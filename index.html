@@ -574,60 +574,41 @@
 
     // ===== 模擬產生穿搭（之後會改成呼叫後端 AI） =====
     async function generateOutfit() {
-      const btn = document.getElementById("generate-btn");
-      const status = document.getElementById("status");
-      const gender = document.getElementById("gender").value;
-      const age = parseInt(document.getElementById("age").value, 10);
-      const style = document.getElementById("style").value;
-      const temp = parseInt(document.getElementById("temp-range").value, 10);
+  const btn = document.getElementById("generate-btn");
+  const status = document.getElementById("status");
+  const gender = document.getElementById("gender").value;
+  const age = parseInt(document.getElementById("age").value, 10);
+  const style = document.getElementById("style").value;
+  const temp = parseInt(document.getElementById("temp-range").value, 10);
 
-      btn.disabled = true;
-      status.textContent = "正在根據條件生成示意穿搭（目前為 Demo 假資料）...";
-      status.className = "status-text loading";
+  btn.disabled = true;
+  status.textContent = "正在向後端 API 測試連線...";
+  status.className = "status-text loading";
 
-      // 這裡之後會改成：呼叫你的後端 /api/generate-image
-      // 現在先用 setTimeout 模擬一次呼叫時間
-      await new Promise(r => setTimeout(r, 800));
+  try {
+    const response = await fetch("/api/generate-image", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ gender, age, style, temp })
+    });
 
-      // 生成簡單文字描述（之後可以改成 GPT 幫你生更漂亮的文案）
-      const styleTextMap = {
-        casual: "休閒日常",
-        minimal: "極簡通勤",
-        street: "街頭風",
-        sporty: "運動風",
-        smart: "Smart Casual"
-      };
+    const data = await response.json();
 
-      const genderTextMap = {
-        female: "女性",
-        male: "男性",
-        neutral: "中性風格"
-      };
+    // 這裡先只顯示後端回傳的訊息
+    document.getElementById("outfit-desc").textContent =
+      "後端回傳：" + (data.message || JSON.stringify(data));
 
-      const styleText = styleTextMap[style] || "日常穿搭";
-      const genderText = genderTextMap[gender] || "不拘";
+    status.textContent = "和後端 API 的連線測試成功！";
+    status.className = "status-text done";
+  } catch (err) {
+    console.error(err);
+    status.textContent = "呼叫後端 API 失敗：" + err.message;
+    status.className = "status-text error";
+  } finally {
+    btn.disabled = false;
+  }
+}
 
-      const desc = `
-${temp}°C 左右的天氣，適合${genderText}、約 ${age} 歲、偏向「${styleText}」的搭配。
-建議以上身寬鬆、下身線條簡單為主，整體維持類似 UNIQLO 的極簡日系休閒感。
-      `.trim();
-
-      document.getElementById("outfit-desc").textContent = desc;
-
-      // 圖片示意：先用一張 placeholder，之後會換成 AI 回傳的 base64 圖
-      const img = document.getElementById("outfit-image");
-      const placeholder = document.getElementById("image-placeholder");
-      img.src = "https://via.placeholder.com/600x800.png?text=AI+Outfit+Preview";
-      img.style.display = "block";
-      placeholder.style.display = "none";
-
-      // 商品：暫時直接顯示 mockProducts；之後可根據條件挑選不同清單
-      renderProducts(mockProducts);
-
-      status.textContent = "Demo 完成：目前示意圖與商品為假資料，之後會接上真正的 AI 與品牌資料。";
-      status.className = "status-text done";
-      btn.disabled = false;
-    }
   </script>
 </body>
 </html>
