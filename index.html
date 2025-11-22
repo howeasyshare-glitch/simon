@@ -582,7 +582,7 @@
   const temp = parseInt(document.getElementById("temp-range").value, 10);
 
   btn.disabled = true;
-  status.textContent = "正在向後端 API 測試連線...";
+  status.textContent = "正在向後端 API 產生穿搭示意圖（目前是假圖片測試）...";
   status.className = "status-text loading";
 
   try {
@@ -592,17 +592,57 @@
       body: JSON.stringify({ gender, age, style, temp })
     });
 
+    if (!response.ok) {
+      throw new Error("API 回應失敗：" + response.status);
+    }
+
     const data = await response.json();
+    if (!data.image) {
+      throw new Error("API 沒有回傳圖片資料");
+    }
 
-    // 這裡先只顯示後端回傳的訊息
-    document.getElementById("outfit-desc").textContent =
-      "後端回傳：" + (data.message || JSON.stringify(data));
+    // 文字描述
+    const styleTextMap = {
+      casual: "休閒日常",
+      minimal: "極簡通勤",
+      street: "街頭風",
+      sporty: "運動風",
+      smart: "Smart Casual"
+    };
 
-    status.textContent = "和後端 API 的連線測試成功！";
+    const genderTextMap = {
+      female: "女性",
+      male: "男性",
+      neutral: "中性風格"
+    };
+
+    const styleText = styleTextMap[style] || "日常穿搭";
+    const genderText = genderTextMap[gender] || "不拘";
+
+    const desc = `
+${temp}°C 左右的天氣，適合${genderText}、約 ${age} 歲、偏向「${styleText}」的搭配。
+目前圖片為測試用 placeholder，確認前端與後端 API 串接正常。
+    `.trim();
+
+    document.getElementById("outfit-desc").textContent = desc;
+
+    // ⬇⬇⬇ 這裡是關鍵：一定要有 data:image/png;base64, 這段前綴
+    const img = document.getElementById("outfit-image");
+    const placeholder = document.getElementById("image-placeholder");
+
+    img.src = "data:image/png;base64," + data.image;
+    img.style.display = "block";
+    placeholder.style.display = "none";
+
+    // 商品
+    const selectedProducts = pickProducts(gender, style, temp);
+    renderProducts(selectedProducts);
+
+    status.textContent = "與後端 API 串接成功（目前為假圖片），下一步可以換成真正 AI 圖片。";
     status.className = "status-text done";
   } catch (err) {
     console.error(err);
-    status.textContent = "呼叫後端 API 失敗：" + err.message;
+    status.textContent = "產生圖片時發生錯誤：" + err.message;
     status.className = "status-text error";
   } finally {
     btn.disabled = false;
