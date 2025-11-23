@@ -484,171 +484,259 @@
   </div>
 
   <script>
-    // ===== 工具：更新溫度顯示 =====
-    function updateTempDisplay(v) {
-      document.getElementById("temp-text").textContent = v;
+  // ===== 工具：更新溫度顯示 =====
+  function updateTempDisplay(v) {
+    document.getElementById("temp-text").textContent = v;
+  }
+
+  // ===== 商品資料：UNIQLO 風格的示意商品 =====
+  const products = [
+    {
+      id: "f-top-casual-01",
+      name: "女裝 寬版圓領 T 恤（白）",
+      brand: "UNIQLO 風格",
+      type: "top",
+      gender: "female",
+      styles: ["casual", "minimal"],
+      tempMin: 18,
+      tempMax: 30,
+      price: 390,
+      currency: "TWD",
+      thumb: "",
+      link: "#"
+    },
+    {
+      id: "f-bottom-casual-01",
+      name: "女裝 直筒牛仔褲（淺藍）",
+      brand: "UNIQLO 風格",
+      type: "bottom",
+      gender: "female",
+      styles: ["casual", "minimal"],
+      tempMin: 15,
+      tempMax: 28,
+      price: 990,
+      currency: "TWD",
+      thumb: "",
+      link: "#"
+    },
+    {
+      id: "u-top-minimal-01",
+      name: "男女皆可 極簡落肩 T 恤（灰）",
+      brand: "UNIQLO 風格",
+      type: "top",
+      gender: "unisex",
+      styles: ["minimal", "smart"],
+      tempMin: 16,
+      tempMax: 28,
+      price: 490,
+      currency: "TWD",
+      thumb: "",
+      link: "#"
+    },
+    {
+      id: "m-top-casual-01",
+      name: "男裝 U 圓領寬版 T 恤（黑）",
+      brand: "UNIQLO 風格",
+      type: "top",
+      gender: "male",
+      styles: ["casual", "street"],
+      tempMin: 20,
+      tempMax: 32,
+      price: 390,
+      currency: "TWD",
+      thumb: "",
+      link: "#"
+    },
+    {
+      id: "m-bottom-casual-01",
+      name: "男裝 錐形長褲（卡其）",
+      brand: "UNIQLO 風格",
+      type: "bottom",
+      gender: "male",
+      styles: ["casual", "smart"],
+      tempMin: 15,
+      tempMax: 26,
+      price: 1290,
+      currency: "TWD",
+      thumb: "",
+      link: "#"
+    },
+    {
+      id: "unisex-outer-01",
+      name: "超輕羽絨外套（深藍）",
+      brand: "UNIQLO 風格",
+      type: "outer",
+      gender: "unisex",
+      styles: ["casual", "minimal", "smart"],
+      tempMin: 8,
+      tempMax: 18,
+      price: 1990,
+      currency: "TWD",
+      thumb: "",
+      link: "#"
+    },
+    {
+      id: "accessory-bag-01",
+      name: "尼龍迷你肩背包（黑）",
+      brand: "UNIQLO 風格",
+      type: "accessory",
+      gender: "unisex",
+      styles: ["casual", "street", "minimal"],
+      tempMin: 5,
+      tempMax: 35,
+      price: 590,
+      currency: "TWD",
+      thumb: "",
+      link: "#"
     }
+  ];
 
-    // ===== 假資料：示意商品（之後會換成真正的 UNIQLO / 品牌資料） =====
-    const mockProducts = [
-      {
-        id: "top-1",
-        name: "極簡寬版圓領上衣（白）",
-        brand: "UNIQLO 風格",
-        category: "上衣",
-        price: 390,
-        currency: "TWD",
-        thumb: "",
-        link: "#"
-      },
-      {
-        id: "bottom-1",
-        name: "直筒牛仔褲（淺藍）",
-        brand: "UNIQLO 風格",
-        category: "下身",
-        price: 990,
-        currency: "TWD",
-        thumb: "",
-        link: "#"
-      },
-      {
-        id: "shoes-1",
-        name: "白色帆布鞋",
-        brand: "basic casual",
-        category: "鞋款",
-        price: 1200,
-        currency: "TWD",
-        thumb: "",
-        link: "#"
-      },
-      {
-        id: "bag-1",
-        name: "棉質托特包",
-        brand: "minimal",
-        category: "配件",
-        price: 390,
-        currency: "TWD",
-        thumb: "",
-        link: "#"
-      }
-    ];
+  // ===== 挑商品：依性別 / 風格 / 溫度 =====
+  function pickProducts(gender, style, temp) {
+    let candidates = products.filter(p => {
+      const genderMatch = p.gender === "unisex" || p.gender === gender;
+      const styleMatch = p.styles.includes(style);
+      const tempMatch = temp >= p.tempMin && temp <= p.tempMax;
+      return genderMatch && styleMatch && tempMatch;
+    });
 
-    // ===== 將商品渲染到右側清單 =====
-    function renderProducts(products) {
-      const container = document.getElementById("product-list");
-      container.innerHTML = "";
-
-      products.forEach(p => {
-        const el = document.createElement("div");
-        el.className = "product-item";
-
-        const thumbHTML = p.thumb
-          ? `<img src="${p.thumb}" alt="${p.name}" />`
-          : `<span>示意圖</span>`;
-
-        el.innerHTML = `
-          <div class="product-thumb">
-            ${thumbHTML}
-          </div>
-          <div class="product-main">
-            <div class="product-name">${p.name}</div>
-            <div class="product-meta">
-              <span>${p.brand}</span>
-              <span>· ${p.category}</span>
-            </div>
-            <div class="product-price">
-              $${p.price.toLocaleString()} ${p.currency}
-            </div>
-            <a class="product-link" href="${p.link}" target="_blank" rel="noopener noreferrer">
-              前往查看類似商品
-            </a>
-          </div>
-        `;
-
-        container.appendChild(el);
+    if (candidates.length === 0) {
+      candidates = products.filter(p => {
+        const genderMatch = p.gender === "unisex" || p.gender === gender;
+        const styleMatch = p.styles.includes(style);
+        return genderMatch && styleMatch;
       });
     }
 
-    // 初始先顯示假商品
-    renderProducts(mockProducts);
-
-    // ===== 模擬產生穿搭（之後會改成呼叫後端 AI） =====
-    async function generateOutfit() {
-  const btn = document.getElementById("generate-btn");
-  const status = document.getElementById("status");
-  const gender = document.getElementById("gender").value;
-  const age = parseInt(document.getElementById("age").value, 10);
-  const style = document.getElementById("style").value;
-  const temp = parseInt(document.getElementById("temp-range").value, 10);
-
-  btn.disabled = true;
-  status.textContent = "正在向後端 API 產生穿搭示意圖（目前是假圖片測試）...";
-  status.className = "status-text loading";
-
-  try {
-    const response = await fetch("/api/generate-image", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ gender, age, style, temp })
-    });
-
-    if (!response.ok) {
-      throw new Error("API 回應失敗：" + response.status);
+    if (candidates.length === 0) {
+      candidates = products;
     }
 
-    const data = await response.json();
-    if (!data.image) {
-      throw new Error("API 沒有回傳圖片資料");
-    }
-
-    // 文字描述
-    const styleTextMap = {
-      casual: "休閒日常",
-      minimal: "極簡通勤",
-      street: "街頭風",
-      sporty: "運動風",
-      smart: "Smart Casual"
-    };
-
-    const genderTextMap = {
-      female: "女性",
-      male: "男性",
-      neutral: "中性風格"
-    };
-
-    const styleText = styleTextMap[style] || "日常穿搭";
-    const genderText = genderTextMap[gender] || "不拘";
-
-    const desc = `
-${temp}°C 左右的天氣，適合${genderText}、約 ${age} 歲、偏向「${styleText}」的搭配。
-目前圖片為測試用 placeholder，確認前端與後端 API 串接正常。
-    `.trim();
-
-    document.getElementById("outfit-desc").textContent = desc;
-
-    // ⬇⬇⬇ 這裡是關鍵：一定要有 data:image/png;base64, 這段前綴
-    const img = document.getElementById("outfit-image");
-    const placeholder = document.getElementById("image-placeholder");
-
-    img.src = "data:image/png;base64," + data.image;
-    img.style.display = "block";
-    placeholder.style.display = "none";
-
-    // 商品
-    const selectedProducts = pickProducts(gender, style, temp);
-    renderProducts(selectedProducts);
-
-    status.textContent = "與後端 API 串接成功（目前為假圖片），下一步可以換成真正 AI 圖片。";
-    status.className = "status-text done";
-  } catch (err) {
-    console.error(err);
-    status.textContent = "產生圖片時發生錯誤：" + err.message;
-    status.className = "status-text error";
-  } finally {
-    btn.disabled = false;
+    return candidates.slice(0, 4);
   }
-}
 
-  </script>
+  // ===== 渲染商品卡片 =====
+  function renderProducts(list) {
+    const container = document.getElementById("product-list");
+    container.innerHTML = "";
+
+    list.forEach(p => {
+      const el = document.createElement("div");
+      el.className = "product-item";
+
+      const thumbHTML = p.thumb
+        ? `<img src="${p.thumb}" alt="${p.name}" />`
+        : `<span>示意圖</span>`;
+
+      el.innerHTML = `
+        <div class="product-thumb">
+          ${thumbHTML}
+        </div>
+        <div class="product-main">
+          <div class="product-name">${p.name}</div>
+          <div class="product-meta">
+            <span>${p.brand}</span>
+            <span>· ${p.type}</span>
+          </div>
+          <div class="product-price">
+            $${p.price.toLocaleString()} ${p.currency}
+          </div>
+          <a class="product-link" href="${p.link}" target="_blank" rel="noopener noreferrer">
+            前往查看類似商品
+          </a>
+        </div>
+      `;
+
+      container.appendChild(el);
+    });
+  }
+
+  // 初始先用預設條件挑幾件商品
+  renderProducts(pickProducts("female", "casual", 22));
+
+  // ===== 真正呼叫後端產圖 =====
+  async function generateOutfit() {
+    const btn = document.getElementById("generate-btn");
+    const status = document.getElementById("status");
+    const gender = document.getElementById("gender").value;
+    const age = parseInt(document.getElementById("age").value, 10);
+    const style = document.getElementById("style").value;
+    const temp = parseInt(document.getElementById("temp-range").value, 10);
+
+    btn.disabled = true;
+    status.textContent = "正在向後端 API 產生 AI 穿搭示意圖...";
+    status.className = "status-text loading";
+
+    try {
+      console.log("呼叫 /api/generate-image...");
+      const response = await fetch("/api/generate-image", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ gender, age, style, temp })
+      });
+
+      console.log("API status:", response.status);
+      if (!response.ok) {
+        const txt = await response.text();
+        console.error("API error body:", txt);
+        throw new Error("API 回應失敗：" + response.status);
+      }
+
+      const data = await response.json();
+      console.log("API 回傳資料：", data);
+
+      if (!data.image) {
+        throw new Error("API 沒有回傳圖片資料");
+      }
+
+      // 文字描述
+      const styleTextMap = {
+        casual: "休閒日常",
+        minimal: "極簡通勤",
+        street: "街頭風",
+        sporty: "運動風",
+        smart: "Smart Casual"
+      };
+
+      const genderTextMap = {
+        female: "女性",
+        male: "男性",
+        neutral: "中性風格"
+      };
+
+      const styleText = styleTextMap[style] || "日常穿搭";
+      const genderText = genderTextMap[gender] || "不拘";
+
+      const desc = `
+${temp}°C 左右的天氣，適合${genderText}、約 ${age} 歲、偏向「${styleText}」的搭配。
+以下示意圖是由 AI 依照日系極簡（類似 UNIQLO）的風格自動生成，主要提供整體輪廓與配色參考。
+      `.trim();
+
+      document.getElementById("outfit-desc").textContent = desc;
+
+      // 顯示圖片
+      const img = document.getElementById("outfit-image");
+      const placeholder = document.getElementById("image-placeholder");
+
+      img.src = "data:image/png;base64," + data.image;
+      img.style.display = "block";
+      if (placeholder) placeholder.style.display = "none";
+
+      // 商品
+      const selectedProducts = pickProducts(gender, style, temp);
+      renderProducts(selectedProducts);
+
+      status.textContent = "AI 穿搭示意圖已生成！";
+      status.className = "status-text done";
+    } catch (err) {
+      console.error(err);
+      status.textContent = "產生圖片時發生錯誤：" + err.message;
+      status.className = "status-text error";
+    } finally {
+      btn.disabled = false;
+    }
+  }
+</script>
+
 </body>
 </html>
