@@ -234,25 +234,28 @@
     }
 
     .image-wrapper {
-      border-radius: var(--border-radius-lg);
-      background: linear-gradient(125deg, #fff7f7, #f9fbff);
-      padding: 12px;
-      display: flex;
-      flex-direction: column;
-      gap: 8px;
-      height: 260px;
-    }
+  border-radius: var(--border-radius-lg);
+  background: linear-gradient(125deg, #fff7f7, #f9fbff);
+  padding: 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  height: 520px;              /* 原本 260，改高一點 */
+}
+
 
     .image-inner {
-      flex: 1;
-      border-radius: 16px;
-      background: #fff;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      overflow: hidden;
-      border: 1px solid #f0f0f5;
-    }
+  flex: 1;
+  border-radius: 16px;
+  background: #fff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  border: 1px solid #f0f0f5;
+  aspect-ratio: 3 / 4;        /* 直式比例 */
+}
+
 
     #outfit-image {
       max-width: 100%;
@@ -593,27 +596,54 @@
 
   // ===== 挑商品：依性別 / 風格 / 溫度 =====
   function pickProducts(gender, style, temp) {
-    let candidates = products.filter(p => {
-      const genderMatch = p.gender === "unisex" || p.gender === gender;
-      const styleMatch = p.styles.includes(style);
-      const tempMatch = temp >= p.tempMin && temp <= p.tempMax;
-      return genderMatch && styleMatch && tempMatch;
-    });
+  // 先把所有符合性別 & 風格的大池子撈出來
+  const pool = products.filter(p => {
+    const genderMatch = p.gender === "unisex" || p.gender === gender;
+    const styleMatch = p.styles.includes(style);
+    return genderMatch;
+  });
 
-    if (candidates.length === 0) {
-      candidates = products.filter(p => {
-        const genderMatch = p.gender === "unisex" || p.gender === gender;
-        const styleMatch = p.styles.includes(style);
-        return genderMatch && styleMatch;
-      });
-    }
+  const pickOne = (typeFilter, extraFilter = () => true) => {
+    const candidates = pool.filter(
+      p => p.type === typeFilter && extraFilter(p)
+    );
+    if (candidates.length === 0) return null;
+    // 簡單隨機挑一件
+    return candidates[Math.floor(Math.random() * candidates.length)];
+  };
 
-    if (candidates.length === 0) {
-      candidates = products;
-    }
+  const result = [];
 
-    return candidates.slice(0, 4);
+  // 一件上衣
+  const top = pickOne("top", p => temp >= p.tempMin && temp <= p.tempMax);
+  if (top) result.push(top);
+
+  // 一件下身
+  const bottom = pickOne("bottom", p => temp >= p.tempMin && temp <= p.tempMax);
+  if (bottom) result.push(bottom);
+
+  // 視溫度決定要不要外套
+  if (temp <= 20) {
+    const outer = pickOne("outer", p => temp >= p.tempMin && temp <= p.tempMax);
+    if (outer) result.push(outer);
   }
+
+  // 一個配件（包包）
+  const accessory = pickOne("accessory");
+  if (accessory) result.push(accessory);
+
+  // 如果結果太少，就再補幾件池子裡的（最多 4-5 件）
+  if (result.length < 3) {
+    pool.forEach(p => {
+      if (!result.includes(p) && result.length < 5) {
+        result.push(p);
+      }
+    });
+  }
+
+  return result;
+}
+
 
   // ===== 渲染商品卡片 =====
   function renderProducts(list) {
