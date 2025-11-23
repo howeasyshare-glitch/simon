@@ -240,11 +240,10 @@
   display: flex;
   flex-direction: column;
   gap: 8px;
-  height: 520px;              /* 原本 260，改高一點 */
+  height: 520px; /* 原本 260，變高 */
 }
 
-
-    .image-inner {
+.image-inner {
   flex: 1;
   border-radius: 16px;
   background: #fff;
@@ -253,8 +252,9 @@
   justify-content: center;
   overflow: hidden;
   border: 1px solid #f0f0f5;
-  aspect-ratio: 3 / 4;        /* 直式比例 */
+  aspect-ratio: 3 / 4; /* 直式比例 */
 }
+
 
 
     #outfit-image {
@@ -356,6 +356,52 @@
       color: var(--muted);
       text-align: center;
     }
+    @media (max-width: 768px) {
+  .page {
+    padding: 16px 12px 28px;
+  }
+
+  header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 6px;
+  }
+
+  .image-wrapper {
+    height: auto;
+    min-height: 360px; /* 手機上仍保有直式比例 */
+  }
+
+  .btn-row {
+    flex-direction: column;
+    align-items: flex-end;
+    gap: 6px;
+  }
+
+  .primary-btn {
+    width: 100%;
+    justify-content: center;
+  }
+}
+
+@media (max-width: 480px) {
+  .card {
+    padding: 14px;
+  }
+
+  .card-title {
+    font-size: 15px;
+  }
+
+  .image-inner {
+    aspect-ratio: 3 / 4;
+  }
+
+  .product-item {
+    grid-template-columns: 56px 1fr;
+  }
+}
+
   </style>
 </head>
 <body>
