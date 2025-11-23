@@ -73,7 +73,7 @@
 
     @media (max-width: 900px) {
       .layout {
-        grid-template-columns: minmax(0, 1fr);
+        grid-template-columns: 1fr;
       }
     }
 
@@ -234,28 +234,26 @@
     }
 
     .image-wrapper {
-  border-radius: var(--border-radius-lg);
-  background: linear-gradient(125deg, #fff7f7, #f9fbff);
-  padding: 12px;
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-  height: 520px; /* 原本 260，變高 */
-}
+      border-radius: var(--border-radius-lg);
+      background: linear-gradient(125deg, #fff7f7, #f9fbff);
+      padding: 12px;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      height: 420px;
+    }
 
-.image-inner {
-  flex: 1;
-  border-radius: 16px;
-  background: #fff;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  overflow: hidden;
-  border: 1px solid #f0f0f5;
-  aspect-ratio: 3 / 4; /* 直式比例 */
-}
-
-
+    .image-inner {
+      flex: 1;
+      border-radius: 16px;
+      background: #fff;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      overflow: hidden;
+      border: 1px solid #f0f0f5;
+      aspect-ratio: 3 / 4; /* 直式比例 */
+    }
 
     #outfit-image {
       max-width: 100%;
@@ -356,52 +354,49 @@
       color: var(--muted);
       text-align: center;
     }
-    @media (max-width: 768px) {
-  .page {
-    padding: 16px 12px 28px;
-  }
 
-  header {
-    flex-direction: column;
-    align-items: flex-start;
-    gap: 6px;
-  }
+    /* 手機版調整 */
+    @media (max-width: 900px) {
+      .page {
+        padding: 16px 12px 28px;
+      }
 
-  .image-wrapper {
-    height: auto;
-    min-height: 360px; /* 手機上仍保有直式比例 */
-  }
+      header {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 6px;
+      }
 
-  .btn-row {
-    flex-direction: column;
-    align-items: flex-end;
-    gap: 6px;
-  }
+      .image-wrapper {
+        height: auto;
+        min-height: 360px;
+      }
 
-  .primary-btn {
-    width: 100%;
-    justify-content: center;
-  }
-}
+      .btn-row {
+        flex-direction: column;
+        align-items: flex-end;
+        gap: 6px;
+      }
 
-@media (max-width: 480px) {
-  .card {
-    padding: 14px;
-  }
+      .primary-btn {
+        width: 100%;
+        justify-content: center;
+      }
+    }
 
-  .card-title {
-    font-size: 15px;
-  }
+    @media (max-width: 480px) {
+      .card {
+        padding: 14px;
+      }
 
-  .image-inner {
-    aspect-ratio: 3 / 4;
-  }
+      .card-title {
+        font-size: 15px;
+      }
 
-  .product-item {
-    grid-template-columns: 56px 1fr;
-  }
-}
-
+      .product-item {
+        grid-template-columns: 56px 1fr;
+      }
+    }
   </style>
 </head>
 <body>
@@ -475,7 +470,7 @@
                   <span id="temp-text">22</span>°C
                 </div>
               </div>
-              <div class="hint">之後會影響薄外套／厚外套等選擇</div>
+              <div class="hint">影響是否建議外套、厚度等</div>
             </div>
           </div>
 
@@ -507,7 +502,7 @@
               />
               <div id="image-placeholder" class="image-placeholder">
                 目前還沒有示意圖，請先在左邊輸入條件並產生一次穿搭。<br />
-                下一步我們會把這裡接上 Google Gemini 的真正 AI 圖片。
+                圖片將以「UNIQLO Lookbook」風格呈現，作為整體搭配參考。
               </div>
             </div>
             <div class="desc" id="outfit-desc">
@@ -528,337 +523,358 @@
     </main>
 
     <footer>
-      v0.1 · 前端 UI Demo — 之後會接上 AI 圖片生成 & 真實商品資料
+      v0.2 · Demo — 已接上 AI 圖片生成 & 基礎商品推薦（含每日次數限制）
     </footer>
   </div>
 
   <script>
-  // ===== 1. 簡單的每日次數限制 =====
-  const DAILY_LIMIT = 20;                 // 你可以改成你想要的每日上限
-  const USAGE_KEY = "outfit_daily_usage_v1";
+    // ===== 1. 每日 API 呼叫次數限制 =====
+    const DAILY_LIMIT = 20;
+    const USAGE_KEY = "outfit_daily_usage_v1";
 
-  function getTodayStr() {
-    return new Date().toISOString().slice(0, 10); // YYYY-MM-DD
-  }
-
-  function getUsage() {
-    if (!window.localStorage) {
-      return { date: getTodayStr(), count: 0 };
+    function getTodayStr() {
+      return new Date().toISOString().slice(0, 10);
     }
-    try {
-      const raw = localStorage.getItem(USAGE_KEY);
-      if (!raw) return { date: getTodayStr(), count: 0 };
-      const parsed = JSON.parse(raw);
-      if (parsed.date !== getTodayStr()) {
+
+    function getUsage() {
+      if (!window.localStorage) {
         return { date: getTodayStr(), count: 0 };
       }
-      return parsed;
-    } catch (e) {
-      console.warn("usage parse error", e);
-      return { date: getTodayStr(), count: 0 };
-    }
-  }
-
-  function setUsage(usage) {
-    if (!window.localStorage) return;
-    try {
-      localStorage.setItem(USAGE_KEY, JSON.stringify(usage));
-    } catch (e) {
-      console.warn("usage save error", e);
-    }
-  }
-
-  function incrementUsage() {
-    const u = getUsage();
-    const next = { date: getTodayStr(), count: u.count + 1 };
-    setUsage(next);
-    return next;
-  }
-
-  // ===== 2. 工具：更新溫度顯示 =====
-  function updateTempDisplay(v) {
-    document.getElementById("temp-text").textContent = v;
-  }
-
-  // ===== 3. 商品資料：UNIQLO 風格示意 =====
-  const products = [
-    {
-      id: "f-top-casual-01",
-      name: "女裝 寬版圓領 T 恤（白）",
-      brand: "UNIQLO 風格",
-      type: "top",
-      gender: "female",
-      styles: ["casual", "minimal"],
-      tempMin: 18,
-      tempMax: 30,
-      price: 390,
-      currency: "TWD",
-      thumb: "",
-      link: "#"
-    },
-    {
-      id: "f-bottom-casual-01",
-      name: "女裝 直筒牛仔褲（淺藍）",
-      brand: "UNIQLO 風格",
-      type: "bottom",
-      gender: "female",
-      styles: ["casual", "minimal"],
-      tempMin: 15,
-      tempMax: 28,
-      price: 990,
-      currency: "TWD",
-      thumb: "",
-      link: "#"
-    },
-    {
-      id: "u-top-minimal-01",
-      name: "男女皆可 極簡落肩 T 恤（灰）",
-      brand: "UNIQLO 風格",
-      type: "top",
-      gender: "unisex",
-      styles: ["minimal", "smart"],
-      tempMin: 16,
-      tempMax: 28,
-      price: 490,
-      currency: "TWD",
-      thumb: "",
-      link: "#"
-    },
-    {
-      id: "m-top-casual-01",
-      name: "男裝 U 圓領寬版 T 恤（黑）",
-      brand: "UNIQLO 風格",
-      type: "top",
-      gender: "male",
-      styles: ["casual", "street"],
-      tempMin: 20,
-      tempMax: 32,
-      price: 390,
-      currency: "TWD",
-      thumb: "",
-      link: "#"
-    },
-    {
-      id: "m-bottom-casual-01",
-      name: "男裝 錐形長褲（卡其）",
-      brand: "UNIQLO 風格",
-      type: "bottom",
-      gender: "male",
-      styles: ["casual", "smart"],
-      tempMin: 15,
-      tempMax: 26,
-      price: 1290,
-      currency: "TWD",
-      thumb: "",
-      link: "#"
-    },
-    {
-      id: "unisex-outer-01",
-      name: "超輕羽絨外套（深藍）",
-      brand: "UNIQLO 風格",
-      type: "outer",
-      gender: "unisex",
-      styles: ["casual", "minimal", "smart"],
-      tempMin: 8,
-      tempMax: 18,
-      price: 1990,
-      currency: "TWD",
-      thumb: "",
-      link: "#"
-    },
-    {
-      id: "accessory-bag-01",
-      name: "尼龍迷你肩背包（黑）",
-      brand: "UNIQLO 風格",
-      type: "accessory",
-      gender: "unisex",
-      styles: ["casual", "street", "minimal"],
-      tempMin: 5,
-      tempMax: 35,
-      price: 590,
-      currency: "TWD",
-      thumb: "",
-      link: "#"
-    }
-  ];
-
-  // ===== 4. 根據性別 / 風格 / 溫度挑商品（上衣＋下身＋外套＋包） =====
-  function pickProducts(gender, style, temp) {
-    const pool = products.filter(p => {
-      const genderMatch = p.gender === "unisex" || p.gender === gender;
-      const styleMatch = p.styles.includes(style);
-      return genderMatch && styleMatch;
-    });
-
-    const pickOne = (typeFilter, extraFilter = () => true) => {
-      const candidates = pool.filter(
-        p => p.type === typeFilter && extraFilter(p)
-      );
-      if (candidates.length === 0) return null;
-      return candidates[Math.floor(Math.random() * candidates.length)];
-    };
-
-    const result = [];
-
-    const top = pickOne("top", p => temp >= p.tempMin && temp <= p.tempMax);
-    if (top) result.push(top);
-
-    const bottom = pickOne("bottom", p => temp >= p.tempMin && temp <= p.tempMax);
-    if (bottom) result.push(bottom);
-
-    if (temp <= 20) {
-      const outer = pickOne("outer", p => temp >= p.tempMin && temp <= p.tempMax);
-      if (outer) result.push(outer);
-    }
-
-    const accessory = pickOne("accessory");
-    if (accessory) result.push(accessory);
-
-    if (result.length < 3) {
-      pool.forEach(p => {
-        if (!result.includes(p) && result.length < 5) {
-          result.push(p);
+      try {
+        const raw = localStorage.getItem(USAGE_KEY);
+        if (!raw) return { date: getTodayStr(), count: 0 };
+        const parsed = JSON.parse(raw);
+        if (parsed.date !== getTodayStr()) {
+          return { date: getTodayStr(), count: 0 };
         }
+        return parsed;
+      } catch (e) {
+        console.warn("usage parse error", e);
+        return { date: getTodayStr(), count: 0 };
+      }
+    }
+
+    function setUsage(usage) {
+      if (!window.localStorage) return;
+      try {
+        localStorage.setItem(USAGE_KEY, JSON.stringify(usage));
+      } catch (e) {
+        console.warn("usage save error", e);
+      }
+    }
+
+    function incrementUsage() {
+      const u = getUsage();
+      const next = { date: getTodayStr(), count: u.count + 1 };
+      setUsage(next);
+      return next;
+    }
+
+    // ===== 2. 更新溫度顯示 =====
+    function updateTempDisplay(v) {
+      document.getElementById("temp-text").textContent = v;
+    }
+
+    // ===== 3. 商品資料：UNIQLO 搜尋連結示意 =====
+    const products = [
+      {
+        id: "f-top-casual-01",
+        name: "女裝 寬版圓領 T 恤（白）",
+        brand: "UNIQLO 風格",
+        type: "top",
+        gender: "female",
+        styles: ["casual", "minimal"],
+        tempMin: 18,
+        tempMax: 30,
+        price: 390,
+        currency: "TWD",
+        searchKeyword: "女裝 寬版 圓領 T恤 白"
+      },
+      {
+        id: "f-bottom-casual-01",
+        name: "女裝 直筒牛仔褲（淺藍）",
+        brand: "UNIQLO 風格",
+        type: "bottom",
+        gender: "female",
+        styles: ["casual", "minimal"],
+        tempMin: 15,
+        tempMax: 28,
+        price: 990,
+        currency: "TWD",
+        searchKeyword: "女裝 直筒 牛仔褲 淺藍"
+      },
+      {
+        id: "u-top-minimal-01",
+        name: "男女皆可 極簡落肩 T 恤（灰）",
+        brand: "UNIQLO 風格",
+        type: "top",
+        gender: "unisex",
+        styles: ["minimal", "smart"],
+        tempMin: 16,
+        tempMax: 28,
+        price: 490,
+        currency: "TWD",
+        searchKeyword: "落肩 T恤 灰 極簡"
+      },
+      {
+        id: "m-top-casual-01",
+        name: "男裝 U 圓領寬版 T 恤（黑）",
+        brand: "UNIQLO 風格",
+        type: "top",
+        gender: "male",
+        styles: ["casual", "street"],
+        tempMin: 20,
+        tempMax: 32,
+        price: 390,
+        currency: "TWD",
+        searchKeyword: "男裝 U 圓領 寬版 T恤 黑"
+      },
+      {
+        id: "m-bottom-casual-01",
+        name: "男裝 錐形長褲（卡其）",
+        brand: "UNIQLO 風格",
+        type: "bottom",
+        gender: "male",
+        styles: ["casual", "smart"],
+        tempMin: 15,
+        tempMax: 26,
+        price: 1290,
+        currency: "TWD",
+        searchKeyword: "男裝 錐形 長褲 卡其"
+      },
+      {
+        id: "unisex-outer-01",
+        name: "超輕羽絨外套（深藍）",
+        brand: "UNIQLO 風格",
+        type: "outer",
+        gender: "unisex",
+        styles: ["casual", "minimal", "smart"],
+        tempMin: 8,
+        tempMax: 18,
+        price: 1990,
+        currency: "TWD",
+        searchKeyword: "超輕 羽絨 外套 深藍"
+      },
+      {
+        id: "accessory-bag-01",
+        name: "尼龍迷你肩背包（黑）",
+        brand: "UNIQLO 風格",
+        type: "accessory",
+        gender: "unisex",
+        styles: ["casual", "street", "minimal"],
+        tempMin: 5,
+        tempMax: 35,
+        price: 590,
+        currency: "TWD",
+        searchKeyword: "尼龍 迷你 肩背包 黑"
+      }
+    ];
+
+    // ===== 4. 挑商品：上衣＋下身＋（視溫度加外套）＋包 =====
+    function pickProducts(gender, style, temp) {
+      const pool = products.filter(p => {
+        const genderMatch = p.gender === "unisex" || p.gender === gender;
+        const styleMatch = p.styles.includes(style);
+        return genderMatch && styleMatch;
+      });
+
+      const pickOne = (typeFilter, extraFilter = () => true) => {
+        const candidates = pool.filter(
+          p => p.type === typeFilter && extraFilter(p)
+        );
+        if (candidates.length === 0) return null;
+        return candidates[Math.floor(Math.random() * candidates.length)];
+      };
+
+      const result = [];
+
+      const top = pickOne("top", p => temp >= p.tempMin && temp <= p.tempMax);
+      if (top) result.push(top);
+
+      const bottom = pickOne("bottom", p => temp >= p.tempMin && temp <= p.tempMax);
+      if (bottom) result.push(bottom);
+
+      if (temp <= 20) {
+        const outer = pickOne("outer", p => temp >= p.tempMin && temp <= p.tempMax);
+        if (outer) result.push(outer);
+      }
+
+      const accessory = pickOne("accessory");
+      if (accessory) result.push(accessory);
+
+      if (result.length < 3) {
+        pool.forEach(p => {
+          if (!result.includes(p) && result.length < 5) {
+            result.push(p);
+          }
+        });
+      }
+
+      return result;
+    }
+
+    // ===== 5. 把商品畫在右邊 =====
+    function renderProducts(list) {
+      const container = document.getElementById("product-list");
+      container.innerHTML = "";
+
+      const typeLabel = {
+        top: "上衣",
+        bottom: "下身",
+        outer: "外套",
+        accessory: "配件"
+      };
+
+      list.forEach(p => {
+        const el = document.createElement("div");
+        el.className = "product-item";
+
+        const thumbHTML = `<span>示意圖</span>`;
+
+        const searchBase = "https://www.uniqlo.com/tw/zh_TW/search?q=";
+        const keyword = p.searchKeyword || p.name;
+        const link = searchBase + encodeURIComponent(keyword);
+
+        el.innerHTML = `
+          <div class="product-thumb">
+            ${thumbHTML}
+          </div>
+          <div class="product-main">
+            <div class="product-name">${p.name}</div>
+            <div class="product-meta">
+              <span>${p.brand}</span>
+              <span>· ${typeLabel[p.type] || ""}</span>
+            </div>
+            <div class="product-price">
+              $${p.price.toLocaleString()} ${p.currency}
+            </div>
+            <a class="product-link" href="${link}" target="_blank" rel="noopener noreferrer">
+              前往查看類似商品
+            </a>
+          </div>
+        `;
+
+        container.appendChild(el);
       });
     }
 
-    return result;
-  }
+    // 初始：用預設條件先挑幾件
+    renderProducts(pickProducts("female", "casual", 22));
 
-  // ===== 5. 把商品畫在右邊 =====
-  function renderProducts(list) {
-    const container = document.getElementById("product-list");
-    container.innerHTML = "";
+    // ===== 6. 用商品組 outfitPrompt，給後端畫圖 =====
+    function buildOutfitPrompt(selectedProducts, gender, style, temp) {
+      const genderTextMapEn = {
+        female: "a woman",
+        male: "a man",
+        neutral: "a person"
+      };
+      const styleTextMapEn = {
+        casual: "casual everyday style",
+        minimal: "minimalist office casual style",
+        street: "streetwear style",
+        sporty: "sporty athleisure style",
+        smart: "smart casual style"
+      };
 
-    const typeLabel = {
-      top: "上衣",
-      bottom: "下身",
-      outer: "外套",
-      accessory: "配件"
-    };
+      const genderEn = genderTextMapEn[gender] || "a person";
+      const styleEn = styleTextMapEn[style] || "casual style";
 
-    list.forEach(p => {
-      const el = document.createElement("div");
-      el.className = "product-item";
+      const itemsText = selectedProducts.map(p => p.name).join(", ");
 
-      const thumbHTML = p.thumb
-        ? `<img src="${p.thumb}" alt="${p.name}" />`
-        : `<span>示意圖</span>`;
+      return `
+${genderEn} wearing a Japanese minimalist outfit (${styleEn}) for about ${temp}°C.
 
-      el.innerHTML = `
-        <div class="product-thumb">
-          ${thumbHTML}
-        </div>
-        <div class="product-main">
-          <div class="product-name">${p.name}</div>
-          <div class="product-meta">
-            <span>${p.brand}</span>
-            <span>· ${typeLabel[p.type] || ""}</span>
-          </div>
-          <div class="product-price">
-            $${p.price.toLocaleString()} ${p.currency}
-          </div>
-          <a class="product-link" href="${p.link}" target="_blank" rel="noopener noreferrer">
-            前往查看類似商品
-          </a>
-        </div>
-      `;
+Clothing items:
+${itemsText}
 
-      container.appendChild(el);
-    });
-  }
-
-  // 初始：用預設條件先挑幾件
-  renderProducts(pickProducts("female", "casual", 22));
-
-  // ===== 6. 呼叫後端 API 產生 AI 示意圖 + 套用商品 =====
-  async function generateOutfit() {
-    const btn = document.getElementById("generate-btn");
-    const status = document.getElementById("status");
-    const gender = document.getElementById("gender").value;
-    const age = parseInt(document.getElementById("age").value, 10);
-    const style = document.getElementById("style").value;
-    const temp = parseInt(document.getElementById("temp-range").value, 10);
-
-    // 先檢查每日次數
-    const usage = getUsage();
-    if (usage.count >= DAILY_LIMIT) {
-      status.textContent = `今天試用次數已達 ${DAILY_LIMIT} 次，上限已滿，明天再試 ✨`;
-      status.className = "status-text error";
-      return;
+Style: UNIQLO lookbook style, realistic but clean and simple. Neutral light background. No visible logos. Focus on the overall silhouette, layering and colors of these items.
+      `.trim();
     }
 
-    btn.disabled = true;
-    status.textContent = `正在產生 AI 穿搭示意圖...（今天已用 ${usage.count}/${DAILY_LIMIT} 次）`;
-    status.className = "status-text loading";
+    // ===== 7. 呼叫後端 API 產生 AI 示意圖 =====
+    async function generateOutfit() {
+      const btn = document.getElementById("generate-btn");
+      const status = document.getElementById("status");
+      const gender = document.getElementById("gender").value;
+      const age = parseInt(document.getElementById("age").value, 10);
+      const style = document.getElementById("style").value;
+      const temp = parseInt(document.getElementById("temp-range").value, 10);
 
-    try {
-      const response = await fetch("/api/generate-image", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ gender, age, style, temp })
-      });
-
-      if (!response.ok) {
-        const txt = await response.text();
-        console.error("API error:", txt);
-        throw new Error("API 回應失敗：" + response.status);
+      const usage = getUsage();
+      if (usage.count >= DAILY_LIMIT) {
+        status.textContent = `今天試用次數已達 ${DAILY_LIMIT} 次，上限已滿，明天再試 ✨`;
+        status.className = "status-text error";
+        return;
       }
 
-      const data = await response.json();
-      if (!data.image) {
-        throw new Error("API 沒有回傳圖片資料");
-      }
-
-      // 成功一次就記錄使用量
-      const newUsage = incrementUsage();
-
-      // 文字描述
-      const styleTextMap = {
-        casual: "休閒日常",
-        minimal: "極簡通勤",
-        street: "街頭風",
-        sporty: "運動風",
-        smart: "Smart Casual"
-      };
-      const genderTextMap = {
-        female: "女性",
-        male: "男性",
-        neutral: "中性風格"
-      };
-      const styleText = styleTextMap[style] || "日常穿搭";
-      const genderText = genderTextMap[gender] || "不拘";
-
+      // 先選出一套商品，圖和文字都用這一套
       const selectedProducts = pickProducts(gender, style, temp);
       renderProducts(selectedProducts);
-      const outfitItemsText = selectedProducts.map(p => p.name).join("、");
+      const outfitPrompt = buildOutfitPrompt(selectedProducts, gender, style, temp);
 
-      const desc = `
+      btn.disabled = true;
+      status.textContent = `正在產生 AI 穿搭示意圖...（今天已用 ${usage.count}/${DAILY_LIMIT} 次）`;
+      status.className = "status-text loading";
+
+      try {
+        const response = await fetch("/api/generate-image", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ gender, age, style, temp, outfitPrompt })
+        });
+
+        if (!response.ok) {
+          const txt = await response.text();
+          console.error("API error:", txt);
+          throw new Error("API 回應失敗：" + response.status);
+        }
+
+        const data = await response.json();
+        if (!data.image) {
+          throw new Error("API 沒有回傳圖片資料");
+        }
+
+        const newUsage = incrementUsage();
+
+        const styleTextMap = {
+          casual: "休閒日常",
+          minimal: "極簡通勤",
+          street: "街頭風",
+          sporty: "運動風",
+          smart: "Smart Casual"
+        };
+        const genderTextMap = {
+          female: "女性",
+          male: "男性",
+          neutral: "中性風格"
+        };
+        const styleText = styleTextMap[style] || "日常穿搭";
+        const genderText = genderTextMap[gender] || "不拘";
+
+        const outfitItemsText = selectedProducts.map(p => p.name).join("、");
+        const desc = `
 ${temp}°C 左右的天氣，適合${genderText}、約 ${age} 歲、偏向「${styleText}」的搭配。
-以下示意圖由 AI 依照日系極簡（類似 UNIQLO）風格生成，可想像成：「${outfitItemsText}」這類組合。
-      `.trim();
+以下示意圖由 AI 依照日系極簡（類似 UNIQLO Lookbook）的風格生成，大致可想像成：「${outfitItemsText}」這類組合。
+        `.trim();
 
-      document.getElementById("outfit-desc").textContent = desc;
+        document.getElementById("outfit-desc").textContent = desc;
 
-      // 顯示圖片
-      const img = document.getElementById("outfit-image");
-      const placeholder = document.getElementById("image-placeholder");
-      img.src = "data:image/png;base64," + data.image;
-      img.style.display = "block";
-      if (placeholder) placeholder.style.display = "none";
+        const img = document.getElementById("outfit-image");
+        const placeholder = document.getElementById("image-placeholder");
+        img.src = "data:image/png;base64," + data.image;
+        img.style.display = "block";
+        if (placeholder) placeholder.style.display = "none";
 
-      status.textContent = `AI 穿搭示意圖已生成！（今天已用 ${newUsage.count}/${DAILY_LIMIT} 次）`;
-      status.className = "status-text done";
-    } catch (err) {
-      console.error(err);
-      status.textContent = "產生圖片時發生錯誤：" + err.message;
-      status.className = "status-text error";
-    } finally {
-      btn.disabled = false;
+        status.textContent = `AI 穿搭示意圖已生成！（今天已用 ${newUsage.count}/${DAILY_LIMIT} 次）`;
+        status.className = "status-text done";
+      } catch (err) {
+        console.error(err);
+        status.textContent = "產生圖片時發生錯誤：" + err.message;
+        status.className = "status-text error";
+      } finally {
+        btn.disabled = false;
+      }
     }
-  }
-</script>
-
-
+  </script>
 </body>
 </html>
