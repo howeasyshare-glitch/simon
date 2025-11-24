@@ -378,84 +378,92 @@
     }
 
     /* 圖片 overlay：零件標籤區 */
-    .outfit-overlay {
-      position: absolute;
-      top: 8px;
-      left: 8px;
-      background: rgba(255,255,255,0.92);
-      border-radius: 12px;
-      padding: 6px 8px;
-      box-shadow: 0 4px 12px rgba(0,0,0,0.08);
-      max-width: 70%;
-      max-height: 80%;
-      overflow-y: auto;
-      font-size: 11px;
-    }
+   /* 圖片 overlay：標籤貼在邊緣，有小箭頭指向服裝區域 */
+.outfit-overlay {
+  position: absolute;
+  inset: 0;
+  pointer-events: none; /* 讓點擊事件只落在內部按鈕 */
+}
 
-    .overlay-title {
-      font-weight: 600;
-      font-size: 11px;
-      margin-bottom: 4px;
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      gap: 8px;
-    }
+.overlay-list {
+  position: relative;
+  width: 100%;
+  height: 100%;
+}
 
-    .overlay-list {
-      display: flex;
-      flex-direction: column;
-      gap: 6px;
-    }
+/* 每一個 slot 的標籤樣式 */
+.overlay-item {
+  position: absolute;
+  max-width: 48%;
+  background: rgba(0,0,0,0.7);
+  color: #fff;
+  border-radius: 999px;
+  padding: 6px 10px;
+  font-size: 11px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  pointer-events: auto; /* 讓按鈕可以點 */
+}
 
-    .overlay-item {
-      border-radius: 8px;
-      padding: 4px 6px;
-      background: #f8f8fb;
-    }
+/* 左側標籤的小箭頭 */
+.overlay-item.left::before {
+  content: "";
+  position: absolute;
+  right: -6px;
+  top: 50%;
+  transform: translateY(-50%);
+  border-width: 6px 0 6px 6px;
+  border-style: solid;
+  border-color: transparent transparent transparent rgba(0,0,0,0.7);
+}
 
-    .overlay-slot-label {
-      font-weight: 600;
-      font-size: 11px;
-    }
+/* 右側標籤的小箭頭 */
+.overlay-item.right::before {
+  content: "";
+  position: absolute;
+  left: -6px;
+  top: 50%;
+  transform: translateY(-50%);
+  border-width: 6px 6px 6px 0;
+  border-style: solid;
+  border-color: transparent rgba(0,0,0,0.7) transparent transparent;
+}
 
-    .overlay-name {
-      font-size: 11px;
-      margin-top: 2px;
-    }
+.overlay-slot-label {
+  font-weight: 600;
+  font-size: 11px;
+}
 
-    .overlay-actions {
-      margin-top: 2px;
-      display: flex;
-      gap: 6px;
-      flex-wrap: wrap;
-      align-items: center;
-    }
+.overlay-name {
+  font-size: 11px;
+}
 
-    .overlay-link {
-      font-size: 10px;
-      color: #ff7b7b;
-      text-decoration: none;
-    }
+.overlay-actions {
+  display: flex;
+  gap: 4px;
+}
 
-    .overlay-link:hover {
-      text-decoration: underline;
-    }
+.overlay-link {
+  font-size: 10px;
+  color: #ffd27f;
+  text-decoration: none;
+}
 
-    .overlay-btn {
-      border: none;
-      border-radius: 999px;
-      padding: 2px 8px;
-      font-size: 10px;
-      background: #fff;
-      color: #555;
-      cursor: pointer;
-      box-shadow: 0 2px 6px rgba(0,0,0,0.05);
-    }
+.overlay-link:hover {
+  text-decoration: underline;
+}
 
-    .overlay-btn:hover {
-      background: #f1f1f5;
-    }
+.overlay-btn {
+  border: none;
+  border-radius: 999px;
+  padding: 2px 8px;
+  font-size: 10px;
+  background: #fff;
+  color: #555;
+  cursor: pointer;
+}
+
 
     /* 手機版調整 */
     @media (max-width: 900px) {
@@ -653,13 +661,11 @@
 
               <!-- Overlay：顯示各部位標籤＆換一件 -->
               <div id="outfit-overlay" class="outfit-overlay" style="display:none;">
-                <div class="overlay-title">
-                  <span>這套穿搭的組成</span>
-                </div>
-                <div id="overlay-list" class="overlay-list">
-                  <!-- JS 產生上身 / 下身 / 鞋子 / 帽子 / 包包 / 外套... -->
-                </div>
-              </div>
+  <div id="overlay-list" class="overlay-list">
+    <!-- JS 會塞標籤 -->
+  </div>
+</div>
+
             </div>
             <div class="desc" id="outfit-desc">
               這裡會顯示以文字描述的穿搭說明，例如：
@@ -998,82 +1004,111 @@
 
     // ===== 7. Overlay：圖上的部位標籤 & 換一件 =====
     function renderOutfitOverlay(slots) {
-      const overlay = document.getElementById("outfit-overlay");
-      const listEl = document.getElementById("overlay-list");
-      if (!overlay || !listEl) return;
+  const overlay = document.getElementById("outfit-overlay");
+  const listEl = document.getElementById("overlay-list");
+  if (!overlay || !listEl) return;
 
-      if (!slots || slots.length === 0) {
-        overlay.style.display = "none";
-        return;
-      }
+  if (!slots || slots.length === 0) {
+    overlay.style.display = "none";
+    return;
+  }
 
-      const labelMap = {
-        top: "上身",
-        bottom: "下身",
-        shoes: "鞋子",
-        hat: "帽子",
-        bag: "包包",
-        outer: "外套",
-        accessory: "配件"
-      };
+  const labelMap = {
+    top: "上身",
+    bottom: "下身",
+    shoes: "鞋子",
+    hat: "帽子",
+    bag: "包包",
+    outer: "外套",
+    accessory: "配件"
+  };
 
-      listEl.innerHTML = "";
-      slots.forEach(({ slot, product }) => {
-        const el = document.createElement("div");
-        el.className = "overlay-item";
+  // 每個 slot 預設的位置（以百分比表示在圖片高度）
+  const slotPosition = {
+    hat:      { top: "8%",  side: "left"  },
+    top:      { top: "28%", side: "right" },
+    outer:    { top: "40%", side: "left"  },
+    bag:      { top: "50%", side: "right" },
+    accessory:{ top: "60%", side: "right" },
+    bottom:   { top: "70%", side: "left"  },
+    shoes:    { top: "86%", side: "right" }
+  };
 
-        const link = buildUniqloLink(product);
+  listEl.innerHTML = "";
 
-        el.innerHTML = `
-          <div class="overlay-slot-label">${labelMap[slot] || "單品"}</div>
-          <div class="overlay-name">${product.name}</div>
-          <div class="overlay-actions">
-            <a class="overlay-link" href="${link}" target="_blank">前往查看</a>
-            <button type="button" class="overlay-btn" onclick="replaceSingleItem('${slot}')">
-              換一件
-            </button>
-          </div>
-        `;
-        listEl.appendChild(el);
-      });
+  slots.forEach(({ slot, product }) => {
+    const pos = slotPosition[slot] || { top: "50%", side: "right" };
+    const el = document.createElement("div");
+    el.className = "overlay-item " + pos.side;
 
-      overlay.style.display = "block";
-      // 有可換的部位，啟用「更新示意圖」按鈕
-      const updateBtn = document.getElementById("update-image-btn");
-      if (updateBtn) updateBtn.disabled = false;
-    }
+    el.style.top = pos.top;
+    el.style[pos.side] = "4px";
+
+    const link = buildUniqloLink(product);
+
+    el.innerHTML = `
+      <span class="overlay-slot-label">${labelMap[slot] || "單品"}</span>
+      <span class="overlay-name">${product.name}</span>
+      <div class="overlay-actions">
+        <a class="overlay-link" href="${link}" target="_blank">查看</a>
+        <button type="button" class="overlay-btn" onclick="replaceSingleItem('${slot}')">
+          換一件
+        </button>
+      </div>
+    `;
+
+    listEl.appendChild(el);
+  });
+
+  overlay.style.display = "block";
+
+  const updateBtn = document.getElementById("update-image-btn");
+  if (updateBtn) updateBtn.disabled = false;
+}
+
 
     // ===== 8. 用 slots + 身高體重 組合 prompt =====
-    function buildOutfitPromptFromSlots(slots, gender, style, temp, height, weight) {
-      const genderTextMapEn = {
-        female: "a woman",
-        male: "a man",
-        neutral: "a person"
-      };
-      const styleTextMapEn = {
-        casual: "casual everyday style",
-        minimal: "minimalist office casual style",
-        street: "streetwear style",
-        sporty: "sporty athleisure style",
-        smart: "smart casual style"
-      };
+   function buildOutfitPromptFromSlots(slots, gender, style, temp, height, weight) {
+  const genderTextMapEn = {
+    female: "a woman",
+    male: "a man",
+    neutral: "a person"
+  };
+  const styleTextMapEn = {
+    casual: "casual everyday style",
+    minimal: "minimalist office casual style",
+    street: "streetwear style",
+    sporty: "sporty athleisure style",
+    smart: "smart casual style"
+  };
 
-      const genderEn = genderTextMapEn[gender] || "a person";
-      const styleEn = styleTextMapEn[style] || "casual style";
+  const genderEn = genderTextMapEn[gender] || "a person";
+  const styleEn = styleTextMapEn[style] || "casual style";
 
-      let bodyType = "average build";
-      if (height && weight) {
-        const h = height / 100;
-        const bmi = weight / (h * h);
-        if (bmi < 19) bodyType = "slim build";
-        else if (bmi > 25) bodyType = "slightly fuller build";
-      }
+  let bodyTypeDesc = "average height and average build";
+  if (height && weight) {
+    const h = height / 100;
+    const bmi = weight / (h * h);
+    if (height <= 155) {
+      bodyTypeDesc = "petite height";
+    } else if (height >= 175) {
+      bodyTypeDesc = "taller height";
+    }
 
-      const itemsText = slots.map(s => s.product.name).join(", ");
+    if (bmi < 19) {
+      bodyTypeDesc += ", slim body type";
+    } else if (bmi > 25) {
+      bodyTypeDesc += ", slightly fuller body type";
+    } else {
+      bodyTypeDesc += ", medium body type";
+    }
+  }
 
-      return `
-${genderEn}, height about ${height} cm, weight about ${weight} kg, ${bodyType},
-wearing a Japanese minimalist outfit (${styleEn}) for about ${temp}°C.
+  const itemsText = slots.map(s => s.product.name).join(", ");
+
+  return `
+${genderEn}, height around ${height} cm, weight around ${weight} kg, ${bodyTypeDesc}.
+Generate a full-body view.
 
 Clothing items:
 ${itemsText}
@@ -1081,9 +1116,10 @@ ${itemsText}
 Style: UNIQLO lookbook style, realistic but clean and simple.
 Neutral light background, soft natural light.
 No visible logos or brand names.
-Show the full body clearly, focus on overall silhouette, layering and colors of these items.
+Clearly show the proportions of the body (height and body type) and how the outfit fits.
       `.trim();
-    }
+}
+
 
     // ===== 9. 呼叫後端：實際產圖 =====
     async function callGenerateImage(outfitPrompt, gender, age, style, temp) {
