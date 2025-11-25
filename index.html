@@ -392,77 +392,68 @@
 }
 
 /* 每一個 slot 的標籤樣式 */
+/* 每一個 slot 的標籤樣式：縮小一點、半透明 */
 .overlay-item {
   position: absolute;
-  max-width: 48%;
-  background: rgba(0,0,0,0.7);
+  max-width: 44%;
+  background: rgba(0,0,0,0.6);
   color: #fff;
   border-radius: 999px;
-  padding: 6px 10px;
-  font-size: 11px;
-  display: flex;
+  padding: 3px 7px;
+  font-size: 10px;
+  display: inline-flex;
   align-items: center;
-  gap: 6px;
-  pointer-events: auto; /* 讓按鈕可以點 */
+  gap: 4px;
+  pointer-events: auto;
+  transform: scale(0.7);      /* ← 縮小到大約 70% */
+  transform-origin: center;
 }
 
 /* 左側標籤的小箭頭 */
 .overlay-item.left::before {
   content: "";
   position: absolute;
-  right: -6px;
+  right: -5px;
   top: 50%;
   transform: translateY(-50%);
-  border-width: 6px 0 6px 6px;
+  border-width: 5px 0 5px 5px;
   border-style: solid;
-  border-color: transparent transparent transparent rgba(0,0,0,0.7);
+  border-color: transparent transparent transparent rgba(0,0,0,0.6);
 }
 
 /* 右側標籤的小箭頭 */
 .overlay-item.right::before {
   content: "";
   position: absolute;
-  left: -6px;
+  left: -5px;
   top: 50%;
   transform: translateY(-50%);
-  border-width: 6px 6px 6px 0;
+  border-width: 5px 5px 5px 0;
   border-style: solid;
-  border-color: transparent rgba(0,0,0,0.7) transparent transparent;
+  border-color: transparent rgba(0,0,0,0.6) transparent transparent;
 }
 
-.overlay-slot-label {
-  font-weight: 600;
-  font-size: 11px;
-}
+.overlay-slot-label { font-size: 10px; font-weight: 600; }
+.overlay-name       { font-size: 10px; }
 
-.overlay-name {
-  font-size: 11px;
-}
-
-.overlay-actions {
-  display: flex;
-  gap: 4px;
-}
+.overlay-actions { display:flex; gap:3px; }
 
 .overlay-link {
-  font-size: 10px;
+  font-size: 9px;
   color: #ffd27f;
   text-decoration: none;
-}
-
-.overlay-link:hover {
-  text-decoration: underline;
 }
 
 .overlay-btn {
   border: none;
   border-radius: 999px;
-  padding: 2px 8px;
-  font-size: 10px;
+  padding: 1px 6px;
+  font-size: 9px;
   background: #fff;
   color: #555;
   cursor: pointer;
 }
+
 
 
     /* 手機版調整 */
@@ -689,7 +680,42 @@
     </footer>
   </div>
 
+  <!-- TensorFlow.js + Pose Detection（MoveNet）-->
+<script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs-core"></script>
+<script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs-converter"></script>
+<script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs-backend-webgl"></script>
+<script src="https://cdn.jsdelivr.net/npm/@tensorflow-models/pose-detection"></script>
+
   <script>
+    // ===== Pose Detection（MoveNet）相關 =====
+let poseDetector = null;
+let dynamicSlotPositions = null; // 由姿勢偵測動態決定標籤位置
+
+async function initPoseDetector() {
+  if (poseDetector) return poseDetector;
+  if (typeof poseDetection === "undefined") {
+    console.warn("poseDetection library not loaded");
+    return null;
+  }
+
+  try {
+    if (typeof tf !== "undefined" && tf.setBackend) {
+      await tf.setBackend("webgl");
+      await tf.ready();
+    }
+  } catch (e) {
+    console.warn("tf webgl backend failed, fallback to default", e);
+  }
+
+  poseDetector = await poseDetection.createDetector(
+    poseDetection.SupportedModels.MoveNet,
+    {
+      modelType: poseDetection.movenet.modelType.SINGLEPOSE_LIGHTNING
+    }
+  );
+
+  return poseDetector;
+}
     // ===== 1. 每日 API 呼叫次數限制 =====
     const DAILY_LIMIT = 20;
     const USAGE_KEY = "outfit_daily_usage_v1";
@@ -1023,25 +1049,28 @@
     accessory: "配件"
   };
 
-  // 每個 slot 預設的位置（以百分比表示在圖片高度）
-  const slotPosition = {
-    hat:      { top: "8%",  side: "left"  },
-    top:      { top: "28%", side: "right" },
-    outer:    { top: "40%", side: "left"  },
-    bag:      { top: "50%", side: "right" },
-    accessory:{ top: "60%", side: "right" },
-    bottom:   { top: "70%", side: "left"  },
-    shoes:    { top: "86%", side: "right" }
+  // 備用：如果沒有偵測到姿勢，就用預設百分比
+  const defaultSlotPosition = {
+    hat:      { top: 8,  side: "left"  },
+    top:      { top: 28, side: "right" },
+    outer:    { top: 40, side: "left"  },
+    bag:      { top: 50, side: "right" },
+    accessory:{ top: 60, side: "right" },
+    bottom:   { top: 70, side: "left"  },
+    shoes:    { top: 86, side: "right" }
   };
 
   listEl.innerHTML = "";
 
   slots.forEach(({ slot, product }) => {
-    const pos = slotPosition[slot] || { top: "50%", side: "right" };
+    const override = dynamicSlotPositions && dynamicSlotPositions[slot];
+    const basePos = defaultSlotPosition[slot] || { top: 50, side: "right" };
+    const pos = override || basePos;
+
     const el = document.createElement("div");
     el.className = "overlay-item " + pos.side;
 
-    el.style.top = pos.top;
+    el.style.top = pos.top + "%";
     el.style[pos.side] = "4px";
 
     const link = buildUniqloLink(product);
@@ -1065,6 +1094,7 @@
   const updateBtn = document.getElementById("update-image-btn");
   if (updateBtn) updateBtn.disabled = false;
 }
+
 
 
     // ===== 8. 用 slots + 身高體重 組合 prompt =====
