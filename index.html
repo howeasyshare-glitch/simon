@@ -377,84 +377,97 @@
       text-align: center;
     }
 
-    /* 圖片 overlay：零件標籤區 */
-   /* 圖片 overlay：標籤貼在邊緣，有小箭頭指向服裝區域 */
-.outfit-overlay {
-  position: absolute;
-  inset: 0;
-  pointer-events: none; /* 讓點擊事件只落在內部按鈕 */
-}
+    /* 圖片 overlay：容器覆蓋整張圖 */
+    .outfit-overlay {
+      position: absolute;
+      inset: 0;
+      pointer-events: none; /* 讓事件只落在內部標籤 */
+    }
 
-.overlay-list {
-  position: relative;
-  width: 100%;
-  height: 100%;
-}
+    .overlay-list {
+      position: relative;
+      width: 100%;
+      height: 100%;
+    }
 
-/* 每一個 slot 的標籤樣式 */
-/* 每一個 slot 的標籤樣式：縮小一點、半透明 */
-.overlay-item {
-  position: absolute;
-  max-width: 44%;
-  background: rgba(0,0,0,0.6);
-  color: #fff;
-  border-radius: 999px;
-  padding: 3px 7px;
-  font-size: 10px;
-  display: inline-flex;
-  align-items: center;
-  gap: 4px;
-  pointer-events: auto;
-  transform: scale(0.7);      /* ← 縮小到大約 70% */
-  transform-origin: center;
-}
+    /* 圖上標籤：三層卡片排版 */
+    .overlay-item {
+      position: absolute;
+      max-width: 46%;
+      background: rgba(0,0,0,0.7);
+      color: #fff;
+      border-radius: 12px;
+      padding: 6px 8px;
+      font-size: 11px;
+      display: flex;
+      flex-direction: column;      /* 三層垂直排版 */
+      gap: 2px;
+      pointer-events: auto;
+      transform: scale(0.8);       /* 整體縮小一點 */
+      transform-origin: center;
+    }
 
-/* 左側標籤的小箭頭 */
-.overlay-item.left::before {
-  content: "";
-  position: absolute;
-  right: -5px;
-  top: 50%;
-  transform: translateY(-50%);
-  border-width: 5px 0 5px 5px;
-  border-style: solid;
-  border-color: transparent transparent transparent rgba(0,0,0,0.6);
-}
+    /* 左側標籤的小箭頭 */
+    .overlay-item.left::before {
+      content: "";
+      position: absolute;
+      right: -5px;
+      top: 50%;
+      transform: translateY(-50%);
+      border-width: 6px 0 6px 6px;
+      border-style: solid;
+      border-color: transparent transparent transparent rgba(0,0,0,0.7);
+    }
 
-/* 右側標籤的小箭頭 */
-.overlay-item.right::before {
-  content: "";
-  position: absolute;
-  left: -5px;
-  top: 50%;
-  transform: translateY(-50%);
-  border-width: 5px 5px 5px 0;
-  border-style: solid;
-  border-color: transparent rgba(0,0,0,0.6) transparent transparent;
-}
+    /* 右側標籤的小箭頭 */
+    .overlay-item.right::before {
+      content: "";
+      position: absolute;
+      left: -5px;
+      top: 50%;
+      transform: translateY(-50%);
+      border-width: 6px 6px 6px 0;
+      border-style: solid;
+      border-color: transparent rgba(0,0,0,0.7) transparent transparent;
+    }
 
-.overlay-slot-label { font-size: 10px; font-weight: 600; }
-.overlay-name       { font-size: 10px; }
+    .overlay-slot-label {
+      font-size: 10px;
+      font-weight: 600;
+      opacity: 0.9;
+    }
 
-.overlay-actions { display:flex; gap:3px; }
+    .overlay-name {
+      font-size: 10px;
+      line-height: 1.3;
+    }
 
-.overlay-link {
-  font-size: 9px;
-  color: #ffd27f;
-  text-decoration: none;
-}
+    .overlay-actions {
+      margin-top: 2px;
+      display: flex;
+      flex-wrap: wrap;
+      gap: 4px;
+    }
 
-.overlay-btn {
-  border: none;
-  border-radius: 999px;
-  padding: 1px 6px;
-  font-size: 9px;
-  background: #fff;
-  color: #555;
-  cursor: pointer;
-}
+    .overlay-link {
+      font-size: 9px;
+      color: #ffd27f;
+      text-decoration: none;
+    }
 
+    .overlay-link:hover {
+      text-decoration: underline;
+    }
 
+    .overlay-btn {
+      border: none;
+      border-radius: 999px;
+      padding: 2px 6px;
+      font-size: 9px;
+      background: #fff;
+      color: #555;
+      cursor: pointer;
+    }
 
     /* 手機版調整 */
     @media (max-width: 900px) {
@@ -482,10 +495,6 @@
       .primary-btn {
         width: 100%;
         justify-content: center;
-      }
-
-      .outfit-overlay {
-        max-width: 80%;
       }
     }
 
@@ -652,11 +661,10 @@
 
               <!-- Overlay：顯示各部位標籤＆換一件 -->
               <div id="outfit-overlay" class="outfit-overlay" style="display:none;">
-  <div id="overlay-list" class="overlay-list">
-    <!-- JS 會塞標籤 -->
-  </div>
-</div>
-
+                <div id="overlay-list" class="overlay-list">
+                  <!-- JS 產生上身 / 下身 / 鞋子 / 帽子 / 包包 / 外套... -->
+                </div>
+              </div>
             </div>
             <div class="desc" id="outfit-desc">
               這裡會顯示以文字描述的穿搭說明，例如：
@@ -680,42 +688,7 @@
     </footer>
   </div>
 
-  <!-- TensorFlow.js + Pose Detection（MoveNet）-->
-<script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs-core"></script>
-<script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs-converter"></script>
-<script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs-backend-webgl"></script>
-<script src="https://cdn.jsdelivr.net/npm/@tensorflow-models/pose-detection"></script>
-
   <script>
-    // ===== Pose Detection（MoveNet）相關 =====
-let poseDetector = null;
-let dynamicSlotPositions = null; // 由姿勢偵測動態決定標籤位置
-
-async function initPoseDetector() {
-  if (poseDetector) return poseDetector;
-  if (typeof poseDetection === "undefined") {
-    console.warn("poseDetection library not loaded");
-    return null;
-  }
-
-  try {
-    if (typeof tf !== "undefined" && tf.setBackend) {
-      await tf.setBackend("webgl");
-      await tf.ready();
-    }
-  } catch (e) {
-    console.warn("tf webgl backend failed, fallback to default", e);
-  }
-
-  poseDetector = await poseDetection.createDetector(
-    poseDetection.SupportedModels.MoveNet,
-    {
-      modelType: poseDetection.movenet.modelType.SINGLEPOSE_LIGHTNING
-    }
-  );
-
-  return poseDetector;
-}
     // ===== 1. 每日 API 呼叫次數限制 =====
     const DAILY_LIMIT = 20;
     const USAGE_KEY = "outfit_daily_usage_v1";
@@ -1028,117 +1001,125 @@ async function initPoseDetector() {
       renderOutfitOverlay(currentOutfitSlots);
     })();
 
-    // ===== 7. Overlay：圖上的部位標籤 & 換一件 =====
+    // ===== 7. Overlay：圖上的部位標籤（平均分布 + 左右交錯） =====
     function renderOutfitOverlay(slots) {
-  const overlay = document.getElementById("outfit-overlay");
-  const listEl = document.getElementById("overlay-list");
-  if (!overlay || !listEl) return;
+      const overlay = document.getElementById("outfit-overlay");
+      const listEl = document.getElementById("overlay-list");
+      if (!overlay || !listEl) return;
 
-  if (!slots || slots.length === 0) {
-    overlay.style.display = "none";
-    return;
-  }
+      if (!slots || slots.length === 0) {
+        overlay.style.display = "none";
+        return;
+      }
 
-  const labelMap = {
-    top: "上身",
-    bottom: "下身",
-    shoes: "鞋子",
-    hat: "帽子",
-    bag: "包包",
-    outer: "外套",
-    accessory: "配件"
-  };
+      const labelMap = {
+        top: "上身",
+        bottom: "下身",
+        shoes: "鞋子",
+        hat: "帽子",
+        bag: "包包",
+        outer: "外套",
+        accessory: "配件"
+      };
 
-  // 備用：如果沒有偵測到姿勢，就用預設百分比
-  const defaultSlotPosition = {
-    hat:      { top: 8,  side: "left"  },
-    top:      { top: 28, side: "right" },
-    outer:    { top: 40, side: "left"  },
-    bag:      { top: 50, side: "right" },
-    accessory:{ top: 60, side: "right" },
-    bottom:   { top: 70, side: "left"  },
-    shoes:    { top: 86, side: "right" }
-  };
+      // 想像人體由上而下的順序
+      const order = ["hat", "top", "outer", "bag", "accessory", "bottom", "shoes"];
+      const orderIndex = type => {
+        const idx = order.indexOf(type);
+        return idx === -1 ? 999 : idx;
+      };
 
-  listEl.innerHTML = "";
+      // 依照「人體順序」排序實際有的 slot
+      const orderedSlots = [...slots].sort(
+        (a, b) => orderIndex(a.slot) - orderIndex(b.slot)
+      );
 
-  slots.forEach(({ slot, product }) => {
-    const override = dynamicSlotPositions && dynamicSlotPositions[slot];
-    const basePos = defaultSlotPosition[slot] || { top: 50, side: "right" };
-    const pos = override || basePos;
+      listEl.innerHTML = "";
 
-    const el = document.createElement("div");
-    el.className = "overlay-item " + pos.side;
+      const count = orderedSlots.length;
+      const minTop = 15; // 百分比
+      const maxTop = 85;
 
-    el.style.top = pos.top + "%";
-    el.style[pos.side] = "4px";
+      orderedSlots.forEach((slotObj, index) => {
+        const { slot, product } = slotObj;
 
-    const link = buildUniqloLink(product);
+        const ratio = count === 1 ? 0.5 : index / (count - 1);
+        const topPercent = minTop + (maxTop - minTop) * ratio;
 
-    el.innerHTML = `
-      <span class="overlay-slot-label">${labelMap[slot] || "單品"}</span>
-      <span class="overlay-name">${product.name}</span>
-      <div class="overlay-actions">
-        <a class="overlay-link" href="${link}" target="_blank">查看</a>
-        <button type="button" class="overlay-btn" onclick="replaceSingleItem('${slot}')">
-          換一件
-        </button>
-      </div>
-    `;
+        // 左右交錯：C
+        const side = index % 2 === 0 ? "left" : "right";
 
-    listEl.appendChild(el);
-  });
+        const el = document.createElement("div");
+        el.className = "overlay-item " + side;
+        el.style.top = topPercent + "%";
+        el.style[side] = "4px";
 
-  overlay.style.display = "block";
+        const link = buildUniqloLink(product);
 
-  const updateBtn = document.getElementById("update-image-btn");
-  if (updateBtn) updateBtn.disabled = false;
-}
+        el.innerHTML = `
+          <div class="overlay-slot-label">${labelMap[slot] || "單品"}</div>
+          <div class="overlay-name">${product.name}</div>
+          <div class="overlay-actions">
+            <a class="overlay-link" href="${link}" target="_blank">查看</a>
+            <button type="button" class="overlay-btn" onclick="replaceSingleItem('${slot}')">
+              換一件
+            </button>
+          </div>
+        `;
 
+        listEl.appendChild(el);
+      });
 
+      overlay.style.display = "block";
+
+      const updateBtn = document.getElementById("update-image-btn");
+      if (updateBtn) updateBtn.disabled = false;
+    }
 
     // ===== 8. 用 slots + 身高體重 組合 prompt =====
-   function buildOutfitPromptFromSlots(slots, gender, style, temp, height, weight) {
-  const genderTextMapEn = {
-    female: "a woman",
-    male: "a man",
-    neutral: "a person"
-  };
-  const styleTextMapEn = {
-    casual: "casual everyday style",
-    minimal: "minimalist office casual style",
-    street: "streetwear style",
-    sporty: "sporty athleisure style",
-    smart: "smart casual style"
-  };
+    function buildOutfitPromptFromSlots(slots, gender, style, temp, height, weight) {
+      const genderTextMapEn = {
+        female: "a woman",
+        male: "a man",
+        neutral: "a person"
+      };
+      const styleTextMapEn = {
+        casual: "casual everyday style",
+        minimal: "minimalist office casual style",
+        street: "streetwear style",
+        sporty: "sporty athleisure style",
+        smart: "smart casual style"
+      };
 
-  const genderEn = genderTextMapEn[gender] || "a person";
-  const styleEn = styleTextMapEn[style] || "casual style";
+      const genderEn = genderTextMapEn[gender] || "a person";
+      const styleEn = styleTextMapEn[style] || "casual style";
 
-  let bodyTypeDesc = "average height and average build";
-  if (height && weight) {
-    const h = height / 100;
-    const bmi = weight / (h * h);
-    if (height <= 155) {
-      bodyTypeDesc = "petite height";
-    } else if (height >= 175) {
-      bodyTypeDesc = "taller height";
-    }
+      let bodyTypeDesc = "average height and average build";
+      if (height && weight) {
+        const h = height / 100;
+        const bmi = weight / (h * h);
+        if (height <= 155) {
+          bodyTypeDesc = "petite height";
+        } else if (height >= 175) {
+          bodyTypeDesc = "taller height";
+        } else {
+          bodyTypeDesc = "medium height";
+        }
 
-    if (bmi < 19) {
-      bodyTypeDesc += ", slim body type";
-    } else if (bmi > 25) {
-      bodyTypeDesc += ", slightly fuller body type";
-    } else {
-      bodyTypeDesc += ", medium body type";
-    }
-  }
+        if (bmi < 19) {
+          bodyTypeDesc += ", slim body type";
+        } else if (bmi > 25) {
+          bodyTypeDesc += ", slightly fuller body type";
+        } else {
+          bodyTypeDesc += ", medium body type";
+        }
+      }
 
-  const itemsText = slots.map(s => s.product.name).join(", ");
+      const itemsText = slots.map(s => s.product.name).join(", ");
 
-  return `
+      return `
 ${genderEn}, height around ${height} cm, weight around ${weight} kg, ${bodyTypeDesc}.
-Generate a full-body view.
+Generate a clear full-body view.
 
 Clothing items:
 ${itemsText}
@@ -1148,8 +1129,7 @@ Neutral light background, soft natural light.
 No visible logos or brand names.
 Clearly show the proportions of the body (height and body type) and how the outfit fits.
       `.trim();
-}
-
+    }
 
     // ===== 9. 呼叫後端：實際產圖 =====
     async function callGenerateImage(outfitPrompt, gender, age, style, temp) {
@@ -1357,84 +1337,9 @@ ${temp}°C 左右的天氣，適合${genderText}、約 ${age} 歲、身高約 ${
       await callGenerateImage(outfitPrompt, gender, age, style, temp);
     }
 
-    // 把 replaceSingleItem / updateImageFromCurrentOutfit 掛到 window，讓 HTML onclick 用得到
+    // 讓 HTML 內的 onclick 用得到
     window.replaceSingleItem = replaceSingleItem;
     window.updateImageFromCurrentOutfit = updateImageFromCurrentOutfit;
-
-    async function updateOverlayPositionsFromPose() {
-  const img = document.getElementById("outfit-image");
-  if (!img || !img.complete || img.naturalWidth === 0) return;
-  if (!currentOutfitSlots || !currentOutfitSlots.length) return;
-
-  try {
-    const detector = await initPoseDetector();
-    if (!detector) return;
-
-    const poses = await detector.estimatePoses(img);
-    if (!poses || !poses.length) {
-      console.warn("No pose detected");
-      return;
-    }
-
-    const keypoints = {};
-    poses[0].keypoints.forEach(k => {
-      if (k.name) keypoints[k.name] = k;
-    });
-
-    const imgH = img.naturalHeight || img.clientHeight || 1;
-    const toPercent = y =>
-      Math.max(0, Math.min(100, (y / imgH) * 100));
-
-    const pos = {};
-
-    // 頭部（帽子）
-    if (keypoints.nose) {
-      const y = keypoints.nose.y - imgH * 0.18;
-      pos.hat = { top: toPercent(y), side: "left" };
-    }
-
-    // 肩膀附近（上身 / 外套）
-    if (keypoints.left_shoulder && keypoints.right_shoulder) {
-      const yShoulder =
-        (keypoints.left_shoulder.y + keypoints.right_shoulder.y) / 2;
-      pos.top = { top: toPercent(yShoulder), side: "right" };
-      pos.outer = { top: toPercent(yShoulder + imgH * 0.05), side: "left" };
-    }
-
-    // 臀部附近（下身 / 包包）
-    if (keypoints.left_hip && keypoints.right_hip) {
-      const yHip = (keypoints.left_hip.y + keypoints.right_hip.y) / 2;
-      pos.bottom = { top: toPercent(yHip + imgH * 0.08), side: "left" };
-      pos.bag = { top: toPercent(yHip), side: "right" };
-    }
-
-    // 腳踝附近（鞋子 / 其他配件）
-    if (keypoints.left_ankle && keypoints.right_ankle) {
-      const yAnkle =
-        (keypoints.left_ankle.y + keypoints.right_ankle.y) / 2;
-      pos.shoes = { top: toPercent(yAnkle + imgH * 0.04), side: "right" };
-      pos.accessory = {
-        top: toPercent(yAnkle - imgH * 0.08),
-        side: "right"
-      };
-    }
-
-    dynamicSlotPositions = pos;
-    // 用新的位置重畫 overlay
-    renderOutfitOverlay(currentOutfitSlots);
-  } catch (err) {
-    console.warn("Pose detection failed:", err);
-  }
-}
-// 圖片載入完成時，自動依據姿勢重新定位標籤
-window.addEventListener("load", () => {
-  const img = document.getElementById("outfit-image");
-  if (!img) return;
-  img.addEventListener("load", () => {
-    updateOverlayPositionsFromPose();
-  });
-});
-
   </script>
 </body>
 </html>
