@@ -381,7 +381,7 @@
     .outfit-overlay {
       position: absolute;
       inset: 0;
-      pointer-events: none; /* 讓事件只落在內部標籤 */
+      pointer-events: none;
     }
 
     .overlay-list {
@@ -390,67 +390,64 @@
       height: 100%;
     }
 
-    /* 圖上標籤：三層卡片排版 */
+    /* 圖上標籤：三層卡片排版，字加大 */
     .overlay-item {
       position: absolute;
       max-width: 46%;
-      background: rgba(0,0,0,0.7);
+      background: rgba(0,0,0,0.78);
       color: #fff;
-      border-radius: 12px;
-      padding: 6px 8px;
-      font-size: 11px;
+      border-radius: 14px;
+      padding: 8px 10px;
       display: flex;
-      flex-direction: column;      /* 三層垂直排版 */
-      gap: 2px;
+      flex-direction: column;
+      gap: 3px;
       pointer-events: auto;
-      transform: scale(0.8);       /* 整體縮小一點 */
+      transform: scale(0.9);
       transform-origin: center;
     }
 
-    /* 左側標籤的小箭頭 */
     .overlay-item.left::before {
       content: "";
       position: absolute;
-      right: -5px;
+      right: -6px;
       top: 50%;
       transform: translateY(-50%);
       border-width: 6px 0 6px 6px;
       border-style: solid;
-      border-color: transparent transparent transparent rgba(0,0,0,0.7);
+      border-color: transparent transparent transparent rgba(0,0,0,0.78);
     }
 
-    /* 右側標籤的小箭頭 */
     .overlay-item.right::before {
       content: "";
       position: absolute;
-      left: -5px;
+      left: -6px;
       top: 50%;
       transform: translateY(-50%);
       border-width: 6px 6px 6px 0;
       border-style: solid;
-      border-color: transparent rgba(0,0,0,0.7) transparent transparent;
+      border-color: transparent rgba(0,0,0,0.78) transparent transparent;
     }
 
     .overlay-slot-label {
-      font-size: 10px;
+      font-size: 12px;
       font-weight: 600;
-      opacity: 0.9;
+      opacity: 0.96;
     }
 
     .overlay-name {
-      font-size: 10px;
+      font-size: 13px;
       line-height: 1.3;
     }
 
     .overlay-actions {
-      margin-top: 2px;
+      margin-top: 4px;
       display: flex;
       flex-wrap: wrap;
-      gap: 4px;
+      gap: 8px;
     }
 
     .overlay-link {
-      font-size: 9px;
+      font-size: 11px;
       color: #ffd27f;
       text-decoration: none;
     }
@@ -462,8 +459,8 @@
     .overlay-btn {
       border: none;
       border-radius: 999px;
-      padding: 2px 6px;
-      font-size: 9px;
+      padding: 3px 10px;
+      font-size: 11px;
       background: #fff;
       color: #555;
       cursor: pointer;
@@ -684,7 +681,7 @@
     </main>
 
     <footer>
-      v0.3 · Demo — AI 圖片生成 + 零件化穿搭（可局部換款 & 更新示意圖） + 每日次數限制
+      v0.4 · Demo — AI 圖片生成 + 零件化穿搭（可局部換款 & 更新示意圖） + 每日次數限制
     </footer>
   </div>
 
@@ -1001,7 +998,7 @@
       renderOutfitOverlay(currentOutfitSlots);
     })();
 
-    // ===== 7. Overlay：圖上的部位標籤（平均分布 + 左右交錯） =====
+    // ===== 7. Overlay：圖上的部位標籤（依身體部位固定高度 + 左右交錯） =====
     function renderOutfitOverlay(slots) {
       const overlay = document.getElementById("outfit-overlay");
       const listEl = document.getElementById("overlay-list");
@@ -1022,14 +1019,24 @@
         accessory: "配件"
       };
 
-      // 想像人體由上而下的順序
+      // 依照人體由上而下的固定高度百分比（越接近真實部位）
+      const slotTopPercent = {
+        hat: 12,
+        top: 30,
+        outer: 40,
+        bag: 52,
+        accessory: 60,
+        bottom: 72,
+        shoes: 88
+      };
+
+      // 想像人體由上而下的順序，決定左右交錯順序
       const order = ["hat", "top", "outer", "bag", "accessory", "bottom", "shoes"];
       const orderIndex = type => {
         const idx = order.indexOf(type);
         return idx === -1 ? 999 : idx;
       };
 
-      // 依照「人體順序」排序實際有的 slot
       const orderedSlots = [...slots].sort(
         (a, b) => orderIndex(a.slot) - orderIndex(b.slot)
       );
@@ -1037,16 +1044,23 @@
       listEl.innerHTML = "";
 
       const count = orderedSlots.length;
-      const minTop = 15; // 百分比
-      const maxTop = 85;
 
       orderedSlots.forEach((slotObj, index) => {
         const { slot, product } = slotObj;
 
-        const ratio = count === 1 ? 0.5 : index / (count - 1);
-        const topPercent = minTop + (maxTop - minTop) * ratio;
+        const predefined = slotTopPercent[slot];
+        let topPercent;
 
-        // 左右交錯：C
+        if (typeof predefined === "number") {
+          topPercent = predefined;
+        } else {
+          // 如果沒有預設，就平均分配
+          const minTop = 18;
+          const maxTop = 82;
+          const ratio = count === 1 ? 0.5 : index / (count - 1);
+          topPercent = minTop + (maxTop - minTop) * ratio;
+        }
+
         const side = index % 2 === 0 ? "left" : "right";
 
         const el = document.createElement("div");
