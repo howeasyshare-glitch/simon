@@ -1360,6 +1360,81 @@ ${temp}°C 左右的天氣，適合${genderText}、約 ${age} 歲、身高約 ${
     // 把 replaceSingleItem / updateImageFromCurrentOutfit 掛到 window，讓 HTML onclick 用得到
     window.replaceSingleItem = replaceSingleItem;
     window.updateImageFromCurrentOutfit = updateImageFromCurrentOutfit;
+
+    async function updateOverlayPositionsFromPose() {
+  const img = document.getElementById("outfit-image");
+  if (!img || !img.complete || img.naturalWidth === 0) return;
+  if (!currentOutfitSlots || !currentOutfitSlots.length) return;
+
+  try {
+    const detector = await initPoseDetector();
+    if (!detector) return;
+
+    const poses = await detector.estimatePoses(img);
+    if (!poses || !poses.length) {
+      console.warn("No pose detected");
+      return;
+    }
+
+    const keypoints = {};
+    poses[0].keypoints.forEach(k => {
+      if (k.name) keypoints[k.name] = k;
+    });
+
+    const imgH = img.naturalHeight || img.clientHeight || 1;
+    const toPercent = y =>
+      Math.max(0, Math.min(100, (y / imgH) * 100));
+
+    const pos = {};
+
+    // 頭部（帽子）
+    if (keypoints.nose) {
+      const y = keypoints.nose.y - imgH * 0.18;
+      pos.hat = { top: toPercent(y), side: "left" };
+    }
+
+    // 肩膀附近（上身 / 外套）
+    if (keypoints.left_shoulder && keypoints.right_shoulder) {
+      const yShoulder =
+        (keypoints.left_shoulder.y + keypoints.right_shoulder.y) / 2;
+      pos.top = { top: toPercent(yShoulder), side: "right" };
+      pos.outer = { top: toPercent(yShoulder + imgH * 0.05), side: "left" };
+    }
+
+    // 臀部附近（下身 / 包包）
+    if (keypoints.left_hip && keypoints.right_hip) {
+      const yHip = (keypoints.left_hip.y + keypoints.right_hip.y) / 2;
+      pos.bottom = { top: toPercent(yHip + imgH * 0.08), side: "left" };
+      pos.bag = { top: toPercent(yHip), side: "right" };
+    }
+
+    // 腳踝附近（鞋子 / 其他配件）
+    if (keypoints.left_ankle && keypoints.right_ankle) {
+      const yAnkle =
+        (keypoints.left_ankle.y + keypoints.right_ankle.y) / 2;
+      pos.shoes = { top: toPercent(yAnkle + imgH * 0.04), side: "right" };
+      pos.accessory = {
+        top: toPercent(yAnkle - imgH * 0.08),
+        side: "right"
+      };
+    }
+
+    dynamicSlotPositions = pos;
+    // 用新的位置重畫 overlay
+    renderOutfitOverlay(currentOutfitSlots);
+  } catch (err) {
+    console.warn("Pose detection failed:", err);
+  }
+}
+// 圖片載入完成時，自動依據姿勢重新定位標籤
+window.addEventListener("load", () => {
+  const img = document.getElementById("outfit-image");
+  if (!img) return;
+  img.addEventListener("load", () => {
+    updateOverlayPositionsFromPose();
+  });
+});
+
   </script>
 </body>
 </html>
