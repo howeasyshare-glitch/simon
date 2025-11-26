@@ -5,6 +5,13 @@
   <title>AI 穿搭建議</title>
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@300;400;500;700&display=swap" rel="stylesheet">
+
+  <!-- TensorFlow.js + Pose Detection（MoveNet）-->
+  <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs-core"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs-converter"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs-backend-webgl"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@tensorflow-models/pose-detection"></script>
+
   <style>
     :root {
       --bg: #f5f5f7;
@@ -681,48 +688,113 @@
     </main>
 
     <footer>
-      v0.4 · Demo — AI 圖片生成 + 零件化穿搭（可局部換款 & 更新示意圖） + 每日次數限制
+      v0.5 · Demo — AI 圖片生成 + 零件化穿搭（可局部換款 & 更新示意圖） + 每日次數限制 + Pose Detection 標籤
     </footer>
   </div>
 
-  <!-- TensorFlow.js + Pose Detection（MoveNet）-->
-<script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs-core"></script>
-<script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs-converter"></script>
-<script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs-backend-webgl"></script>
-<script src="https://cdn.jsdelivr.net/npm/@tensorflow-models/pose-detection"></script>
-
   <script>
     // ===== Pose Detection（MoveNet） =====
-let poseDetector = null;
-let dynamicSlotPositions = null;  // 由姿勢偵測決定的標籤 top%
+    let poseDetector = null;
+    let dynamicSlotPositions = null; // { hat: { top: % }, shoes: { top: % }, ... }
 
-async function initPoseDetector() {
-  if (poseDetector) return poseDetector;
+    async function initPoseDetector() {
+      if (poseDetector) return poseDetector;
 
-  if (typeof tf !== "undefined" && tf.setBackend) {
-    try {
-      await tf.setBackend("webgl");
-      await tf.ready();
-    } catch (e) {
-      console.warn("WebGL backend 失敗，改用預設 backend", e);
+      try {
+        if (typeof tf !== "undefined" && tf.setBackend) {
+          await tf.setBackend("webgl");
+          await tf.ready();
+        }
+      } catch (e) {
+        console.warn("WebGL backend 失敗，改用預設 backend", e);
+      }
+
+      if (typeof poseDetection === "undefined") {
+        console.warn("poseDetection 尚未載入");
+        return null;
+      }
+
+      poseDetector = await poseDetection.createDetector(
+        poseDetection.SupportedModels.MoveNet,
+        {
+          modelType: poseDetection.movenet.modelType.SINGLEPOSE_LIGHTNING
+        }
+      );
+
+      return poseDetector;
     }
-  }
 
-  if (typeof poseDetection === "undefined") {
-    console.warn("poseDetection library 尚未載入");
-    return null;
-  }
+    async function updateOverlayFromPose() {
+      const img = document.getElementById("outfit-image");
+      if (!img || !img.complete || !img.naturalWidth) return;
+      if (!currentOutfitSlots || !currentOutfitSlots.length) return;
 
-  poseDetector = await poseDetection.createDetector(
-    poseDetection.SupportedModels.MoveNet,
-    {
-      modelType: poseDetection.movenet.modelType.SINGLEPOSE_LIGHTNING
+      try {
+        const detector = await initPoseDetector();
+        if (!detector) return;
+
+        const poses = await detector.estimatePoses(img);
+        if (!poses || !poses.length) {
+          console.warn("沒有偵測到姿勢，使用預設標籤位置");
+          return;
+        }
+
+        const kpMap = {};
+        poses[0].keypoints.forEach(k => {
+          if (k.name && (k.score == null || k.score > 0.3)) {
+            kpMap[k.name] = k;
+          }
+        });
+
+        const imgH = img.naturalHeight || img.clientHeight || 1;
+        const toPercent = y => Math.max(0, Math.min(100, (y / imgH) * 100));
+
+        const pos = {};
+
+        // 帽子：鼻子上方一段
+        if (kpMap.nose) {
+          const y = kpMap.nose.y - imgH * 0.18;
+          pos.hat = { top: toPercent(y) };
+        }
+
+        // 上身 / 外套：肩膀中間附近
+        if (kpMap.left_shoulder && kpMap.right_shoulder) {
+          const yShoulder =
+            (kpMap.left_shoulder.y + kpMap.right_shoulder.y) / 2;
+          pos.top = { top: toPercent(yShoulder) };
+          pos.outer = { top: toPercent(yShoulder + imgH * 0.06) };
+        }
+
+        // 下身 / 包包：髖部附近
+        if (kpMap.left_hip && kpMap.right_hip) {
+          const yHip = (kpMap.left_hip.y + kpMap.right_hip.y) / 2;
+          pos.bottom = { top: toPercent(yHip + imgH * 0.08) };
+          pos.bag = { top: toPercent(yHip) };
+        }
+
+        // 鞋子 / 其他配件：腳踝附近
+        if (kpMap.left_ankle && kpMap.right_ankle) {
+          const yAnkle =
+            (kpMap.left_ankle.y + kpMap.right_ankle.y) / 2;
+          pos.shoes = { top: toPercent(yAnkle + imgH * 0.02) };
+          pos.accessory = { top: toPercent(yAnkle - imgH * 0.06) };
+        }
+
+        dynamicSlotPositions = pos;
+        renderOutfitOverlay(currentOutfitSlots);
+      } catch (err) {
+        console.warn("Pose detection 失敗：", err);
+      }
     }
-  );
-  return poseDetector;
-}
 
-    
+    window.addEventListener("load", () => {
+      const img = document.getElementById("outfit-image");
+      if (!img) return;
+      img.addEventListener("load", () => {
+        updateOverlayFromPose();
+      });
+    });
+
     // ===== 1. 每日 API 呼叫次數限制 =====
     const DAILY_LIMIT = 20;
     const USAGE_KEY = "outfit_daily_usage_v1";
@@ -1034,72 +1106,8 @@ async function initPoseDetector() {
       renderProducts(selected);
       renderOutfitOverlay(currentOutfitSlots);
     })();
-async function updateOverlayFromPose() {
-  const img = document.getElementById("outfit-image");
-  if (!img || !img.complete || !img.naturalWidth) return;
-  if (!currentOutfitSlots || !currentOutfitSlots.length) return;
 
-  try {
-    const detector = await initPoseDetector();
-    if (!detector) return;
-
-    const poses = await detector.estimatePoses(img);
-    if (!poses || !poses.length) {
-      console.warn("沒有偵測到姿勢，使用預設標籤位置");
-      return;
-    }
-
-    const kpMap = {};
-    poses[0].keypoints.forEach(k => {
-      if (k.name && (k.score == null || k.score > 0.3)) {
-        kpMap[k.name] = k;
-      }
-    });
-
-    const imgH = img.naturalHeight || img.clientHeight || 1;
-    const toPercent = y => Math.max(0, Math.min(100, (y / imgH) * 100));
-
-    const pos = {};
-
-    // 帽子：nose 上方一段
-    if (kpMap.nose) {
-      const y = kpMap.nose.y - imgH * 0.18;
-      pos.hat = { top: toPercent(y) };
-    }
-
-    // 上身 / 外套：肩膀中間附近
-    if (kpMap.left_shoulder && kpMap.right_shoulder) {
-      const yShoulder =
-        (kpMap.left_shoulder.y + kpMap.right_shoulder.y) / 2;
-      pos.top   = { top: toPercent(yShoulder) };
-      pos.outer = { top: toPercent(yShoulder + imgH * 0.06) };
-    }
-
-    // 下身 / 包包：髖部附近
-    if (kpMap.left_hip && kpMap.right_hip) {
-      const yHip = (kpMap.left_hip.y + kpMap.right_hip.y) / 2;
-      pos.bottom = { top: toPercent(yHip + imgH * 0.08) };
-      pos.bag    = { top: toPercent(yHip) };
-    }
-
-    // 鞋子 / 其他配件：腳踝附近
-    if (kpMap.left_ankle && kpMap.right_ankle) {
-      const yAnkle =
-        (kpMap.left_ankle.y + kpMap.right_ankle.y) / 2;
-      pos.shoes     = { top: toPercent(yAnkle + imgH * 0.02) };
-      pos.accessory = { top: toPercent(yAnkle - imgH * 0.06) };
-    }
-
-    dynamicSlotPositions = pos;
-
-    // 用新的 top% 重新畫一次標籤
-    renderOutfitOverlay(currentOutfitSlots);
-  } catch (err) {
-    console.warn("Pose detection 失敗：", err);
-  }
-}
-
-    // ===== 7. Overlay：圖上的部位標籤（依身體部位固定高度 + 左右交錯） =====
+    // ===== 7. Overlay：圖上的部位標籤（優先用 pose top% + 左右交錯） =====
     function renderOutfitOverlay(slots) {
       const overlay = document.getElementById("outfit-overlay");
       const listEl = document.getElementById("overlay-list");
@@ -1120,7 +1128,7 @@ async function updateOverlayFromPose() {
         accessory: "配件"
       };
 
-      // 依照人體由上而下的固定高度百分比（越接近真實部位）
+      // 預設高度百分比（沒偵測到姿勢時用）
       const slotTopPercent = {
         hat: 12,
         top: 30,
@@ -1149,25 +1157,21 @@ async function updateOverlayFromPose() {
       orderedSlots.forEach((slotObj, index) => {
         const { slot, product } = slotObj;
 
+        const override = dynamicSlotPositions && dynamicSlotPositions[slot];
         const predefined = slotTopPercent[slot];
         let topPercent;
 
-        const override = dynamicSlotPositions && dynamicSlotPositions[slot];
-const predefined = slotTopPercent[slot];
-let topPercent;
-
-if (override && typeof override.top === "number") {
-  topPercent = override.top;            // 先用偵測到的真實位置
-} else if (typeof predefined === "number") {
-  topPercent = predefined;              // 再用我們手動寫的預設
-} else {
-  // 最後才用平均分配
-  const minTop = 18;
-  const maxTop = 82;
-  const ratio = count === 1 ? 0.5 : index / (count - 1);
-  topPercent = minTop + (maxTop - minTop) * ratio;
-}
-
+        if (override && typeof override.top === "number") {
+          topPercent = override.top; // 先用姿勢偵測位置
+        } else if (typeof predefined === "number") {
+          topPercent = predefined;   // 再用預設
+        } else {
+          // 最後才用平均分配
+          const minTop = 18;
+          const maxTop = 82;
+          const ratio = count === 1 ? 0.5 : index / (count - 1);
+          topPercent = minTop + (maxTop - minTop) * ratio;
+        }
 
         const side = index % 2 === 0 ? "left" : "right";
 
@@ -1457,15 +1461,6 @@ ${temp}°C 左右的天氣，適合${genderText}、約 ${age} 歲、身高約 ${
       status.className = "status-text loading";
 
       await callGenerateImage(outfitPrompt, gender, age, style, temp);
-
-      window.addEventListener("load", () => {
-  const img = document.getElementById("outfit-image");
-  if (!img) return;
-  img.addEventListener("load", () => {
-    updateOverlayFromPose();
-  });
-});
-
     }
 
     // 讓 HTML 內的 onclick 用得到
