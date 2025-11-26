@@ -510,16 +510,19 @@ Important:
       try {
         // ⚠️ 這裡沿用你主站 /api/generate-image 的結構
         const response = await fetch("/api/generate-image", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            gender,
-            age: 25,       // 測試頁不在意年齡，就給固定值
-            style,
-            temp: isNaN(temp) ? 22 : temp,
-            outfitPrompt: prompt
-          })
-        });
+  method: "POST",
+  headers: { "Content-Type": "application/json" },
+  body: JSON.stringify({
+    gender,
+    age,
+    style,
+    temp,
+    height,
+    weight,
+    outfitPrompt
+  })
+});
+
 
         if (!response.ok) {
           const txt = await response.text();
