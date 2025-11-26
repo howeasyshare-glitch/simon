@@ -1,0 +1,551 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="UTF-8" />
+  <title>AI 身材測試工具</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@300;400;500;700&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg: #f5f5f7;
+      --card-bg: #ffffff;
+      --primary: #222;
+      --accent: #ff6b6b;
+      --muted: #777;
+      --border-radius-lg: 18px;
+      --border-radius-sm: 10px;
+      --shadow-soft: 0 10px 30px rgba(0,0,0,0.08);
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      padding: 0;
+      font-family: "Noto Sans TC", system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      background: radial-gradient(circle at top, #ffecec 0, #f5f5f7 45%, #f5f5f7 100%);
+      color: var(--primary);
+    }
+
+    .page {
+      max-width: 960px;
+      margin: 0 auto;
+      padding: 24px 16px 40px;
+    }
+
+    header {
+      margin-bottom: 20px;
+    }
+
+    .title {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      font-size: 22px;
+      font-weight: 700;
+    }
+
+    .logo-pill {
+      width: 26px;
+      height: 26px;
+      border-radius: 999px;
+      background: linear-gradient(135deg, #ff6b6b, #ff9f43);
+      box-shadow: 0 6px 15px rgba(255,107,107,0.5);
+    }
+
+    .subtitle {
+      margin-top: 6px;
+      font-size: 13px;
+      color: var(--muted);
+    }
+
+    .layout {
+      display: grid;
+      grid-template-columns: minmax(0, 1.1fr) minmax(0, 1.2fr);
+      gap: 20px;
+    }
+
+    @media (max-width: 840px) {
+      .layout {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    .card {
+      background: var(--card-bg);
+      border-radius: var(--border-radius-lg);
+      box-shadow: var(--shadow-soft);
+      padding: 18px 18px 20px;
+    }
+
+    .card-title {
+      font-size: 16px;
+      font-weight: 600;
+      margin-bottom: 12px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
+    }
+
+    .pill {
+      font-size: 11px;
+      padding: 4px 10px;
+      border-radius: 999px;
+      background: #f3f3f8;
+      color: var(--muted);
+    }
+
+    .form-grid {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 12px 14px;
+      margin-bottom: 14px;
+    }
+
+    @media (max-width: 600px) {
+      .form-grid {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    .form-field {
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+      font-size: 13px;
+    }
+
+    label {
+      font-weight: 500;
+    }
+
+    .hint {
+      font-size: 11px;
+      color: var(--muted);
+    }
+
+    select,
+    input[type="number"] {
+      padding: 8px 10px;
+      border-radius: var(--border-radius-sm);
+      border: 1px solid #e0e0ea;
+      background: #fafafa;
+      font-size: 14px;
+      outline: none;
+      transition: border-color 0.15s ease, box-shadow 0.15s ease, background 0.15s ease;
+    }
+
+    select:focus,
+    input[type="number"]:focus {
+      border-color: #ff8a8a;
+      box-shadow: 0 0 0 2px rgba(255,138,138,0.35);
+      background: #ffffff;
+    }
+
+    .primary-btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+      padding: 9px 16px;
+      border-radius: 999px;
+      border: none;
+      background: linear-gradient(135deg, #ff6b6b, #ff9f43);
+      color: #fff;
+      font-weight: 600;
+      font-size: 14px;
+      cursor: pointer;
+      box-shadow: 0 8px 18px rgba(255,107,107,0.5);
+      transition: transform 0.1s ease, box-shadow 0.1s ease, opacity 0.1s ease;
+    }
+
+    .primary-btn:active {
+      transform: translateY(1px);
+      box-shadow: 0 4px 10px rgba(255,107,107,0.6);
+      opacity: 0.95;
+    }
+
+    .primary-btn[disabled] {
+      opacity: 0.6;
+      cursor: default;
+      box-shadow: none;
+    }
+
+    .btn-row {
+      display: flex;
+      align-items: center;
+      justify-content: flex-end;
+      gap: 8px;
+      flex-wrap: wrap;
+      margin-top: 6px;
+    }
+
+    .status-text {
+      font-size: 11px;
+      color: var(--muted);
+    }
+
+    .status-text.loading::before {
+      content: "⏳ ";
+    }
+    .status-text.done::before {
+      content: "✨ ";
+    }
+    .status-text.error::before {
+      content: "⚠️ ";
+    }
+
+    .image-wrapper {
+      border-radius: var(--border-radius-lg);
+      background: linear-gradient(125deg, #fff7f7, #f9fbff);
+      padding: 12px;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      height: 420px;
+      position: relative;
+    }
+
+    .image-inner {
+      flex: 1;
+      border-radius: 16px;
+      background: #fff;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      overflow: hidden;
+      border: 1px solid #f0f0f5;
+      aspect-ratio: 3 / 4;
+      position: relative;
+    }
+
+    #body-image {
+      max-width: 100%;
+      max-height: 100%;
+      display: block;
+      object-fit: contain;
+    }
+
+    .image-placeholder {
+      text-align: center;
+      font-size: 13px;
+      color: var(--muted);
+      padding: 12px;
+    }
+
+    .desc {
+      font-size: 13px;
+      color: var(--muted);
+    }
+
+    .code-block {
+      font-family: SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+      font-size: 11px;
+      background: #111;
+      color: #eee;
+      padding: 10px;
+      border-radius: 10px;
+      max-height: 200px;
+      overflow: auto;
+      white-space: pre-wrap;
+    }
+
+    footer {
+      margin-top: 20px;
+      font-size: 11px;
+      color: var(--muted);
+      text-align: center;
+    }
+  </style>
+</head>
+<body>
+  <div class="page">
+    <header>
+      <div class="title">
+        <span class="logo-pill"></span>
+        <span>Body Shape Test · 身材生成測試頁</span>
+      </div>
+      <div class="subtitle">
+        專門用來測試「身高／體重」對 AI 人物身材的影響，避免每次都改整個穿搭網站。
+      </div>
+    </header>
+
+    <main class="layout">
+      <!-- 左：輸入條件 -->
+      <section class="card">
+        <div class="card-title">
+          測試條件
+          <span class="pill">Step 1 · 設定身材</span>
+        </div>
+
+        <form id="body-form" onsubmit="event.preventDefault(); generateBodyImage();">
+          <div class="form-grid">
+            <div class="form-field">
+              <label for="gender">性別</label>
+              <select id="gender" required>
+                <option value="female">女性</option>
+                <option value="male">男性</option>
+                <option value="neutral">中性 / 不拘</option>
+              </select>
+              <div class="hint">只影響文字描述，不會限制衣服款式。</div>
+            </div>
+
+            <div class="form-field">
+              <label for="height">身高（cm）</label>
+              <input type="number" id="height" min="140" max="210" value="165" required />
+              <div class="hint">例如：150、160、170、180</div>
+            </div>
+
+            <div class="form-field">
+              <label for="weight">體重（kg）</label>
+              <input type="number" id="weight" min="35" max="150" value="55" required />
+              <div class="hint">可以刻意測：45 / 60 / 80 / 100</div>
+            </div>
+
+            <div class="form-field">
+              <label for="style">風格</label>
+              <select id="style">
+                <option value="casual">休閒日常</option>
+                <option value="minimal">極簡通勤</option>
+                <option value="street">街頭風</option>
+                <option value="sporty">運動風</option>
+                <option value="smart">Smart Casual</option>
+              </select>
+              <div class="hint">只是給模型一點穿著方向。</div>
+            </div>
+
+            <div class="form-field">
+              <label for="temp">溫度（°C，選填）</label>
+              <input type="number" id="temp" value="22" />
+              <div class="hint">目前只會寫進 prompt，不影響身材。</div>
+            </div>
+
+            <div class="form-field">
+              <label>身材分級（由 BMI 自動判斷）</label>
+              <div id="bmi-info" class="hint">BMI：--，身型：--</div>
+            </div>
+          </div>
+
+          <div class="btn-row">
+            <span id="status" class="status-text">修改身高／體重後，按下「產生身材示意圖」。</span>
+            <button type="submit" id="generate-btn" class="primary-btn">
+              🧍 產生身材示意圖
+            </button>
+          </div>
+        </form>
+      </section>
+
+      <!-- 右：結果與實際 prompt -->
+      <section class="card">
+        <div class="card-title">
+          測試結果
+          <span class="pill">Step 2 · 查看身材變化</span>
+        </div>
+
+        <div class="image-wrapper">
+          <div class="image-inner">
+            <img id="body-image" src="" alt="Body shape preview" style="display:none;" />
+            <div id="image-placeholder" class="image-placeholder">
+              還沒有測試結果。<br/>
+              可以試試：同樣身高 165 cm，分別輸入 45 / 60 / 80 / 100 kg，比較差異。
+            </div>
+          </div>
+          <div class="desc">下方會顯示實際送給 AI 的英文 prompt（方便你微調句子強度）。</div>
+        </div>
+
+        <div style="margin-top:10px;">
+          <div style="font-size:12px; color:var(--muted); margin-bottom:4px;">實際使用的 Prompt：</div>
+          <pre id="prompt-view" class="code-block"></pre>
+        </div>
+      </section>
+    </main>
+
+    <footer>
+      Body Shape Debug · 專門用來調整「瘦／正常／微胖／豐滿」的 prompt，不影響主站程式碼。
+    </footer>
+  </div>
+
+  <script>
+    // 強化版：依 BMI 給最強的身材描述 prompt
+    function getBodyShapePrompt(height, weight) {
+      const h = height / 100;
+      const bmi = weight / (h * h);
+
+      if (bmi < 19) {
+        return `
+very slim body, clearly slender limbs, visible bone outline, small waist,
+minimal body fat, lightweight figure,
+do NOT draw curves, do NOT draw thick arms or legs, do NOT draw chubby proportions.
+        `.trim();
+      }
+
+      if (bmi < 25) {
+        return `
+average realistic body, balanced proportions, medium muscle and fat,
+neither skinny nor chubby, natural and healthy body shape,
+do NOT draw extremely slim or extremely curvy proportions.
+        `.trim();
+      }
+
+      if (bmi < 30) {
+        return `
+slightly chubby body, soft curves, visibly thicker arms and thighs,
+rounder waistline, fuller hips, clearly not slim,
+do NOT draw skinny limbs, do NOT shrink the body proportion.
+        `.trim();
+      }
+
+      return `
+plus-size figure, full curves, heavier and thicker limbs, larger waist and hips,
+round and full body shape, definitely not slim,
+do NOT draw a skinny model, do NOT reduce body width.
+      `.trim();
+    }
+
+    function getBodyShapeTag(height, weight) {
+      const h = height / 100;
+      const bmi = weight / (h * h);
+      if (!isFinite(bmi)) return { bmi: null, label: "—" };
+
+      if (bmi < 19) return { bmi, label: "偏瘦（Slim）" };
+      if (bmi < 25) return { bmi, label: "正常（Average）" };
+      if (bmi < 30) return { bmi, label: "微胖（Slightly chubby）" };
+      return { bmi, label: "豐滿（Plus-size）" };
+    }
+
+    // 這是專門給身材測試用的 prompt（跟主站分開）
+    function buildBodyShapeTestPrompt(gender, style, temp, height, weight) {
+      const genderTextMapEn = {
+        female: "a woman",
+        male: "a man",
+        neutral: "a person"
+      };
+      const styleTextMapEn = {
+        casual: "casual everyday clothing",
+        minimal: "minimalist clean outfit",
+        street: "streetwear outfit",
+        sporty: "sporty athleisure outfit",
+        smart: "smart casual outfit"
+      };
+
+      const genderEn = genderTextMapEn[gender] || "a person";
+      const styleEn = styleTextMapEn[style] || "casual outfit";
+
+      const bodyShapePrompt = getBodyShapePrompt(height, weight);
+
+      const tempPart = isNaN(temp)
+        ? ""
+        : `Weather around ${temp}°C, outfit should logically match this temperature.`;
+
+      return `
+${genderEn}, height around ${height} cm, weight around ${weight} kg.
+Body shape: ${bodyShapePrompt}
+
+Full-body view, standing pose, front angle or slight 3/4 angle.
+
+Outfit:
+- ${styleEn}
+- Simple everyday clothes, similar to UNIQLO lookbook style
+- Neutral light background, soft even lighting
+
+${tempPart}
+
+Important:
+- Strictly follow the described body shape above.
+- If chubby or plus-size, do NOT draw a slim or skinny model.
+- Show realistic human proportions, not stylized anime.
+- No visible brand logos.
+      `.trim();
+    }
+
+    function updateBmiDisplay() {
+      const h = parseFloat(document.getElementById("height").value);
+      const w = parseFloat(document.getElementById("weight").value);
+      const el = document.getElementById("bmi-info");
+      if (!h || !w) {
+        el.textContent = "BMI：--，身型：--";
+        return;
+      }
+      const { bmi, label } = getBodyShapeTag(h, w);
+      if (!bmi) {
+        el.textContent = "BMI：--，身型：--";
+        return;
+      }
+      el.textContent = `BMI：約 ${bmi.toFixed(1)}，身型推估：${label}`;
+    }
+
+    document.getElementById("height").addEventListener("input", updateBmiDisplay);
+    document.getElementById("weight").addEventListener("input", updateBmiDisplay);
+    updateBmiDisplay();
+
+    async function generateBodyImage() {
+      const gender = document.getElementById("gender").value;
+      const height = parseFloat(document.getElementById("height").value);
+      const weight = parseFloat(document.getElementById("weight").value);
+      const style = document.getElementById("style").value;
+      const temp = parseFloat(document.getElementById("temp").value);
+
+      const status = document.getElementById("status");
+      const btn = document.getElementById("generate-btn");
+      const img = document.getElementById("body-image");
+      const placeholder = document.getElementById("image-placeholder");
+      const promptView = document.getElementById("prompt-view");
+
+      if (!height || !weight) {
+        status.textContent = "請先輸入身高與體重。";
+        status.className = "status-text error";
+        return;
+      }
+
+      const prompt = buildBodyShapeTestPrompt(gender, style, temp, height, weight);
+      promptView.textContent = prompt;
+
+      status.textContent = "正在請 AI 依照身高／體重產生人物身材示意圖…";
+      status.className = "status-text loading";
+      btn.disabled = true;
+
+      try {
+        // ⚠️ 這裡沿用你主站 /api/generate-image 的結構
+        const response = await fetch("/api/generate-image", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            gender,
+            age: 25,       // 測試頁不在意年齡，就給固定值
+            style,
+            temp: isNaN(temp) ? 22 : temp,
+            outfitPrompt: prompt
+          })
+        });
+
+        if (!response.ok) {
+          const txt = await response.text();
+          console.error("API error:", txt);
+          throw new Error("API 回應失敗：" + response.status);
+        }
+
+        const data = await response.json();
+        if (!data.image) {
+          throw new Error("API 沒有回傳圖片資料");
+        }
+
+        img.src = "data:image/png;base64," + data.image;
+        img.style.display = "block";
+        placeholder.style.display = "none";
+
+        status.textContent = "已完成，請直接比較不同體重輸入的差異（建議一次固定身高，只改體重）";
+        status.className = "status-text done";
+      } catch (err) {
+        console.error(err);
+        status.textContent = "產生圖片時發生錯誤：" + err.message;
+        status.className = "status-text error";
+      } finally {
+        btn.disabled = false;
+      }
+    }
+  </script>
+</body>
+</html>
