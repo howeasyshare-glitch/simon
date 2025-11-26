@@ -482,73 +482,72 @@ Important:
     updateBmiDisplay();
 
     async function generateBodyImage() {
-      const gender = document.getElementById("gender").value;
-      const height = parseFloat(document.getElementById("height").value);
-      const weight = parseFloat(document.getElementById("weight").value);
-      const style = document.getElementById("style").value;
-      const temp = parseFloat(document.getElementById("temp").value);
+  const gender = document.getElementById("gender").value;
+  const height = parseFloat(document.getElementById("height").value);
+  const weight = parseFloat(document.getElementById("weight").value);
+  const style = document.getElementById("style").value;
+  const temp = parseFloat(document.getElementById("temp").value);
 
-      const status = document.getElementById("status");
-      const btn = document.getElementById("generate-btn");
-      const img = document.getElementById("body-image");
-      const placeholder = document.getElementById("image-placeholder");
-      const promptView = document.getElementById("prompt-view");
+  const status = document.getElementById("status");
+  const btn = document.getElementById("generate-btn");
+  const img = document.getElementById("body-image");
+  const placeholder = document.getElementById("image-placeholder");
+  const promptView = document.getElementById("prompt-view");
 
-      if (!height || !weight) {
-        status.textContent = "請先輸入身高與體重。";
-        status.className = "status-text error";
-        return;
-      }
+  if (!height || !weight) {
+    status.textContent = "請先輸入身高與體重。";
+    status.className = "status-text error";
+    return;
+  }
 
-      const prompt = buildBodyShapeTestPrompt(gender, style, temp, height, weight);
-      promptView.textContent = prompt;
+  const prompt = buildBodyShapeTestPrompt(gender, style, temp, height, weight);
+  promptView.textContent = prompt;
 
-      status.textContent = "正在請 AI 依照身高／體重產生人物身材示意圖…";
-      status.className = "status-text loading";
-      btn.disabled = true;
+  status.textContent = "正在請 AI 依照身高／體重產生人物身材示意圖…";
+  status.className = "status-text loading";
+  btn.disabled = true;
 
-      try {
-        // ⚠️ 這裡沿用你主站 /api/generate-image 的結構
-        const response = await fetch("/api/generate-image", {
-  method: "POST",
-  headers: { "Content-Type": "application/json" },
-  body: JSON.stringify({
-    gender,
-    age:25,
-    style,
-    temp:isNaN(temp) ? 22 : temp,
-    height,
-    weight,
-    outfitPrompt:prompt
-  })
-});
+  try {
+    const response = await fetch("/api/generate-image", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        gender,
+        age: 25,                        // 固定年齡，避免 age 未定義
+        style,
+        temp: isNaN(temp) ? 22 : temp,
+        height,
+        weight,
+        outfitPrompt: prompt            // ⬅⬅ 這裡一定要是「outfitPrompt: prompt」
+      })
+    });
 
-
-        if (!response.ok) {
-          const txt = await response.text();
-          console.error("API error:", txt);
-          throw new Error("API 回應失敗：" + response.status);
-        }
-
-        const data = await response.json();
-        if (!data.image) {
-          throw new Error("API 沒有回傳圖片資料");
-        }
-
-        img.src = "data:image/png;base64," + data.image;
-        img.style.display = "block";
-        placeholder.style.display = "none";
-
-        status.textContent = "已完成，請直接比較不同體重輸入的差異（建議一次固定身高，只改體重）";
-        status.className = "status-text done";
-      } catch (err) {
-        console.error(err);
-        status.textContent = "產生圖片時發生錯誤：" + err.message;
-        status.className = "status-text error";
-      } finally {
-        btn.disabled = false;
-      }
+    if (!response.ok) {
+      const txt = await response.text();
+      console.error("API error:", txt);
+      throw new Error("API 回應失敗：" + response.status);
     }
+
+    const data = await response.json();
+    if (!data.image) {
+      throw new Error("API 沒有回傳圖片資料");
+    }
+
+    img.src = "data:image/png;base64," + data.image;
+    img.style.display = "block";
+    placeholder.style.display = "none";
+
+    status.textContent = "已完成，請直接比較不同體重輸入的差異（建議一次固定身高，只改體重）";
+    status.className = "status-text done";
+  } catch (err) {
+    console.error(err);
+    status.textContent = "產生圖片時發生錯誤：" + err.message;
+    status.className = "status-text error";
+  } finally {
+    btn.disabled = false;
+  }
+}
+
   </script>
 </body>
 </html>
