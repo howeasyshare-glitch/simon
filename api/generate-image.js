@@ -110,7 +110,6 @@ async function callGeminiTextToImage(prompt) {
       }
     ],
     generationConfig: {
-      // 要求回傳 PNG 圖片
       responseMimeType: "image/png"
     }
   };
@@ -131,8 +130,10 @@ async function callGeminiTextToImage(prompt) {
   }
 
   if (!resp.ok) {
+    // 關鍵：把 Gemini 的 message 帶出來
+    const msg = json.error?.message || JSON.stringify(json);
     console.error("Gemini text→image error detail:", json);
-    throw new Error("Gemini text→image API error: " + resp.status);
+    throw new Error(`Gemini text→image API error: ${resp.status} - ${msg}`);
   }
 
   const imagePart =
@@ -145,7 +146,7 @@ async function callGeminiTextToImage(prompt) {
     throw new Error("No image data in Gemini text→image response");
   }
 
-  return imagePart.inlineData.data; // base64（不含 data:image/png;base64, 前綴）
+  return imagePart.inlineData.data;
 }
 
 // ---- Gemini：圖片 + 文本 → 新圖片 ----
@@ -186,8 +187,9 @@ async function callGeminiImageToImage(baseImageBase64, prompt) {
   }
 
   if (!resp.ok) {
+    const msg = json.error?.message || JSON.stringify(json);
     console.error("Gemini image→image error detail:", json);
-    throw new Error("Gemini image→image API error: " + resp.status);
+    throw new Error(`Gemini image→image API error: ${resp.status} - ${msg}`);
   }
 
   const imagePart =
@@ -254,6 +256,7 @@ export default async function handler(req, res) {
     });
   } catch (err) {
     console.error("generate-image handler error:", err);
+    // 這裡直接把錯誤訊息丟出去，讓前端看到
     res.status(500).json({ error: err.message || "Unknown error" });
   }
 }
