@@ -1,8 +1,11 @@
 // pages/api/generate-image.js
 
 const GEMINI_API_KEY = process.env.GEMINI_API_KEY;
-const GEMINI_MODEL = "gemini-2.0-flash-exp";
-const GEMINI_ENDPOINT = `https://generativelanguage.googleapis.com/v1beta/models/${GEMINI_MODEL}:generateContent?key=${GEMINI_API_KEY}`;
+
+// 直接寫死成你 cURL 測成功的那個 endpoint
+const GEMINI_ENDPOINT =
+  `https://generativelanguage.googleapis.com/v1beta/models/` +
+  `gemini-2.0-flash-exp:generateContent?key=${GEMINI_API_KEY}`;
 
 // ---- 身材描述（依 BMI 分級）----
 function getBodyShapePrompt(height, weight) {
@@ -100,16 +103,31 @@ ${tempText}
   `.trim();
 }
 
-// ---- Gemini：純文字 → 圖片 ----
-async function callGeminiTextToImage(prompt) {
+// ---- 共用：呼叫 Gemini（純文字 → 圖片 或 圖片+文字 → 圖片）----
+async function callGeminiGenerate({ prompt, baseImageBase64 }) {
+  const parts = [];
+
+  if (baseImageBase64) {
+    // image → image 模式
+    parts.push({
+      inlineData: {
+        mimeType: "image/png",
+        data: baseImageBase64
+      }
+    });
+  }
+
+  parts.push({ text: prompt });
+
   const body = {
     contents: [
       {
         role: "user",
-        parts: [{ text: prompt }]
+        parts
       }
     ],
     generationConfig: {
+      // 這就是你 cURL 時用到的設定
       responseMimeType: "image/png"
     }
   };
@@ -125,15 +143,14 @@ async function callGeminiTextToImage(prompt) {
   try {
     json = JSON.parse(raw);
   } catch (e) {
-    console.error("Gemini text→image 非 JSON 回應：", raw);
-    throw new Error("Gemini text→image API returned non-JSON response");
+    console.error("Gemini 非 JSON 回應：", raw);
+    throw new Error("Gemini API returned non-JSON response");
   }
 
   if (!resp.ok) {
-    // 關鍵：把 Gemini 的 message 帶出來
     const msg = json.error?.message || JSON.stringify(json);
-    console.error("Gemini text→image error detail:", json);
-    throw new Error(`Gemini text→image API error: ${resp.status} - ${msg}`);
+    console.error("Gemini API error detail:", json);
+    throw new Error(`Gemini API error: ${resp.status} - ${msg}`);
   }
 
   const imagePart =
@@ -142,67 +159,11 @@ async function callGeminiTextToImage(prompt) {
     );
 
   if (!imagePart) {
-    console.error("Gemini text→image response unexpected:", JSON.stringify(json, null, 2));
-    throw new Error("No image data in Gemini text→image response");
+    console.error("Gemini image response unexpected:", JSON.stringify(json, null, 2));
+    throw new Error("No image data in Gemini response");
   }
 
-  return imagePart.inlineData.data;
-}
-
-// ---- Gemini：圖片 + 文本 → 新圖片 ----
-async function callGeminiImageToImage(baseImageBase64, prompt) {
-  const body = {
-    contents: [
-      {
-        role: "user",
-        parts: [
-          {
-            inlineData: {
-              mimeType: "image/png",
-              data: baseImageBase64
-            }
-          },
-          { text: prompt }
-        ]
-      }
-    ],
-    generationConfig: {
-      responseMimeType: "image/png"
-    }
-  };
-
-  const resp = await fetch(GEMINI_ENDPOINT, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify(body)
-  });
-
-  const raw = await resp.text();
-  let json;
-  try {
-    json = JSON.parse(raw);
-  } catch (e) {
-    console.error("Gemini image→image 非 JSON 回應：", raw);
-    throw new Error("Gemini image→image API returned non-JSON response");
-  }
-
-  if (!resp.ok) {
-    const msg = json.error?.message || JSON.stringify(json);
-    console.error("Gemini image→image error detail:", json);
-    throw new Error(`Gemini image→image API error: ${resp.status} - ${msg}`);
-  }
-
-  const imagePart =
-    json.candidates?.[0]?.content?.parts?.find(
-      p => p.inlineData && p.inlineData.data
-    );
-
-  if (!imagePart) {
-    console.error("Gemini image→image response unexpected:", JSON.stringify(json, null, 2));
-    throw new Error("No image data in Gemini image→image response");
-  }
-
-  return imagePart.inlineData.data;
+  return imagePart.inlineData.data; // base64
 }
 
 // ---- Next.js API handler ----
@@ -231,21 +192,24 @@ export default async function handler(req, res) {
     const wNum = Number(weight);
     const tNum = Number(temp) || 22;
 
-    // Stage 1：只畫身材基底圖
+    // Stage 1：只畫身材基底圖（純文字 → 圖片）
     const bodyOnlyPrompt = buildBodyOnlyPrompt(gender, hNum, wNum);
-    const baseBodyImageBase64 = await callGeminiTextToImage(bodyOnlyPrompt);
+    const baseBodyImageBase64 = await callGeminiGenerate({
+      prompt: bodyOnlyPrompt,
+      baseImageBase64: null
+    });
 
-    // Stage 2：在身材基底上套穿搭
+    // Stage 2：在身材基底上套穿搭（圖片 + 文字 → 圖片）
     const outfitStagePrompt = buildOutfitStagePrompt(
       outfitPrompt || "",
       style || "casual",
       tNum
     );
 
-    const finalImageBase64 = await callGeminiImageToImage(
-      baseBodyImageBase64,
-      outfitStagePrompt
-    );
+    const finalImageBase64 = await callGeminiGenerate({
+      prompt: outfitStagePrompt,
+      baseImageBase64: baseBodyImageBase64
+    });
 
     res.status(200).json({
       image: finalImageBase64,
@@ -256,7 +220,6 @@ export default async function handler(req, res) {
     });
   } catch (err) {
     console.error("generate-image handler error:", err);
-    // 這裡直接把錯誤訊息丟出去，讓前端看到
     res.status(500).json({ error: err.message || "Unknown error" });
   }
 }
