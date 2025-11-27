@@ -128,7 +128,7 @@ async function callGeminiGenerate({ prompt, baseImageBase64 }) {
     ],
     generationConfig: {
       // 這就是你 cURL 時用到的設定
-      responseMimeType: "image/png"
+      responseMimeType: "image"
     }
   };
 
