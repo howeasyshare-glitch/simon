@@ -382,6 +382,18 @@
   </div>
 
   <script>
+  async function searchSimilarProducts() {
+    const resp = await fetch("/api/search-products", {
+      method: "POST",
+      headers: {"Content-Type": "application/json"},
+      body: JSON.stringify({ items })
+    });
+    const data = await resp.json();
+    renderProductResults(data);
+  }
+</script>
+
+  <script>
     function getBmiTag(height, weight) {
       const h = height / 100;
       const bmi = weight / (h * h);
