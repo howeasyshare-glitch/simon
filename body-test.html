@@ -2,7 +2,7 @@
 <html lang="zh-Hant">
 <head>
   <meta charset="UTF-8" />
-  <title>Body Shape · 雙階段身材＋穿搭測試頁</title>
+  <title>Body Shape · 身材配件完成版 + 商品搜尋測試</title>
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@300;400;500;700&display=swap" rel="stylesheet" />
   <style>
@@ -135,6 +135,25 @@
       background: #ffffff;
     }
 
+    .checkbox-row {
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+    }
+
+    .checkbox-row label {
+      font-weight: 400;
+      font-size: 12px;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      cursor: pointer;
+    }
+
+    .checkbox-row input[type="checkbox"] {
+      transform: scale(0.9);
+    }
+
     .primary-btn {
       display: inline-flex;
       align-items: center;
@@ -189,7 +208,6 @@
       display: flex;
       flex-direction: column;
       gap: 8px;
-      height: 420px;
     }
 
     .image-inner {
@@ -230,23 +248,63 @@
       text-align: center;
     }
 
-    .checkbox-row {
-      display: flex;
-      flex-direction: column;
-      gap: 2px;
+    .product-card {
+      display: grid;
+      grid-template-columns: 60px minmax(0, 1fr);
+      gap: 8px;
+      border-radius: 10px;
+      border: 1px solid #eee;
+      padding: 6px 8px;
+      background: #fafafa;
     }
 
-    .checkbox-row label {
-      font-weight: 400;
-      font-size: 12px;
+    .product-thumb {
+      width: 60px;
+      height: 60px;
+      border-radius: 8px;
+      overflow: hidden;
+      background: #fff;
       display: flex;
       align-items: center;
-      gap: 6px;
-      cursor: pointer;
+      justify-content: center;
+      font-size: 10px;
+      color: #999;
     }
 
-    .checkbox-row input[type="checkbox"] {
-      transform: scale(0.9);
+    .product-thumb img {
+      max-width: 100%;
+      max-height: 100%;
+    }
+
+    .product-main {
+      display: flex;
+      flex-direction: column;
+      gap: 3px;
+    }
+
+    .product-title {
+      font-size: 12px;
+      font-weight: 500;
+    }
+
+    .product-meta {
+      font-size: 11px;
+      color: #777;
+    }
+
+    .product-price {
+      font-size: 12px;
+      font-weight: 600;
+    }
+
+    .product-link {
+      font-size: 11px;
+      color: #ff7b7b;
+      text-decoration: none;
+    }
+
+    .product-link:hover {
+      text-decoration: underline;
     }
   </style>
 </head>
@@ -255,10 +313,10 @@
     <header>
       <div class="title">
         <span class="logo-pill"></span>
-        <span>Body Shape Test · 身材版本2025 v1＋配件測試</span>
+        <span>Body Shape Test · 身材配件完成版 + 商品搜尋測試</span>
       </div>
       <div class="subtitle">
-        後端使用「身材版本2025 v1」：先產生貼身素色身材基底圖，再在同一個身材上套 UNIQLO 風格穿搭。這個頁面專門拿來測試包包 / 帽子勾選是否真的有作用。
+        後端使用「身材版本2025 v1」＋配件控制（包包 / 帽子 / 外套）。這個頁面另外加上 SerpApi 商品搜尋，讓你看到實際的商品名稱與連結。
       </div>
     </header>
 
@@ -267,7 +325,7 @@
       <section class="card">
         <div class="card-title">
           測試條件
-          <span class="pill">Step 1 · 設定人物、身材與配件</span>
+          <span class="pill">Step 1 · 身材＋配件設定</span>
         </div>
 
         <form id="body-form" onsubmit="event.preventDefault(); generateOutfit();">
@@ -323,18 +381,22 @@
             </div>
 
             <div class="form-field">
-              <label>配件選擇（配合後端 prompt 測試）</label>
+              <label>配件選擇</label>
               <div class="checkbox-row">
                 <label>
                   <input type="checkbox" id="acc-bag" checked />
-                  包包（勾選時必須有包包；沒勾時必須沒有包包）
+                  包包
                 </label>
                 <label>
                   <input type="checkbox" id="acc-hat" />
-                  帽子（勾選時必須出現帽子；沒勾時必須沒有帽子）
+                  帽子
+                </label>
+                <label>
+                  <input type="checkbox" id="acc-coat" />
+                  外套 / 罩衫 / 夾克
                 </label>
               </div>
-              <div class="hint">這裡只控制包包／帽子，方便你看「配件指令有沒有被模型聽話」。</div>
+              <div class="hint">這三個會直接影響後端 prompt，要看模型有沒有乖乖照做。</div>
             </div>
           </div>
 
@@ -350,8 +412,8 @@
       <!-- 右側：結果 -->
       <section class="card">
         <div class="card-title">
-          結果預覽
-          <span class="pill">Step 2 · 查看身材＋穿搭＋配件</span>
+          圖像與商品測試
+          <span class="pill">Step 2 · 查看 AI 圖像 & 商品搜尋結果</span>
         </div>
 
         <div class="image-wrapper">
@@ -359,39 +421,63 @@
             <img id="result-image" src="" alt="Outfit preview" style="display:none;" />
             <div id="image-placeholder" class="image-placeholder">
               還沒有結果。<br />
-              可以先固定身高，例如 165 cm，<br />
-              接著測試：
-              <ul style="margin:6px 0 0 18px; padding:0; text-align:left; font-size:12px;">
-                <li>包包 ✅ / 帽子 ❌</li>
-                <li>包包 ❌ / 帽子 ✅</li>
-                <li>包包 ❌ / 帽子 ❌</li>
-              </ul>
-              看看圖中的包包 / 帽子是否有跟勾選同步。
+              先產生一次 AI 穿搭示意圖，再按下下面的「抓類似商品」。
             </div>
           </div>
           <div class="desc">
-            後端會先產生一張「貼身素色衣服的身材基底圖」，再在同一個身材上套入 UNIQLO 風格穿搭。這裡顯示的是第二階段（穿好衣服）的成果。
+            後端使用「身材版本2025 v1」，先畫貼身素色身材基底圖，再在同一個身材上套 UNIQLO 風格穿搭＋配件條件。
+          </div>
+        </div>
+
+        <!-- 類似商品搜尋結果區塊（SerpApi 測試） -->
+        <div style="margin-top: 14px;">
+          <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:6px;">
+            <div style="font-size:13px; color:#555; font-weight:500;">
+              類似商品（SerpApi / Google Shopping 測試）
+            </div>
+            <button
+              type="button"
+              onclick="searchSimilarProducts()"
+              style="
+                border:none;
+                border-radius:999px;
+                padding:4px 10px;
+                font-size:11px;
+                cursor:pointer;
+                background:#f3f3f8;
+                color:#555;
+              "
+            >
+              🔍 抓類似商品
+            </button>
+          </div>
+          <div id="product-status" class="desc" style="font-size:11px; margin-bottom:4px;">
+            按下「抓類似商品」後，會用目前性別＋風格去呼叫 /api/search-products。
+          </div>
+          <div
+            id="product-results"
+            style="
+              display:flex;
+              flex-direction:column;
+              gap:8px;
+              max-height:220px;
+              overflow-y:auto;
+              padding-right:4px;
+              border-top:1px solid #f0f0f5;
+              margin-top:4px;
+              padding-top:6px;
+            "
+          >
+            <!-- JS 會在這裡塞商品卡片 -->
           </div>
         </div>
       </section>
     </main>
 
     <footer>
-      Body Shape Debug · 身材版本2025 v1＋配件測試。想調整「胖瘦程度」，可以在後端的 <code>getBodyShapePrompt()</code> 修改文字描述。
+      Debug Tips：如果商品區塊顯示錯誤訊息，請同時打開 DevTools（F12）看 Console / Network。
     </footer>
   </div>
-
-  <script>
-  async function searchSimilarProducts() {
-    const resp = await fetch("/api/search-products", {
-      method: "POST",
-      headers: {"Content-Type": "application/json"},
-      body: JSON.stringify({ items })
-    });
-    const data = await resp.json();
-    renderProductResults(data);
-  }
-</script>
 
   <script>
     function getBmiTag(height, weight) {
@@ -434,6 +520,7 @@
       const weight = parseFloat(document.getElementById("weight").value);
       const withBag = document.getElementById("acc-bag").checked;
       const withHat = document.getElementById("acc-hat").checked;
+      const withCoat = document.getElementById("acc-coat").checked;
 
       const status = document.getElementById("status");
       const btn = document.getElementById("generate-btn");
@@ -462,7 +549,8 @@
             height,
             weight,
             withBag,
-            withHat
+            withHat,
+            withCoat
           })
         });
 
@@ -471,11 +559,12 @@
         try {
           data = JSON.parse(rawText);
         } catch {
+          console.error("generate-image raw:", rawText);
           throw new Error("API 回傳非 JSON：" + rawText.slice(0, 120));
         }
 
         if (!response.ok) {
-          console.error("API error detail:", data);
+          console.error("generate-image error detail:", data);
           throw new Error("API 回應失敗：" + response.status + "／" + (data.error || "unknown"));
         }
 
@@ -487,7 +576,7 @@
         img.style.display = "block";
         placeholder.style.display = "none";
 
-        status.textContent = "已完成，請改變包包／帽子勾選，看看圖中的配件有沒有跟著變化。";
+        status.textContent = "已完成，接著可以測試『抓類似商品』功能。";
         status.className = "status-text done";
       } catch (err) {
         console.error(err);
@@ -495,6 +584,177 @@
         status.className = "status-text error";
       } finally {
         btn.disabled = false;
+      }
+    }
+
+    // ===== 商品搜尋（SerpApi） =====
+
+    function buildTestItemsForSearch() {
+      const gender = document.getElementById("gender").value;
+      const style = document.getElementById("style").value;
+
+      const genderText =
+        gender === "female"
+          ? "female"
+          : gender === "male"
+          ? "male"
+          : "unisex";
+
+      let styleText = "casual";
+      if (style === "minimal") styleText = "minimalist";
+      else if (style === "street") styleText = "streetwear";
+      else if (style === "sporty") styleText = "sporty";
+      else if (style === "smart") styleText = "smart casual";
+
+      // 先 hardcode 三個部位：上衣 / 下身 / 鞋子
+      return [
+        {
+          slot: "top",
+          generic_name: "oversized cotton crew neck t-shirt",
+          color: "white",
+          style: styleText,
+          gender: genderText
+        },
+        {
+          slot: "bottom",
+          generic_name: "straight leg jeans",
+          color: "light blue",
+          style: styleText,
+          gender: genderText
+        },
+        {
+          slot: "shoes",
+          generic_name: "white low-top sneakers",
+          color: "white",
+          style: styleText,
+          gender: "unisex"
+        }
+      ];
+    }
+
+    function renderProductResults(data) {
+      const container = document.getElementById("product-results");
+      const status = document.getElementById("product-status");
+      container.innerHTML = "";
+
+      if (!data || !Array.isArray(data.results) || data.results.length === 0) {
+        status.textContent = "沒有取回任何商品結果。";
+        return;
+      }
+
+      status.textContent =
+        "以下為 /api/search-products 透過 SerpApi 回傳的部分 Google Shopping 商品結果（每個部位最多 3 筆）：";
+
+      data.results.forEach((block) => {
+        const slot = block.slot || "item";
+        const query = block.query || "";
+
+        const header = document.createElement("div");
+        header.style.fontSize = "11px";
+        header.style.color = "#777";
+        header.style.marginTop = "4px";
+        header.textContent = `部位：${slot}（query: ${query}）`;
+        container.appendChild(header);
+
+        if (block.error) {
+          const errEl = document.createElement("div");
+          errEl.style.fontSize = "11px";
+          errEl.style.color = "#c00";
+          errEl.textContent = "錯誤：" + block.error;
+          container.appendChild(errEl);
+          return;
+        }
+
+        (block.items || []).forEach((p) => {
+          const card = document.createElement("div");
+          card.className = "product-card";
+
+          const thumb = document.createElement("div");
+          thumb.className = "product-thumb";
+
+          if (p.thumbnail) {
+            const img = document.createElement("img");
+            img.src = p.thumbnail;
+            thumb.appendChild(img);
+          } else {
+            thumb.textContent = "No image";
+          }
+
+          const main = document.createElement("div");
+          main.className = "product-main";
+
+          const title = document.createElement("div");
+          title.className = "product-title";
+          title.textContent = p.title || "(no title)";
+
+          const meta = document.createElement("div");
+          meta.className = "product-meta";
+          meta.textContent = p.source || "";
+
+          const price = document.createElement("div");
+          price.className = "product-price";
+          const priceText =
+            p.price != null
+              ? `${p.price} ${p.currency || ""}`.trim()
+              : "價格不明";
+          price.textContent = priceText;
+
+          const link = document.createElement("a");
+          link.className = "product-link";
+          link.target = "_blank";
+          link.rel = "noopener noreferrer";
+          link.href = p.link || "#";
+          link.textContent = p.link ? "前往商品頁" : "無連結";
+
+          main.appendChild(title);
+          main.appendChild(meta);
+          main.appendChild(price);
+          main.appendChild(link);
+
+          card.appendChild(thumb);
+          card.appendChild(main);
+
+          container.appendChild(card);
+        });
+      });
+    }
+
+    async function searchSimilarProducts() {
+      const status = document.getElementById("product-status");
+      const container = document.getElementById("product-results");
+      container.innerHTML = "";
+      status.textContent = "正在呼叫 /api/search-products 並透過 SerpApi 搜尋商品…";
+
+      try {
+        const items = buildTestItemsForSearch();
+
+        const resp = await fetch("/api/search-products", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ items })
+        });
+
+        const text = await resp.text();
+        let data;
+        try {
+          data = JSON.parse(text);
+        } catch {
+          console.error("search-products raw:", text);
+          throw new Error("後端回傳非 JSON：" + text.slice(0, 120));
+        }
+
+        if (!resp.ok) {
+          console.error("search-products error detail:", data);
+          throw new Error(
+            "API 回應失敗：" + resp.status + "／" + (data.error || "unknown")
+          );
+        }
+
+        console.log("search-products data:", data);
+        renderProductResults(data);
+      } catch (err) {
+        console.error(err);
+        status.textContent = "搜尋商品時發生錯誤：" + err.message;
       }
     }
   </script>
