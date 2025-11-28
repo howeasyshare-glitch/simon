@@ -229,6 +229,25 @@
       color: var(--muted);
       text-align: center;
     }
+
+    .checkbox-row {
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+    }
+
+    .checkbox-row label {
+      font-weight: 400;
+      font-size: 12px;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      cursor: pointer;
+    }
+
+    .checkbox-row input[type="checkbox"] {
+      transform: scale(0.9);
+    }
   </style>
 </head>
 <body>
@@ -236,10 +255,10 @@
     <header>
       <div class="title">
         <span class="logo-pill"></span>
-        <span>Body Shape Test · 雙階段身材＋穿搭測試</span>
+        <span>Body Shape Test · 身材版本2025 v1＋配件測試</span>
       </div>
       <div class="subtitle">
-        這個頁面專門用來測試「身高／體重 → 身材」＋「UNIQLO 風格穿搭」。後端會先畫貼身素色衣服的身材基底圖，再套上正式穿搭。
+        後端使用「身材版本2025 v1」：先產生貼身素色身材基底圖，再在同一個身材上套 UNIQLO 風格穿搭。這個頁面專門拿來測試包包 / 帽子勾選是否真的有作用。
       </div>
     </header>
 
@@ -248,7 +267,7 @@
       <section class="card">
         <div class="card-title">
           測試條件
-          <span class="pill">Step 1 · 設定人物與天氣</span>
+          <span class="pill">Step 1 · 設定人物、身材與配件</span>
         </div>
 
         <form id="body-form" onsubmit="event.preventDefault(); generateOutfit();">
@@ -302,6 +321,21 @@
               <label>身材預估（BMI）</label>
               <div id="bmi-info" class="hint">BMI：--，身型：--</div>
             </div>
+
+            <div class="form-field">
+              <label>配件選擇（配合後端 prompt 測試）</label>
+              <div class="checkbox-row">
+                <label>
+                  <input type="checkbox" id="acc-bag" checked />
+                  包包（勾選時必須有包包；沒勾時必須沒有包包）
+                </label>
+                <label>
+                  <input type="checkbox" id="acc-hat" />
+                  帽子（勾選時必須出現帽子；沒勾時必須沒有帽子）
+                </label>
+              </div>
+              <div class="hint">這裡只控制包包／帽子，方便你看「配件指令有沒有被模型聽話」。</div>
+            </div>
           </div>
 
           <div class="btn-row">
@@ -317,7 +351,7 @@
       <section class="card">
         <div class="card-title">
           結果預覽
-          <span class="pill">Step 2 · 查看身材＋穿搭</span>
+          <span class="pill">Step 2 · 查看身材＋穿搭＋配件</span>
         </div>
 
         <div class="image-wrapper">
@@ -325,7 +359,14 @@
             <img id="result-image" src="" alt="Outfit preview" style="display:none;" />
             <div id="image-placeholder" class="image-placeholder">
               還沒有結果。<br />
-              可以試試看：身高固定 165 cm，分別輸入體重 45 / 60 / 80 / 100 kg，比較人物身材是否有差異。
+              可以先固定身高，例如 165 cm，<br />
+              接著測試：
+              <ul style="margin:6px 0 0 18px; padding:0; text-align:left; font-size:12px;">
+                <li>包包 ✅ / 帽子 ❌</li>
+                <li>包包 ❌ / 帽子 ✅</li>
+                <li>包包 ❌ / 帽子 ❌</li>
+              </ul>
+              看看圖中的包包 / 帽子是否有跟勾選同步。
             </div>
           </div>
           <div class="desc">
@@ -336,7 +377,7 @@
     </main>
 
     <footer>
-      Body Shape Debug · 如果要微調胖瘦程度，可在後端的 <code>getBodyShapePrompt()</code> 文字描述中修改。
+      Body Shape Debug · 身材版本2025 v1＋配件測試。想調整「胖瘦程度」，可以在後端的 <code>getBodyShapePrompt()</code> 修改文字描述。
     </footer>
   </div>
 
@@ -379,6 +420,8 @@
       const temp = parseFloat(document.getElementById("temp").value);
       const height = parseFloat(document.getElementById("height").value);
       const weight = parseFloat(document.getElementById("weight").value);
+      const withBag = document.getElementById("acc-bag").checked;
+      const withHat = document.getElementById("acc-hat").checked;
 
       const status = document.getElementById("status");
       const btn = document.getElementById("generate-btn");
@@ -391,7 +434,7 @@
         return;
       }
 
-      status.textContent = "正在產生 AI 身材＋穿搭示意圖（後端會跑雙階段生成）…";
+      status.textContent = "正在產生 AI 身材＋穿搭＋配件示意圖（後端會跑雙階段生成）…";
       status.className = "status-text loading";
       btn.disabled = true;
 
@@ -405,7 +448,9 @@
             style,
             temp,
             height,
-            weight
+            weight,
+            withBag,
+            withHat
           })
         });
 
@@ -430,7 +475,7 @@
         img.style.display = "block";
         placeholder.style.display = "none";
 
-        status.textContent = "已完成，請試著改變體重比較身材差異。";
+        status.textContent = "已完成，請改變包包／帽子勾選，看看圖中的配件有沒有跟著變化。";
         status.className = "status-text done";
       } catch (err) {
         console.error(err);
