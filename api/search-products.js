@@ -71,13 +71,17 @@ export default async function handler(req, res) {
 
       // 取前 3 筆作為「類似商品」
       const mapped = shoppingResults.slice(0, 3).map((r) => ({
-        title: r.title,
-        source: r.source, // 商店名稱
-        price: r.price || r.extracted_price,
-        currency: r.currency || "",
-        thumbnail: r.thumbnail,
-        link: r.link
-      }));
+  title: r.title,
+  source: r.source,
+  // price：優先用 extracted_price，沒有就用原始字串
+  price: r.extracted_price ?? r.price,
+  price_raw: r.price,            // 可選：想看原字串可用
+  currency: r.currency || "",
+  thumbnail: r.thumbnail,
+  // ⚠ 這裡是重點：Google Shopping 結果用的是 product_link
+  link: r.product_link || r.link || null
+}));
+
 
       results.push({
         slot,
