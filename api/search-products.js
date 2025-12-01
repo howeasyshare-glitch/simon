@@ -1,5 +1,5 @@
 // pages/api/search-products.js
-// 用 SerpApi 打 Google Shopping，根據 AI 給的 "generic_name + color + category" 找類似商品
+// 用 SerpApi 搜尋 Google Shopping 商品，依據 outfitSpec.items
 
 export default async function handler(req, res) {
   if (req.method !== "POST") {
@@ -17,23 +17,21 @@ export default async function handler(req, res) {
       return res.status(400).json({ error: "Missing items array" });
     }
 
-    // 為了測試：最多只查 3 個 slot，免得太多 request
-    const limitedItems = items.slice(0, 3);
+    // 在 Server log 看看實際 Outfit Spec 收到哪些 slot
+    console.log(
+      "[search-products] received items slots:",
+      items.map((it) => it.slot)
+    );
+
+    // 只限制最大 6 個部位就好（top/bottom/shoes/outer/bag/hat）
+    const limitedItems = items.slice(0, 6);
 
     const results = [];
 
     for (const item of limitedItems) {
-      const {
-        slot,          // "top" / "bottom" / "shoes" / "outer" / "bag" / "hat"
-        generic_name,  // "oversized cotton crew neck t-shirt"
-        color,         // "white"
-        style,         // "casual"
-        gender         // "female" / "male" / "unisex"
-      } = item;
+      const { slot, generic_name, color, style, gender } = item;
 
-      if (!generic_name) {
-        continue;
-      }
+      if (!generic_name) continue;
 
       let genderText = "";
       if (gender === "female") genderText = "for women";
@@ -47,11 +45,10 @@ export default async function handler(req, res) {
 
       const query = qParts.join(" ");
 
-      // 呼叫 SerpApi 的 Google Shopping
       const url = new URL("https://serpapi.com/search.json");
       url.searchParams.set("engine", "google_shopping");
       url.searchParams.set("q", query);
-      url.searchParams.set("hl", "en");
+      url.searchParams.set("hl", "en"); // 先用英文結果，比較穩定
       url.searchParams.set("api_key", apiKey);
 
       const resp = await fetch(url.toString());
@@ -69,19 +66,15 @@ export default async function handler(req, res) {
 
       const shoppingResults = json.shopping_results || [];
 
-      // 取前 3 筆作為「類似商品」
       const mapped = shoppingResults.slice(0, 3).map((r) => ({
-  title: r.title,
-  source: r.source,
-  // price：優先用 extracted_price，沒有就用原始字串
-  price: r.extracted_price ?? r.price,
-  price_raw: r.price,            // 可選：想看原字串可用
-  currency: r.currency || "",
-  thumbnail: r.thumbnail,
-  // ⚠ 這裡是重點：Google Shopping 結果用的是 product_link
-  link: r.product_link || r.link || null
-}));
-
+        title: r.title,
+        source: r.source,
+        price: r.extracted_price ?? r.price,
+        price_raw: r.price,
+        currency: r.currency || "",
+        thumbnail: r.thumbnail,
+        link: r.product_link || r.link || null
+      }));
 
       results.push({
         slot,
