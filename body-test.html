@@ -2,7 +2,7 @@
 <html lang="zh-Hant">
 <head>
   <meta charset="UTF-8" />
-  <title>Body Shape · 身材配件完成版 + 商品搜尋測試</title>
+  <title>Body Test · 身材版本2025 v1 + 等級2穿搭規格 + 商品搜尋</title>
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@300;400;500;700&display=swap" rel="stylesheet" />
   <style>
@@ -306,6 +306,15 @@
     .product-link:hover {
       text-decoration: underline;
     }
+
+    .outfit-summary {
+      font-size: 12px;
+      color: #555;
+      padding: 6px 8px;
+      border-radius: 10px;
+      background: #fff;
+      border: 1px dashed #f0b5b5;
+    }
   </style>
 </head>
 <body>
@@ -313,10 +322,10 @@
     <header>
       <div class="title">
         <span class="logo-pill"></span>
-        <span>Body Shape Test · 身材配件完成版 + 商品搜尋測試</span>
+        <span>Body Test · 身材版本2025 v1 + 等級2穿搭規格</span>
       </div>
       <div class="subtitle">
-        後端使用「身材版本2025 v1」＋配件控制（包包 / 帽子 / 外套）。這個頁面另外加上 SerpApi 商品搜尋，讓你看到實際的商品名稱與連結。
+        流程：先用文字模型產生 Outfit Spec（JSON），再用這份規格畫圖，最後用同一份規格去搜尋類似商品。
       </div>
     </header>
 
@@ -325,7 +334,7 @@
       <section class="card">
         <div class="card-title">
           測試條件
-          <span class="pill">Step 1 · 身材＋配件設定</span>
+          <span class="pill">Step 1 · 身材＋配件＋風格</span>
         </div>
 
         <form id="body-form" onsubmit="event.preventDefault(); generateOutfit();">
@@ -355,7 +364,7 @@
             <div class="form-field">
               <label for="weight">體重（kg）</label>
               <input type="number" id="weight" min="35" max="150" value="55" required />
-              <div class="hint">可以測試 45 / 60 / 80 / 100 kg 的差異。</div>
+              <div class="hint">測試 45 / 60 / 80 / 100 kg 的差異。</div>
             </div>
 
             <div class="form-field">
@@ -372,7 +381,7 @@
             <div class="form-field">
               <label for="temp">溫度（°C）</label>
               <input type="number" id="temp" value="22" />
-              <div class="hint">會影響衣服厚度，身材不受影響。</div>
+              <div class="hint">之後適合做：冷一點多外套、熱一點變短袖。</div>
             </div>
 
             <div class="form-field">
@@ -383,25 +392,16 @@
             <div class="form-field">
               <label>配件選擇</label>
               <div class="checkbox-row">
-                <label>
-                  <input type="checkbox" id="acc-bag" checked />
-                  包包
-                </label>
-                <label>
-                  <input type="checkbox" id="acc-hat" />
-                  帽子
-                </label>
-                <label>
-                  <input type="checkbox" id="acc-coat" />
-                  外套 / 罩衫 / 夾克
-                </label>
+                <label><input type="checkbox" id="acc-bag" checked /> 包包</label>
+                <label><input type="checkbox" id="acc-hat" /> 帽子</label>
+                <label><input type="checkbox" id="acc-coat" /> 外套 / 罩衫 / 夾克</label>
               </div>
-              <div class="hint">這三個會直接影響後端 prompt，要看模型有沒有乖乖照做。</div>
+              <div class="hint">這三個會直接影響 Outfit Spec 的 items。</div>
             </div>
           </div>
 
           <div class="btn-row">
-            <span id="status" class="status-text">設定好條件後，按下「產生 AI 穿搭示意圖」。</span>
+            <span id="status" class="status-text">設定好條件後，按「產生 AI 穿搭示意圖」。</span>
             <button type="submit" id="generate-btn" class="primary-btn">
               🧍‍♀️ 產生 AI 穿搭示意圖
             </button>
@@ -409,11 +409,11 @@
         </form>
       </section>
 
-      <!-- 右側：結果 -->
+      <!-- 右側：圖像 + 商品 -->
       <section class="card">
         <div class="card-title">
           圖像與商品測試
-          <span class="pill">Step 2 · 查看 AI 圖像 & 商品搜尋結果</span>
+          <span class="pill">Step 2 · Outfit Spec → 圖片 & 商品</span>
         </div>
 
         <div class="image-wrapper">
@@ -421,19 +421,21 @@
             <img id="result-image" src="" alt="Outfit preview" style="display:none;" />
             <div id="image-placeholder" class="image-placeholder">
               還沒有結果。<br />
-              先產生一次 AI 穿搭示意圖，再按下下面的「抓類似商品」。
+              先產生一次 AI 穿搭示意圖，系統會先產生 Outfit Spec 再畫圖。
             </div>
           </div>
+          <div id="outfit-summary" class="outfit-summary" style="display:none;"></div>
           <div class="desc">
-            後端使用「身材版本2025 v1」，先畫貼身素色身材基底圖，再在同一個身材上套 UNIQLO 風格穿搭＋配件條件。
+            後端使用「身材版本2025 v1」＋「等級2 Outfit Spec」：
+            先用文字模型決定上半身 / 下半身 / 鞋子 / 外套 / 包包 / 帽子，再用這份規格畫圖。
           </div>
         </div>
 
-        <!-- 類似商品搜尋結果區塊（SerpApi 測試） -->
+        <!-- 類似商品搜尋結果區塊（SerpApi） -->
         <div style="margin-top: 14px;">
           <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:6px;">
             <div style="font-size:13px; color:#555; font-weight:500;">
-              類似商品（SerpApi / Google Shopping 測試）
+              類似商品（SerpApi / Google Shopping）
             </div>
             <button
               type="button"
@@ -452,7 +454,7 @@
             </button>
           </div>
           <div id="product-status" class="desc" style="font-size:11px; margin-bottom:4px;">
-            按下「抓類似商品」後，會用目前性別＋風格去呼叫 /api/search-products。
+            會用目前的 Outfit Spec（同一套穿搭）去呼叫 /api/search-products。
           </div>
           <div
             id="product-results"
@@ -475,11 +477,15 @@
     </main>
 
     <footer>
-      Debug Tips：如果商品區塊顯示錯誤訊息，請同時打開 DevTools（F12）看 Console / Network。
+      Debug Tips：如有錯誤請打開 DevTools（F12）看 Console / Network。
     </footer>
   </div>
 
   <script>
+    // ===== 全域：目前的 Outfit Spec =====
+    let currentOutfitSpec = null;
+
+    // ===== BMI 顯示 =====
     function getBmiTag(height, weight) {
       const h = height / 100;
       const bmi = weight / (h * h);
@@ -511,6 +517,7 @@
     document.getElementById("weight").addEventListener("input", updateBmiDisplay);
     updateBmiDisplay();
 
+    // ===== 產生穿搭（等級2：先 Outfit Spec，再圖片） =====
     async function generateOutfit() {
       const gender = document.getElementById("gender").value;
       const age = parseInt(document.getElementById("age").value, 10);
@@ -526,6 +533,7 @@
       const btn = document.getElementById("generate-btn");
       const img = document.getElementById("result-image");
       const placeholder = document.getElementById("image-placeholder");
+      const summaryBox = document.getElementById("outfit-summary");
 
       if (!height || !weight || !age) {
         status.textContent = "請先輸入完整的年齡、身高與體重。";
@@ -533,105 +541,118 @@
         return;
       }
 
-      status.textContent = "正在產生 AI 身材＋穿搭＋配件示意圖（後端會跑雙階段生成）…";
+      status.textContent = "Step 1：正在產生 Outfit Spec（穿搭 JSON 規格）…";
       status.className = "status-text loading";
       btn.disabled = true;
 
       try {
-        const response = await fetch("/api/generate-image", {
+        // Step 1: 先跟後端拿 Outfit Spec
+        const specResp = await fetch("/api/generate-outfit-spec", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
             gender,
             age,
-            style,
-            temp,
             height,
             weight,
+            style,
+            temp,
             withBag,
             withHat,
             withCoat
           })
         });
 
-        const rawText = await response.text();
-        let data;
+        const specText = await specResp.text();
+        let specData;
         try {
-          data = JSON.parse(rawText);
+          specData = JSON.parse(specText);
         } catch {
-          console.error("generate-image raw:", rawText);
-          throw new Error("API 回傳非 JSON：" + rawText.slice(0, 120));
+          throw new Error("Outfit Spec API 回傳非 JSON：" + specText.slice(0, 120));
         }
 
-        if (!response.ok) {
-          console.error("generate-image error detail:", data);
-          throw new Error("API 回應失敗：" + response.status + "／" + (data.error || "unknown"));
+        if (!specResp.ok) {
+          console.error("generate-outfit-spec error:", specData);
+          throw new Error(
+            "Outfit Spec API 失敗：" +
+              specResp.status +
+              "／" +
+              (specData.error || "unknown")
+          );
         }
 
-        if (!data.image) {
-          throw new Error("API 沒有回傳圖片資料");
+        currentOutfitSpec = {
+          summary: specData.summary || "",
+          items: specData.items || []
+        };
+
+        // 顯示穿搭摘要
+        if (currentOutfitSpec.summary) {
+          summaryBox.style.display = "block";
+          summaryBox.textContent = currentOutfitSpec.summary;
+        } else {
+          summaryBox.style.display = "none";
         }
 
-        img.src = "data:image/png;base64," + data.image;
+        status.textContent = "Step 2：Outfit Spec 完成，開始產生圖片…";
+
+        // Step 2: 用 Outfit Spec 去產圖片
+        const imgResp = await fetch("/api/generate-image", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            gender,
+            age,
+            height,
+            weight,
+            style,
+            temp,
+            withBag,
+            withHat,
+            withCoat,
+            outfitSpec: currentOutfitSpec
+          })
+        });
+
+        const imgText = await imgResp.text();
+        let imgData;
+        try {
+          imgData = JSON.parse(imgText);
+        } catch {
+          throw new Error("Image API 回傳非 JSON：" + imgText.slice(0, 120));
+        }
+
+        if (!imgResp.ok) {
+          console.error("generate-image error:", imgData);
+          throw new Error(
+            "Image API 失敗：" +
+              imgResp.status +
+              "／" +
+              (imgData.error || "unknown")
+          );
+        }
+
+        if (!imgData.image) {
+          throw new Error("Image API 沒有回傳圖片資料");
+        }
+
+        img.src = "data:image/png;base64," + imgData.image;
         img.style.display = "block";
         placeholder.style.display = "none";
 
-        status.textContent = "已完成，接著可以測試『抓類似商品』功能。";
+        status.textContent =
+          "完成：Outfit Spec + 圖片都產生成功，接著可以按「抓類似商品」。";
         status.className = "status-text done";
       } catch (err) {
         console.error(err);
-        status.textContent = "產生圖片時發生錯誤：" + err.message;
+        status.textContent = "產生穿搭時發生錯誤：" + err.message;
         status.className = "status-text error";
       } finally {
         btn.disabled = false;
       }
     }
 
-    // ===== 商品搜尋（SerpApi） =====
-
-    function buildTestItemsForSearch() {
-      const gender = document.getElementById("gender").value;
-      const style = document.getElementById("style").value;
-
-      const genderText =
-        gender === "female"
-          ? "female"
-          : gender === "male"
-          ? "male"
-          : "unisex";
-
-      let styleText = "casual";
-      if (style === "minimal") styleText = "minimalist";
-      else if (style === "street") styleText = "streetwear";
-      else if (style === "sporty") styleText = "sporty";
-      else if (style === "smart") styleText = "smart casual";
-
-      // 先 hardcode 三個部位：上衣 / 下身 / 鞋子
-      return [
-        {
-          slot: "top",
-          generic_name: "oversized cotton crew neck t-shirt",
-          color: "white",
-          style: styleText,
-          gender: genderText
-        },
-        {
-          slot: "bottom",
-          generic_name: "straight leg jeans",
-          color: "light blue",
-          style: styleText,
-          gender: genderText
-        },
-        {
-          slot: "shoes",
-          generic_name: "white low-top sneakers",
-          color: "white",
-          style: styleText,
-          gender: "unisex"
-        }
-      ];
-    }
-
+    // ===== 商品搜尋（使用 currentOutfitSpec.items） =====
     function renderProductResults(data) {
       const container = document.getElementById("product-results");
       const status = document.getElementById("product-status");
@@ -723,15 +744,20 @@
       const status = document.getElementById("product-status");
       const container = document.getElementById("product-results");
       container.innerHTML = "";
-      status.textContent = "正在呼叫 /api/search-products 並透過 SerpApi 搜尋商品…";
+
+      if (!currentOutfitSpec || !Array.isArray(currentOutfitSpec.items)) {
+        status.textContent = "請先產生一次穿搭（Outfit Spec），再抓類似商品。";
+        return;
+      }
+
+      status.textContent =
+        "正在呼叫 /api/search-products，使用目前 Outfit Spec 去查商品…";
 
       try {
-        const items = buildTestItemsForSearch();
-
         const resp = await fetch("/api/search-products", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ items })
+          body: JSON.stringify({ items: currentOutfitSpec.items })
         });
 
         const text = await resp.text();
