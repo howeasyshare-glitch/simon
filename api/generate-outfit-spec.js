@@ -221,20 +221,155 @@ Please design one complete outfit and return JSON only.
     });
 
     // 3. 外套：只有當 withCoat=true 或 氣溫 <=20 度時才要有
-    if (withCoat || temp <= 20) {
-      pushIfMissing("outer", {
-        slot: "outer",
-        generic_name: temp <= 15 ? "padded jacket" : "lightweight jacket",
-        display_name_zh: temp <= 15 ? "保暖外套" : "輕薄外套",
-        color: "beige",
-        style: "casual",
-        gender: genderText === "female" ? "female" : genderText === "male" ? "male" : "unisex",
-        warmth: temp <= 15 ? "warm" : "medium"
-      });
-    } else {
-      // 沒勾外套就把 outer 刪掉
-      items = items.filter((it) => it.slot !== "outer");
-    }
+if (withCoat || temp <= 20) {
+  // 依照風格 + 溫度決定外套種類
+  const isCold = temp <= 10;
+  const isCool = temp > 10 && temp <= 18;
+
+  let outerPreset;
+
+  if (style === "minimal") {
+    outerPreset = isCold
+      ? {
+          generic_name: "long wool coat",
+          display_name_zh: "長版羊毛大衣",
+          color: "camel",
+          style: "minimal",
+          warmth: "warm"
+        }
+      : isCool
+      ? {
+          generic_name: "long belted trench coat",
+          display_name_zh: "綁帶長版風衣外套",
+          color: "beige",
+          style: "minimal",
+          warmth: "medium"
+        }
+      : {
+          generic_name: "lightweight open-front jacket",
+          display_name_zh: "輕薄落肩外套",
+          color: "light beige",
+          style: "minimal",
+          warmth: "light"
+        };
+  } else if (style === "street") {
+    outerPreset = isCold
+      ? {
+          generic_name: "oversized padded bomber jacket",
+          display_name_zh: "寬版鋪棉飛行外套",
+          color: "black",
+          style: "street",
+          warmth: "warm"
+        }
+      : isCool
+      ? {
+          generic_name: "oversized denim jacket",
+          display_name_zh: "寬版牛仔外套",
+          color: "mid blue",
+          style: "street",
+          warmth: "medium"
+        }
+      : {
+          generic_name: "lightweight coach jacket",
+          display_name_zh: "薄款教練外套",
+          color: "navy",
+          style: "street",
+          warmth: "light"
+        };
+  } else if (style === "sporty") {
+    outerPreset = isCold
+      ? {
+          generic_name: "padded hooded parka",
+          display_name_zh: "鋪棉帽T外套",
+          color: "dark gray",
+          style: "sporty",
+          warmth: "warm"
+        }
+      : isCool
+      ? {
+          generic_name: "zip-up track jacket",
+          display_name_zh: "拉鍊運動外套",
+          color: "black",
+          style: "sporty",
+          warmth: "medium"
+        }
+      : {
+          generic_name: "lightweight zip hoodie",
+          display_name_zh: "輕薄連帽外套",
+          color: "light gray",
+          style: "sporty",
+          warmth: "light"
+        };
+  } else if (style === "smart") {
+    outerPreset = isCold
+      ? {
+          generic_name: "tailored wool coat",
+          display_name_zh: "修身羊毛大衣",
+          color: "dark navy",
+          style: "smart",
+          warmth: "warm"
+        }
+      : isCool
+      ? {
+          generic_name: "short trench coat",
+          display_name_zh: "短版風衣外套",
+          color: "beige",
+          style: "smart",
+          warmth: "medium"
+        }
+      : {
+          generic_name: "unstructured blazer",
+          display_name_zh: "輕薄休閒西裝外套",
+          color: "dark gray",
+          style: "smart",
+          warmth: "light"
+        };
+  } else {
+    // 預設：casual
+    outerPreset = isCold
+      ? {
+          generic_name: "padded jacket",
+          display_name_zh: "保暖外套",
+          color: "beige",
+          style: "casual",
+          warmth: "warm"
+        }
+      : isCool
+      ? {
+          generic_name: "cotton parka jacket",
+          display_name_zh: "棉質連帽外套",
+          color: "khaki",
+          style: "casual",
+          warmth: "medium"
+        }
+      : {
+          generic_name: "lightweight utility jacket",
+          display_name_zh: "輕薄機能外套",
+          color: "olive",
+          style: "casual",
+          warmth: "light"
+        };
+  }
+
+  pushIfMissing("outer", {
+    slot: "outer",
+    generic_name: outerPreset.generic_name,
+    display_name_zh: outerPreset.display_name_zh,
+    color: outerPreset.color,
+    style: outerPreset.style,
+    gender:
+      genderText === "female"
+        ? "female"
+        : genderText === "male"
+        ? "male"
+        : "unisex",
+    warmth: outerPreset.warmth
+  });
+} else {
+  // 沒勾外套就把 outer 刪掉
+  items = items.filter((it) => it.slot !== "outer");
+}
+
 
     // 4. 包包：只有 withBag=true 才要有
     if (withBag) {
