@@ -1,5 +1,45 @@
 // pages/api/generate-outfit-spec.js
-// 用 gemini-2.0-flash 產生結構化的 Outfit Spec（JSON），並確保必備部位存在
+// 用 gemini-2.0-flash 產生 Outfit Spec JSON（身材＋風格＋品牌/名人變體）
+
+const variantPromptMap = {
+  "brand-uniqlo": {
+    desc: "Japanese everyday casual style similar to UNIQLO: simple basics, clean lines, comfortable fits, no visible logos.",
+    baseStyle: "casual"
+  },
+  "brand-muji": {
+    desc: "MUJI-like minimal lifestyle clothing: soft neutral colors, linen and cotton, relaxed fit, very simple design, no logos.",
+    baseStyle: "casual"
+  },
+  "brand-cos": {
+    desc: "COS-like modern minimalism: structured silhouettes, monochrome palette, slightly oversized shapes, design-focused details.",
+    baseStyle: "minimal"
+  },
+  "brand-nike-tech": {
+    desc: "Nike techwear inspired athleisure: technical fabrics, fitted joggers, hoodies or track jackets, sporty sneakers.",
+    baseStyle: "sporty"
+  },
+  "brand-ader-error": {
+    desc: "Korean streetwear similar to Ader Error: oversized fits, playful proportions, bold color accents, sometimes asymmetry.",
+    baseStyle: "street"
+  },
+
+  "celeb-iu-casual": {
+    desc: "Outfit styling inspired by IU's Korean casual looks: soft pastel colors, neat knitwear or shirts, straight pants, light outerwear. Do NOT copy her face or identity.",
+    baseStyle: "casual"
+  },
+  "celeb-jennie-minimal": {
+    desc: "Outfit styling inspired by Jennie's minimal chic outfits: clean silhouettes, cropped tops or neat knits, high-waisted bottoms, neutral tones. Do NOT copy her face or identity.",
+    baseStyle: "minimal"
+  },
+  "celeb-gd-street": {
+    desc: "Outfit styling inspired by G-Dragon's Korean street layering: bold layered pieces, interesting textures, statement shoes and accessories. Do NOT copy his face or identity.",
+    baseStyle: "street"
+  },
+  "celeb-lisa-sporty": {
+    desc: "Outfit styling inspired by Lisa's dancer athleisure: sporty crop tops, jogger pants, hoodies or jackets, cap and sneakers. Do NOT copy her face or identity.",
+    baseStyle: "sporty"
+  }
+};
 
 export default async function handler(req, res) {
   if (req.method !== "POST") {
@@ -13,6 +53,7 @@ export default async function handler(req, res) {
       height,
       weight,
       style,
+      styleVariant,
       temp,
       withBag,
       withHat,
@@ -35,7 +76,6 @@ export default async function handler(req, res) {
       throw new Error("GEMINI_API_KEY not set");
     }
 
-    // ===== 身材描述 =====
     const h = height / 100;
     const bmi = weight / (h * h);
     let bodyShape = "average body shape";
@@ -61,7 +101,11 @@ export default async function handler(req, res) {
 
     const styleText = styleMap[style] || "casual style";
 
-    // ===== System 指令：強制 JSON 格式 + 指定 slot 名稱 =====
+    let variantHint = "";
+    if (styleVariant && variantPromptMap[styleVariant]) {
+      variantHint = variantPromptMap[styleVariant].desc;
+    }
+
     const systemInstruction = `
 You are a stylist that only returns STRICT JSON.
 
@@ -114,6 +158,10 @@ Accessories preference:
 - with hat: ${withHat ? "true" : "false"}
 - with coat/outer: ${withCoat ? "true" : "false"}
 
+Style variant:
+- ${styleVariant || "none"}
+- Additional styling hints: ${variantHint || "none"}
+
 Please design one complete outfit and return JSON only.
 `;
 
@@ -162,8 +210,6 @@ Please design one complete outfit and return JSON only.
 
     let items = Array.isArray(parsed.items) ? parsed.items : [];
 
-    // ===== 後處理：確保必要 slot 存在，並與前端勾選同步 =====
-    // 1. 正規化 slot
     const normalizeSlot = (slot) => {
       if (!slot) return null;
       const s = String(slot).toLowerCase();
@@ -178,25 +224,28 @@ Please design one complete outfit and return JSON only.
         ...it,
         slot: normalizeSlot(it.slot)
       }))
-      .filter((it) => it.slot && it.generic_name); // 沒 slot 或沒名字就丟掉
+      .filter((it) => it.slot && it.generic_name);
 
-    // 快速查詢 function
     const hasSlot = (slotName) => items.some((it) => it.slot === slotName);
-
     const pushIfMissing = (slotName, fallback) => {
       if (!hasSlot(slotName)) {
         items.push(fallback);
       }
     };
 
-    // 2. 必備：top / bottom / shoes
+    // 必備：top / bottom / shoes
     pushIfMissing("top", {
       slot: "top",
       generic_name: "oversized cotton crew neck t-shirt",
       display_name_zh: "寬版棉質圓領上衣",
       color: "white",
       style: "casual",
-      gender: genderText === "female" ? "female" : genderText === "male" ? "male" : "unisex",
+      gender:
+        genderText === "female"
+          ? "female"
+          : genderText === "male"
+          ? "male"
+          : "unisex",
       warmth: "light"
     });
 
@@ -206,7 +255,12 @@ Please design one complete outfit and return JSON only.
       display_name_zh: "直筒牛仔褲",
       color: "light blue",
       style: "casual",
-      gender: genderText === "female" ? "female" : genderText === "male" ? "male" : "unisex",
+      gender:
+        genderText === "female"
+          ? "female"
+          : genderText === "male"
+          ? "male"
+          : "unisex",
       warmth: "light"
     });
 
@@ -220,158 +274,155 @@ Please design one complete outfit and return JSON only.
       warmth: "light"
     });
 
-    // 3. 外套：只有當 withCoat=true 或 氣溫 <=20 度時才要有
-if (withCoat || temp <= 20) {
-  // 依照風格 + 溫度決定外套種類
-  const isCold = temp <= 10;
-  const isCool = temp > 10 && temp <= 18;
+    // 外套 fallback：依 style + 溫度
+    if (withCoat || temp <= 20) {
+      const isCold = temp <= 10;
+      const isCool = temp > 10 && temp <= 18;
 
-  let outerPreset;
+      let outerPreset;
 
-  if (style === "minimal") {
-    outerPreset = isCold
-      ? {
-          generic_name: "long wool coat",
-          display_name_zh: "長版羊毛大衣",
-          color: "camel",
-          style: "minimal",
-          warmth: "warm"
-        }
-      : isCool
-      ? {
-          generic_name: "long belted trench coat",
-          display_name_zh: "綁帶長版風衣外套",
-          color: "beige",
-          style: "minimal",
-          warmth: "medium"
-        }
-      : {
-          generic_name: "lightweight open-front jacket",
-          display_name_zh: "輕薄落肩外套",
-          color: "light beige",
-          style: "minimal",
-          warmth: "light"
-        };
-  } else if (style === "street") {
-    outerPreset = isCold
-      ? {
-          generic_name: "oversized padded bomber jacket",
-          display_name_zh: "寬版鋪棉飛行外套",
-          color: "black",
-          style: "street",
-          warmth: "warm"
-        }
-      : isCool
-      ? {
-          generic_name: "oversized denim jacket",
-          display_name_zh: "寬版牛仔外套",
-          color: "mid blue",
-          style: "street",
-          warmth: "medium"
-        }
-      : {
-          generic_name: "lightweight coach jacket",
-          display_name_zh: "薄款教練外套",
-          color: "navy",
-          style: "street",
-          warmth: "light"
-        };
-  } else if (style === "sporty") {
-    outerPreset = isCold
-      ? {
-          generic_name: "padded hooded parka",
-          display_name_zh: "鋪棉帽T外套",
-          color: "dark gray",
-          style: "sporty",
-          warmth: "warm"
-        }
-      : isCool
-      ? {
-          generic_name: "zip-up track jacket",
-          display_name_zh: "拉鍊運動外套",
-          color: "black",
-          style: "sporty",
-          warmth: "medium"
-        }
-      : {
-          generic_name: "lightweight zip hoodie",
-          display_name_zh: "輕薄連帽外套",
-          color: "light gray",
-          style: "sporty",
-          warmth: "light"
-        };
-  } else if (style === "smart") {
-    outerPreset = isCold
-      ? {
-          generic_name: "tailored wool coat",
-          display_name_zh: "修身羊毛大衣",
-          color: "dark navy",
-          style: "smart",
-          warmth: "warm"
-        }
-      : isCool
-      ? {
-          generic_name: "short trench coat",
-          display_name_zh: "短版風衣外套",
-          color: "beige",
-          style: "smart",
-          warmth: "medium"
-        }
-      : {
-          generic_name: "unstructured blazer",
-          display_name_zh: "輕薄休閒西裝外套",
-          color: "dark gray",
-          style: "smart",
-          warmth: "light"
-        };
-  } else {
-    // 預設：casual
-    outerPreset = isCold
-      ? {
-          generic_name: "padded jacket",
-          display_name_zh: "保暖外套",
-          color: "beige",
-          style: "casual",
-          warmth: "warm"
-        }
-      : isCool
-      ? {
-          generic_name: "cotton parka jacket",
-          display_name_zh: "棉質連帽外套",
-          color: "khaki",
-          style: "casual",
-          warmth: "medium"
-        }
-      : {
-          generic_name: "lightweight utility jacket",
-          display_name_zh: "輕薄機能外套",
-          color: "olive",
-          style: "casual",
-          warmth: "light"
-        };
-  }
+      if (style === "minimal") {
+        outerPreset = isCold
+          ? {
+              generic_name: "long wool coat",
+              display_name_zh: "長版羊毛大衣",
+              color: "camel",
+              style: "minimal",
+              warmth: "warm"
+            }
+          : isCool
+          ? {
+              generic_name: "long belted trench coat",
+              display_name_zh: "綁帶長版風衣外套",
+              color: "beige",
+              style: "minimal",
+              warmth: "medium"
+            }
+          : {
+              generic_name: "lightweight open-front jacket",
+              display_name_zh: "輕薄落肩外套",
+              color: "light beige",
+              style: "minimal",
+              warmth: "light"
+            };
+      } else if (style === "street") {
+        outerPreset = isCold
+          ? {
+              generic_name: "oversized padded bomber jacket",
+              display_name_zh: "寬版鋪棉飛行外套",
+              color: "black",
+              style: "street",
+              warmth: "warm"
+            }
+          : isCool
+          ? {
+              generic_name: "oversized denim jacket",
+              display_name_zh: "寬版牛仔外套",
+              color: "mid blue",
+              style: "street",
+              warmth: "medium"
+            }
+          : {
+              generic_name: "lightweight coach jacket",
+              display_name_zh: "薄款教練外套",
+              color: "navy",
+              style: "street",
+              warmth: "light"
+            };
+      } else if (style === "sporty") {
+        outerPreset = isCold
+          ? {
+              generic_name: "padded hooded parka",
+              display_name_zh: "鋪棉帽T外套",
+              color: "dark gray",
+              style: "sporty",
+              warmth: "warm"
+            }
+          : isCool
+          ? {
+              generic_name: "zip-up track jacket",
+              display_name_zh: "拉鍊運動外套",
+              color: "black",
+              style: "sporty",
+              warmth: "medium"
+            }
+          : {
+              generic_name: "lightweight zip hoodie",
+              display_name_zh: "輕薄連帽外套",
+              color: "light gray",
+              style: "sporty",
+              warmth: "light"
+            };
+      } else if (style === "smart") {
+        outerPreset = isCold
+          ? {
+              generic_name: "tailored wool coat",
+              display_name_zh: "修身羊毛大衣",
+              color: "dark navy",
+              style: "smart",
+              warmth: "warm"
+            }
+          : isCool
+          ? {
+              generic_name: "short trench coat",
+              display_name_zh: "短版風衣外套",
+              color: "beige",
+              style: "smart",
+              warmth: "medium"
+            }
+          : {
+              generic_name: "unstructured blazer",
+              display_name_zh: "輕薄休閒西裝外套",
+              color: "dark gray",
+              style: "smart",
+              warmth: "light"
+            };
+      } else {
+        // casual
+        outerPreset = isCold
+          ? {
+              generic_name: "padded jacket",
+              display_name_zh: "保暖外套",
+              color: "beige",
+              style: "casual",
+              warmth: "warm"
+            }
+          : isCool
+          ? {
+              generic_name: "cotton parka jacket",
+              display_name_zh: "棉質連帽外套",
+              color: "khaki",
+              style: "casual",
+              warmth: "medium"
+            }
+          : {
+              generic_name: "lightweight utility jacket",
+              display_name_zh: "輕薄機能外套",
+              color: "olive",
+              style: "casual",
+              warmth: "light"
+            };
+      }
 
-  pushIfMissing("outer", {
-    slot: "outer",
-    generic_name: outerPreset.generic_name,
-    display_name_zh: outerPreset.display_name_zh,
-    color: outerPreset.color,
-    style: outerPreset.style,
-    gender:
-      genderText === "female"
-        ? "female"
-        : genderText === "male"
-        ? "male"
-        : "unisex",
-    warmth: outerPreset.warmth
-  });
-} else {
-  // 沒勾外套就把 outer 刪掉
-  items = items.filter((it) => it.slot !== "outer");
-}
+      pushIfMissing("outer", {
+        slot: "outer",
+        generic_name: outerPreset.generic_name,
+        display_name_zh: outerPreset.display_name_zh,
+        color: outerPreset.color,
+        style: outerPreset.style,
+        gender:
+          genderText === "female"
+            ? "female"
+            : genderText === "male"
+            ? "male"
+            : "unisex",
+        warmth: outerPreset.warmth
+      });
+    } else {
+      items = items.filter((it) => it.slot !== "outer");
+    }
 
-
-    // 4. 包包：只有 withBag=true 才要有
+    // 包包
     if (withBag) {
       pushIfMissing("bag", {
         slot: "bag",
@@ -386,7 +437,7 @@ if (withCoat || temp <= 20) {
       items = items.filter((it) => it.slot !== "bag");
     }
 
-    // 5. 帽子：只有 withHat=true 才要有
+    // 帽子
     if (withHat) {
       pushIfMissing("hat", {
         slot: "hat",
@@ -401,7 +452,6 @@ if (withCoat || temp <= 20) {
       items = items.filter((it) => it.slot !== "hat");
     }
 
-    // 最後再保險檢查一次
     items = items.filter((it) => !!it.slot && !!it.generic_name);
 
     return res.status(200).json({
