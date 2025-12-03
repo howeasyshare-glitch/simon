@@ -2,9 +2,12 @@
 <html lang="zh-Hant">
 <head>
   <meta charset="UTF-8" />
-  <title>Body Test · 身材版本2025 v1 + 等級2穿搭規格 + 商品搜尋</title>
+  <title>Body Test · 身材版本2025 v1 + 風格變體</title>
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@300;400;500;700&display=swap" rel="stylesheet" />
+  <link
+    href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@300;400;500;700&display=swap"
+    rel="stylesheet"
+  />
   <style>
     :root {
       --bg: #f5f5f7;
@@ -17,13 +20,21 @@
       --shadow-soft: 0 10px 30px rgba(0, 0, 0, 0.08);
     }
 
-    * { box-sizing: border-box; }
+    * {
+      box-sizing: border-box;
+    }
 
     body {
       margin: 0;
       padding: 0;
-      font-family: "Noto Sans TC", system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
-      background: radial-gradient(circle at top, #ffecec 0, #f5f5f7 45%, #f5f5f7 100%);
+      font-family: "Noto Sans TC", system-ui, -apple-system, BlinkMacSystemFont,
+        "Segoe UI", sans-serif;
+      background: radial-gradient(
+        circle at top,
+        #ffecec 0,
+        #f5f5f7 45%,
+        #f5f5f7 100%
+      );
       color: var(--primary);
     }
 
@@ -33,7 +44,9 @@
       padding: 24px 16px 40px;
     }
 
-    header { margin-bottom: 20px; }
+    header {
+      margin-bottom: 20px;
+    }
 
     .title {
       display: flex;
@@ -64,7 +77,9 @@
     }
 
     @media (max-width: 840px) {
-      .layout { grid-template-columns: 1fr; }
+      .layout {
+        grid-template-columns: 1fr;
+      }
     }
 
     .card {
@@ -100,7 +115,9 @@
     }
 
     @media (max-width: 600px) {
-      .form-grid { grid-template-columns: 1fr; }
+      .form-grid {
+        grid-template-columns: 1fr;
+      }
     }
 
     .form-field {
@@ -110,7 +127,9 @@
       font-size: 13px;
     }
 
-    label { font-weight: 500; }
+    label {
+      font-weight: 500;
+    }
 
     .hint {
       font-size: 11px;
@@ -125,7 +144,8 @@
       background: #fafafa;
       font-size: 14px;
       outline: none;
-      transition: border-color 0.15s ease, box-shadow 0.15s ease, background 0.15s ease;
+      transition: border-color 0.15s ease, box-shadow 0.15s ease,
+        background 0.15s ease;
     }
 
     select:focus,
@@ -168,7 +188,8 @@
       font-size: 14px;
       cursor: pointer;
       box-shadow: 0 8px 18px rgba(255, 107, 107, 0.5);
-      transition: transform 0.1s ease, box-shadow 0.1s ease, opacity 0.1s ease;
+      transition: transform 0.1s ease, box-shadow 0.1s ease,
+        opacity 0.1s ease;
     }
 
     .primary-btn:active {
@@ -197,9 +218,15 @@
       color: var(--muted);
     }
 
-    .status-text.loading::before { content: "⏳ "; }
-    .status-text.done::before    { content: "✨ "; }
-    .status-text.error::before   { content: "⚠️ "; }
+    .status-text.loading::before {
+      content: "⏳ ";
+    }
+    .status-text.done::before {
+      content: "✨ ";
+    }
+    .status-text.error::before {
+      content: "⚠️ ";
+    }
 
     .image-wrapper {
       border-radius: var(--border-radius-lg);
@@ -322,10 +349,10 @@
     <header>
       <div class="title">
         <span class="logo-pill"></span>
-        <span>Body Test · 身材版本2025 v1 + 等級2穿搭規格</span>
+        <span>Body Test · 身材版本2025 v1 + 風格變體</span>
       </div>
       <div class="subtitle">
-        流程：先用文字模型產生 Outfit Spec（JSON），再用這份規格畫圖，最後用同一份規格去搜尋類似商品。
+        流程：先用文字模型產生 Outfit Spec（JSON），再用這份規格畫圖，最後用同一份規格搜尋類似商品。
       </div>
     </header>
 
@@ -334,10 +361,13 @@
       <section class="card">
         <div class="card-title">
           測試條件
-          <span class="pill">Step 1 · 身材＋配件＋風格</span>
+          <span class="pill">Step 1 · 身材＋風格＋配件</span>
         </div>
 
-        <form id="body-form" onsubmit="event.preventDefault(); generateOutfit();">
+        <form
+          id="body-form"
+          onsubmit="event.preventDefault(); generateOutfit();"
+        >
           <div class="form-grid">
             <div class="form-field">
               <label for="gender">性別</label>
@@ -351,24 +381,45 @@
 
             <div class="form-field">
               <label for="age">年齡</label>
-              <input type="number" id="age" min="10" max="80" value="25" required />
+              <input
+                type="number"
+                id="age"
+                min="10"
+                max="80"
+                value="25"
+                required
+              />
               <div class="hint">例如：18、25、35、45…</div>
             </div>
 
             <div class="form-field">
               <label for="height">身高（cm）</label>
-              <input type="number" id="height" min="140" max="210" value="165" required />
+              <input
+                type="number"
+                id="height"
+                min="140"
+                max="210"
+                value="165"
+                required
+              />
               <div class="hint">建議一次固定身高，只改體重做比較。</div>
             </div>
 
             <div class="form-field">
               <label for="weight">體重（kg）</label>
-              <input type="number" id="weight" min="35" max="150" value="55" required />
+              <input
+                type="number"
+                id="weight"
+                min="35"
+                max="150"
+                value="55"
+                required
+              />
               <div class="hint">測試 45 / 60 / 80 / 100 kg 的差異。</div>
             </div>
 
             <div class="form-field">
-              <label for="style">風格</label>
+              <label for="style">風格大類</label>
               <select id="style">
                 <option value="casual">休閒日常</option>
                 <option value="minimal">極簡通勤</option>
@@ -379,9 +430,34 @@
             </div>
 
             <div class="form-field">
+              <label for="style-variant">風格細分（品牌 / 名人風格）</label>
+              <select id="style-variant">
+                <option value="">（不特別指定）</option>
+
+                <optgroup label="品牌風格">
+                  <option value="brand-uniqlo">UNIQLO 日常基本款</option>
+                  <option value="brand-muji">MUJI 無印風</option>
+                  <option value="brand-cos">COS 極簡</option>
+                  <option value="brand-nike-tech">Nike Tech 機能運動</option>
+                  <option value="brand-ader-error">Ader Error 韓系街頭</option>
+                </optgroup>
+
+                <optgroup label="名人穿搭風格（不畫臉，只參考穿搭）">
+                  <option value="celeb-iu-casual">IU 韓系日常</option>
+                  <option value="celeb-jennie-minimal">Jennie 極簡</option>
+                  <option value="celeb-gd-street">GD 街頭多層次</option>
+                  <option value="celeb-lisa-sporty">Lisa 舞者運動風</option>
+                </optgroup>
+              </select>
+              <div class="hint">
+                只影響穿搭風格，不會畫出真實名人臉或複製身份。
+              </div>
+            </div>
+
+            <div class="form-field">
               <label for="temp">溫度（°C）</label>
               <input type="number" id="temp" value="22" />
-              <div class="hint">之後適合做：冷一點多外套、熱一點變短袖。</div>
+              <div class="hint">越冷會偏向多層、厚外套。</div>
             </div>
 
             <div class="form-field">
@@ -394,14 +470,19 @@
               <div class="checkbox-row">
                 <label><input type="checkbox" id="acc-bag" checked /> 包包</label>
                 <label><input type="checkbox" id="acc-hat" /> 帽子</label>
-                <label><input type="checkbox" id="acc-coat" /> 外套 / 罩衫 / 夾克</label>
+                <label
+                  ><input type="checkbox" id="acc-coat" /> 外套 / 罩衫 /
+                  夾克</label
+                >
               </div>
-              <div class="hint">這三個會直接影響 Outfit Spec 的 items。</div>
+              <div class="hint">會直接影響 Outfit Spec 的 items。</div>
             </div>
           </div>
 
           <div class="btn-row">
-            <span id="status" class="status-text">設定好條件後，按「產生 AI 穿搭示意圖」。</span>
+            <span id="status" class="status-text"
+              >設定好條件後，按「產生 AI 穿搭示意圖」。</span
+            >
             <button type="submit" id="generate-btn" class="primary-btn">
               🧍‍♀️ 產生 AI 穿搭示意圖
             </button>
@@ -418,56 +499,76 @@
 
         <div class="image-wrapper">
           <div class="image-inner">
-            <img id="result-image" src="" alt="Outfit preview" style="display:none;" />
+            <img
+              id="result-image"
+              src=""
+              alt="Outfit preview"
+              style="display: none"
+            />
             <div id="image-placeholder" class="image-placeholder">
               還沒有結果。<br />
               先產生一次 AI 穿搭示意圖，系統會先產生 Outfit Spec 再畫圖。
             </div>
           </div>
-          <div id="outfit-summary" class="outfit-summary" style="display:none;"></div>
+          <div
+            id="outfit-summary"
+            class="outfit-summary"
+            style="display: none"
+          ></div>
           <div class="desc">
-            後端使用「身材版本2025 v1」＋「等級2 Outfit Spec」：
-            先用文字模型決定上半身 / 下半身 / 鞋子 / 外套 / 包包 / 帽子，再用這份規格畫圖。
+            後端使用「身材版本2025 v1」＋「等級2 Outfit Spec」：先用文字模型決定
+            top / bottom / shoes / outer / bag / hat，再用這份規格畫圖。
           </div>
         </div>
 
         <!-- 類似商品搜尋結果區塊（SerpApi） -->
-        <div style="margin-top: 14px;">
-          <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:6px;">
-            <div style="font-size:13px; color:#555; font-weight:500;">
+        <div style="margin-top: 14px">
+          <div
+            style="
+              display: flex;
+              align-items: center;
+              justify-content: space-between;
+              margin-bottom: 6px;
+            "
+          >
+            <div style="font-size: 13px; color: #555; font-weight: 500">
               類似商品（SerpApi / Google Shopping）
             </div>
             <button
               type="button"
               onclick="searchSimilarProducts()"
               style="
-                border:none;
-                border-radius:999px;
-                padding:4px 10px;
-                font-size:11px;
-                cursor:pointer;
-                background:#f3f3f8;
-                color:#555;
+                border: none;
+                border-radius: 999px;
+                padding: 4px 10px;
+                font-size: 11px;
+                cursor: pointer;
+                background: #f3f3f8;
+                color: #555;
               "
             >
               🔍 抓類似商品
             </button>
           </div>
-          <div id="product-status" class="desc" style="font-size:11px; margin-bottom:4px;">
+          <div
+            id="product-status"
+            class="desc"
+            style="font-size: 11px; margin-bottom: 4px"
+          >
             會用目前的 Outfit Spec（同一套穿搭）去呼叫 /api/search-products。
           </div>
           <div
             id="product-results"
             style="
-              display:flex;
-              flex-direction:column;
-              gap:8px;
-              max-height:220px;
-              overflow-y:auto;
-              padding-right:4px;
-              border-top:1px solid #f0f0f5;
-              margin-top:4px;
-              padding-top:6px;
+              display: flex;
+              flex-direction: column;
+              gap: 8px;
+              max-height: 220px;
+              overflow-y: auto;
+              padding-right: 4px;
+              border-top: 1px solid #f0f0f5;
+              margin-top: 4px;
+              padding-top: 6px;
             "
           >
             <!-- JS 會在這裡塞商品卡片 -->
@@ -482,7 +583,6 @@
   </div>
 
   <script>
-    // ===== 全域：目前的 Outfit Spec =====
     let currentOutfitSpec = null;
 
     // ===== BMI 顯示 =====
@@ -513,15 +613,21 @@
       el.textContent = `BMI：約 ${bmi.toFixed(1)}，身型推估：${label}`;
     }
 
-    document.getElementById("height").addEventListener("input", updateBmiDisplay);
-    document.getElementById("weight").addEventListener("input", updateBmiDisplay);
+    document
+      .getElementById("height")
+      .addEventListener("input", updateBmiDisplay);
+    document
+      .getElementById("weight")
+      .addEventListener("input", updateBmiDisplay);
     updateBmiDisplay();
 
-    // ===== 產生穿搭（等級2：先 Outfit Spec，再圖片） =====
+    // ===== 產生穿搭（Outfit Spec + 圖片） =====
     async function generateOutfit() {
       const gender = document.getElementById("gender").value;
       const age = parseInt(document.getElementById("age").value, 10);
       const style = document.getElementById("style").value;
+      const styleVariant =
+        document.getElementById("style-variant").value || "";
       const temp = parseFloat(document.getElementById("temp").value);
       const height = parseFloat(document.getElementById("height").value);
       const weight = parseFloat(document.getElementById("weight").value);
@@ -556,6 +662,7 @@
             height,
             weight,
             style,
+            styleVariant,
             temp,
             withBag,
             withHat,
@@ -568,7 +675,9 @@
         try {
           specData = JSON.parse(specText);
         } catch {
-          throw new Error("Outfit Spec API 回傳非 JSON：" + specText.slice(0, 120));
+          throw new Error(
+            "Outfit Spec API 回傳非 JSON：" + specText.slice(0, 120)
+          );
         }
 
         if (!specResp.ok) {
@@ -606,6 +715,7 @@
             height,
             weight,
             style,
+            styleVariant,
             temp,
             withBag,
             withHat,
@@ -772,7 +882,10 @@
         if (!resp.ok) {
           console.error("search-products error detail:", data);
           throw new Error(
-            "API 回應失敗：" + resp.status + "／" + (data.error || "unknown")
+            "API 回應失敗：" +
+              resp.status +
+              "／" +
+              (data.error || "unknown")
           );
         }
 
