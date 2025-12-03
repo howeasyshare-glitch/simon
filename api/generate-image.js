@@ -1,5 +1,36 @@
 // pages/api/generate-image.js
-// 使用 gemini-2.5-flash-image：先根據 outfitSpec 畫出完整穿搭圖
+// 使用 gemini-2.5-flash-image：依 Outfit Spec + styleVariant 畫完整穿搭圖
+
+const variantPromptMap = {
+  "brand-uniqlo": {
+    desc: "Japanese everyday casual style similar to UNIQLO: simple basics, clean lines, comfortable fits, no visible logos."
+  },
+  "brand-muji": {
+    desc: "MUJI-like minimal lifestyle clothing: soft neutral colors, linen and cotton, relaxed fit, very simple design, no logos."
+  },
+  "brand-cos": {
+    desc: "COS-like modern minimalism: structured silhouettes, monochrome palette, slightly oversized shapes, design-focused details."
+  },
+  "brand-nike-tech": {
+    desc: "Nike techwear inspired athleisure: technical fabrics, fitted joggers, hoodies or track jackets, sporty sneakers."
+  },
+  "brand-ader-error": {
+    desc: "Korean streetwear similar to Ader Error: oversized fits, playful proportions, bold color accents, sometimes asymmetry."
+  },
+
+  "celeb-iu-casual": {
+    desc: "Outfit styling inspired by IU's Korean casual looks: soft pastel colors, neat knitwear or shirts, straight pants, light outerwear. Do NOT copy her face or identity."
+  },
+  "celeb-jennie-minimal": {
+    desc: "Outfit styling inspired by Jennie's minimal chic outfits: clean silhouettes, cropped tops or neat knits, high-waisted bottoms, neutral tones. Do NOT copy her face or identity."
+  },
+  "celeb-gd-street": {
+    desc: "Outfit styling inspired by G-Dragon's Korean street layering: bold layered pieces, interesting textures, statement shoes and accessories. Do NOT copy his face or identity."
+  },
+  "celeb-lisa-sporty": {
+    desc: "Outfit styling inspired by Lisa's dancer athleisure: sporty crop tops, jogger pants, hoodies or jackets, cap and sneakers. Do NOT copy her face or identity."
+  }
+};
 
 export default async function handler(req, res) {
   if (req.method !== "POST") {
@@ -13,11 +44,12 @@ export default async function handler(req, res) {
       height,
       weight,
       style,
+      styleVariant,
       temp,
       withBag,
       withHat,
       withCoat,
-      outfitSpec // 👈 新增：前端丟進來的 { summary, items }
+      outfitSpec
     } = req.body || {};
 
     if (
@@ -31,7 +63,9 @@ export default async function handler(req, res) {
       !Array.isArray(outfitSpec.items) ||
       outfitSpec.items.length === 0
     ) {
-      return res.status(400).json({ error: "Missing parameters or outfitSpec" });
+      return res
+        .status(400)
+        .json({ error: "Missing parameters or outfitSpec" });
     }
 
     const apiKey = process.env.GEMINI_API_KEY;
@@ -39,7 +73,6 @@ export default async function handler(req, res) {
       throw new Error("GEMINI_API_KEY not set");
     }
 
-    // ===== 身材說明 =====
     const h = height / 100;
     const bmi = weight / (h * h);
     let bodyShape = "average body shape";
@@ -55,7 +88,6 @@ export default async function handler(req, res) {
         ? "a man"
         : "a person with a gender-neutral look";
 
-    // ===== 把 outfitSpec 轉成英文描述（給圖片模型看） =====
     const lines = outfitSpec.items.map((item) => {
       const slot = item.slot || "item";
       const color = item.color || "";
@@ -74,6 +106,9 @@ export default async function handler(req, res) {
     };
     const styleText = styleMap[style] || "casual daily style";
 
+    const variant = styleVariant && variantPromptMap[styleVariant];
+    const variantHint = variant ? variant.desc : "";
+
     const prompt = `
 Generate a full-body outfit illustration of ${genderText}, around ${age} years old,
 with a ${bodyShape}, height about ${height} cm, weight about ${weight} kg.
@@ -81,24 +116,25 @@ with a ${bodyShape}, height about ${height} cm, weight about ${weight} kg.
 Outfit specification (must follow closely):
 ${outfitDescription}
 
-Context:
-- Overall style: ${styleText}, minimalist Japanese casual brands similar to UNIQLO.
+Styling direction:
+- Base style: ${styleText}
+- Variant styling hints: ${variantHint || "none"}
 - Temperature: about ${temp}°C, dress appropriately for this weather.
 - Accessories preference:
   - bag: ${withBag ? "include a bag if present in the outfitSpec" : "no bag"}
   - hat: ${withHat ? "include a hat if present in the outfitSpec" : "no hat"}
   - outer/coat: ${
-        withCoat
-          ? "include an outer layer if present in the outfitSpec"
-          : "no outer layer unless absolutely needed"
-      }
+      withCoat
+        ? "include an outer layer if present in the outfitSpec"
+        : "no extra outer layer unless absolutely needed"
+    }
 
 Rendering requirements:
 - Clean, full-body illustration, standing pose, neutral background (light gray or off-white).
 - Show the entire outfit clearly (top, bottom, shoes, and any accessories listed).
 - No brand logos or text on clothing.
 - Character must not resemble any real person or celebrity.
-    `.trim();
+`.trim();
 
     const endpoint =
       "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-image:generateContent?key=" +
