@@ -17,13 +17,11 @@ export default async function handler(req, res) {
       return res.status(400).json({ error: "Missing items array" });
     }
 
-    // 在 Server log 看看實際 Outfit Spec 收到哪些 slot
     console.log(
       "[search-products] received items slots:",
       items.map((it) => it.slot)
     );
 
-    // 只限制最大 6 個部位就好（top/bottom/shoes/outer/bag/hat）
     const limitedItems = items.slice(0, 6);
 
     const results = [];
@@ -48,7 +46,7 @@ export default async function handler(req, res) {
       const url = new URL("https://serpapi.com/search.json");
       url.searchParams.set("engine", "google_shopping");
       url.searchParams.set("q", query);
-      url.searchParams.set("hl", "en"); // 先用英文結果，比較穩定
+      url.searchParams.set("hl", "en");
       url.searchParams.set("api_key", apiKey);
 
       const resp = await fetch(url.toString());
