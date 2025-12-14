@@ -2,929 +2,241 @@
 <html lang="zh-Hant">
 <head>
   <meta charset="UTF-8" />
-  <title>Body Test · 身材版本2025 v1 + 風格變體</title>
+  <title>Body Test · Outfit Generator</title>
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <link
-    href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@300;400;500;700&display=swap"
-    rel="stylesheet"
-  />
   <style>
-    :root {
-      --bg: #f5f5f7;
-      --card-bg: #ffffff;
-      --primary: #222;
-      --accent: #ff6b6b;
-      --muted: #777;
-      --border-radius-lg: 18px;
-      --border-radius-sm: 10px;
-      --shadow-soft: 0 10px 30px rgba(0, 0, 0, 0.08);
-    }
-
-    * {
-      box-sizing: border-box;
-    }
-
     body {
+      font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI",
+        sans-serif;
+      background: #f5f6f8;
       margin: 0;
-      padding: 0;
-      font-family: "Noto Sans TC", system-ui, -apple-system, BlinkMacSystemFont,
-        "Segoe UI", sans-serif;
-      background: radial-gradient(
-        circle at top,
-        #ffecec 0,
-        #f5f5f7 45%,
-        #f5f5f7 100%
-      );
-      color: var(--primary);
+      padding: 24px;
     }
-
-    .page {
-      max-width: 960px;
-      margin: 0 auto;
-      padding: 24px 16px 40px;
+    h1 {
+      margin-top: 0;
     }
-
-    header {
-      margin-bottom: 20px;
-    }
-
-    .title {
-      display: flex;
-      align-items: center;
-      gap: 10px;
-      font-size: 22px;
-      font-weight: 700;
-    }
-
-    .logo-pill {
-      width: 26px;
-      height: 26px;
-      border-radius: 999px;
-      background: linear-gradient(135deg, #ff6b6b, #ff9f43);
-      box-shadow: 0 6px 15px rgba(255, 107, 107, 0.5);
-    }
-
-    .subtitle {
-      margin-top: 6px;
-      font-size: 13px;
-      color: var(--muted);
-    }
-
-    .layout {
-      display: grid;
-      grid-template-columns: minmax(0, 1.1fr) minmax(0, 1.2fr);
-      gap: 20px;
-    }
-
-    @media (max-width: 840px) {
-      .layout {
-        grid-template-columns: 1fr;
-      }
-    }
-
     .card {
-      background: var(--card-bg);
-      border-radius: var(--border-radius-lg);
-      box-shadow: var(--shadow-soft);
-      padding: 18px 18px 20px;
+      background: #fff;
+      border-radius: 12px;
+      padding: 16px;
+      max-width: 520px;
+      box-shadow: 0 8px 24px rgba(0,0,0,0.08);
+      margin-bottom: 16px;
     }
-
-    .card-title {
-      font-size: 16px;
-      font-weight: 600;
-      margin-bottom: 12px;
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      gap: 8px;
-    }
-
-    .pill {
-      font-size: 11px;
-      padding: 4px 10px;
-      border-radius: 999px;
-      background: #f3f3f8;
-      color: var(--muted);
-    }
-
-    .form-grid {
-      display: grid;
-      grid-template-columns: repeat(2, minmax(0, 1fr));
-      gap: 12px 14px;
-      margin-bottom: 14px;
-    }
-
-    @media (max-width: 600px) {
-      .form-grid {
-        grid-template-columns: 1fr;
-      }
-    }
-
-    .form-field {
-      display: flex;
-      flex-direction: column;
-      gap: 4px;
-      font-size: 13px;
-    }
-
     label {
-      font-weight: 500;
-    }
-
-    .hint {
-      font-size: 11px;
-      color: var(--muted);
-    }
-
-    select,
-    input[type="number"] {
-      padding: 8px 10px;
-      border-radius: var(--border-radius-sm);
-      border: 1px solid #e0e0ea;
-      background: #fafafa;
-      font-size: 14px;
-      outline: none;
-      transition: border-color 0.15s ease, box-shadow 0.15s ease,
-        background 0.15s ease;
-    }
-
-    select:focus,
-    input[type="number"]:focus {
-      border-color: #ff8a8a;
-      box-shadow: 0 0 0 2px rgba(255, 138, 138, 0.35);
-      background: #ffffff;
-    }
-
-    .checkbox-row {
-      display: flex;
-      flex-direction: column;
-      gap: 2px;
-    }
-
-    .checkbox-row label {
-      font-weight: 400;
-      font-size: 12px;
-      display: flex;
-      align-items: center;
-      gap: 6px;
-      cursor: pointer;
-    }
-
-    .checkbox-row input[type="checkbox"] {
-      transform: scale(0.9);
-    }
-
-    .primary-btn {
-      display: inline-flex;
-      align-items: center;
-      justify-content: center;
-      gap: 6px;
-      padding: 9px 16px;
-      border-radius: 999px;
-      border: none;
-      background: linear-gradient(135deg, #ff6b6b, #ff9f43);
-      color: #fff;
-      font-weight: 600;
-      font-size: 14px;
-      cursor: pointer;
-      box-shadow: 0 8px 18px rgba(255, 107, 107, 0.5);
-      transition: transform 0.1s ease, box-shadow 0.1s ease,
-        opacity 0.1s ease;
-    }
-
-    .primary-btn:active {
-      transform: translateY(1px);
-      box-shadow: 0 4px 10px rgba(255, 107, 107, 0.6);
-      opacity: 0.95;
-    }
-
-    .primary-btn[disabled] {
-      opacity: 0.6;
-      cursor: default;
-      box-shadow: none;
-    }
-
-    .btn-row {
-      display: flex;
-      align-items: center;
-      justify-content: flex-end;
-      gap: 8px;
-      flex-wrap: wrap;
-      margin-top: 6px;
-    }
-
-    .status-text {
-      font-size: 11px;
-      color: var(--muted);
-    }
-
-    .status-text.loading::before {
-      content: "⏳ ";
-    }
-    .status-text.done::before {
-      content: "✨ ";
-    }
-    .status-text.error::before {
-      content: "⚠️ ";
-    }
-
-    .image-wrapper {
-      border-radius: var(--border-radius-lg);
-      background: linear-gradient(125deg, #fff7f7, #f9fbff);
-      padding: 12px;
-      display: flex;
-      flex-direction: column;
-      gap: 8px;
-    }
-
-    .image-inner {
-      flex: 1;
-      border-radius: 16px;
-      background: #fff;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      overflow: hidden;
-      border: 1px solid #f0f0f5;
-      aspect-ratio: 3 / 4;
-    }
-
-    #result-image {
-      max-width: 100%;
-      max-height: 100%;
       display: block;
-      object-fit: contain;
+      margin-top: 12px;
+      font-size: 14px;
     }
-
-    .image-placeholder {
-      text-align: center;
-      font-size: 13px;
-      color: var(--muted);
-      padding: 12px;
+    input, select {
+      width: 100%;
+      padding: 8px;
+      margin-top: 4px;
+      font-size: 14px;
     }
-
-    .desc {
-      font-size: 13px;
-      color: var(--muted);
-    }
-
-    footer {
-      margin-top: 20px;
-      font-size: 11px;
-      color: var(--muted);
-      text-align: center;
-    }
-
-    .product-card {
-      display: grid;
-      grid-template-columns: 60px minmax(0, 1fr);
-      gap: 8px;
-      border-radius: 10px;
-      border: 1px solid #eee;
-      padding: 6px 8px;
-      background: #fafafa;
-    }
-
-    .product-thumb {
-      width: 60px;
-      height: 60px;
+    button {
+      margin-top: 16px;
+      padding: 10px 14px;
+      font-size: 15px;
+      border: none;
       border-radius: 8px;
-      overflow: hidden;
-      background: #fff;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      font-size: 10px;
-      color: #999;
+      cursor: pointer;
     }
-
-    .product-thumb img {
-      max-width: 100%;
-      max-height: 100%;
+    .primary {
+      background: #111;
+      color: #fff;
     }
-
-    .product-main {
-      display: flex;
-      flex-direction: column;
-      gap: 3px;
+    .secondary {
+      background: #eee;
     }
-
-    .product-title {
-      font-size: 12px;
-      font-weight: 500;
-    }
-
-    .product-meta {
-      font-size: 11px;
-      color: #777;
-    }
-
-    .product-price {
-      font-size: 12px;
-      font-weight: 600;
-    }
-
-    .product-link {
-      font-size: 11px;
-      color: #ff7b7b;
-      text-decoration: none;
-    }
-
-    .product-link:hover {
-      text-decoration: underline;
-    }
-
-    .outfit-summary {
-      font-size: 12px;
+    .status {
+      margin-top: 12px;
+      font-size: 14px;
       color: #555;
-      padding: 6px 8px;
-      border-radius: 10px;
-      background: #fff;
-      border: 1px dashed #f0b5b5;
+    }
+    pre {
+      background: #f0f0f0;
+      padding: 12px;
+      border-radius: 8px;
+      font-size: 13px;
+      overflow-x: auto;
     }
   </style>
 </head>
 <body>
-  <div class="page">
-    <header>
-      <div class="title">
-        <span class="logo-pill"></span>
-        <span>Body Test · 身材版本2025 v1 + 風格變體</span>
-      </div>
-      <div class="subtitle">
-        流程：先用文字模型產生 Outfit Spec（JSON），再用這份規格畫圖，最後用同一份規格搜尋類似商品。
-      </div>
-    </header>
 
-    <main class="layout">
-      <!-- 左側：條件輸入 -->
-      <section class="card">
-        <div class="card-title">
-          測試條件
-          <span class="pill">Step 1 · 身材＋風格＋配件</span>
-        </div>
+<h1>Body Test（身材 + 風格測試頁）</h1>
 
-        <form
-          id="body-form"
-          onsubmit="event.preventDefault(); generateOutfit();"
-        >
-          <div class="form-grid">
-            <div class="form-field">
-              <label for="gender">性別</label>
-              <select id="gender" required>
-                <option value="female">女性</option>
-                <option value="male">男性</option>
-                <option value="neutral">中性 / 不拘</option>
-              </select>
-              <div class="hint">只影響人物形象，不限制衣服款式。</div>
-            </div>
+<!-- ===== 登入區 ===== -->
+<div class="card">
+  <h2>登入</h2>
+  <button class="secondary" onclick="loginWithGoogle()">使用 Google 登入</button>
+  <button class="secondary" onclick="logout()">登出</button>
+  <div class="status" id="login-status">尚未登入</div>
+</div>
 
-            <div class="form-field">
-              <label for="age">年齡</label>
-              <input
-                type="number"
-                id="age"
-                min="10"
-                max="80"
-                value="25"
-                required
-              />
-              <div class="hint">例如：18、25、35、45…</div>
-            </div>
+<!-- ===== 表單區 ===== -->
+<div class="card">
+  <h2>穿搭條件</h2>
 
-            <div class="form-field">
-              <label for="height">身高（cm）</label>
-              <input
-                type="number"
-                id="height"
-                min="140"
-                max="210"
-                value="165"
-                required
-              />
-              <div class="hint">建議一次固定身高，只改體重做比較。</div>
-            </div>
+  <label>性別
+    <select id="gender">
+      <option value="female">女性</option>
+      <option value="male">男性</option>
+      <option value="neutral">中性</option>
+    </select>
+  </label>
 
-            <div class="form-field">
-              <label for="weight">體重（kg）</label>
-              <input
-                type="number"
-                id="weight"
-                min="35"
-                max="150"
-                value="55"
-                required
-              />
-              <div class="hint">測試 45 / 60 / 80 / 100 kg 的差異。</div>
-            </div>
+  <label>年齡
+    <input id="age" type="number" value="25" />
+  </label>
 
-            <div class="form-field">
-              <label for="style">風格大類</label>
-              <select id="style">
-                <option value="casual">休閒日常</option>
-                <option value="minimal">極簡通勤</option>
-                <option value="street">街頭風</option>
-                <option value="sporty">運動風</option>
-                <option value="smart">Smart Casual</option>
-              </select>
-            </div>
+  <label>身高（cm）
+    <input id="height" type="number" value="165" />
+  </label>
 
-            <div class="form-field">
-              <label for="style-variant">風格細分（品牌 / 名人風格）</label>
-              <select id="style-variant">
-                <option value="">（不特別指定）</option>
+  <label>體重（kg）
+    <input id="weight" type="number" value="55" />
+  </label>
 
-                <optgroup label="品牌風格">
-                  <option value="brand-uniqlo">UNIQLO 日常基本款</option>
-                  <option value="brand-muji">MUJI 無印風</option>
-                  <option value="brand-cos">COS 極簡</option>
-                  <option value="brand-nike-tech">Nike Tech 機能運動</option>
-                  <option value="brand-ader-error">Ader Error 韓系街頭</option>
-                </optgroup>
+  <label>風格
+    <select id="style">
+      <option value="casual">休閒</option>
+      <option value="minimal">極簡</option>
+      <option value="street">街頭</option>
+      <option value="sporty">運動</option>
+      <option value="smart">Smart Casual</option>
+    </select>
+  </label>
 
-                <optgroup label="名人穿搭風格（不畫臉，只參考穿搭）">
-                  <option value="celeb-iu-casual">IU 韓系日常</option>
-                  <option value="celeb-jennie-minimal">Jennie 極簡</option>
-                  <option value="celeb-gd-street">GD 街頭多層次</option>
-                  <option value="celeb-lisa-sporty">Lisa 舞者運動風</option>
-                </optgroup>
-              </select>
-              <div class="hint">
-                只影響穿搭風格，不會畫出真實名人臉或複製身份。
-              </div>
-            </div>
+  <label>溫度（°C）
+    <input id="temp" type="number" value="22" />
+  </label>
 
-            <div class="form-field">
-              <label for="temp">溫度（°C）</label>
-              <input type="number" id="temp" value="22" />
-              <div class="hint">越冷會偏向多層、厚外套。</div>
-            </div>
+  <label>
+    <input type="checkbox" id="withBag" /> 包包
+  </label>
+  <label>
+    <input type="checkbox" id="withHat" /> 帽子
+  </label>
+  <label>
+    <input type="checkbox" id="withCoat" /> 外套
+  </label>
 
-            <div class="form-field">
-              <label>身材預估（BMI）</label>
-              <div id="bmi-info" class="hint">BMI：--，身型：--</div>
-            </div>
+  <button class="primary" onclick="generateOutfit()">產生穿搭</button>
+  <div class="status" id="generate-status"></div>
+</div>
 
-            <div class="form-field">
-              <label>配件選擇</label>
-              <div class="checkbox-row">
-                <label><input type="checkbox" id="acc-bag" checked /> 包包</label>
-                <label><input type="checkbox" id="acc-hat" /> 帽子</label>
-                <label
-                  ><input type="checkbox" id="acc-coat" /> 外套 / 罩衫 /
-                  夾克</label
-                >
-              </div>
-              <div class="hint">會直接影響 Outfit Spec 的 items。</div>
-            </div>
-          </div>
-
-          <div class="btn-row">
-            <span id="status" class="status-text"
-              >設定好條件後，按「產生 AI 穿搭示意圖」。</span
-            >
-            <button type="submit" id="generate-btn" class="primary-btn">
-              🧍‍♀️ 產生 AI 穿搭示意圖
-            </button>
-          </div>
-        </form>
-      </section>
-
-      <!-- 右側：圖像 + 商品 -->
-      <section class="card">
-        <div class="card-title">
-          圖像與商品測試
-          <span class="pill">Step 2 · Outfit Spec → 圖片 & 商品</span>
-        </div>
-
-        <div class="image-wrapper">
-          <div class="image-inner">
-            <img
-              id="result-image"
-              src=""
-              alt="Outfit preview"
-              style="display: none"
-            />
-            <div id="image-placeholder" class="image-placeholder">
-              還沒有結果。<br />
-              先產生一次 AI 穿搭示意圖，系統會先產生 Outfit Spec 再畫圖。
-            </div>
-          </div>
-          <div
-            id="outfit-summary"
-            class="outfit-summary"
-            style="display: none"
-          ></div>
-          <div class="desc">
-            後端使用「身材版本2025 v1」＋「等級2 Outfit Spec」：先用文字模型決定
-            top / bottom / shoes / outer / bag / hat，再用這份規格畫圖。
-          </div>
-        </div>
-
-        <!-- 類似商品搜尋結果區塊（SerpApi） -->
-        <div style="margin-top: 14px">
-          <div
-            style="
-              display: flex;
-              align-items: center;
-              justify-content: space-between;
-              margin-bottom: 6px;
-            "
-          >
-            <div style="font-size: 13px; color: #555; font-weight: 500">
-              類似商品（SerpApi / Google Shopping）
-            </div>
-            <button
-              type="button"
-              onclick="searchSimilarProducts()"
-              style="
-                border: none;
-                border-radius: 999px;
-                padding: 4px 10px;
-                font-size: 11px;
-                cursor: pointer;
-                background: #f3f3f8;
-                color: #555;
-              "
-            >
-              🔍 抓類似商品
-            </button>
-          </div>
-          <div
-            id="product-status"
-            class="desc"
-            style="font-size: 11px; margin-bottom: 4px"
-          >
-            會用目前的 Outfit Spec（同一套穿搭）去呼叫 /api/search-products。
-          </div>
-          <div
-            id="product-results"
-            style="
-              display: flex;
-              flex-direction: column;
-              gap: 8px;
-              max-height: 220px;
-              overflow-y: auto;
-              padding-right: 4px;
-              border-top: 1px solid #f0f0f5;
-              margin-top: 4px;
-              padding-top: 6px;
-            "
-          >
-            <!-- JS 會在這裡塞商品卡片 -->
-          </div>
-        </div>
-      </section>
-    </main>
-
-    <footer>
-      Debug Tips：如有錯誤請打開 DevTools（F12）看 Console / Network。
-    </footer>
-  </div>
-<button onclick="loginWithGoogle()">使用 Google 登入</button>
+<!-- ===== 結果區 ===== -->
+<div class="card">
+  <h2>Outfit Spec 回傳</h2>
+  <pre id="result">尚未產生</pre>
+</div>
 
 <script>
-function loginWithGoogle() {
+  /* =========================
+     Supabase 設定
+     ========================= */
   const SUPABASE_URL = "https://auiwcsolpvufxxyhnvaf.supabase.co";
 
-  const redirectTo = encodeURIComponent(
-    window.location.origin + "/body-test.html"
-  );
+  /* =========================
+     登入 / 登出
+     ========================= */
+  function loginWithGoogle() {
+    const redirectTo = encodeURIComponent(
+      window.location.origin + window.location.pathname
+    );
+    const url =
+      `${SUPABASE_URL}/auth/v1/authorize` +
+      `?provider=google&redirect_to=${redirectTo}`;
+    window.location.href = url;
+  }
 
-  const url =
-    `${SUPABASE_URL}/auth/v1/authorize` +
-    `?provider=google` +
-    `&redirect_to=${redirectTo}`;
+  function logout() {
+    // 清除 localStorage 中的 supabase session
+    Object.keys(localStorage)
+      .filter(k => k.startsWith("sb-") && k.endsWith("-auth-token"))
+      .forEach(k => localStorage.removeItem(k));
+    updateLoginStatus();
+  }
 
-  window.location.href = url;
-}
-</script>
-  <script>
-    let currentOutfitSpec = null;
+  /* =========================
+     取得 Supabase Token（重點）
+     ========================= */
+  function getSupabaseToken() {
+    const key = Object.keys(localStorage)
+      .find(k => k.startsWith("sb-") && k.endsWith("-auth-token"));
+    if (!key) return null;
+    const session = JSON.parse(localStorage.getItem(key));
+    return session?.access_token || null;
+  }
 
-    // ===== BMI 顯示 =====
-    function getBmiTag(height, weight) {
-      const h = height / 100;
-      const bmi = weight / (h * h);
-      if (!isFinite(bmi)) return { bmi: null, label: "—" };
+  function updateLoginStatus() {
+    const token = getSupabaseToken();
+    const el = document.getElementById("login-status");
+    if (token) {
+      el.textContent = "已登入（token 已取得）";
+    } else {
+      el.textContent = "尚未登入";
+    }
+  }
 
-      if (bmi < 19) return { bmi, label: "偏瘦（Slim）" };
-      if (bmi < 25) return { bmi, label: "正常（Average）" };
-      if (bmi < 30) return { bmi, label: "微胖（Slightly chubby）" };
-      return { bmi, label: "豐滿（Plus-size）" };
+  updateLoginStatus();
+
+  /* =========================
+     產生穿搭（帶 token）
+     ========================= */
+  async function generateOutfit() {
+    const statusEl = document.getElementById("generate-status");
+    const resultEl = document.getElementById("result");
+
+    const token = getSupabaseToken();
+    if (!token) {
+      alert("請先登入再使用");
+      return;
     }
 
-    function updateBmiDisplay() {
-      const h = parseFloat(document.getElementById("height").value);
-      const w = parseFloat(document.getElementById("weight").value);
-      const el = document.getElementById("bmi-info");
-      if (!h || !w) {
-        el.textContent = "BMI：--，身型：--";
-        return;
-      }
-      const { bmi, label } = getBmiTag(h, w);
-      if (!bmi) {
-        el.textContent = "BMI：--，身型：--";
-        return;
-      }
-      el.textContent = `BMI：約 ${bmi.toFixed(1)}，身型推估：${label}`;
-    }
+    statusEl.textContent = "產生中...";
+    resultEl.textContent = "";
 
-    document
-      .getElementById("height")
-      .addEventListener("input", updateBmiDisplay);
-    document
-      .getElementById("weight")
-      .addEventListener("input", updateBmiDisplay);
-    updateBmiDisplay();
+    const payload = {
+      gender: document.getElementById("gender").value,
+      age: Number(document.getElementById("age").value),
+      height: Number(document.getElementById("height").value),
+      weight: Number(document.getElementById("weight").value),
+      style: document.getElementById("style").value,
+      temp: Number(document.getElementById("temp").value),
+      withBag: document.getElementById("withBag").checked,
+      withHat: document.getElementById("withHat").checked,
+      withCoat: document.getElementById("withCoat").checked
+    };
 
-    // ===== 產生穿搭（Outfit Spec + 圖片） =====
-    async function generateOutfit() {
-      const gender = document.getElementById("gender").value;
-      const age = parseInt(document.getElementById("age").value, 10);
-      const style = document.getElementById("style").value;
-      const styleVariant =
-        document.getElementById("style-variant").value || "";
-      const temp = parseFloat(document.getElementById("temp").value);
-      const height = parseFloat(document.getElementById("height").value);
-      const weight = parseFloat(document.getElementById("weight").value);
-      const withBag = document.getElementById("acc-bag").checked;
-      const withHat = document.getElementById("acc-hat").checked;
-      const withCoat = document.getElementById("acc-coat").checked;
-
-      const status = document.getElementById("status");
-      const btn = document.getElementById("generate-btn");
-      const img = document.getElementById("result-image");
-      const placeholder = document.getElementById("image-placeholder");
-      const summaryBox = document.getElementById("outfit-summary");
-
-      if (!height || !weight || !age) {
-        status.textContent = "請先輸入完整的年齡、身高與體重。";
-        status.className = "status-text error";
-        return;
-      }
-
-      status.textContent = "Step 1：正在產生 Outfit Spec（穿搭 JSON 規格）…";
-      status.className = "status-text loading";
-      btn.disabled = true;
-
-      try {
-        // Step 1: 先跟後端拿 Outfit Spec
-        const specResp = await fetch("/api/generate-outfit-spec", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            gender,
-            age,
-            height,
-            weight,
-            style,
-            styleVariant,
-            temp,
-            withBag,
-            withHat,
-            withCoat
-          })
-        });
-
-        const specText = await specResp.text();
-        let specData;
-        try {
-          specData = JSON.parse(specText);
-        } catch {
-          throw new Error(
-            "Outfit Spec API 回傳非 JSON：" + specText.slice(0, 120)
-          );
-        }
-
-        if (!specResp.ok) {
-          console.error("generate-outfit-spec error:", specData);
-          throw new Error(
-            "Outfit Spec API 失敗：" +
-              specResp.status +
-              "／" +
-              (specData.error || "unknown")
-          );
-        }
-
-        currentOutfitSpec = {
-          summary: specData.summary || "",
-          items: specData.items || []
-        };
-
-        // 顯示穿搭摘要
-        if (currentOutfitSpec.summary) {
-          summaryBox.style.display = "block";
-          summaryBox.textContent = currentOutfitSpec.summary;
-        } else {
-          summaryBox.style.display = "none";
-        }
-
-        status.textContent = "Step 2：Outfit Spec 完成，開始產生圖片…";
-
-        // Step 2: 用 Outfit Spec 去產圖片
-        const imgResp = await fetch("/api/generate-image", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            gender,
-            age,
-            height,
-            weight,
-            style,
-            styleVariant,
-            temp,
-            withBag,
-            withHat,
-            withCoat,
-            outfitSpec: currentOutfitSpec
-          })
-        });
-
-        const imgText = await imgResp.text();
-        let imgData;
-        try {
-          imgData = JSON.parse(imgText);
-        } catch {
-          throw new Error("Image API 回傳非 JSON：" + imgText.slice(0, 120));
-        }
-
-        if (!imgResp.ok) {
-          console.error("generate-image error:", imgData);
-          throw new Error(
-            "Image API 失敗：" +
-              imgResp.status +
-              "／" +
-              (imgData.error || "unknown")
-          );
-        }
-
-        if (!imgData.image) {
-          throw new Error("Image API 沒有回傳圖片資料");
-        }
-
-        img.src = "data:image/png;base64," + imgData.image;
-        img.style.display = "block";
-        placeholder.style.display = "none";
-
-        status.textContent =
-          "完成：Outfit Spec + 圖片都產生成功，接著可以按「抓類似商品」。";
-        status.className = "status-text done";
-      } catch (err) {
-        console.error(err);
-        status.textContent = "產生穿搭時發生錯誤：" + err.message;
-        status.className = "status-text error";
-      } finally {
-        btn.disabled = false;
-      }
-    }
-
-    // ===== 商品搜尋（使用 currentOutfitSpec.items） =====
-    function renderProductResults(data) {
-      const container = document.getElementById("product-results");
-      const status = document.getElementById("product-status");
-      container.innerHTML = "";
-
-      if (!data || !Array.isArray(data.results) || data.results.length === 0) {
-        status.textContent = "沒有取回任何商品結果。";
-        return;
-      }
-
-      status.textContent =
-        "以下為 /api/search-products 透過 SerpApi 回傳的部分 Google Shopping 商品結果（每個部位最多 3 筆）：";
-
-      data.results.forEach((block) => {
-        const slot = block.slot || "item";
-        const query = block.query || "";
-
-        const header = document.createElement("div");
-        header.style.fontSize = "11px";
-        header.style.color = "#777";
-        header.style.marginTop = "4px";
-        header.textContent = `部位：${slot}（query: ${query}）`;
-        container.appendChild(header);
-
-        if (block.error) {
-          const errEl = document.createElement("div");
-          errEl.style.fontSize = "11px";
-          errEl.style.color = "#c00";
-          errEl.textContent = "錯誤：" + block.error;
-          container.appendChild(errEl);
-          return;
-        }
-
-        (block.items || []).forEach((p) => {
-          const card = document.createElement("div");
-          card.className = "product-card";
-
-          const thumb = document.createElement("div");
-          thumb.className = "product-thumb";
-
-          if (p.thumbnail) {
-            const img = document.createElement("img");
-            img.src = p.thumbnail;
-            thumb.appendChild(img);
-          } else {
-            thumb.textContent = "No image";
-          }
-
-          const main = document.createElement("div");
-          main.className = "product-main";
-
-          const title = document.createElement("div");
-          title.className = "product-title";
-          title.textContent = p.title || "(no title)";
-
-          const meta = document.createElement("div");
-          meta.className = "product-meta";
-          meta.textContent = p.source || "";
-
-          const price = document.createElement("div");
-          price.className = "product-price";
-          const priceText =
-            p.price != null
-              ? `${p.price} ${p.currency || ""}`.trim()
-              : "價格不明";
-          price.textContent = priceText;
-
-          const link = document.createElement("a");
-          link.className = "product-link";
-          link.target = "_blank";
-          link.rel = "noopener noreferrer";
-          link.href = p.link || "#";
-          link.textContent = p.link ? "前往商品頁" : "無連結";
-
-          main.appendChild(title);
-          main.appendChild(meta);
-          main.appendChild(price);
-          main.appendChild(link);
-
-          card.appendChild(thumb);
-          card.appendChild(main);
-
-          container.appendChild(card);
-        });
+    try {
+      const resp = await fetch("/api/generate-outfit-spec", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": `Bearer ${token}`
+        },
+        body: JSON.stringify(payload)
       });
-    }
 
-    async function searchSimilarProducts() {
-      const status = document.getElementById("product-status");
-      const container = document.getElementById("product-results");
-      container.innerHTML = "";
+      const data = await resp.json();
 
-      if (!currentOutfitSpec || !Array.isArray(currentOutfitSpec.items)) {
-        status.textContent = "請先產生一次穿搭（Outfit Spec），再抓類似商品。";
-        return;
+      if (!resp.ok) {
+        throw new Error(data.error || "API error");
       }
 
-      status.textContent =
-        "正在呼叫 /api/search-products，使用目前 Outfit Spec 去查商品…";
+      resultEl.textContent = JSON.stringify(data, null, 2);
+      statusEl.textContent =
+        "完成！剩餘點數：" + (data.credits_left ?? "未知");
 
-      try {
-        const resp = await fetch("/api/search-products", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ items: currentOutfitSpec.items })
-        });
-
-        const text = await resp.text();
-        let data;
-        try {
-          data = JSON.parse(text);
-        } catch {
-          console.error("search-products raw:", text);
-          throw new Error("後端回傳非 JSON：" + text.slice(0, 120));
-        }
-
-        if (!resp.ok) {
-          console.error("search-products error detail:", data);
-          throw new Error(
-            "API 回應失敗：" +
-              resp.status +
-              "／" +
-              (data.error || "unknown")
-          );
-        }
-
-        console.log("search-products data:", data);
-        renderProductResults(data);
-      } catch (err) {
-        console.error(err);
-        status.textContent = "搜尋商品時發生錯誤：" + err.message;
-      }
+    } catch (err) {
+      console.error(err);
+      statusEl.textContent = "錯誤：" + err.message;
     }
-  </script>
-
-  <script>
-function getSupabaseToken() {
-  const key = Object.keys(localStorage)
-    .find(k => k.startsWith("sb-") && k.endsWith("-auth-token"));
-
-  if (!key) return null;
-
-  const session = JSON.parse(localStorage.getItem(key));
-  return session?.access_token || null;
-}
+  }
 </script>
+
 </body>
 </html>
