@@ -581,7 +581,24 @@
       Debug Tips：如有錯誤請打開 DevTools（F12）看 Console / Network。
     </footer>
   </div>
+<button onclick="loginWithGoogle()">使用 Google 登入</button>
 
+<script>
+function loginWithGoogle() {
+  const SUPABASE_URL = "https://你的-project-id.supabase.co";
+
+  const redirectTo = encodeURIComponent(
+    window.location.origin + "/body-test.html"
+  );
+
+  const url =
+    `${SUPABASE_URL}/auth/v1/authorize` +
+    `?provider=google` +
+    `&redirect_to=${redirectTo}`;
+
+  window.location.href = url;
+}
+</script>
   <script>
     let currentOutfitSpec = null;
 
