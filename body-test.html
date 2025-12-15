@@ -5,199 +5,370 @@
   <title>Body Test · Outfit Generator</title>
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <style>
-    body {
-      font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI",
-        sans-serif;
-      background: #f5f6f8;
-      margin: 0;
-      padding: 24px;
+    :root{
+      --bg:#f5f6f8;
+      --card:#fff;
+      --text:#111;
+      --muted:#666;
+      --border:#e8e8ef;
+      --primary:#111;
+      --danger:#d33;
+      --ok:#0a7;
     }
-    h1 {
-      margin-top: 0;
+    body{
+      font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      background: var(--bg);
+      margin:0;
+      padding:24px;
+      color:var(--text);
     }
-    .card {
-      background: #fff;
-      border-radius: 12px;
+    h1{ margin:0 0 12px; }
+    .wrap{
+      max-width: 860px;
+      margin: 0 auto;
+      display: grid;
+      gap: 14px;
+      grid-template-columns: 360px 1fr;
+    }
+    @media (max-width: 860px){
+      .wrap{ grid-template-columns: 1fr; }
+    }
+    .card{
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 14px;
       padding: 16px;
-      max-width: 520px;
-      box-shadow: 0 8px 24px rgba(0,0,0,0.08);
-      margin-bottom: 16px;
+      box-shadow: 0 10px 24px rgba(0,0,0,0.06);
     }
-    label {
-      display: block;
-      margin-top: 12px;
-      font-size: 14px;
+    .row{ display:flex; align-items:center; justify-content:space-between; gap:10px; }
+    .pill{
+      font-size:12px;
+      padding:4px 10px;
+      border-radius: 999px;
+      background:#f2f3f6;
+      color:var(--muted);
+      white-space: nowrap;
     }
-    input, select {
-      width: 100%;
-      padding: 8px;
-      margin-top: 4px;
-      font-size: 14px;
-    }
-    button {
-      margin-top: 16px;
-      padding: 10px 14px;
-      font-size: 15px;
-      border: none;
-      border-radius: 8px;
-      cursor: pointer;
-    }
-    .primary {
-      background: #111;
-      color: #fff;
-    }
-    .secondary {
-      background: #eee;
-    }
-    .status {
-      margin-top: 12px;
-      font-size: 14px;
-      color: #555;
-    }
-    pre {
-      background: #f0f0f0;
-      padding: 12px;
-      border-radius: 8px;
+    .meta{
+      display:flex;
+      flex-direction: column;
+      gap:6px;
+      margin-top: 10px;
       font-size: 13px;
-      overflow-x: auto;
+      color: var(--muted);
+    }
+    .meta strong{ color: var(--text); font-weight: 600; }
+    label{
+      display:block;
+      margin-top: 10px;
+      font-size: 13px;
+      color: var(--text);
+      font-weight: 600;
+    }
+    input, select{
+      width:100%;
+      padding: 9px 10px;
+      margin-top: 6px;
+      font-size: 14px;
+      border-radius: 10px;
+      border: 1px solid var(--border);
+      outline: none;
+      background: #fff;
+    }
+    input:focus, select:focus{
+      border-color:#bbb;
+      box-shadow: 0 0 0 2px rgba(0,0,0,0.06);
+    }
+    .check{
+      display:flex;
+      align-items:center;
+      gap:10px;
+      margin-top: 10px;
+      font-size: 14px;
+    }
+    .check input{ width:auto; margin:0; }
+    button{
+      padding: 10px 14px;
+      border-radius: 10px;
+      border: 1px solid var(--border);
+      cursor: pointer;
+      font-size: 14px;
+      background: #fff;
+    }
+    button.primary{
+      background: var(--primary);
+      color:#fff;
+      border-color: var(--primary);
+    }
+    button[disabled]{
+      opacity: 0.55;
+      cursor: not-allowed;
+    }
+    .hint{
+      font-size: 12px;
+      color: var(--muted);
+      margin-top: 8px;
+      line-height: 1.5;
+    }
+    .status{
+      margin-top: 10px;
+      font-size: 13px;
+      color: var(--muted);
+      line-height: 1.5;
+    }
+    .status.ok{ color: var(--ok); }
+    .status.err{ color: var(--danger); }
+    pre{
+      background:#0f1115;
+      color:#d6e0ff;
+      padding: 14px;
+      border-radius: 12px;
+      overflow:auto;
+      font-size: 12.5px;
+      line-height: 1.45;
+      border: 1px solid rgba(255,255,255,0.06);
+      min-height: 240px;
+      margin:0;
+    }
+    .small{
+      font-size: 12px;
+      color: var(--muted);
     }
   </style>
 </head>
 <body>
 
-<h1>Body Test（身材 + 風格測試頁）</h1>
+  <h1>Body Test（登入 + 點數 + 產生穿搭）</h1>
 
-<!-- ===== 登入區 ===== -->
-<div class="card">
-  <h2>登入</h2>
-  <button class="secondary" onclick="loginWithGoogle()">使用 Google 登入</button>
-  <button class="secondary" onclick="logout()">登出</button>
-  <div class="status" id="login-status">尚未登入</div>
-</div>
+  <div class="wrap">
+    <!-- 左：登入/點數/表單 -->
+    <div class="card">
+      <div class="row">
+        <div style="font-weight:700;">登入與點數</div>
+        <div class="pill" id="auth-pill">未登入</div>
+      </div>
 
-<!-- ===== 表單區 ===== -->
-<div class="card">
-  <h2>穿搭條件</h2>
+      <div class="meta">
+        <div>帳號：<strong id="user-email">—</strong></div>
+        <div>剩餘點數：<strong id="credits">—</strong></div>
+      </div>
 
-  <label>性別
-    <select id="gender">
-      <option value="female">女性</option>
-      <option value="male">男性</option>
-      <option value="neutral">中性</option>
-    </select>
-  </label>
+      <div class="row" style="margin-top:12px;">
+        <button id="btn-login" onclick="loginWithGoogle()">Google 登入</button>
+        <button id="btn-logout" onclick="logout()">登出</button>
+      </div>
 
-  <label>年齡
-    <input id="age" type="number" value="25" />
-  </label>
+      <div class="hint">
+        若你已登入但點數顯示仍是「—」，請先按一次「產生穿搭」讓後端回傳 credits_left（或你也可之後加一支 /api/me 取得點數）。
+      </div>
 
-  <label>身高（cm）
-    <input id="height" type="number" value="165" />
-  </label>
+      <hr style="border:none;border-top:1px solid var(--border); margin:16px 0;" />
 
-  <label>體重（kg）
-    <input id="weight" type="number" value="55" />
-  </label>
+      <div class="row">
+        <div style="font-weight:700;">穿搭條件</div>
+        <div class="pill">扣 1 點 / 次</div>
+      </div>
 
-  <label>風格
-    <select id="style">
-      <option value="casual">休閒</option>
-      <option value="minimal">極簡</option>
-      <option value="street">街頭</option>
-      <option value="sporty">運動</option>
-      <option value="smart">Smart Casual</option>
-    </select>
-  </label>
+      <label>性別
+        <select id="gender">
+          <option value="female">女性</option>
+          <option value="male">男性</option>
+          <option value="neutral">中性</option>
+        </select>
+      </label>
 
-  <label>溫度（°C）
-    <input id="temp" type="number" value="22" />
-  </label>
+      <label>年齡
+        <input id="age" type="number" value="25" min="10" max="80"/>
+      </label>
 
-  <label>
-    <input type="checkbox" id="withBag" /> 包包
-  </label>
-  <label>
-    <input type="checkbox" id="withHat" /> 帽子
-  </label>
-  <label>
-    <input type="checkbox" id="withCoat" /> 外套
-  </label>
+      <label>身高（cm）
+        <input id="height" type="number" value="165" min="120" max="210"/>
+      </label>
 
-  <button class="primary" onclick="generateOutfit()">產生穿搭</button>
-  <div class="status" id="generate-status"></div>
-</div>
+      <label>體重（kg）
+        <input id="weight" type="number" value="55" min="30" max="200"/>
+      </label>
 
-<!-- ===== 結果區 ===== -->
-<div class="card">
-  <h2>Outfit Spec 回傳</h2>
-  <pre id="result">尚未產生</pre>
-</div>
+      <label>風格
+        <select id="style">
+          <option value="casual">休閒</option>
+          <option value="minimal">極簡</option>
+          <option value="street">街頭</option>
+          <option value="sporty">運動</option>
+          <option value="smart">Smart Casual</option>
+        </select>
+      </label>
+
+      <label>溫度（°C）
+        <input id="temp" type="number" value="22" min="-5" max="40"/>
+      </label>
+
+      <div class="check">
+        <input type="checkbox" id="withBag" />
+        <span>包包</span>
+      </div>
+      <div class="check">
+        <input type="checkbox" id="withHat" />
+        <span>帽子</span>
+      </div>
+      <div class="check">
+        <input type="checkbox" id="withCoat" />
+        <span>外套</span>
+      </div>
+
+      <button class="primary" id="btn-generate" onclick="generateOutfit()" style="width:100%; margin-top:14px;">
+        產生穿搭（Outfit Spec）
+      </button>
+
+      <div class="status" id="generate-status">請先登入再使用。</div>
+      <div class="small" style="margin-top:8px;">提示：未登入 / 點數不足會自動鎖住按鈕。</div>
+    </div>
+
+    <!-- 右：結果 -->
+    <div class="card">
+      <div class="row">
+        <div style="font-weight:700;">Outfit Spec（JSON）</div>
+        <div class="pill">Debug / 測試</div>
+      </div>
+      <div style="margin-top:12px;">
+        <pre id="result">尚未產生</pre>
+      </div>
+    </div>
+  </div>
 
 <script>
   /* =========================
-     Supabase 設定
+     1) 需要你改的地方
      ========================= */
-  const SUPABASE_URL = "https://auiwcsolpvufxxyhnvaf.supabase.co";
+  const SUPABASE_URL = "https://outfit-ai.supabase.co"; // ← 改成你的 Supabase Project URL
 
   /* =========================
-     登入 / 登出
+     2) Hosted Auth：登入 / 登出
      ========================= */
   function loginWithGoogle() {
-    const redirectTo = encodeURIComponent(
-      window.location.origin + window.location.pathname
-    );
-    const url =
-      `${SUPABASE_URL}/auth/v1/authorize` +
-      `?provider=google&redirect_to=${redirectTo}`;
+    // 回到同一頁（body-test.html）
+    const redirectTo = encodeURIComponent(window.location.origin + window.location.pathname);
+    const url = `${SUPABASE_URL}/auth/v1/authorize?provider=google&redirect_to=${redirectTo}`;
     window.location.href = url;
   }
 
   function logout() {
-    // 清除 localStorage 中的 supabase session
+    // Hosted Auth 的「前端簡易登出」：清 localStorage 裡的 session
     Object.keys(localStorage)
       .filter(k => k.startsWith("sb-") && k.endsWith("-auth-token"))
       .forEach(k => localStorage.removeItem(k));
-    updateLoginStatus();
+
+    setAuthUI({ loggedIn:false });
+    setGenerateUI({ state:"idle", message:"你已登出，請先登入再使用。", level:"" });
   }
 
   /* =========================
-     取得 Supabase Token（重點）
+     3) Step 2：拿 token（重點）
      ========================= */
-  function getSupabaseToken() {
-    const key = Object.keys(localStorage)
-      .find(k => k.startsWith("sb-") && k.endsWith("-auth-token"));
+  function getSupabaseSession() {
+    const key = Object.keys(localStorage).find(k => k.startsWith("sb-") && k.endsWith("-auth-token"));
     if (!key) return null;
-    const session = JSON.parse(localStorage.getItem(key));
+    try { return JSON.parse(localStorage.getItem(key)); } catch { return null; }
+  }
+
+  function getSupabaseToken() {
+    const session = getSupabaseSession();
     return session?.access_token || null;
   }
 
-  function updateLoginStatus() {
-    const token = getSupabaseToken();
-    const el = document.getElementById("login-status");
-    if (token) {
-      el.textContent = "已登入（token 已取得）";
+  function getSupabaseEmail() {
+    const session = getSupabaseSession();
+    return session?.user?.email || session?.user?.user_metadata?.email || "";
+  }
+
+  /* =========================
+     4) UI helpers
+     ========================= */
+  function setAuthUI({ loggedIn, email }) {
+    const pill = document.getElementById("auth-pill");
+    const emailEl = document.getElementById("user-email");
+
+    if (loggedIn) {
+      pill.textContent = "已登入";
+      pill.style.background = "#e9fbf5";
+      pill.style.color = "#0a7";
+      emailEl.textContent = email || "（已登入）";
     } else {
-      el.textContent = "尚未登入";
+      pill.textContent = "未登入";
+      pill.style.background = "#f2f3f6";
+      pill.style.color = "#666";
+      emailEl.textContent = "—";
+      document.getElementById("credits").textContent = "—";
+    }
+
+    // 未登入就鎖產生按鈕
+    document.getElementById("btn-generate").disabled = !loggedIn;
+  }
+
+  function setCreditsUI(credits) {
+    const c = document.getElementById("credits");
+    c.textContent = (credits === null || credits === undefined) ? "—" : String(credits);
+
+    // 若點數為 0，鎖按鈕
+    if (credits === 0) {
+      document.getElementById("btn-generate").disabled = true;
+      setGenerateUI({ state:"idle", message:"點數不足（0 點）。", level:"err" });
     }
   }
 
-  updateLoginStatus();
+  function setGenerateUI({ state, message, level }) {
+    const status = document.getElementById("generate-status");
+    const btn = document.getElementById("btn-generate");
+
+    status.className = "status" + (level ? (" " + level) : "");
+    status.textContent = message || "";
+
+    if (state === "loading") {
+      btn.disabled = true;
+      btn.textContent = "產生中...";
+    } else {
+      // 回到預設文字
+      btn.textContent = "產生穿搭（Outfit Spec）";
+
+      // 若已登入且點數不是 0，才可按
+      const token = getSupabaseToken();
+      const creditsText = document.getElementById("credits").textContent;
+      const credits = creditsText === "—" ? null : Number(creditsText);
+
+      const canUse = !!token && (credits === null || credits > 0);
+      btn.disabled = !canUse;
+    }
+  }
 
   /* =========================
-     產生穿搭（帶 token）
+     5) 初始化：檢查登入狀態
+     ========================= */
+  function initAuth() {
+    const token = getSupabaseToken();
+    const email = getSupabaseEmail();
+
+    if (token) {
+      setAuthUI({ loggedIn:true, email });
+      setGenerateUI({ state:"idle", message:"已登入，可開始產生穿搭。", level:"" });
+    } else {
+      setAuthUI({ loggedIn:false });
+      setGenerateUI({ state:"idle", message:"請先登入再使用。", level:"" });
+    }
+  }
+  initAuth();
+
+  /* =========================
+     6) Step 3：呼叫 API（帶 token）
      ========================= */
   async function generateOutfit() {
-    const statusEl = document.getElementById("generate-status");
     const resultEl = document.getElementById("result");
-
     const token = getSupabaseToken();
+
     if (!token) {
-      alert("請先登入再使用");
+      alert("請先登入");
+      setGenerateUI({ state:"idle", message:"未登入，請先登入再使用。", level:"err" });
       return;
     }
-
-    statusEl.textContent = "產生中...";
-    resultEl.textContent = "";
 
     const payload = {
       gender: document.getElementById("gender").value,
@@ -211,6 +382,9 @@
       withCoat: document.getElementById("withCoat").checked
     };
 
+    setGenerateUI({ state:"loading", message:"呼叫後端產生 Outfit Spec（扣 1 點）...", level:"" });
+    resultEl.textContent = "";
+
     try {
       const resp = await fetch("/api/generate-outfit-spec", {
         method: "POST",
@@ -221,19 +395,41 @@
         body: JSON.stringify(payload)
       });
 
-      const data = await resp.json();
+      const data = await resp.json().catch(() => ({}));
 
       if (!resp.ok) {
-        throw new Error(data.error || "API error");
+        // 點數不足：403
+        if (resp.status === 403) {
+          setCreditsUI(0);
+          setGenerateUI({ state:"idle", message:"點數不足，請稍後補點或改用免費方案。", level:"err" });
+          resultEl.textContent = JSON.stringify(data, null, 2);
+          return;
+        }
+
+        // 未授權：401
+        if (resp.status === 401) {
+          setAuthUI({ loggedIn:false });
+          setGenerateUI({ state:"idle", message:"登入狀態失效，請重新登入。", level:"err" });
+          resultEl.textContent = JSON.stringify(data, null, 2);
+          return;
+        }
+
+        throw new Error(data.error || `API error (${resp.status})`);
       }
 
+      // 成功：顯示結果、更新剩餘點數
       resultEl.textContent = JSON.stringify(data, null, 2);
-      statusEl.textContent =
-        "完成！剩餘點數：" + (data.credits_left ?? "未知");
+
+      if (data.credits_left !== undefined) {
+        setCreditsUI(data.credits_left);
+      }
+
+      setGenerateUI({ state:"idle", message:`完成！已扣 1 點。剩餘點數：${data.credits_left ?? "—"}`, level:"ok" });
 
     } catch (err) {
       console.error(err);
-      statusEl.textContent = "錯誤：" + err.message;
+      setGenerateUI({ state:"idle", message:"發生錯誤：" + (err.message || "Unknown error"), level:"err" });
+      resultEl.textContent = "Error: " + (err.message || "Unknown error");
     }
   }
 </script>
