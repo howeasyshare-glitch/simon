@@ -237,10 +237,47 @@
   </div>
 
 <script>
+
+  // === 重要：把 URL hash 的 token 存成 Supabase session（for implicit grant）===
+function persistSupabaseSessionFromHash() {
+  const hash = window.location.hash || "";
+  if (!hash.includes("access_token=")) return;
+
+  const params = new URLSearchParams(hash.replace(/^#/, ""));
+  const access_token = params.get("access_token");
+  const refresh_token = params.get("refresh_token");
+  const expires_at = Number(params.get("expires_at") || "0");
+  const token_type = params.get("token_type") || "bearer";
+
+  if (!access_token) return;
+
+  // 你的 Supabase project ref（請確認）
+  const projectRef = "auiwcsolpvufxxyhnvaf";
+
+  // Supabase auth token key 命名規則：sb-<projectRef>-auth-token
+  const storageKey = `sb-${projectRef}-auth-token`;
+
+  const session = {
+    access_token,
+    refresh_token,
+    token_type,
+    expires_at,
+    expires_in: Number(params.get("expires_in") || "3600"),
+    provider_token: params.get("provider_token") || null,
+    user: null // 我們前端不需要解析 user，後端會用 token 驗證拿 user
+  };
+
+  localStorage.setItem(storageKey, JSON.stringify(session));
+
+  // 清掉 hash，避免 token 暴露在 URL
+  history.replaceState(null, "", window.location.pathname + window.location.search);
+}
+
   /* =========================
      1) 需要你改的地方
      ========================= */
   const SUPABASE_URL = "https://auiwcsolpvufxxyhnvaf.supabase.co"; // ← 改成你的 Supabase Project URL
+persistSupabaseSessionFromHash();
 
   /* =========================
      2) Hosted Auth：登入 / 登出
