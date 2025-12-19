@@ -2,7 +2,7 @@
 <html lang="zh-Hant">
 <head>
   <meta charset="UTF-8" />
-  <title>Body Test · Outfit Generator</title>
+  <title>Body Test · Login + Credits + Outfit Spec (styleVariant)</title>
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <style>
     :root{
@@ -24,13 +24,13 @@
     }
     h1{ margin:0 0 12px; }
     .wrap{
-      max-width: 860px;
+      max-width: 980px;
       margin: 0 auto;
       display: grid;
       gap: 14px;
-      grid-template-columns: 360px 1fr;
+      grid-template-columns: 380px 1fr;
     }
-    @media (max-width: 860px){
+    @media (max-width: 980px){
       .wrap{ grid-template-columns: 1fr; }
     }
     .card{
@@ -57,13 +57,21 @@
       font-size: 13px;
       color: var(--muted);
     }
-    .meta strong{ color: var(--text); font-weight: 600; }
+    .meta strong{ color: var(--text); font-weight: 700; }
+    .grid2{
+      display:grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+    }
+    @media (max-width: 520px){
+      .grid2{ grid-template-columns: 1fr; }
+    }
     label{
       display:block;
       margin-top: 10px;
       font-size: 13px;
       color: var(--text);
-      font-weight: 600;
+      font-weight: 700;
     }
     input, select{
       width:100%;
@@ -127,24 +135,29 @@
       font-size: 12.5px;
       line-height: 1.45;
       border: 1px solid rgba(255,255,255,0.06);
-      min-height: 240px;
+      min-height: 280px;
       margin:0;
     }
     .small{
       font-size: 12px;
       color: var(--muted);
     }
+    .hr{
+      border:none;
+      border-top:1px solid var(--border);
+      margin:16px 0;
+    }
   </style>
 </head>
-<body>
 
-  <h1>Body Test（登入 + 點數 + 產生穿搭）</h1>
+<body>
+  <h1>Body Test（整合版：登入 + 點數 + styleVariant + Outfit Spec）</h1>
 
   <div class="wrap">
     <!-- 左：登入/點數/表單 -->
     <div class="card">
       <div class="row">
-        <div style="font-weight:700;">登入與點數</div>
+        <div style="font-weight:800;">登入與點數</div>
         <div class="pill" id="auth-pill">未登入</div>
       </div>
 
@@ -159,48 +172,85 @@
       </div>
 
       <div class="hint">
-        若你已登入但點數顯示仍是「—」，請先按一次「產生穿搭」讓後端回傳 credits_left（或你也可之後加一支 /api/me 取得點數）。
+        這頁使用 Hosted Auth（不需 SDK）。登入成功後會自動呼叫 <code>/api/me</code> 顯示點數。<br/>
+        產生一次 Outfit Spec 會扣 1 點。
       </div>
 
-      <hr style="border:none;border-top:1px solid var(--border); margin:16px 0;" />
+      <hr class="hr" />
 
       <div class="row">
-        <div style="font-weight:700;">穿搭條件</div>
+        <div style="font-weight:800;">穿搭條件</div>
         <div class="pill">扣 1 點 / 次</div>
       </div>
 
-      <label>性別
-        <select id="gender">
-          <option value="female">女性</option>
-          <option value="male">男性</option>
-          <option value="neutral">中性</option>
+      <div class="grid2">
+        <div>
+          <label>性別
+            <select id="gender">
+              <option value="female">女性</option>
+              <option value="male">男性</option>
+              <option value="neutral">中性</option>
+            </select>
+          </label>
+        </div>
+        <div>
+          <label>年齡
+            <input id="age" type="number" value="25" min="10" max="80"/>
+          </label>
+        </div>
+      </div>
+
+      <div class="grid2">
+        <div>
+          <label>身高（cm）
+            <input id="height" type="number" value="165" min="120" max="210"/>
+          </label>
+        </div>
+        <div>
+          <label>體重（kg）
+            <input id="weight" type="number" value="55" min="30" max="200"/>
+          </label>
+        </div>
+      </div>
+
+      <div class="grid2">
+        <div>
+          <label>風格（大類 style）
+            <select id="style">
+              <option value="casual">休閒</option>
+              <option value="minimal">極簡</option>
+              <option value="street">街頭</option>
+              <option value="sporty">運動</option>
+              <option value="smart">Smart Casual</option>
+            </select>
+          </label>
+        </div>
+        <div>
+          <label>溫度（°C）
+            <input id="temp" type="number" value="22" min="-5" max="40"/>
+          </label>
+        </div>
+      </div>
+
+      <label>風格變體（styleVariant：品牌/名人）
+        <select id="styleVariant">
+          <option value="">（不使用變體）</option>
+
+          <optgroup label="品牌 Brand">
+            <option value="brand-uniqlo">UNIQLO 風格（基礎日常）</option>
+            <option value="brand-muji">MUJI 風格（生活感極簡）</option>
+            <option value="brand-cos">COS 風格（現代結構極簡）</option>
+            <option value="brand-nike-tech">Nike Tech（機能運動/Techwear）</option>
+            <option value="brand-ader-error">Ader Error（韓系街頭 Oversized）</option>
+          </optgroup>
+
+          <optgroup label="名人 Celeb（僅參考穿搭氛圍）">
+            <option value="celeb-iu-casual">IU 休閒（柔和韓系日常）</option>
+            <option value="celeb-jennie-minimal">Jennie 極簡（俐落 chic）</option>
+            <option value="celeb-gd-street">G-Dragon 街頭（層次混搭）</option>
+            <option value="celeb-lisa-sporty">Lisa 運動（舞者 Athleisure）</option>
+          </optgroup>
         </select>
-      </label>
-
-      <label>年齡
-        <input id="age" type="number" value="25" min="10" max="80"/>
-      </label>
-
-      <label>身高（cm）
-        <input id="height" type="number" value="165" min="120" max="210"/>
-      </label>
-
-      <label>體重（kg）
-        <input id="weight" type="number" value="55" min="30" max="200"/>
-      </label>
-
-      <label>風格
-        <select id="style">
-          <option value="casual">休閒</option>
-          <option value="minimal">極簡</option>
-          <option value="street">街頭</option>
-          <option value="sporty">運動</option>
-          <option value="smart">Smart Casual</option>
-        </select>
-      </label>
-
-      <label>溫度（°C）
-        <input id="temp" type="number" value="22" min="-5" max="40"/>
       </label>
 
       <div class="check">
@@ -227,9 +277,14 @@
     <!-- 右：結果 -->
     <div class="card">
       <div class="row">
-        <div style="font-weight:700;">Outfit Spec（JSON）</div>
-        <div class="pill">Debug / 測試</div>
+        <div style="font-weight:800;">Outfit Spec（JSON）</div>
+        <div class="pill">Debug</div>
       </div>
+
+      <div class="hint" style="margin-top:10px;">
+        右側顯示 <code>/api/generate-outfit-spec</code> 回傳內容（含 <code>credits_left</code>）。
+      </div>
+
       <div style="margin-top:12px;">
         <pre id="result">尚未產生</pre>
       </div>
@@ -237,73 +292,85 @@
   </div>
 
 <script>
-
-  // === 重要：把 URL hash 的 token 存成 Supabase session（for implicit grant）===
-function persistSupabaseSessionFromHash() {
-  const hash = window.location.hash || "";
-  if (!hash.includes("access_token=")) return;
-
-  const params = new URLSearchParams(hash.replace(/^#/, ""));
-  const access_token = params.get("access_token");
-  const refresh_token = params.get("refresh_token");
-  const expires_at = Number(params.get("expires_at") || "0");
-  const token_type = params.get("token_type") || "bearer";
-
-  if (!access_token) return;
-
-  // 你的 Supabase project ref（請確認）
-  const projectRef = "auiwcsolpvufxxyhnvaf";
-
-  // Supabase auth token key 命名規則：sb-<projectRef>-auth-token
-  const storageKey = `sb-${projectRef}-auth-token`;
-
-  const session = {
-    access_token,
-    refresh_token,
-    token_type,
-    expires_at,
-    expires_in: Number(params.get("expires_in") || "3600"),
-    provider_token: params.get("provider_token") || null,
-    user: null // 我們前端不需要解析 user，後端會用 token 驗證拿 user
-  };
-
-  localStorage.setItem(storageKey, JSON.stringify(session));
-
-  // 清掉 hash，避免 token 暴露在 URL
-  history.replaceState(null, "", window.location.pathname + window.location.search);
-}
-
   /* =========================
-     1) 需要你改的地方
+     0) 設定：你的 Supabase URL
      ========================= */
-  const SUPABASE_URL = "https://auiwcsolpvufxxyhnvaf.supabase.co"; // ← 改成你的 Supabase Project URL
-persistSupabaseSessionFromHash();
+  const SUPABASE_URL = "https://auiwcsolpvufxxyhnvaf.supabase.co"; // ← 若你換專案，改這裡
+
+  function getProjectRefFromSupabaseUrl(url) {
+    try {
+      const u = new URL(url);
+      // host like: auiwcsolpvufxxyhnvaf.supabase.co
+      return u.hostname.split(".")[0];
+    } catch {
+      return null;
+    }
+  }
 
   /* =========================
-     2) Hosted Auth：登入 / 登出
+     1) Hosted Auth：登入/登出
      ========================= */
   function loginWithGoogle() {
-    // 回到同一頁（body-test.html）
     const redirectTo = encodeURIComponent(window.location.origin + window.location.pathname);
     const url = `${SUPABASE_URL}/auth/v1/authorize?provider=google&redirect_to=${redirectTo}`;
     window.location.href = url;
   }
 
   function logout() {
-    // Hosted Auth 的「前端簡易登出」：清 localStorage 裡的 session
+    // 清除 localStorage 中的 supabase session
     Object.keys(localStorage)
       .filter(k => k.startsWith("sb-") && k.endsWith("-auth-token"))
       .forEach(k => localStorage.removeItem(k));
 
     setAuthUI({ loggedIn:false });
+    setCreditsUI(null);
     setGenerateUI({ state:"idle", message:"你已登出，請先登入再使用。", level:"" });
+    document.getElementById("result").textContent = "尚未產生";
   }
 
   /* =========================
-     3) Step 2：拿 token（重點）
+     2) 修正點：Implicit Grant 的 token 在 URL hash
+     進頁時把它存到 localStorage 讓後續 getSupabaseToken() 可讀
+     ========================= */
+  function persistSupabaseSessionFromHash() {
+    const hash = window.location.hash || "";
+    if (!hash.includes("access_token=")) return;
+
+    const params = new URLSearchParams(hash.replace(/^#/, ""));
+    const access_token = params.get("access_token");
+    const refresh_token = params.get("refresh_token");
+    const expires_at = Number(params.get("expires_at") || "0");
+    const token_type = params.get("token_type") || "bearer";
+
+    if (!access_token) return;
+
+    const projectRef = getProjectRefFromSupabaseUrl(SUPABASE_URL);
+    if (!projectRef) return;
+
+    const storageKey = `sb-${projectRef}-auth-token`;
+
+    const session = {
+      access_token,
+      refresh_token,
+      token_type,
+      expires_at,
+      expires_in: Number(params.get("expires_in") || "3600"),
+      provider_token: params.get("provider_token") || null,
+      user: null
+    };
+
+    localStorage.setItem(storageKey, JSON.stringify(session));
+
+    // 清掉 hash，避免 token 暴露在 URL
+    history.replaceState(null, "", window.location.pathname + window.location.search);
+  }
+
+  /* =========================
+     3) 取得 token / session
      ========================= */
   function getSupabaseSession() {
-    const key = Object.keys(localStorage).find(k => k.startsWith("sb-") && k.endsWith("-auth-token"));
+    const key = Object.keys(localStorage)
+      .find(k => k.startsWith("sb-") && k.endsWith("-auth-token"));
     if (!key) return null;
     try { return JSON.parse(localStorage.getItem(key)); } catch { return null; }
   }
@@ -311,11 +378,6 @@ persistSupabaseSessionFromHash();
   function getSupabaseToken() {
     const session = getSupabaseSession();
     return session?.access_token || null;
-  }
-
-  function getSupabaseEmail() {
-    const session = getSupabaseSession();
-    return session?.user?.email || session?.user?.user_metadata?.email || "";
   }
 
   /* =========================
@@ -335,7 +397,6 @@ persistSupabaseSessionFromHash();
       pill.style.background = "#f2f3f6";
       pill.style.color = "#666";
       emailEl.textContent = "—";
-      document.getElementById("credits").textContent = "—";
     }
 
     // 未登入就鎖產生按鈕
@@ -350,6 +411,9 @@ persistSupabaseSessionFromHash();
     if (credits === 0) {
       document.getElementById("btn-generate").disabled = true;
       setGenerateUI({ state:"idle", message:"點數不足（0 點）。", level:"err" });
+    } else {
+      // 若已登入且不是 loading，恢復按鈕狀態（是否可用由 setGenerateUI 判斷）
+      setGenerateUI({ state:"idle", message:"已登入，可開始產生穿搭。", level:"" });
     }
   }
 
@@ -363,39 +427,77 @@ persistSupabaseSessionFromHash();
     if (state === "loading") {
       btn.disabled = true;
       btn.textContent = "產生中...";
-    } else {
-      // 回到預設文字
-      btn.textContent = "產生穿搭（Outfit Spec）";
+      return;
+    }
 
-      // 若已登入且點數不是 0，才可按
-      const token = getSupabaseToken();
-      const creditsText = document.getElementById("credits").textContent;
-      const credits = creditsText === "—" ? null : Number(creditsText);
+    // 回到預設文字
+    btn.textContent = "產生穿搭（Outfit Spec）";
 
-      const canUse = !!token && (credits === null || credits > 0);
-      btn.disabled = !canUse;
+    // 是否可按：必須登入 + 點數 > 0（如果點數未知，先允許一次，/api/me 會補上）
+    const token = getSupabaseToken();
+    const creditsText = document.getElementById("credits").textContent;
+    const credits = creditsText === "—" ? null : Number(creditsText);
+
+    const canUse = !!token && (credits === null || credits > 0);
+    btn.disabled = !canUse;
+  }
+
+  /* =========================
+     5) /api/me：一登入就顯示點數
+     ========================= */
+  async function fetchMeAndCredits() {
+    const token = getSupabaseToken();
+    if (!token) return;
+
+    try {
+      const resp = await fetch("/api/me", {
+        method: "GET",
+        headers: {
+          "Authorization": `Bearer ${token}`
+        }
+      });
+
+      const data = await resp.json().catch(() => ({}));
+
+      if (!resp.ok) {
+        console.warn("me api failed:", data);
+        // token 失效
+        if (resp.status === 401) {
+          setAuthUI({ loggedIn:false });
+          setCreditsUI(null);
+          setGenerateUI({ state:"idle", message:"登入狀態失效，請重新登入。", level:"err" });
+        }
+        return;
+      }
+
+      setAuthUI({ loggedIn:true, email: data.user?.email || "" });
+      setCreditsUI(data.credits_left);
+
+    } catch (e) {
+      console.warn("fetchMeAndCredits error:", e);
     }
   }
 
   /* =========================
-     5) 初始化：檢查登入狀態
+     6) 初始化
      ========================= */
   function initAuth() {
     const token = getSupabaseToken();
-    const email = getSupabaseEmail();
-
     if (token) {
-      setAuthUI({ loggedIn:true, email });
-      setGenerateUI({ state:"idle", message:"已登入，可開始產生穿搭。", level:"" });
+      setAuthUI({ loggedIn:true, email:"" });
+      setGenerateUI({ state:"idle", message:"已登入，正在取得點數...", level:"" });
     } else {
       setAuthUI({ loggedIn:false });
       setGenerateUI({ state:"idle", message:"請先登入再使用。", level:"" });
     }
   }
+
+  persistSupabaseSessionFromHash();
   initAuth();
+  fetchMeAndCredits();
 
   /* =========================
-     6) Step 3：呼叫 API（帶 token）
+     7) 產生穿搭（帶 token）+ 讀 credits_left + 顯示結果
      ========================= */
   async function generateOutfit() {
     const resultEl = document.getElementById("result");
@@ -413,6 +515,7 @@ persistSupabaseSessionFromHash();
       height: Number(document.getElementById("height").value),
       weight: Number(document.getElementById("weight").value),
       style: document.getElementById("style").value,
+      styleVariant: document.getElementById("styleVariant").value || "",
       temp: Number(document.getElementById("temp").value),
       withBag: document.getElementById("withBag").checked,
       withHat: document.getElementById("withHat").checked,
@@ -438,7 +541,7 @@ persistSupabaseSessionFromHash();
         // 點數不足：403
         if (resp.status === 403) {
           setCreditsUI(0);
-          setGenerateUI({ state:"idle", message:"點數不足，請稍後補點或改用免費方案。", level:"err" });
+          setGenerateUI({ state:"idle", message:"點數不足，無法繼續使用。", level:"err" });
           resultEl.textContent = JSON.stringify(data, null, 2);
           return;
         }
@@ -446,6 +549,7 @@ persistSupabaseSessionFromHash();
         // 未授權：401
         if (resp.status === 401) {
           setAuthUI({ loggedIn:false });
+          setCreditsUI(null);
           setGenerateUI({ state:"idle", message:"登入狀態失效，請重新登入。", level:"err" });
           resultEl.textContent = JSON.stringify(data, null, 2);
           return;
@@ -454,14 +558,18 @@ persistSupabaseSessionFromHash();
         throw new Error(data.error || `API error (${resp.status})`);
       }
 
-      // 成功：顯示結果、更新剩餘點數
+      // ✅ 成功：顯示 JSON + 更新 credits_left
       resultEl.textContent = JSON.stringify(data, null, 2);
 
       if (data.credits_left !== undefined) {
         setCreditsUI(data.credits_left);
       }
 
-      setGenerateUI({ state:"idle", message:`完成！已扣 1 點。剩餘點數：${data.credits_left ?? "—"}`, level:"ok" });
+      setGenerateUI({
+        state:"idle",
+        message:`完成！已扣 1 點。剩餘點數：${data.credits_left ?? "—"}`,
+        level:"ok"
+      });
 
     } catch (err) {
       console.error(err);
@@ -470,6 +578,5 @@ persistSupabaseSessionFromHash();
     }
   }
 </script>
-
 </body>
 </html>
