@@ -2,7 +2,7 @@
 <html lang="zh-Hant">
 <head>
 <meta charset="UTF-8" />
-<title>Body Test · AI 穿搭示意圖</title>
+<title>Body Test · AI 穿搭示意圖 & 類似商品</title>
 <meta name="viewport" content="width=device-width, initial-scale=1" />
 <style>
 :root{
@@ -10,211 +10,304 @@
   --text:#111; --muted:#666; --primary:#111;
   --ok:#0a7; --err:#c33;
 }
-body{
-  margin:0; padding:24px;
-  font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
-  background:var(--bg); color:var(--text);
-}
-h1{ margin:0 0 12px; }
-.wrap{
-  max-width:1100px; margin:0 auto;
-  display:grid; gap:14px;
-  grid-template-columns:380px 1fr;
-}
-@media(max-width:900px){ .wrap{grid-template-columns:1fr;} }
-.card{
-  background:var(--card); border:1px solid var(--border);
-  border-radius:14px; padding:16px;
-  box-shadow:0 10px 24px rgba(0,0,0,.06);
-}
+body{margin:0;padding:24px;font-family:system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;background:var(--bg);color:var(--text);}
+h1{margin:0 0 12px;}
+.wrap{max-width:1100px;margin:0 auto;display:grid;gap:14px;grid-template-columns:380px 1fr;}
+@media(max-width:900px){.wrap{grid-template-columns:1fr;}}
+.card{background:var(--card);border:1px solid var(--border);border-radius:14px;padding:16px;box-shadow:0 10px 24px rgba(0,0,0,.06);}
 .row{display:flex;justify-content:space-between;align-items:center;gap:8px;}
 .pill{font-size:12px;padding:4px 10px;border-radius:999px;background:#f1f2f6;color:var(--muted);}
 label{font-size:13px;font-weight:700;display:block;margin-top:10px;}
-input,select{
-  width:100%;margin-top:6px;padding:8px 10px;
-  border-radius:10px;border:1px solid var(--border);
-}
-button{
-  margin-top:14px;width:100%;
-  padding:10px;border-radius:10px;
-  background:var(--primary);color:#fff;border:none;
-}
+input,select{width:100%;margin-top:6px;padding:8px 10px;border-radius:10px;border:1px solid var(--border);}
+button{margin-top:14px;width:100%;padding:10px;border-radius:10px;background:var(--primary);color:#fff;border:none;cursor:pointer;}
 button[disabled]{opacity:.5;cursor:not-allowed;}
 .small{font-size:12px;color:var(--muted);}
-.status{margin-top:8px;font-size:13px;}
+.status{margin-top:8px;font-size:13px;line-height:1.5;}
 .status.ok{color:var(--ok);}
 .status.err{color:var(--err);}
-.image-box{
-  height:420px;border-radius:14px;
-  border:1px solid var(--border);
-  background:#f2f3f7;
-  display:flex;align-items:center;justify-content:center;
-  color:var(--muted);
-}
-.product-grid{
-  display:grid;grid-template-columns:repeat(auto-fill,minmax(160px,1fr));
-  gap:10px;margin-top:10px;
-}
-.product-card{
-  border:1px solid var(--border);border-radius:10px;
-  padding:8px;background:#fff;
-}
-pre{
-  background:#0f1115;color:#d6e0ff;
-  padding:12px;border-radius:10px;
-  font-size:12px;overflow:auto;
-}
+.image-box{height:420px;border-radius:14px;border:1px solid var(--border);background:#f2f3f7;display:flex;align-items:center;justify-content:center;color:var(--muted);}
+.product-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:10px;margin-top:10px;}
+.product-card{border:1px solid var(--border);border-radius:12px;padding:10px;background:#fff;display:flex;gap:10px;}
+.thumb{width:64px;height:64px;border-radius:10px;border:1px solid var(--border);background:#fafbff;display:flex;align-items:center;justify-content:center;overflow:hidden;flex:0 0 auto;}
+.thumb img{width:100%;height:100%;object-fit:cover;}
+.pmeta{display:flex;flex-direction:column;gap:4px;min-width:0;}
+.pmeta .title{font-weight:800;font-size:13px;line-height:1.2;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;}
+.pmeta .sub{font-size:12px;color:var(--muted);display:flex;gap:6px;flex-wrap:wrap;}
+.pmeta a{font-size:12px;color:#1a73e8;text-decoration:none;}
+.pmeta a:hover{text-decoration:underline;}
+pre{background:#0f1115;color:#d6e0ff;padding:12px;border-radius:10px;font-size:12px;overflow:auto;}
+.slot-badge{font-size:11px;padding:2px 8px;border-radius:999px;background:#f1f2f6;color:#555;}
 </style>
 </head>
 
 <body>
-<h1>AI 穿搭示意圖（產品模式）</h1>
+<h1>AI 穿搭示意圖 & 類似商品（先做商品）</h1>
 
 <div class="wrap">
 
-<!-- 左：輸入 -->
-<div class="card">
-  <div class="row">
-    <strong>穿搭條件</strong>
-    <span class="pill">扣 1 點 / 次</span>
-  </div>
+  <!-- 左：輸入 -->
+  <div class="card">
+    <div class="row">
+      <strong>穿搭條件</strong>
+      <span class="pill">扣 1 點 / 次</span>
+    </div>
 
-  <label>性別
-    <select id="gender">
-      <option value="female">女性</option>
-      <option value="male">男性</option>
-      <option value="neutral">中性</option>
-    </select>
-  </label>
-
-  <label>年齡 <input id="age" type="number" value="25"/></label>
-  <label>身高(cm) <input id="height" type="number" value="165"/></label>
-  <label>體重(kg) <input id="weight" type="number" value="55"/></label>
-
-  <label>風格
-    <select id="style">
-      <option value="casual">休閒</option>
-      <option value="minimal">極簡</option>
-      <option value="street">街頭</option>
-      <option value="sporty">運動</option>
-      <option value="smart">Smart Casual</option>
-    </select>
-  </label>
-
-  <label>風格變體（品牌 / 名人）
-    <select id="styleVariant">
-      <option value="">無</option>
-      <option value="brand-uniqlo">UNIQLO</option>
-      <option value="brand-cos">COS</option>
-      <option value="celeb-jennie-minimal">Jennie</option>
-      <option value="celeb-gd-street">G-Dragon</option>
-    </select>
-  </label>
-
-  <label>溫度(°C) <input id="temp" type="number" value="22"/></label>
-
-  <label><input type="checkbox" id="withBag"/> 包包</label>
-  <label><input type="checkbox" id="withHat"/> 帽子</label>
-  <label><input type="checkbox" id="withCoat"/> 外套</label>
-
-  <button id="btn" onclick="generate()">產生穿搭</button>
-  <div id="status" class="status">請先登入再使用</div>
-</div>
-
-<!-- 右：結果 -->
-<div class="card">
-  <div class="row">
-    <strong>AI 穿搭示意圖 & 類似商品</strong>
-    <label class="small">
-      <input type="checkbox" onchange="toggleDebug(this)"> Debug
+    <label>性別
+      <select id="gender">
+        <option value="female">女性</option>
+        <option value="male">男性</option>
+        <option value="neutral">中性</option>
+      </select>
     </label>
+
+    <label>年齡 <input id="age" type="number" value="25" min="10" max="80"/></label>
+    <label>身高(cm) <input id="height" type="number" value="165" min="120" max="210"/></label>
+    <label>體重(kg) <input id="weight" type="number" value="55" min="30" max="200"/></label>
+
+    <label>風格
+      <select id="style">
+        <option value="casual">休閒</option>
+        <option value="minimal">極簡</option>
+        <option value="street">街頭</option>
+        <option value="sporty">運動</option>
+        <option value="smart">Smart Casual</option>
+      </select>
+    </label>
+
+    <label>風格變體（品牌 / 名人）
+      <select id="styleVariant">
+        <option value="">（不使用變體）</option>
+        <optgroup label="品牌 Brand">
+          <option value="brand-uniqlo">UNIQLO</option>
+          <option value="brand-muji">MUJI</option>
+          <option value="brand-cos">COS</option>
+          <option value="brand-nike-tech">Nike Tech</option>
+          <option value="brand-ader-error">Ader Error</option>
+        </optgroup>
+        <optgroup label="名人 Celeb（僅參考穿搭氛圍）">
+          <option value="celeb-iu-casual">IU casual</option>
+          <option value="celeb-jennie-minimal">Jennie minimal</option>
+          <option value="celeb-gd-street">G-Dragon street</option>
+          <option value="celeb-lisa-sporty">Lisa sporty</option>
+        </optgroup>
+      </select>
+    </label>
+
+    <label>溫度(°C) <input id="temp" type="number" value="22" min="-5" max="40"/></label>
+
+    <label style="font-weight:600;"><input type="checkbox" id="withBag"/> 包包</label>
+    <label style="font-weight:600;"><input type="checkbox" id="withHat"/> 帽子</label>
+    <label style="font-weight:600;"><input type="checkbox" id="withCoat"/> 外套</label>
+
+    <button id="btn" onclick="generate()">產生穿搭 & 搜尋商品</button>
+    <div id="status" class="status">提示：需先登入（Bearer token）才能呼叫扣點的 Spec API。</div>
+    <div class="small">右側商品會用 SerpAPI Google Shopping 搜尋並提供正確連結與價格。</div>
   </div>
 
-  <!-- 圖片 -->
-  <div style="margin-top:12px">
-    <div class="pill">AI 穿搭示意圖</div>
-    <div id="imageBox" class="image-box">
-      尚未產生示意圖
+  <!-- 右：結果 -->
+  <div class="card">
+    <div class="row">
+      <strong>AI 穿搭示意圖 & 類似商品</strong>
+      <label class="small" style="cursor:pointer;">
+        <input type="checkbox" id="debugToggle" onchange="toggleDebug(this)" /> Debug
+      </label>
+    </div>
+
+    <!-- 圖片（先 placeholder，下一步再接 image） -->
+    <div style="margin-top:12px">
+      <div class="pill">AI 穿搭示意圖</div>
+      <div id="imageBox" class="image-box" style="margin-top:8px;">
+        尚未產生示意圖（下一步接 image API）
+      </div>
+    </div>
+
+    <!-- 商品 -->
+    <div style="margin-top:16px">
+      <div class="pill">類似商品（Google Shopping）</div>
+      <div id="products" class="product-grid">
+        <div class="small">尚未產生商品</div>
+      </div>
+    </div>
+
+    <!-- Debug JSON -->
+    <div id="debugPanel" style="display:none;margin-top:16px">
+      <div class="pill">Outfit Spec（Debug）</div>
+      <pre id="json">—</pre>
     </div>
   </div>
-
-  <!-- 商品 -->
-  <div style="margin-top:16px">
-    <div class="pill">類似商品</div>
-    <div id="products" class="product-grid">
-      <div class="small">尚未產生商品</div>
-    </div>
-  </div>
-
-  <!-- Debug -->
-  <div id="debug" style="display:none;margin-top:16px">
-    <div class="pill">Outfit Spec（Debug）</div>
-    <pre id="json">—</pre>
-  </div>
-</div>
 
 </div>
 
 <script>
+/* ===== Debug panel ===== */
 function toggleDebug(el){
-  document.getElementById("debug").style.display = el.checked ? "block":"none";
+  document.getElementById("debugPanel").style.display = el.checked ? "block" : "none";
 }
 
+/* ===== Supabase session/token (讀 sb-xxx-auth-token) ===== */
+function getSupabaseSession() {
+  const key = Object.keys(localStorage).find(k => k.startsWith("sb-") && k.endsWith("-auth-token"));
+  if (!key) return null;
+  try { return JSON.parse(localStorage.getItem(key)); } catch { return null; }
+}
+function getSupabaseToken() {
+  const s = getSupabaseSession();
+  return s?.access_token || null;
+}
+
+/* ===== UI render ===== */
 function renderImagePlaceholder(){
   document.getElementById("imageBox").innerHTML =
     `<div style="text-align:center">
       <div>（示意）AI 穿搭圖將顯示於此</div>
-      <div class="small">下一步接 image API</div>
+      <div class="small">你已選擇先完成商品搜尋（B）</div>
      </div>`;
 }
 
-function renderProducts(items){
-  const box=document.getElementById("products");
-  box.innerHTML="";
-  items.forEach(it=>{
-    const d=document.createElement("div");
-    d.className="product-card";
-    d.innerHTML=`
-      <strong>${it.display_name_zh}</strong>
-      <div class="small">${it.generic_name}</div>
-      <div class="small">分類：${it.slot}</div>
-      <div class="small">顏色：${it.color}</div>`;
-    box.appendChild(d);
-  });
+function slotLabel(slot){
+  const map = { top:"上衣", bottom:"下身", shoes:"鞋子", outer:"外套", bag:"包包", hat:"帽子" };
+  return map[slot] || slot;
 }
 
+function renderProductsFromSerp(resultsBySlot){
+  const box = document.getElementById("products");
+  box.innerHTML = "";
+
+  const slots = Object.keys(resultsBySlot || {});
+  if (slots.length === 0) {
+    box.innerHTML = `<div class="small">沒有取得商品結果</div>`;
+    return;
+  }
+
+  // 依穿搭常見順序顯示
+  const order = ["top","bottom","shoes","outer","bag","hat"];
+  const sorted = order.filter(s => slots.includes(s)).concat(slots.filter(s => !order.includes(s)));
+
+  for (const slot of sorted) {
+    const list = resultsBySlot[slot] || [];
+    if (list.length === 0) continue;
+
+    for (const p of list) {
+      const card = document.createElement("div");
+      card.className = "product-card";
+
+      const thumb = p.thumbnail
+        ? `<img src="${p.thumbnail}" alt="thumb"/>`
+        : `<div class="small">No Img</div>`;
+
+      card.innerHTML = `
+        <div class="thumb">${thumb}</div>
+        <div class="pmeta">
+          <div class="sub">
+            <span class="slot-badge">${slotLabel(slot)}</span>
+            ${p.source ? `<span>${p.source}</span>` : ``}
+            ${p.price ? `<span>· ${p.price}</span>` : ``}
+          </div>
+          <div class="title">${escapeHtml(p.title || "")}</div>
+          ${p.link ? `<a href="${p.link}" target="_blank" rel="noopener noreferrer">前往查看商品</a>` : `<span class="small">無連結</span>`}
+          ${p.query ? `<div class="small">query: ${escapeHtml(p.query)}</div>` : ``}
+        </div>
+      `;
+      box.appendChild(card);
+    }
+  }
+}
+
+function escapeHtml(str){
+  return String(str).replace(/[&<>"']/g, (m) => ({
+    "&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#039;"
+  }[m]));
+}
+
+/* ===== Main flow ===== */
 async function generate(){
-  const payload={
-    gender:gender.value,
-    age:+age.value,
-    height:+height.value,
-    weight:+weight.value,
-    style:style.value,
-    styleVariant:styleVariant.value,
-    temp:+temp.value,
-    withBag:withBag.checked,
-    withHat:withHat.checked,
-    withCoat:withCoat.checked
+  const status = document.getElementById("status");
+  const btn = document.getElementById("btn");
+  const jsonEl = document.getElementById("json");
+
+  const token = getSupabaseToken();
+  if (!token) {
+    status.className = "status err";
+    status.textContent = "未登入：找不到 Supabase token（sb-xxx-auth-token）。請先完成 Google 登入。";
+    return;
+  }
+
+  const payload = {
+    gender: document.getElementById("gender").value,
+    age: Number(document.getElementById("age").value),
+    height: Number(document.getElementById("height").value),
+    weight: Number(document.getElementById("weight").value),
+    style: document.getElementById("style").value,
+    styleVariant: document.getElementById("styleVariant").value || "",
+    temp: Number(document.getElementById("temp").value),
+    withBag: document.getElementById("withBag").checked,
+    withHat: document.getElementById("withHat").checked,
+    withCoat: document.getElementById("withCoat").checked
   };
 
-  status.textContent="產生中…";
+  btn.disabled = true;
+  status.className = "status";
+  status.textContent = "Step 1/2：產生 Outfit Spec（會扣 1 點）...";
   renderImagePlaceholder();
+  document.getElementById("products").innerHTML = `<div class="small">搜尋中…</div>`;
 
-  const r=await fetch("/api/generate-outfit-spec",{
-    method:"POST",
-    headers:{
-      "Content-Type":"application/json",
-      "Authorization":"Bearer "+localStorage.getItem("access_token")
-    },
-    body:JSON.stringify(payload)
-  });
+  try {
+    // 1) Outfit spec（你這支有扣點）
+    const specResp = await fetch("/api/generate-outfit-spec", {
+      method:"POST",
+      headers:{
+        "Content-Type":"application/json",
+        "Authorization":"Bearer " + token
+      },
+      body: JSON.stringify(payload)
+    });
 
-  const data=await r.json();
-  json.textContent=JSON.stringify(data,null,2);
+    const specData = await specResp.json().catch(()=> ({}));
+    jsonEl.textContent = JSON.stringify(specData, null, 2);
 
-  renderProducts(data.items||[]);
-  status.textContent=`完成，剩餘點數：${data.credits_left}`;
-  status.className="status ok";
+    if (!specResp.ok) {
+      status.className = "status err";
+      status.textContent = `Spec API 失敗：${specData.error || specResp.status}`;
+      btn.disabled = false;
+      return;
+    }
+
+    status.className = "status ok";
+    status.textContent = `Step 1/2 完成：已扣 1 點，剩餘點數：${specData.credits_left ?? "—"}。Step 2/2：搜尋商品中...`;
+
+    // 2) 搜商品（SerpAPI）
+    const items = Array.isArray(specData.items) ? specData.items : [];
+    const prodResp = await fetch("/api/search-products-from-spec", {
+      method:"POST",
+      headers:{ "Content-Type":"application/json" },
+      body: JSON.stringify({
+        items,
+        gl: "tw",
+        hl: "zh-tw",
+        maxPerSlot: 3
+      })
+    });
+
+    const prodData = await prodResp.json().catch(()=> ({}));
+    if (!prodResp.ok) {
+      status.className = "status err";
+      status.textContent = `商品搜尋失敗：${prodData.error || prodResp.status}`;
+      document.getElementById("products").innerHTML = `<div class="small">商品搜尋失敗</div>`;
+      btn.disabled = false;
+      return;
+    }
+
+    renderProductsFromSerp(prodData.results || {});
+    status.className = "status ok";
+    status.textContent = `完成 ✅（Spec + 商品）剩餘點數：${specData.credits_left ?? "—"}`;
+
+  } catch (e) {
+    console.error(e);
+    status.className = "status err";
+    status.textContent = "發生錯誤：" + (e.message || "Unknown error");
+  } finally {
+    btn.disabled = false;
+  }
 }
 </script>
 </body>
