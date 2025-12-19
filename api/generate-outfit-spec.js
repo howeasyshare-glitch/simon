@@ -1,5 +1,6 @@
 // pages/api/generate-outfit-spec.js
 // 用 gemini-2.0-flash 產生 Outfit Spec JSON（身材＋風格＋品牌/名人變體）
+// ✅ 加入：Supabase token 驗證 + profiles(credits) 自動建立 + 每次扣 1 點 + 回傳 credits_left
 
 const variantPromptMap = {
   "brand-uniqlo": {
@@ -41,12 +42,128 @@ const variantPromptMap = {
   }
 };
 
+// === Supabase helpers (service role) ===
+async function getUserFromSupabase({ supabaseUrl, serviceKey, accessToken }) {
+  const resp = await fetch(`${supabaseUrl}/auth/v1/user`, {
+    headers: {
+      apikey: serviceKey,
+      Authorization: `Bearer ${accessToken}`
+    }
+  });
+  if (!resp.ok) {
+    const t = await resp.text();
+    return { ok: false, detail: t };
+  }
+  const user = await resp.json();
+  return { ok: true, user };
+}
+
+async function getOrCreateProfile({ supabaseUrl, serviceKey, userId, email }) {
+  const headers = {
+    "Content-Type": "application/json",
+    apikey: serviceKey,
+    Authorization: `Bearer ${serviceKey}`
+  };
+
+  // query existing
+  const q = await fetch(
+    `${supabaseUrl}/rest/v1/profiles?id=eq.${userId}&select=id,email,credits`,
+    { headers }
+  );
+
+  if (!q.ok) {
+    const t = await q.text();
+    throw new Error("profiles query failed: " + t);
+  }
+
+  const arr = await q.json();
+  if (arr && arr[0]) return arr[0];
+
+  // create
+  const ins = await fetch(`${supabaseUrl}/rest/v1/profiles`, {
+    method: "POST",
+    headers: { ...headers, Prefer: "return=representation" },
+    body: JSON.stringify({ id: userId, email, credits: 3 })
+  });
+
+  if (!ins.ok) {
+    const t = await ins.text();
+    throw new Error("profiles insert failed: " + t);
+  }
+
+  const created = await ins.json();
+  return created?.[0] || { id: userId, email, credits: 3 };
+}
+
+async function deductOneCredit({ supabaseUrl, serviceKey, userId, currentCredits }) {
+  if (currentCredits <= 0) {
+    return { ok: false, credits_left: 0 };
+  }
+
+  const newCredits = currentCredits - 1;
+  const headers = {
+    "Content-Type": "application/json",
+    apikey: serviceKey,
+    Authorization: `Bearer ${serviceKey}`,
+    Prefer: "return=representation"
+  };
+
+  const upd = await fetch(`${supabaseUrl}/rest/v1/profiles?id=eq.${userId}`, {
+    method: "PATCH",
+    headers,
+    body: JSON.stringify({ credits: newCredits, updated_at: new Date().toISOString() })
+  });
+
+  if (!upd.ok) {
+    const t = await upd.text();
+    throw new Error("profiles update failed: " + t);
+  }
+
+  return { ok: true, credits_left: newCredits };
+}
+
 export default async function handler(req, res) {
   if (req.method !== "POST") {
     return res.status(405).json({ error: "Method not allowed" });
   }
 
   try {
+    // === 0) 驗證登入 token（必須）===
+    const auth = req.headers.authorization || "";
+    const accessToken = auth.startsWith("Bearer ") ? auth.slice(7) : null;
+    if (!accessToken) return res.status(401).json({ error: "Missing Bearer token" });
+
+    const supabaseUrl = process.env.SUPABASE_URL;
+    const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+    if (!supabaseUrl || !serviceKey) {
+      return res.status(500).json({ error: "Supabase env not set (SUPABASE_URL / SUPABASE_SERVICE_ROLE_KEY)" });
+    }
+
+    const userRes = await getUserFromSupabase({ supabaseUrl, serviceKey, accessToken });
+    if (!userRes.ok) {
+      return res.status(401).json({ error: "Invalid token", detail: userRes.detail });
+    }
+
+    const user = userRes.user;
+    const userId = user.id;
+    const userEmail = user.email || "";
+
+    // === 1) 確保 profile 存在 + 取得 credits ===
+    const profile = await getOrCreateProfile({ supabaseUrl, serviceKey, userId, email: userEmail });
+
+    // === 2) 扣 1 點（沒點數就擋）===
+    const deduct = await deductOneCredit({
+      supabaseUrl,
+      serviceKey,
+      userId,
+      currentCredits: Number(profile.credits || 0)
+    });
+
+    if (!deduct.ok) {
+      return res.status(403).json({ error: "No credits left", credits_left: 0 });
+    }
+
+    // === 3) 你的原本邏輯：讀參數 + Gemini 產生 spec ===
     const {
       gender,
       age,
@@ -60,21 +177,12 @@ export default async function handler(req, res) {
       withCoat
     } = req.body || {};
 
-    if (
-      !gender ||
-      !age ||
-      !height ||
-      !weight ||
-      !style ||
-      temp === undefined
-    ) {
-      return res.status(400).json({ error: "Missing parameters" });
+    if (!gender || !age || !height || !weight || !style || temp === undefined) {
+      return res.status(400).json({ error: "Missing parameters", credits_left: deduct.credits_left });
     }
 
     const apiKey = process.env.GEMINI_API_KEY;
-    if (!apiKey) {
-      throw new Error("GEMINI_API_KEY not set");
-    }
+    if (!apiKey) throw new Error("GEMINI_API_KEY not set");
 
     const h = height / 100;
     const bmi = weight / (h * h);
@@ -85,11 +193,7 @@ export default async function handler(req, res) {
     else bodyShape = "plus-size body shape";
 
     const genderText =
-      gender === "female"
-        ? "female"
-        : gender === "male"
-        ? "male"
-        : "gender-neutral";
+      gender === "female" ? "female" : gender === "male" ? "male" : "gender-neutral";
 
     const styleMap = {
       casual: "casual daily style",
@@ -138,7 +242,6 @@ HARD rules (VERY IMPORTANT):
 - If user asked for hat (withHat = true), you MUST include EXACTLY ONE item with slot = "hat".
 - If user did NOT ask for bag/hat/outer, you should NOT include those slots.
 - slot MUST be one of: "top", "bottom", "shoes", "outer", "bag", "hat". No other values.
-- Style should match Japanese minimal casual brands similar to UNIQLO: clean, simple, no logos.
 - Colors should be realistic and easy to match.
 - Use gender-neutral items (gender:"unisex") if they fit both genders.
 - Return ONLY valid JSON, with no extra text, comments, or explanations.
@@ -174,10 +277,7 @@ Please design one complete outfit and return JSON only.
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
         contents: [
-          {
-            role: "user",
-            parts: [{ text: systemInstruction }, { text: userInstruction }]
-          }
+          { role: "user", parts: [{ text: systemInstruction }, { text: userInstruction }] }
         ],
         generationConfig: {
           temperature: 0.7,
@@ -189,9 +289,12 @@ Please design one complete outfit and return JSON only.
     if (!geminiResponse.ok) {
       const errText = await geminiResponse.text();
       console.error("Gemini SPEC API error:", geminiResponse.status, errText);
-      return res
-        .status(500)
-        .json({ error: "Gemini SPEC API error", detail: errText });
+      // ⚠️ 這裡扣點已發生；若你想「失敗不扣點」要做更進階的交易/補償機制
+      return res.status(500).json({
+        error: "Gemini SPEC API error",
+        detail: errText,
+        credits_left: deduct.credits_left
+      });
     }
 
     const data = await geminiResponse.json();
@@ -204,7 +307,8 @@ Please design one complete outfit and return JSON only.
       console.error("Failed to parse outfit JSON:", text);
       return res.status(500).json({
         error: "Failed to parse JSON from Gemini",
-        raw: text
+        raw: text,
+        credits_left: deduct.credits_left
       });
     }
 
@@ -213,24 +317,17 @@ Please design one complete outfit and return JSON only.
     const normalizeSlot = (slot) => {
       if (!slot) return null;
       const s = String(slot).toLowerCase();
-      if (["top", "bottom", "shoes", "outer", "bag", "hat"].includes(s)) {
-        return s;
-      }
+      if (["top", "bottom", "shoes", "outer", "bag", "hat"].includes(s)) return s;
       return null;
     };
 
     items = items
-      .map((it) => ({
-        ...it,
-        slot: normalizeSlot(it.slot)
-      }))
+      .map((it) => ({ ...it, slot: normalizeSlot(it.slot) }))
       .filter((it) => it.slot && it.generic_name);
 
     const hasSlot = (slotName) => items.some((it) => it.slot === slotName);
     const pushIfMissing = (slotName, fallback) => {
-      if (!hasSlot(slotName)) {
-        items.push(fallback);
-      }
+      if (!hasSlot(slotName)) items.push(fallback);
     };
 
     // 必備：top / bottom / shoes
@@ -240,12 +337,7 @@ Please design one complete outfit and return JSON only.
       display_name_zh: "寬版棉質圓領上衣",
       color: "white",
       style: "casual",
-      gender:
-        genderText === "female"
-          ? "female"
-          : genderText === "male"
-          ? "male"
-          : "unisex",
+      gender: genderText === "female" ? "female" : genderText === "male" ? "male" : "unisex",
       warmth: "light"
     });
 
@@ -255,12 +347,7 @@ Please design one complete outfit and return JSON only.
       display_name_zh: "直筒牛仔褲",
       color: "light blue",
       style: "casual",
-      gender:
-        genderText === "female"
-          ? "female"
-          : genderText === "male"
-          ? "male"
-          : "unisex",
+      gender: genderText === "female" ? "female" : genderText === "male" ? "male" : "unisex",
       warmth: "light"
     });
 
@@ -283,125 +370,35 @@ Please design one complete outfit and return JSON only.
 
       if (style === "minimal") {
         outerPreset = isCold
-          ? {
-              generic_name: "long wool coat",
-              display_name_zh: "長版羊毛大衣",
-              color: "camel",
-              style: "minimal",
-              warmth: "warm"
-            }
+          ? { generic_name: "long wool coat", display_name_zh: "長版羊毛大衣", color: "camel", style: "minimal", warmth: "warm" }
           : isCool
-          ? {
-              generic_name: "long belted trench coat",
-              display_name_zh: "綁帶長版風衣外套",
-              color: "beige",
-              style: "minimal",
-              warmth: "medium"
-            }
-          : {
-              generic_name: "lightweight open-front jacket",
-              display_name_zh: "輕薄落肩外套",
-              color: "light beige",
-              style: "minimal",
-              warmth: "light"
-            };
+          ? { generic_name: "long belted trench coat", display_name_zh: "綁帶長版風衣外套", color: "beige", style: "minimal", warmth: "medium" }
+          : { generic_name: "lightweight open-front jacket", display_name_zh: "輕薄落肩外套", color: "light beige", style: "minimal", warmth: "light" };
       } else if (style === "street") {
         outerPreset = isCold
-          ? {
-              generic_name: "oversized padded bomber jacket",
-              display_name_zh: "寬版鋪棉飛行外套",
-              color: "black",
-              style: "street",
-              warmth: "warm"
-            }
+          ? { generic_name: "oversized padded bomber jacket", display_name_zh: "寬版鋪棉飛行外套", color: "black", style: "street", warmth: "warm" }
           : isCool
-          ? {
-              generic_name: "oversized denim jacket",
-              display_name_zh: "寬版牛仔外套",
-              color: "mid blue",
-              style: "street",
-              warmth: "medium"
-            }
-          : {
-              generic_name: "lightweight coach jacket",
-              display_name_zh: "薄款教練外套",
-              color: "navy",
-              style: "street",
-              warmth: "light"
-            };
+          ? { generic_name: "oversized denim jacket", display_name_zh: "寬版牛仔外套", color: "mid blue", style: "street", warmth: "medium" }
+          : { generic_name: "lightweight coach jacket", display_name_zh: "薄款教練外套", color: "navy", style: "street", warmth: "light" };
       } else if (style === "sporty") {
         outerPreset = isCold
-          ? {
-              generic_name: "padded hooded parka",
-              display_name_zh: "鋪棉帽T外套",
-              color: "dark gray",
-              style: "sporty",
-              warmth: "warm"
-            }
+          ? { generic_name: "padded hooded parka", display_name_zh: "鋪棉帽T外套", color: "dark gray", style: "sporty", warmth: "warm" }
           : isCool
-          ? {
-              generic_name: "zip-up track jacket",
-              display_name_zh: "拉鍊運動外套",
-              color: "black",
-              style: "sporty",
-              warmth: "medium"
-            }
-          : {
-              generic_name: "lightweight zip hoodie",
-              display_name_zh: "輕薄連帽外套",
-              color: "light gray",
-              style: "sporty",
-              warmth: "light"
-            };
+          ? { generic_name: "zip-up track jacket", display_name_zh: "拉鍊運動外套", color: "black", style: "sporty", warmth: "medium" }
+          : { generic_name: "lightweight zip hoodie", display_name_zh: "輕薄連帽外套", color: "light gray", style: "sporty", warmth: "light" };
       } else if (style === "smart") {
         outerPreset = isCold
-          ? {
-              generic_name: "tailored wool coat",
-              display_name_zh: "修身羊毛大衣",
-              color: "dark navy",
-              style: "smart",
-              warmth: "warm"
-            }
+          ? { generic_name: "tailored wool coat", display_name_zh: "修身羊毛大衣", color: "dark navy", style: "smart", warmth: "warm" }
           : isCool
-          ? {
-              generic_name: "short trench coat",
-              display_name_zh: "短版風衣外套",
-              color: "beige",
-              style: "smart",
-              warmth: "medium"
-            }
-          : {
-              generic_name: "unstructured blazer",
-              display_name_zh: "輕薄休閒西裝外套",
-              color: "dark gray",
-              style: "smart",
-              warmth: "light"
-            };
+          ? { generic_name: "short trench coat", display_name_zh: "短版風衣外套", color: "beige", style: "smart", warmth: "medium" }
+          : { generic_name: "unstructured blazer", display_name_zh: "輕薄休閒西裝外套", color: "dark gray", style: "smart", warmth: "light" };
       } else {
         // casual
         outerPreset = isCold
-          ? {
-              generic_name: "padded jacket",
-              display_name_zh: "保暖外套",
-              color: "beige",
-              style: "casual",
-              warmth: "warm"
-            }
+          ? { generic_name: "padded jacket", display_name_zh: "保暖外套", color: "beige", style: "casual", warmth: "warm" }
           : isCool
-          ? {
-              generic_name: "cotton parka jacket",
-              display_name_zh: "棉質連帽外套",
-              color: "khaki",
-              style: "casual",
-              warmth: "medium"
-            }
-          : {
-              generic_name: "lightweight utility jacket",
-              display_name_zh: "輕薄機能外套",
-              color: "olive",
-              style: "casual",
-              warmth: "light"
-            };
+          ? { generic_name: "cotton parka jacket", display_name_zh: "棉質連帽外套", color: "khaki", style: "casual", warmth: "medium" }
+          : { generic_name: "lightweight utility jacket", display_name_zh: "輕薄機能外套", color: "olive", style: "casual", warmth: "light" };
       }
 
       pushIfMissing("outer", {
@@ -410,12 +407,7 @@ Please design one complete outfit and return JSON only.
         display_name_zh: outerPreset.display_name_zh,
         color: outerPreset.color,
         style: outerPreset.style,
-        gender:
-          genderText === "female"
-            ? "female"
-            : genderText === "male"
-            ? "male"
-            : "unisex",
+        gender: genderText === "female" ? "female" : genderText === "male" ? "male" : "unisex",
         warmth: outerPreset.warmth
       });
     } else {
@@ -454,7 +446,9 @@ Please design one complete outfit and return JSON only.
 
     items = items.filter((it) => !!it.slot && !!it.generic_name);
 
+    // ✅ 回傳加上 credits_left
     return res.status(200).json({
+      credits_left: deduct.credits_left,
       summary: parsed.summary || "",
       items
     });
