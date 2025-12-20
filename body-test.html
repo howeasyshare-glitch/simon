@@ -1,646 +1,826 @@
 <!DOCTYPE html>
 <html lang="zh-Hant">
 <head>
-<meta charset="UTF-8" />
-<title>Body Test · Outfit + Image + Products</title>
-<meta name="viewport" content="width=device-width, initial-scale=1" />
-<style>
-  :root{
-    --bg:#f5f5f7;
-    --card:#ffffff;
-    --text:#111;
-    --muted:#6b7280;
-    --border:#e5e7eb;
-    --shadow:0 14px 36px rgba(0,0,0,.08);
-    --radius:18px;
-    --accent:#111;
-    --ok:#0a7;
-    --err:#c33;
-  }
-  *{box-sizing:border-box;}
-  body{
-    margin:0; padding:0;
-    font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
-    background: radial-gradient(circle at top, #ffecec 0, #f5f5f7 45%, #f5f5f7 100%);
-    color:var(--text);
-  }
-  .page{max-width:1180px;margin:0 auto;padding:22px 16px 36px;}
-  header{display:flex;align-items:flex-start;justify-content:space-between;gap:12px;margin-bottom:14px;}
-  .brand{display:flex;align-items:center;gap:10px;}
-  .brand-dot{width:28px;height:28px;border-radius:999px;background:linear-gradient(135deg,#111,#444);box-shadow:0 10px 18px rgba(0,0,0,.22);}
-  .brand h1{font-size:20px;margin:0;letter-spacing:.02em;}
-  .sub{font-size:12px;color:var(--muted);margin-top:4px;}
-
-  .layout{display:grid;grid-template-columns:420px minmax(0,1fr);gap:16px;align-items:stretch;}
-  @media(max-width:960px){.layout{grid-template-columns:1fr;}}
-
-  .card{background:var(--card);border:1px solid var(--border);border-radius:var(--radius);box-shadow:var(--shadow);padding:16px;}
-  .card-head{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:12px;}
-  .title{font-size:16px;font-weight:800;margin:0;}
-  .pill{font-size:11px;padding:5px 10px;border-radius:999px;background:#f3f4f6;color:#666;white-space:nowrap;}
-
-  .authbar{display:flex;gap:8px;align-items:center;flex-wrap:wrap;justify-content:flex-end;}
-  .authbar .who{font-size:12px;color:var(--muted);}
-  .btn{border:1px solid var(--border);background:#fff;border-radius:999px;padding:8px 12px;font-size:13px;cursor:pointer;}
-  .btn.primary{background:#111;color:#fff;border-color:#111;}
-  .btn:disabled{opacity:.55;cursor:not-allowed;}
-
-  .field{margin-bottom:12px;}
-  label{display:block;font-size:12px;font-weight:700;margin-bottom:6px;}
-  input,select{width:100%;border:1px solid var(--border);border-radius:12px;padding:10px 12px;background:#fafafa;outline:none;font-size:14px;}
-  input:focus,select:focus{background:#fff;border-color:#c7c7d4;}
-
-  .grid2{display:grid;grid-template-columns:1fr 1fr;gap:12px;}
-  @media(max-width:520px){.grid2{grid-template-columns:1fr;}}
-
-  .optlist{margin-top:8px;border:1px solid var(--border);border-radius:14px;overflow:hidden;background:#fafafa;}
-  .optrow{display:flex;align-items:center;justify-content:space-between;padding:12px;border-top:1px solid var(--border);}
-  .optrow:first-child{border-top:none;}
-  .optname{font-size:13px;font-weight:800;}
-  .optdesc{font-size:12px;color:var(--muted);margin-top:2px;}
-  .optleft{display:flex;flex-direction:column;gap:2px;}
-  .toggle{width:42px;height:24px;border-radius:999px;background:#e5e7eb;position:relative;cursor:pointer;flex:0 0 auto;}
-  .toggle::after{content:"";width:18px;height:18px;border-radius:999px;background:#fff;position:absolute;top:3px;left:3px;box-shadow:0 6px 12px rgba(0,0,0,.12);transition:all .15s ease;}
-  input[type="checkbox"]{display:none;}
-  input[type="checkbox"]:checked + .toggle{background:#111;}
-  input[type="checkbox"]:checked + .toggle::after{left:21px;}
-
-  .actionrow{display:flex;gap:10px;align-items:center;justify-content:space-between;margin-top:12px;}
-  .status{font-size:12px;color:var(--muted);line-height:1.35;min-height:18px;}
-  .status.ok{color:var(--ok);}
-  .status.err{color:var(--err);}
-
-  .resultGrid{display:grid;grid-template-rows:auto auto auto;gap:14px;}
-  .imageWrap{border-radius:var(--radius);border:1px solid var(--border);background:#f3f4f6;height:440px;display:flex;align-items:center;justify-content:center;overflow:hidden;}
-  .imageWrap img{width:100%;height:100%;object-fit:contain;display:block;}
-  .placeholder{color:var(--muted);font-size:13px;text-align:center;padding:12px;}
-
-  .sectionLabel{font-size:12px;font-weight:900;color:#555;margin-bottom:8px;display:flex;align-items:center;justify-content:space-between;gap:10px;}
-  .debugToggle{display:flex;align-items:center;gap:8px;font-size:12px;color:var(--muted);user-select:none;}
-
-  .products{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:10px;}
-  .pitem{border:1px solid var(--border);border-radius:14px;background:#fff;padding:10px;display:flex;gap:10px;}
-  .pthumb{width:64px;height:64px;border-radius:12px;border:1px solid var(--border);background:#fafafa;overflow:hidden;flex:0 0 auto;display:flex;align-items:center;justify-content:center;color:var(--muted);font-size:11px;}
-  .pthumb img{width:100%;height:100%;object-fit:cover;}
-  .pmeta{min-width:0;display:flex;flex-direction:column;gap:4px;}
-  .ptitle{font-size:13px;font-weight:900;line-height:1.2;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;}
-  .psub{font-size:12px;color:var(--muted);display:flex;flex-wrap:wrap;gap:6px;}
-  .plink{font-size:12px;color:#1a73e8;text-decoration:none;}
-  .plink:hover{text-decoration:underline;}
-  .badge{font-size:11px;padding:2px 8px;border-radius:999px;background:#f1f2f6;color:#555;}
-
-  pre{margin:0;background:#0f1115;color:#d6e0ff;padding:12px;border-radius:14px;font-size:12px;overflow:auto;border:1px solid #222;}
-</style>
+  <meta charset="UTF-8" />
+  <title>Outfit Studio · Body Test</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@300;400;500;700&display=swap" rel="stylesheet">
+  <style>
+    :root{
+      --bg:#f5f5f7;
+      --card:#fff;
+      --text:#1b1b1f;
+      --muted:#6b7280;
+      --line:#e5e7eb;
+      --brand:#111827;
+      --accent:#ff6b6b;
+      --ok:#16a34a;
+      --warn:#ef4444;
+      --shadow:0 12px 30px rgba(0,0,0,.08);
+      --r-lg:18px;
+      --r-md:14px;
+      --r-sm:10px;
+    }
+    *{box-sizing:border-box}
+    body{
+      margin:0;
+      font-family:"Noto Sans TC",system-ui,-apple-system,Segoe UI,Roboto,Helvetica,Arial,sans-serif;
+      color:var(--text);
+      background: radial-gradient(circle at top, #ffecec 0, var(--bg) 45%, var(--bg) 100%);
+    }
+    .page{
+      max-width:1280px;
+      margin:0 auto;
+      padding:20px 14px 40px;
+    }
+    header{
+      display:flex;
+      align-items:flex-start;
+      justify-content:space-between;
+      gap:12px;
+      padding:10px 10px 16px;
+    }
+    .brand{
+      display:flex;
+      gap:10px;
+      align-items:center;
+    }
+    .dot{
+      width:28px;height:28px;border-radius:999px;
+      background: linear-gradient(135deg, #111827, #111827);
+      box-shadow:0 10px 20px rgba(0,0,0,.2);
+    }
+    .title{
+      font-size:20px;
+      font-weight:800;
+      letter-spacing:.02em;
+    }
+    .subtitle{
+      color:var(--muted);
+      font-size:13px;
+      margin-top:4px;
+    }
+    .top-right{
+      display:flex;
+      align-items:flex-start;
+      gap:12px;
+    }
+    .auth-box{
+      text-align:right;
+      font-size:13px;
+      color:var(--muted);
+      line-height:1.6;
+      margin-top:2px;
+      min-width:260px;
+    }
+    .auth-box b{color:var(--text)}
+    .btn{
+      border:none;
+      cursor:pointer;
+      border-radius:999px;
+      padding:10px 14px;
+      font-weight:700;
+      background:var(--brand);
+      color:#fff;
+      box-shadow:0 10px 20px rgba(0,0,0,.18);
+      transition:transform .1s ease, opacity .1s ease;
+      white-space:nowrap;
+    }
+    .btn:active{transform:translateY(1px);opacity:.92}
+    .btn.secondary{
+      background:#fff;color:var(--text);
+      border:1px solid var(--line);
+      box-shadow:none;
+      font-weight:700;
+    }
+    .btn.small{padding:8px 12px;font-size:13px}
+    .layout{
+      display:grid;
+      grid-template-columns: minmax(320px, 0.9fr) minmax(0, 1.6fr);
+      gap:16px;
+    }
+    @media (max-width: 980px){
+      .layout{grid-template-columns:1fr}
+      .auth-box{min-width:auto}
+    }
+    .card{
+      background:var(--card);
+      border-radius:var(--r-lg);
+      box-shadow:var(--shadow);
+      border:1px solid rgba(0,0,0,.04);
+      padding:16px;
+    }
+    .card h3{
+      margin:0 0 12px 0;
+      font-size:18px;
+      font-weight:800;
+    }
+    .pill{
+      display:inline-flex;
+      align-items:center;
+      gap:6px;
+      padding:6px 10px;
+      border-radius:999px;
+      font-size:12px;
+      color:var(--muted);
+      background:#f3f4f6;
+      border:1px solid #eef0f3;
+    }
+    .row{
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+      gap:10px;
+      margin-bottom:10px;
+    }
+    .form-grid{
+      display:grid;
+      grid-template-columns:1fr 1fr;
+      gap:10px 12px;
+    }
+    @media (max-width: 560px){
+      .form-grid{grid-template-columns:1fr}
+    }
+    label{
+      display:block;
+      font-size:12px;
+      font-weight:700;
+      margin:0 0 6px 0;
+      color:#111827;
+    }
+    input, select{
+      width:100%;
+      padding:10px 10px;
+      border-radius:12px;
+      border:1px solid var(--line);
+      background:#fafafa;
+      outline:none;
+      font-size:14px;
+    }
+    input:focus, select:focus{
+      background:#fff;
+      border-color:#ff9a9a;
+      box-shadow:0 0 0 3px rgba(255,107,107,.18);
+    }
+    .toggle-list{
+      margin-top:10px;
+      border:1px solid var(--line);
+      border-radius:14px;
+      overflow:hidden;
+    }
+    .toggle-item{
+      display:flex;
+      justify-content:space-between;
+      align-items:center;
+      padding:12px 12px;
+      border-top:1px solid var(--line);
+    }
+    .toggle-item:first-child{border-top:none}
+    .toggle-item .left{
+      display:flex;
+      flex-direction:column;
+      gap:2px;
+    }
+    .toggle-item .name{
+      font-weight:800;
+      font-size:14px;
+    }
+    .toggle-item .desc{
+      font-size:12px;
+      color:var(--muted);
+    }
+    .switch{
+      width:44px;height:24px;border-radius:999px;
+      background:#e5e7eb;
+      position:relative;
+      cursor:pointer;
+      flex:0 0 auto;
+    }
+    .switch::after{
+      content:"";
+      position:absolute;
+      top:3px;left:3px;
+      width:18px;height:18px;border-radius:999px;
+      background:#fff;
+      box-shadow:0 3px 8px rgba(0,0,0,.18);
+      transition:transform .15s ease;
+    }
+    .switch.on{background:#111827}
+    .switch.on::after{transform:translateX(20px)}
+    .primary-wide{
+      width:100%;
+      margin-top:12px;
+      padding:14px 14px;
+      border-radius:14px;
+      font-size:15px;
+      font-weight:900;
+      background:#111827;
+      color:#fff;
+      border:none;
+      cursor:pointer;
+    }
+    .primary-wide:disabled{
+      opacity:.55;cursor:default;
+    }
+    .hint{
+      margin-top:10px;
+      font-size:12px;
+      color:var(--muted);
+    }
+    .hint.error{color:var(--warn);font-weight:800}
+    .right-head{
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+      gap:10px;
+      margin-bottom:10px;
+    }
+    .right-head h3{margin:0;font-size:18px;font-weight:900}
+    .debug-toggle{
+      display:flex;
+      align-items:center;
+      gap:8px;
+      font-size:13px;
+      color:var(--muted);
+      user-select:none;
+      cursor:pointer;
+    }
+    .preview-wrap{
+      border:1px solid var(--line);
+      border-radius:18px;
+      background:linear-gradient(125deg,#fff7f7,#f9fbff);
+      padding:12px;
+    }
+    .preview-inner{
+      height:520px;
+      border-radius:16px;
+      background:#fff;
+      border:1px solid #f0f0f5;
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      overflow:hidden;
+      position:relative;
+    }
+    @media (max-width:980px){ .preview-inner{height:420px} }
+    img#outfit-image{
+      max-width:100%;
+      max-height:100%;
+      object-fit:contain;
+      display:none;
+    }
+    .placeholder{
+      text-align:center;
+      color:var(--muted);
+      font-size:14px;
+      padding:20px;
+    }
+    .section-title{
+      margin:14px 0 8px;
+      display:flex;
+      gap:8px;
+      align-items:center;
+    }
+    .section-title .pill{font-weight:800}
+    .products{
+      border:1px solid var(--line);
+      border-radius:18px;
+      padding:12px;
+      background:#fff;
+      min-height:160px;
+    }
+    .product-item{
+      display:grid;
+      grid-template-columns:60px 1fr;
+      gap:10px;
+      padding:10px;
+      border-radius:14px;
+      background:#fafafa;
+      border:1px solid #f1f2f4;
+      margin-bottom:10px;
+    }
+    .product-item:last-child{margin-bottom:0}
+    .thumb{
+      width:60px;height:60px;border-radius:12px;
+      background:#fff;
+      border:1px solid #eee;
+      display:flex;align-items:center;justify-content:center;
+      overflow:hidden;
+      color:var(--muted);
+      font-size:12px;
+    }
+    .thumb img{width:100%;height:100%;object-fit:cover}
+    .pname{font-weight:900;font-size:14px;margin:0 0 4px}
+    .pmeta{font-size:12px;color:var(--muted);display:flex;gap:8px;flex-wrap:wrap;margin-bottom:6px}
+    .plink{font-size:12px;color:#ff6b6b;text-decoration:none;font-weight:900}
+    .plink:hover{text-decoration:underline}
+    .statusbar{
+      margin-top:10px;
+      font-size:12px;
+      color:var(--muted);
+    }
+    .statusbar .ok{color:var(--ok);font-weight:900}
+    .statusbar .bad{color:var(--warn);font-weight:900}
+    .debug{
+      margin-top:12px;
+      display:none;
+      border:1px dashed #d1d5db;
+      background:#fff;
+      border-radius:14px;
+      padding:10px;
+      font-size:12px;
+      color:#111827;
+      max-height:280px;
+      overflow:auto;
+      white-space:pre-wrap;
+    }
+    .debug.on{display:block}
+  </style>
 </head>
 
 <body>
-<div class="page">
-
-  <header>
-    <div>
+  <div class="page">
+    <header>
       <div class="brand">
-        <div class="brand-dot"></div>
+        <div class="dot"></div>
         <div>
-          <h1>Outfit Studio · Body Test</h1>
-          <div class="sub">流程：Spec（扣點）→ Image → Products。右上可開 Debug。</div>
-        </div>
-      </div>
-    </div>
-
-    <div class="authbar">
-      <span id="who" class="who">未登入</span>
-      <span id="credit" class="pill">點數：—</span>
-      <button id="loginBtn" class="btn primary" onclick="loginGoogle()">Google 登入</button>
-      <button id="logoutBtn" class="btn" style="display:none" onclick="logout()">登出</button>
-    </div>
-  </header>
-
-  <main class="layout">
-
-    <!-- Left -->
-    <section class="card">
-      <div class="card-head">
-        <div class="title">穿搭條件</div>
-        <div class="pill">扣 1 點 / 次</div>
-      </div>
-
-      <div class="grid2">
-        <div class="field">
-          <label>性別</label>
-          <select id="gender">
-            <option value="female">女性</option>
-            <option value="male">男性</option>
-            <option value="neutral">中性</option>
-          </select>
-        </div>
-
-        <div class="field">
-          <label>年齡</label>
-          <input id="age" type="number" value="25" min="10" max="80" />
-        </div>
-
-        <div class="field">
-          <label>身高 (cm)</label>
-          <input id="height" type="number" value="165" min="120" max="210" />
-        </div>
-
-        <div class="field">
-          <label>體重 (kg)</label>
-          <input id="weight" type="number" value="55" min="30" max="200" />
+          <div class="title">Outfit Studio · Body Test</div>
+          <div class="subtitle">流程：Spec（扣點）→ Image → Products。右上可開 Debug。</div>
         </div>
       </div>
 
-      <div class="field">
-        <label>風格</label>
-        <select id="style">
-          <option value="casual">休閒</option>
-          <option value="minimal">極簡</option>
-          <option value="street">街頭</option>
-          <option value="sporty">運動</option>
-          <option value="smart">Smart Casual</option>
-        </select>
+      <div class="top-right">
+        <div class="auth-box">
+          <div id="login-status">未登入</div>
+          <div>點數：<b><span id="credits">—</span></b></div>
+          <div id="auth-hint" style="font-size:12px;color:var(--muted)"></div>
+        </div>
+        <button id="login-btn" class="btn">Google 登入</button>
+        <button id="logout-btn" class="btn secondary" style="display:none;">登出</button>
       </div>
+    </header>
 
-      <div class="field">
-        <label>風格變體（品牌 / 名人）</label>
-        <select id="styleVariant">
-          <option value="">（不使用變體）</option>
-          <optgroup label="品牌 Brand">
-            <option value="brand-uniqlo">UNIQLO</option>
-            <option value="brand-muji">MUJI</option>
-            <option value="brand-cos">COS</option>
-            <option value="brand-nike-tech">Nike Tech</option>
-            <option value="brand-ader-error">Ader Error</option>
-          </optgroup>
-          <optgroup label="名人 Celeb（只參考穿搭氛圍）">
-            <option value="celeb-iu-casual">IU casual</option>
-            <option value="celeb-jennie-minimal">Jennie minimal</option>
-            <option value="celeb-gd-street">G-Dragon street</option>
-            <option value="celeb-lisa-sporty">Lisa sporty</option>
-          </optgroup>
-        </select>
-      </div>
+    <main class="layout">
+      <!-- LEFT -->
+      <section class="card">
+        <div class="row">
+          <h3 style="margin:0">穿搭條件</h3>
+          <span class="pill">扣 1 點 / 次</span>
+        </div>
 
-      <div class="field">
-        <label>溫度 (°C)</label>
-        <input id="temp" type="number" value="22" min="-5" max="40" />
-      </div>
-
-      <div class="optlist">
-        <div class="optrow">
-          <div class="optleft">
-            <div class="optname">包包</div>
-            <div class="optdesc">需要 bag 才會出現在 Spec + 商品</div>
+        <div class="form-grid">
+          <div>
+            <label>性別</label>
+            <select id="gender">
+              <option value="female">女性</option>
+              <option value="male">男性</option>
+              <option value="neutral">中性</option>
+            </select>
           </div>
-          <label style="margin:0;">
-            <input id="withBag" type="checkbox" />
-            <span class="toggle" aria-hidden="true"></span>
-          </label>
-        </div>
-
-        <div class="optrow">
-          <div class="optleft">
-            <div class="optname">帽子</div>
-            <div class="optdesc">需要 hat 才會出現在 Spec + 商品</div>
+          <div>
+            <label>年齡</label>
+            <input id="age" type="number" min="10" max="80" value="25" />
           </div>
-          <label style="margin:0;">
-            <input id="withHat" type="checkbox" />
-            <span class="toggle" aria-hidden="true"></span>
-          </label>
-        </div>
 
-        <div class="optrow">
-          <div class="optleft">
-            <div class="optname">外套</div>
-            <div class="optdesc">勾選或溫度 ≤ 20°C 時會生成 outer</div>
+          <div>
+            <label>身高 (cm)</label>
+            <input id="height" type="number" min="120" max="210" value="165" />
           </div>
-          <label style="margin:0;">
-            <input id="withCoat" type="checkbox" />
-            <span class="toggle" aria-hidden="true"></span>
-          </label>
-        </div>
-      </div>
+          <div>
+            <label>體重 (kg)</label>
+            <input id="weight" type="number" min="30" max="160" value="55" />
+          </div>
 
-      <div class="actionrow">
-        <button id="btn" class="btn primary" style="width:100%; border-radius:14px;" onclick="generate()">
-          產生穿搭圖 & 搜尋商品
-        </button>
-      </div>
+          <div>
+            <label>風格</label>
+            <select id="style">
+              <option value="casual">休閒</option>
+              <option value="minimal">極簡</option>
+              <option value="street">街頭</option>
+              <option value="sporty">運動</option>
+              <option value="smart">Smart Casual</option>
+            </select>
+          </div>
 
-      <div id="status" class="status">提示：請先登入。點數不足時會自動禁止產生。</div>
-    </section>
+          <div>
+            <label>風格變體（品牌 / 名人）</label>
+            <select id="styleVariant">
+              <option value="">（不使用變體）</option>
+              <optgroup label="品牌">
+                <option value="brand-uniqlo">UNIQLO（日系基本）</option>
+                <option value="brand-muji">MUJI（生活極簡）</option>
+                <option value="brand-cos">COS（結構極簡）</option>
+                <option value="brand-nike-tech">Nike Tech（機能運動）</option>
+                <option value="brand-ader-error">Ader Error（韓系街頭）</option>
+              </optgroup>
+              <optgroup label="名人（風格靈感，不模仿臉）">
+                <option value="celeb-iu-casual">IU（韓系清新）</option>
+                <option value="celeb-jennie-minimal">Jennie（極簡辣）</option>
+                <option value="celeb-gd-street">G-Dragon（街頭層次）</option>
+                <option value="celeb-lisa-sporty">Lisa（舞者運動）</option>
+              </optgroup>
+            </select>
+          </div>
 
-    <!-- Right -->
-    <section class="card">
-      <div class="card-head">
-        <div class="title">AI 穿搭示意圖 & 類似商品</div>
-        <div class="debugToggle">
-          <input id="debugToggle" type="checkbox" onchange="toggleDebug(this)" />
-          <span>Debug</span>
-        </div>
-      </div>
-
-      <div class="resultGrid">
-        <!-- Image -->
-        <div>
-          <div class="sectionLabel"><span class="pill">AI 穿搭示意圖</span></div>
-          <div id="imageWrap" class="imageWrap">
-            <div class="placeholder">尚未產生示意圖</div>
+          <div style="grid-column:1/-1">
+            <label>溫度 (°C)</label>
+            <input id="temp" type="number" min="0" max="40" value="22" />
           </div>
         </div>
 
-        <!-- Products -->
-        <div>
-          <div class="sectionLabel"><span class="pill">類似商品（Google Shopping）</span></div>
-          <div id="products" class="products">
-            <div class="placeholder">尚未產生商品</div>
+        <div class="toggle-list">
+          <div class="toggle-item">
+            <div class="left">
+              <div class="name">包包</div>
+              <div class="desc">需要 bag 才會出現在 Spec + 商品</div>
+            </div>
+            <div class="switch" id="sw-bag" role="switch" aria-checked="false"></div>
+          </div>
+          <div class="toggle-item">
+            <div class="left">
+              <div class="name">帽子</div>
+              <div class="desc">需要 hat 才會出現在 Spec + 商品</div>
+            </div>
+            <div class="switch" id="sw-hat" role="switch" aria-checked="false"></div>
+          </div>
+          <div class="toggle-item">
+            <div class="left">
+              <div class="name">外套</div>
+              <div class="desc">勾選或溫度 ≤ 20°C 時會生成 outer</div>
+            </div>
+            <div class="switch" id="sw-coat" role="switch" aria-checked="false"></div>
           </div>
         </div>
 
-        <!-- Debug -->
-        <div id="debugPanel" style="display:none;">
-          <div class="sectionLabel"><span class="pill">Outfit Spec（Debug）</span></div>
-          <pre id="json">—</pre>
+        <button id="go-btn" class="primary-wide">產生穿搭圖 & 搜尋商品</button>
+        <div class="hint" id="form-hint">提示：需先登入（Bearer token）才能呼叫扣點的 Spec API。</div>
+        <div class="hint error" id="error-hint" style="display:none;"></div>
+      </section>
+
+      <!-- RIGHT -->
+      <section class="card">
+        <div class="right-head">
+          <h3>AI 穿搭示意圖 & 類似商品</h3>
+          <div class="debug-toggle" id="debug-toggle">
+            <div class="switch" id="sw-debug" aria-checked="false"></div>
+            <div>Debug</div>
+          </div>
         </div>
-      </div>
-    </section>
 
-  </main>
-</div>
+        <div class="section-title">
+          <span class="pill">AI 穿搭示意圖</span>
+        </div>
 
-<script>
+        <div class="preview-wrap">
+          <div class="preview-inner">
+            <img id="outfit-image" alt="Outfit preview" />
+            <div class="placeholder" id="img-placeholder">尚未產生示意圖</div>
+          </div>
+          <div class="statusbar" id="statusbar">狀態：<span>等待操作</span></div>
+        </div>
+
+        <div class="section-title">
+          <span class="pill">類似商品（Google Shopping）</span>
+        </div>
+        <div class="products" id="products">
+          <div class="placeholder" style="padding:16px;">尚未產生商品</div>
+        </div>
+
+        <pre class="debug" id="debug-box"></pre>
+      </section>
+    </main>
+  </div>
 
   <script>
-  const AUTH_KEY = "os_supabase_access_token_v1";
+    /***********************
+     * 0) CONFIG (請改這裡)
+     ***********************/
+    // 你的 Supabase project ref（看你的網址：https://auiwcsolpvufxxyhnvaf.supabase.co）
+    const SUPABASE_PROJECT_REF = "auiwcsolpvufxxyhnvaf"; // ←如果不同請改
+    const REDIRECT_TO = window.location.origin + "/body-test.html";
 
-  function parseHashTokens() {
-    // Supabase implicit flow: #access_token=...&refresh_token=...&expires_in=...
-    const hash = window.location.hash || "";
-    if (!hash.startsWith("#")) return null;
+    /***********************
+     * 1) AUTH helpers
+     ***********************/
+    const AUTH_KEY = "os_supabase_access_token_v1";
 
-    const params = new URLSearchParams(hash.slice(1));
-    const access_token = params.get("access_token");
-    const refresh_token = params.get("refresh_token");
-    const expires_in = params.get("expires_in");
-
-    if (!access_token) return null;
-
-    return {
-      access_token,
-      refresh_token,
-      expires_in: expires_in ? Number(expires_in) : null,
-      received_at: Date.now()
-    };
-  }
-
-  function saveAccessToken(accessToken) {
-    localStorage.setItem(AUTH_KEY, accessToken);
-  }
-
-  function getAccessToken() {
-    return localStorage.getItem(AUTH_KEY);
-  }
-
-  function clearAccessToken() {
-    localStorage.removeItem(AUTH_KEY);
-  }
-
-  async function fetchMeAndUpdateUI() {
-    const token = getAccessToken();
-    const elStatus = document.getElementById("login-status");
-    const elCredits = document.getElementById("credits");
-
-    if (!token) {
-      if (elStatus) elStatus.textContent = "未登入";
-      if (elCredits) elCredits.textContent = "—";
-      return;
+    function parseHashTokens() {
+      const hash = window.location.hash || "";
+      if (!hash.startsWith("#")) return null;
+      const params = new URLSearchParams(hash.slice(1));
+      const access_token = params.get("access_token");
+      if (!access_token) return null;
+      return { access_token };
     }
 
-    try {
+    function saveAccessToken(t){ localStorage.setItem(AUTH_KEY, t); }
+    function getAccessToken(){ return localStorage.getItem(AUTH_KEY); }
+    function clearAccessToken(){ localStorage.removeItem(AUTH_KEY); }
+
+    async function apiMe() {
+      const token = getAccessToken();
+      if (!token) return { ok:false, error:"no token" };
       const r = await fetch("/api/me", {
         headers: { Authorization: "Bearer " + token }
       });
-      const j = await r.json();
+      const j = await r.json().catch(()=> ({}));
+      if (!r.ok) return { ok:false, error:j?.error || "me failed", detail:j?.detail };
+      return j;
+    }
 
-      if (!r.ok || !j.ok) {
-        // token 失效
-        clearAccessToken();
-        if (elStatus) elStatus.textContent = "登入狀態異常（請重新登入）";
-        if (elCredits) elCredits.textContent = "—";
+    function setAuthUI({ loggedIn, email, credits, hint }) {
+      const st = document.getElementById("login-status");
+      const cr = document.getElementById("credits");
+      const hintEl = document.getElementById("auth-hint");
+      const loginBtn = document.getElementById("login-btn");
+      const logoutBtn = document.getElementById("logout-btn");
+
+      if (loggedIn) {
+        st.textContent = email ? `已登入：${email}` : "已登入";
+        cr.textContent = String(credits ?? 0);
+        hintEl.textContent = hint || "";
+        loginBtn.style.display = "none";
+        logoutBtn.style.display = "inline-flex";
+      } else {
+        st.textContent = hint || "未登入";
+        cr.textContent = "—";
+        hintEl.textContent = "";
+        loginBtn.style.display = "inline-flex";
+        logoutBtn.style.display = "none";
+      }
+    }
+
+    async function refreshAuthUI() {
+      const token = getAccessToken();
+      if (!token) {
+        setAuthUI({ loggedIn:false, hint:"未登入" });
         return;
       }
 
-      if (elStatus) elStatus.textContent = j.user?.email ? `已登入：${j.user.email}` : "已登入";
-      if (elCredits) elCredits.textContent = String(j.credits_left ?? 0);
-    } catch (e) {
-      console.error("me failed:", e);
-      if (elStatus) elStatus.textContent = "登入狀態異常（請重新登入）";
-      if (elCredits) elCredits.textContent = "—";
-    }
-  }
-
-  // ====== page init ======
-  (function initAuth() {
-    // 1) 如果網址 hash 帶 token，存起來並清掉 hash
-    const tokens = parseHashTokens();
-    if (tokens?.access_token) {
-      saveAccessToken(tokens.access_token);
-
-      // 清除 hash，避免每次重整都重跑
-      history.replaceState(null, "", window.location.pathname + window.location.search);
+      const me = await apiMe();
+      if (!me.ok) {
+        clearAccessToken();
+        setAuthUI({ loggedIn:false, hint:"登入狀態異常（請重新登入）" });
+        return;
+      }
+      setAuthUI({ loggedIn:true, email: me.user?.email, credits: me.credits_left, hint:"" });
     }
 
-    // 2) 更新 UI（登入狀態 / 點數）
-    fetchMeAndUpdateUI();
-  })();
-</script>
+    function loginGoogle() {
+      const url =
+        `https://${SUPABASE_PROJECT_REF}.supabase.co/auth/v1/authorize` +
+        `?provider=google&redirect_to=${encodeURIComponent(REDIRECT_TO)}`;
+      window.location.href = url;
+    }
 
-/** 你 Supabase 專案 URL（若更換請改這行） */
-const SUPABASE_URL = "https://auiwcsolpvufxxyhnvaf.supabase.co";
+    function logout() {
+      clearAccessToken();
+      setAuthUI({ loggedIn:false, hint:"已登出" });
+    }
 
-/** ===== Auth token helpers ===== */
-function getSupabaseSessionFromLocalStorage() {
-  const key = Object.keys(localStorage).find(k => k.startsWith("sb-") && k.endsWith("-auth-token"));
-  if (!key) return null;
-  try { return JSON.parse(localStorage.getItem(key)); } catch { return null; }
-}
-function getToken() {
-  const t = localStorage.getItem("access_token");
-  if (t) return t;
-  const s = getSupabaseSessionFromLocalStorage();
-  return s?.access_token || null;
-}
-function setToken(t){ if (t) localStorage.setItem("access_token", t); }
-function clearToken(){ localStorage.removeItem("access_token"); }
-function consumeHashTokenIfAny(){
-  const hash = location.hash || "";
-  if (!hash.includes("access_token=")) return;
-  const params = new URLSearchParams(hash.replace(/^#/, ""));
-  const accessToken = params.get("access_token");
-  if (accessToken) setToken(accessToken);
-  history.replaceState(null, "", location.pathname + location.search);
-}
-function loginGoogle(){
-  const redirectTo = location.origin + location.pathname;
-  const url = `${SUPABASE_URL}/auth/v1/authorize?provider=google&redirect_to=${encodeURIComponent(redirectTo)}`;
-  location.href = url;
-}
-function logout(){
-  clearToken();
-  const sbKey = Object.keys(localStorage).find(k => k.startsWith("sb-") && k.endsWith("-auth-token"));
-  if (sbKey) localStorage.removeItem(sbKey);
-  location.reload();
-}
-function toggleDebug(el){
-  document.getElementById("debugPanel").style.display = el.checked ? "block" : "none";
-}
+    /***********************
+     * 2) UI switches
+     ***********************/
+    function bindSwitch(id, initial=false) {
+      const el = document.getElementById(id);
+      let on = initial;
+      const paint = () => {
+        el.classList.toggle("on", on);
+        el.setAttribute("aria-checked", on ? "true" : "false");
+      };
+      paint();
+      el.addEventListener("click", () => { on = !on; paint(); });
+      return () => on;
+    }
 
-/** ===== Credits / me ===== */
-let CURRENT_CREDITS = null;
+    const getBag = bindSwitch("sw-bag", false);
+    const getHat = bindSwitch("sw-hat", false);
+    const getCoat = bindSwitch("sw-coat", false);
+    const getDebug = bindSwitch("sw-debug", false);
 
-function setCreditsUI(v){
-  CURRENT_CREDITS = v;
-  const credit = document.getElementById("credit");
-  credit.textContent = `點數：${v ?? "—"}`;
+    document.getElementById("debug-toggle").addEventListener("click", (e) => {
+      // 避免點到 switch 之外沒反應
+      if (e.target.id !== "sw-debug") document.getElementById("sw-debug").click();
+      const box = document.getElementById("debug-box");
+      box.classList.toggle("on", getDebug());
+    });
 
-  const btn = document.getElementById("btn");
-  if (typeof v === "number" && v <= 0){
-    btn.disabled = true;
-    const status = document.getElementById("status");
-    status.className = "status err";
-    status.textContent = "點數不足：請補點後再試。";
-  }else{
-    btn.disabled = false;
-  }
-}
+    /***********************
+     * 3) Render helpers
+     ***********************/
+    function setStatus(text, ok=null) {
+      const sb = document.getElementById("statusbar");
+      const span = sb.querySelector("span");
+      span.textContent = text;
+      span.className = ok === true ? "ok" : ok === false ? "bad" : "";
+    }
 
-async function refreshMe(){
-  const token = getToken();
-  const who = document.getElementById("who");
-  const loginBtn = document.getElementById("loginBtn");
-  const logoutBtn = document.getElementById("logoutBtn");
+    function showError(msg) {
+      const el = document.getElementById("error-hint");
+      el.style.display = "block";
+      el.textContent = msg;
+    }
+    function clearError() {
+      const el = document.getElementById("error-hint");
+      el.style.display = "none";
+      el.textContent = "";
+    }
 
-  if (!token){
-    who.textContent = "未登入";
-    setCreditsUI(null);
-    loginBtn.style.display = "inline-block";
-    logoutBtn.style.display = "none";
-    return;
-  }
+    function setImageBase64(base64, mime="image/png") {
+      const img = document.getElementById("outfit-image");
+      const ph = document.getElementById("img-placeholder");
+      img.src = `data:${mime};base64,${base64}`;
+      img.style.display = "block";
+      ph.style.display = "none";
+    }
 
-  try{
-    const r = await fetch("/api/me", { headers: { "Authorization": "Bearer " + token } });
-    const data = await r.json().catch(()=> ({}));
-    if (!r.ok) throw new Error(data?.error || "me api failed");
+    function clearImage() {
+      const img = document.getElementById("outfit-image");
+      const ph = document.getElementById("img-placeholder");
+      img.src = "";
+      img.style.display = "none";
+      ph.style.display = "block";
+    }
 
-    who.textContent = data?.email ? `已登入：${data.email}` : "已登入";
-    setCreditsUI(data.credits_left ?? null);
+    function renderProducts(list) {
+      const root = document.getElementById("products");
+      root.innerHTML = "";
 
-    loginBtn.style.display = "none";
-    logoutBtn.style.display = "inline-block";
-  }catch(e){
-    who.textContent = "登入狀態異常（請重新登入）";
-    setCreditsUI(null);
-    document.getElementById("status").className = "status err";
-    document.getElementById("status").textContent = "登入 token 失效或 /api/me 失敗，請按 Google 登入重試。";
-    loginBtn.style.display = "inline-block";
-    logoutBtn.style.display = "none";
-  }
-}
+      if (!Array.isArray(list) || list.length === 0) {
+        root.innerHTML = `<div class="placeholder" style="padding:16px;">沒有找到商品（或 API 尚未回傳）</div>`;
+        return;
+      }
 
-/** ===== Render helpers ===== */
-function renderImagePlaceholder(msg){
-  const wrap = document.getElementById("imageWrap");
-  wrap.innerHTML = `<div class="placeholder">${msg || "尚未產生示意圖"}</div>`;
-}
-function renderImageBase64(base64, mime){
-  const wrap = document.getElementById("imageWrap");
-  const img = document.createElement("img");
-  img.alt = "Outfit preview";
-  img.src = `data:${mime || "image/png"};base64,` + base64;
-  wrap.innerHTML = "";
-  wrap.appendChild(img);
-}
+      list.forEach(p => {
+        const div = document.createElement("div");
+        div.className = "product-item";
 
-function slotLabel(slot){
-  const m = { top:"上衣", bottom:"下身", shoes:"鞋子", outer:"外套", bag:"包包", hat:"帽子" };
-  return m[slot] || slot;
-}
-function escapeHtml(str){
-  return String(str ?? "").replace(/[&<>"']/g, (m) => ({
-    "&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#039;"
-  }[m]));
-}
+        const thumb = p.thumbnail
+          ? `<img src="${p.thumbnail}" alt="">`
+          : `示意`;
 
-function renderProductsFromSerp(resultsBySlot){
-  const box = document.getElementById("products");
-  box.innerHTML = "";
+        const price = p.price || p.extracted_price || "";
+        const link = p.link || p.product_link || p.url || "#";
 
-  const slots = Object.keys(resultsBySlot || {});
-  if (slots.length === 0){
-    box.innerHTML = `<div class="placeholder">沒有取得商品結果</div>`;
-    return;
-  }
-
-  const order = ["top","bottom","shoes","outer","bag","hat"];
-  const sorted = order.filter(s => slots.includes(s)).concat(slots.filter(s => !order.includes(s)));
-
-  for (const slot of sorted){
-    const list = resultsBySlot[slot] || [];
-    for (const p of list){
-      const el = document.createElement("div");
-      el.className = "pitem";
-      const thumb = p.thumbnail ? `<img src="${p.thumbnail}" alt="thumb">` : `—`;
-      el.innerHTML = `
-        <div class="pthumb">${thumb}</div>
-        <div class="pmeta">
-          <div class="psub">
-            <span class="badge">${slotLabel(slot)}</span>
-            ${p.source ? `<span>${escapeHtml(p.source)}</span>` : ``}
-            ${p.price ? `<span>· ${escapeHtml(p.price)}</span>` : ``}
+        div.innerHTML = `
+          <div class="thumb">${thumb}</div>
+          <div>
+            <div class="pname">${escapeHtml(p.title || p.name || "商品")}</div>
+            <div class="pmeta">
+              ${price ? `<span>價格：${escapeHtml(String(price))}</span>` : ""}
+              ${p.source ? `<span>來源：${escapeHtml(String(p.source))}</span>` : ""}
+            </div>
+            <a class="plink" href="${link}" target="_blank" rel="noopener noreferrer">前往查看</a>
           </div>
-          <div class="ptitle">${escapeHtml(p.title)}</div>
-          ${
-            p.link
-              ? `<a class="plink" href="${p.link}" target="_blank" rel="noopener noreferrer">前往查看商品</a>`
-              : `<span class="psub">無連結</span>`
-          }
-        </div>
-      `;
-      box.appendChild(el);
-    }
-  }
-}
-
-/** ===== Main flow ===== */
-async function generate(){
-  const status = document.getElementById("status");
-  const btn = document.getElementById("btn");
-  const jsonEl = document.getElementById("json");
-  const token = getToken();
-
-  if (!token){
-    status.className = "status err";
-    status.textContent = "未登入：請先按右上角 Google 登入。";
-    return;
-  }
-  if (typeof CURRENT_CREDITS === "number" && CURRENT_CREDITS <= 0){
-    status.className = "status err";
-    status.textContent = "點數不足：請補點後再試。";
-    return;
-  }
-
-  const payload = {
-    gender: document.getElementById("gender").value,
-    age: Number(document.getElementById("age").value),
-    height: Number(document.getElementById("height").value),
-    weight: Number(document.getElementById("weight").value),
-    style: document.getElementById("style").value,
-    styleVariant: document.getElementById("styleVariant").value || "",
-    temp: Number(document.getElementById("temp").value),
-    withBag: document.getElementById("withBag").checked,
-    withHat: document.getElementById("withHat").checked,
-    withCoat: document.getElementById("withCoat").checked
-  };
-
-  btn.disabled = true;
-  status.className = "status";
-  status.textContent = "Step 1/3：產生 Outfit Spec（會扣 1 點）...";
-  renderImagePlaceholder("準備產生示意圖…");
-  document.getElementById("products").innerHTML = `<div class="placeholder">搜尋中…</div>`;
-
-  try{
-    // 1) Spec (扣點)
-    const specResp = await fetch("/api/generate-outfit-spec", {
-      method:"POST",
-      headers:{
-        "Content-Type":"application/json",
-        "Authorization":"Bearer " + token
-      },
-      body: JSON.stringify(payload)
-    });
-
-    const specData = await specResp.json().catch(()=> ({}));
-    jsonEl.textContent = JSON.stringify(specData, null, 2);
-
-    if (!specResp.ok){
-      status.className = "status err";
-      status.textContent = `Spec API 失敗：${specData.error || specResp.status}`;
-      btn.disabled = false;
-      return;
+        `;
+        root.appendChild(div);
+      });
     }
 
-    // 更新點數
-    if (specData.credits_left !== undefined) setCreditsUI(specData.credits_left);
-
-    status.className = "status ok";
-    status.textContent = `Step 1/3 完成：已扣 1 點。剩餘點數：${specData.credits_left ?? "—"}；Step 2/3：產生穿搭圖...`;
-
-    // 2) Image（用同樣 payload 或你想要的字段）
-    const imgResp = await fetch("/api/generate-image", {
-      method:"POST",
-      headers:{ "Content-Type":"application/json" },
-      body: JSON.stringify(payload)
-    });
-
-    const imgData = await imgResp.json().catch(()=> ({}));
-    if (!imgResp.ok){
-      status.className = "status err";
-      status.textContent = `Image API 失敗：${imgData.error || imgResp.status}`;
-      renderImagePlaceholder("圖片產生失敗（請看 Debug / logs）");
-      btn.disabled = false;
-      return;
+    function escapeHtml(str){
+      return String(str)
+        .replaceAll("&","&amp;")
+        .replaceAll("<","&lt;")
+        .replaceAll(">","&gt;")
+        .replaceAll('"',"&quot;")
+        .replaceAll("'","&#039;");
     }
 
-    if (!imgData.image){
-      status.className = "status err";
-      status.textContent = `Image API 無回傳 image`;
-      renderImagePlaceholder("圖片產生失敗（無 image）");
-      btn.disabled = false;
-      return;
+    function setDebug(obj) {
+      const box = document.getElementById("debug-box");
+      box.textContent = typeof obj === "string" ? obj : JSON.stringify(obj, null, 2);
+      box.classList.toggle("on", getDebug());
     }
 
-    renderImageBase64(imgData.image, imgData.mime);
+    /***********************
+     * 4) Main flow: Spec -> Image -> Products
+     ***********************/
+    async function postJson(url, body, withAuth=true) {
+      const headers = { "Content-Type": "application/json" };
+      if (withAuth) {
+        const token = getAccessToken();
+        if (!token) throw new Error("未登入（沒有 Bearer token）");
+        headers["Authorization"] = "Bearer " + token;
+      }
 
-    status.className = "status ok";
-    status.textContent = `Step 2/3 完成：已產生穿搭圖；Step 3/3：搜尋商品...`;
+      const r = await fetch(url, {
+        method: "POST",
+        headers,
+        body: JSON.stringify(body)
+      });
 
-    // 3) Products（依 spec items 搜尋）
-    const items = Array.isArray(specData.items) ? specData.items : [];
-    const prodResp = await fetch("/api/search-products-from-spec", {
-      method:"POST",
-      headers:{ "Content-Type":"application/json" },
-      body: JSON.stringify({ items, gl:"tw", hl:"zh-tw", maxPerSlot: 3 })
-    });
+      const text = await r.text();
+      let j = null;
+      try { j = JSON.parse(text); } catch { j = { raw: text }; }
 
-    const prodData = await prodResp.json().catch(()=> ({}));
-    if (!prodResp.ok){
-      status.className = "status err";
-      status.textContent = `商品搜尋失敗：${prodData.error || prodResp.status}`;
-      document.getElementById("products").innerHTML = `<div class="placeholder">商品搜尋失敗</div>`;
-      btn.disabled = false;
-      return;
+      if (!r.ok) {
+        const msg = j?.error ? `${j.error}${j.detail ? " / " + j.detail : ""}` : `HTTP ${r.status}`;
+        throw new Error(`${url} 失敗：${msg}`);
+      }
+      return j;
     }
 
-    renderProductsFromSerp(prodData.results || {});
-    status.className = "status ok";
-    status.textContent = `完成 ✅（Spec + 圖片 + 商品）剩餘點數：${specData.credits_left ?? "—"}`;
+    async function generateAll() {
+      clearError();
+      setStatus("開始…");
+      clearImage();
+      renderProducts([]);
 
-  }catch(e){
-    console.error(e);
-    status.className = "status err";
-    status.textContent = "發生錯誤：" + (e.message || "Unknown error");
-  }finally{
-    // 若點數被扣到 0，setCreditsUI 會把按鈕 disable
-    if (!(typeof CURRENT_CREDITS === "number" && CURRENT_CREDITS <= 0)){
-      btn.disabled = false;
+      // ensure logged in
+      const me = await apiMe();
+      if (!me.ok) {
+        setAuthUI({ loggedIn:false, hint:"登入 token 失效或 /api/me 失敗，請按 Google 登入重試。" });
+        throw new Error("未登入或 token 失效");
+      }
+
+      const payload = {
+        gender: document.getElementById("gender").value,
+        age: Number(document.getElementById("age").value),
+        height: Number(document.getElementById("height").value),
+        weight: Number(document.getElementById("weight").value),
+        style: document.getElementById("style").value,
+        styleVariant: document.getElementById("styleVariant").value || "",
+        temp: Number(document.getElementById("temp").value),
+        withBag: !!getBag(),
+        withHat: !!getHat(),
+        withCoat: !!getCoat()
+      };
+
+      // 1) Spec (扣點)
+      setStatus("Step 1/3：產生 Outfit Spec（扣點）…");
+      const spec = await postJson("/api/generate-outfit-spec", payload, true);
+      setDebug({ step:"spec", spec });
+
+      // 更新點數 UI（如果 spec 有回 credits_left）
+      if (typeof spec.credits_left !== "undefined") {
+        setAuthUI({ loggedIn:true, email: me.user?.email, credits: spec.credits_left });
+      } else {
+        // 沒回就再拉一次 me（保險）
+        await refreshAuthUI();
+      }
+
+      // 2) Image
+      setStatus("Step 2/3：產生穿搭示意圖…");
+      const imgResp = await postJson("/api/generate-image", {
+        ...payload,
+        outfitSpec: spec
+      }, true);
+
+      if (!imgResp.image) throw new Error("Image API 沒回傳 image");
+      setImageBase64(imgResp.image, imgResp.mime || "image/png");
+      setDebug({ step:"image", imgResp, spec });
+
+      // 3) Products
+      setStatus("Step 3/3：搜尋類似商品…");
+      const prodResp = await postJson("/api/search-products", {
+        items: spec.items || [],
+        locale: "tw"
+      }, true);
+
+      const list = prodResp.products || prodResp.items || prodResp.shopping_results || [];
+      renderProducts(list);
+      setDebug({ step:"products", prodResp, spec });
+
+      setStatus("完成 ✅", true);
     }
-  }
-}
 
-/** boot */
-consumeHashTokenIfAny();
-refreshMe();
-</script>
+    /***********************
+     * 5) INIT
+     ***********************/
+    (function init() {
+      // consume hash token
+      const tokens = parseHashTokens();
+      if (tokens?.access_token) {
+        saveAccessToken(tokens.access_token);
+        // clear hash
+        history.replaceState(null, "", window.location.pathname + window.location.search);
+      }
+
+      // bind auth buttons
+      document.getElementById("login-btn").addEventListener("click", loginGoogle);
+      document.getElementById("logout-btn").addEventListener("click", logout);
+
+      // bind main button
+      const goBtn = document.getElementById("go-btn");
+      goBtn.addEventListener("click", async () => {
+        goBtn.disabled = true;
+        try {
+          await generateAll();
+        } catch (e) {
+          console.error(e);
+          setStatus("失敗 ❌", false);
+          showError(String(e.message || e));
+        } finally {
+          goBtn.disabled = false;
+        }
+      });
+
+      // show debug if toggled
+      document.getElementById("debug-box").classList.toggle("on", getDebug());
+
+      // refresh auth state
+      refreshAuthUI();
+    })();
+  </script>
 </body>
 </html>
