@@ -1,5 +1,9 @@
 // pages/api/me.js
 
+export const config = {
+  runtime: "nodejs",
+};
+
 export default async function handler(req, res) {
   try {
     const SUPABASE_URL = process.env.SUPABASE_URL;
@@ -15,7 +19,6 @@ export default async function handler(req, res) {
       });
     }
 
-    // 1) Bearer token
     const auth = req.headers.authorization || "";
     const match = auth.match(/^Bearer\s+(.+)$/i);
     const accessToken = match?.[1];
@@ -24,67 +27,51 @@ export default async function handler(req, res) {
       return res.status(401).json({ error: "Missing bearer token" });
     }
 
-    // 2) 驗證 token（用 GoTrue REST，不用 SDK）
+    // 1) 驗證使用者 token
     let user;
-    try {
-      const userResp = await fetch(`${SUPABASE_URL}/auth/v1/user`, {
-        headers: {
-          Authorization: `Bearer ${accessToken}`,
-          apikey: SERVICE_ROLE,
-        },
-      });
+    const userResp = await fetch(`${SUPABASE_URL}/auth/v1/user`, {
+      headers: {
+        Authorization: `Bearer ${accessToken}`,
+        apikey: SERVICE_ROLE,
+      },
+    });
 
-      const text = await userResp.text();
-      if (!userResp.ok) {
-        return res.status(401).json({
-          error: "Invalid token",
-          status: userResp.status,
-          detail: text,
-        });
-      }
-
-      user = JSON.parse(text);
-    } catch (e) {
-      return res.status(500).json({
-        error: "Auth fetch failed",
-        detail: String(e),
+    const userText = await userResp.text();
+    if (!userResp.ok) {
+      return res.status(401).json({
+        error: "Invalid token",
+        status: userResp.status,
+        detail: userText,
       });
     }
 
+    user = JSON.parse(userText);
     if (!user?.id) {
       return res.status(401).json({ error: "Invalid user payload", user });
     }
 
-    // 3) 查 profiles（service role）
-    let rows;
-    try {
-      const profResp = await fetch(
-        `${SUPABASE_URL}/rest/v1/profiles?id=eq.${user.id}&select=credits_left`,
-        {
-          headers: {
-            apikey: SERVICE_ROLE,
-            Authorization: `Bearer ${SERVICE_ROLE}`,
-            Accept: "application/json",
-          },
-        }
-      );
-
-      const text = await profResp.text();
-      if (!profResp.ok) {
-        return res.status(500).json({
-          error: "Profile query failed",
-          status: profResp.status,
-          detail: text,
-        });
+    // 2) 讀取 credits
+    const profResp = await fetch(
+      `${SUPABASE_URL}/rest/v1/profiles?id=eq.${user.id}&select=credits_left`,
+      {
+        headers: {
+          apikey: SERVICE_ROLE,
+          Authorization: `Bearer ${SERVICE_ROLE}`,
+          Accept: "application/json",
+        },
       }
+    );
 
-      rows = JSON.parse(text);
-    } catch (e) {
+    const profText = await profResp.text();
+    if (!profResp.ok) {
       return res.status(500).json({
-        error: "Profile fetch failed",
-        detail: String(e),
+        error: "Profile query failed",
+        status: profResp.status,
+        detail: profText,
       });
     }
+
+    const rows = JSON.parse(profText);
 
     return res.status(200).json({
       ok: true,
@@ -92,7 +79,7 @@ export default async function handler(req, res) {
       credits_left: rows?.[0]?.credits_left ?? 0,
     });
   } catch (err) {
-    // 保險用：理論上不會進到這
+    console.error("me error:", err);
     return res.status(500).json({
       error: "Unhandled error",
       detail: String(err),
