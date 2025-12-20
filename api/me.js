@@ -1,11 +1,18 @@
 // pages/api/me.js
+
 export default async function handler(req, res) {
   try {
     const SUPABASE_URL = process.env.SUPABASE_URL;
     const SERVICE_ROLE = process.env.SUPABASE_SERVICE_ROLE_KEY;
 
     if (!SUPABASE_URL || !SERVICE_ROLE) {
-      return res.status(500).json({ error: "Supabase env not set" });
+      return res.status(500).json({
+        error: "Supabase env not set",
+        missing: {
+          SUPABASE_URL: !SUPABASE_URL,
+          SUPABASE_SERVICE_ROLE_KEY: !SERVICE_ROLE,
+        },
+      });
     }
 
     // 1) get bearer token from header
@@ -18,44 +25,69 @@ export default async function handler(req, res) {
     }
 
     // 2) verify token: get user from Supabase Auth
+    // Note: apikey can be anon or service_role; keep service_role here for simplicity.
     const userResp = await fetch(`${SUPABASE_URL}/auth/v1/user`, {
       headers: {
         apikey: SERVICE_ROLE,
         Authorization: `Bearer ${accessToken}`,
+        Accept: "application/json",
       },
     });
 
     const userText = await userResp.text();
     if (!userResp.ok) {
-      return res.status(401).json({ error: "Invalid token", detail: userText });
+      return res.status(401).json({
+        error: "Invalid token",
+        detail: userText,
+        status: userResp.status,
+      });
     }
 
-    const user = JSON.parse(userText);
+    let user;
+    try {
+      user = JSON.parse(userText);
+    } catch {
+      return res.status(401).json({ error: "Invalid user payload (non-JSON)", detail: userText });
+    }
+
     const uid = user?.id;
     const email = user?.email || null;
 
     if (!uid) {
-      return res.status(401).json({ error: "Invalid user payload" });
+      return res.status(401).json({ error: "Invalid user payload (missing id)", detail: user });
     }
 
-    // 3) read credits from profiles
-    const profResp = await fetch(
-      `${SUPABASE_URL}/rest/v1/profiles?id=eq.${encodeURIComponent(uid)}&select=id,credits_left,email`,
-      {
-        headers: {
-          apikey: SERVICE_ROLE,
-          Authorization: `Bearer ${SERVICE_ROLE}`,
-          Accept: "application/json",
-        },
-      }
-    );
+    // 3) read credits from profiles (service role bypasses RLS)
+    const profUrl =
+      `${SUPABASE_URL}/rest/v1/profiles` +
+      `?id=eq.${encodeURIComponent(uid)}` +
+      `&select=id,credits_left,email`;
+
+    const profResp = await fetch(profUrl, {
+      headers: {
+        apikey: SERVICE_ROLE,
+        Authorization: `Bearer ${SERVICE_ROLE}`,
+        Accept: "application/json",
+      },
+    });
 
     const profText = await profResp.text();
     if (!profResp.ok) {
-      return res.status(500).json({ error: "Read profile failed", detail: profText });
+      return res.status(500).json({
+        error: "Read profile failed",
+        detail: profText,
+        status: profResp.status,
+        url: profUrl,
+      });
     }
 
-    const rows = JSON.parse(profText);
+    let rows;
+    try {
+      rows = JSON.parse(profText);
+    } catch {
+      return res.status(500).json({ error: "Profile payload is not JSON", detail: profText });
+    }
+
     const credits_left = rows?.[0]?.credits_left ?? 0;
 
     return res.status(200).json({
@@ -65,6 +97,6 @@ export default async function handler(req, res) {
     });
   } catch (err) {
     console.error("me error:", err);
-    return res.status(500).json({ error: err.message || "Unknown error" });
+    return res.status(500).json({ error: err?.message || "Unknown error" });
   }
 }
