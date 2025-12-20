@@ -1,0 +1,70 @@
+// pages/api/me.js
+export default async function handler(req, res) {
+  try {
+    const SUPABASE_URL = process.env.SUPABASE_URL;
+    const SERVICE_ROLE = process.env.SUPABASE_SERVICE_ROLE_KEY;
+
+    if (!SUPABASE_URL || !SERVICE_ROLE) {
+      return res.status(500).json({ error: "Supabase env not set" });
+    }
+
+    // 1) get bearer token from header
+    const auth = req.headers.authorization || "";
+    const m = auth.match(/^Bearer\s+(.+)$/i);
+    const accessToken = m?.[1];
+
+    if (!accessToken) {
+      return res.status(401).json({ error: "Missing bearer token" });
+    }
+
+    // 2) verify token: get user from Supabase Auth
+    const userResp = await fetch(`${SUPABASE_URL}/auth/v1/user`, {
+      headers: {
+        apikey: SERVICE_ROLE,
+        Authorization: `Bearer ${accessToken}`,
+      },
+    });
+
+    const userText = await userResp.text();
+    if (!userResp.ok) {
+      return res.status(401).json({ error: "Invalid token", detail: userText });
+    }
+
+    const user = JSON.parse(userText);
+    const uid = user?.id;
+    const email = user?.email || null;
+
+    if (!uid) {
+      return res.status(401).json({ error: "Invalid user payload" });
+    }
+
+    // 3) read credits from profiles
+    const profResp = await fetch(
+      `${SUPABASE_URL}/rest/v1/profiles?id=eq.${encodeURIComponent(uid)}&select=id,credits_left,email`,
+      {
+        headers: {
+          apikey: SERVICE_ROLE,
+          Authorization: `Bearer ${SERVICE_ROLE}`,
+          Accept: "application/json",
+        },
+      }
+    );
+
+    const profText = await profResp.text();
+    if (!profResp.ok) {
+      return res.status(500).json({ error: "Read profile failed", detail: profText });
+    }
+
+    const rows = JSON.parse(profText);
+    const credits_left = rows?.[0]?.credits_left ?? 0;
+
+    return res.status(200).json({
+      ok: true,
+      user: { id: uid, email },
+      credits_left,
+    });
+  } catch (err) {
+    console.error("me error:", err);
+    return res.status(500).json({ error: err.message || "Unknown error" });
+  }
+}
