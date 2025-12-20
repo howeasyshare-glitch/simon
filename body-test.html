@@ -259,13 +259,14 @@
     /***********************
      * 1) Supabase client
      ***********************/
-    const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
-      auth: {
-        persistSession: true,
-        autoRefreshToken: true,
-        detectSessionInUrl: true
-      }
-    });
+   const sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
+  auth: {
+    persistSession: true,
+    autoRefreshToken: true,
+    detectSessionInUrl: true
+  }
+});
+
 
     // 你原本後端 /api/me 用的 key（維持不變）
     const AUTH_KEY = "os_supabase_access_token_v1";
@@ -314,7 +315,7 @@
 
     async function refreshAuthUI() {
       // 1) 先從 supabase session 拿 JWT
-      const { data } = await supabase.auth.getSession();
+      const { data } = await sb.auth.getSession();
       const access = data?.session?.access_token;
 
       if (!access) {
@@ -337,10 +338,11 @@
 
     async function loginGoogle() {
       // ✅ 交給 SDK：它會自己處理 state / PKCE / callback
-      const { error } = await supabase.auth.signInWithOAuth({
-        provider: "google",
-        options: { redirectTo: REDIRECT_TO }
-      });
+      const { error } = await sb.auth.signInWithOAuth({
+  provider: "google",
+  options: { redirectTo: REDIRECT_TO }
+});
+
       if (error) {
         console.error(error);
         setAuthUI({ loggedIn:false, hint:"登入失敗：" + (error.message || String(error)) });
@@ -349,7 +351,7 @@
 
     async function logout() {
       clearBearerForApi();
-      await supabase.auth.signOut();
+      await sb.auth.signOut();
       setAuthUI({ loggedIn:false, hint:"已登出" });
     }
 
@@ -566,7 +568,7 @@
 
       // ✅ SDK 會自動 detectSessionInUrl：OAuth 回來時就能建立 session
       // 監聽 auth 事件，確保 token 落地後立刻刷新點數 UI
-      supabase.auth.onAuthStateChange((event) => {
+      sb.auth.onAuthStateChange((event) => {
         if (getDebug()) console.log("[auth event]", event);
         refreshAuthUI();
       });
