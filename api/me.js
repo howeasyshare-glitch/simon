@@ -1,6 +1,4 @@
 // pages/api/me.js
-import { createClient } from "@supabase/supabase-js";
-
 export default async function handler(req, res) {
   try {
     const SUPABASE_URL = process.env.SUPABASE_URL;
@@ -16,61 +14,79 @@ export default async function handler(req, res) {
       });
     }
 
-    // 1) Bearer token
+    // 1) bearer
     const auth = req.headers.authorization || "";
     const m = auth.match(/^Bearer\s+(.+)$/i);
     const accessToken = m?.[1];
+    if (!accessToken) return res.status(401).json({ error: "Missing bearer token" });
 
-    if (!accessToken) {
-      return res.status(401).json({ error: "Missing bearer token" });
-    }
+    // 2) verify user token via GoTrue user endpoint
+    // apikey 用 anon 或 service_role 都行，但這裡用 service_role 保守
+    const userResp = await fetch(`${SUPABASE_URL}/auth/v1/user`, {
+      headers: {
+        apikey: SERVICE_ROLE,
+        Authorization: `Bearer ${accessToken}`,
+        Accept: "application/json",
+      },
+    });
 
-    // 2) 建立 admin client
-    const supabaseAdmin = createClient(
-      SUPABASE_URL,
-      SERVICE_ROLE,
-      {
-        auth: {
-          autoRefreshToken: false,
-          persistSession: false,
-        },
-      }
-    );
-
-    // 3) 用官方 API 驗證 JWT（⭐關鍵）
-    const { data: userData, error: userError } =
-      await supabaseAdmin.auth.getUser(accessToken);
-
-    if (userError || !userData?.user) {
+    const userText = await userResp.text();
+    if (!userResp.ok) {
       return res.status(401).json({
-        error: "Invalid token",
-        detail: userError?.message,
+        error: "Invalid token (auth/v1/user failed)",
+        status: userResp.status,
+        detail: userText,
       });
     }
 
-    const user = userData.user;
-    const uid = user.id;
-    const email = user.email || null;
+    let user;
+    try {
+      user = JSON.parse(userText);
+    } catch {
+      return res.status(401).json({ error: "Invalid user payload (non-JSON)", detail: userText });
+    }
 
-    // 4) 查 profiles（service role 自動 bypass RLS）
-    const { data: profile, error: profileError } =
-      await supabaseAdmin
-        .from("profiles")
-        .select("credits_left")
-        .eq("id", uid)
-        .single();
+    const uid = user?.id;
+    const email = user?.email || null;
+    if (!uid) return res.status(401).json({ error: "Invalid user payload (missing id)", detail: user });
 
-    if (profileError) {
+    // 3) read credits from profiles (service role bypasses RLS)
+    const profUrl =
+      `${SUPABASE_URL}/rest/v1/profiles` +
+      `?id=eq.${encodeURIComponent(uid)}` +
+      `&select=id,credits_left,email`;
+
+    const profResp = await fetch(profUrl, {
+      headers: {
+        apikey: SERVICE_ROLE,
+        Authorization: `Bearer ${SERVICE_ROLE}`,
+        Accept: "application/json",
+      },
+    });
+
+    const profText = await profResp.text();
+    if (!profResp.ok) {
       return res.status(500).json({
         error: "Read profile failed",
-        detail: profileError.message,
+        status: profResp.status,
+        detail: profText,
+        url: profUrl,
       });
     }
+
+    let rows;
+    try {
+      rows = JSON.parse(profText);
+    } catch {
+      return res.status(500).json({ error: "Profile payload is not JSON", detail: profText });
+    }
+
+    const credits_left = rows?.[0]?.credits_left ?? 0;
 
     return res.status(200).json({
       ok: true,
       user: { id: uid, email },
-      credits_left: profile?.credits_left ?? 0,
+      credits_left,
     });
   } catch (err) {
     console.error("me error:", err);
