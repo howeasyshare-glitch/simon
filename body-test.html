@@ -5,21 +5,16 @@
   <title>Outfit Studio · Body Test</title>
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@300;400;500;700&display=swap" rel="stylesheet">
+
+  <!-- ✅ Supabase JS (CDN) -->
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
   <style>
     :root{
-      --bg:#f5f5f7;
-      --card:#fff;
-      --text:#1b1b1f;
-      --muted:#6b7280;
-      --line:#e5e7eb;
-      --brand:#111827;
-      --accent:#ff6b6b;
-      --ok:#16a34a;
-      --warn:#ef4444;
+      --bg:#f5f5f7; --card:#fff; --text:#1b1b1f; --muted:#6b7280; --line:#e5e7eb;
+      --brand:#111827; --accent:#ff6b6b; --ok:#16a34a; --warn:#ef4444;
       --shadow:0 12px 30px rgba(0,0,0,.08);
-      --r-lg:18px;
-      --r-md:14px;
-      --r-sm:10px;
+      --r-lg:18px; --r-md:14px; --r-sm:10px;
     }
     *{box-sizing:border-box}
     body{
@@ -28,319 +23,70 @@
       color:var(--text);
       background: radial-gradient(circle at top, #ffecec 0, var(--bg) 45%, var(--bg) 100%);
     }
-    .page{
-      max-width:1280px;
-      margin:0 auto;
-      padding:20px 14px 40px;
-    }
-    header{
-      display:flex;
-      align-items:flex-start;
-      justify-content:space-between;
-      gap:12px;
-      padding:10px 10px 16px;
-    }
-    .brand{
-      display:flex;
-      gap:10px;
-      align-items:center;
-    }
-    .dot{
-      width:28px;height:28px;border-radius:999px;
-      background: linear-gradient(135deg, #111827, #111827);
-      box-shadow:0 10px 20px rgba(0,0,0,.2);
-    }
-    .title{
-      font-size:20px;
-      font-weight:800;
-      letter-spacing:.02em;
-    }
-    .subtitle{
-      color:var(--muted);
-      font-size:13px;
-      margin-top:4px;
-    }
-    .top-right{
-      display:flex;
-      align-items:flex-start;
-      gap:12px;
-    }
-    .auth-box{
-      text-align:right;
-      font-size:13px;
-      color:var(--muted);
-      line-height:1.6;
-      margin-top:2px;
-      min-width:260px;
-    }
+    .page{max-width:1280px;margin:0 auto;padding:20px 14px 40px;}
+    header{display:flex;align-items:flex-start;justify-content:space-between;gap:12px;padding:10px 10px 16px;}
+    .brand{display:flex;gap:10px;align-items:center;}
+    .dot{width:28px;height:28px;border-radius:999px;background: linear-gradient(135deg, #111827, #111827);box-shadow:0 10px 20px rgba(0,0,0,.2);}
+    .title{font-size:20px;font-weight:800;letter-spacing:.02em;}
+    .subtitle{color:var(--muted);font-size:13px;margin-top:4px;}
+    .top-right{display:flex;align-items:flex-start;gap:12px;}
+    .auth-box{text-align:right;font-size:13px;color:var(--muted);line-height:1.6;margin-top:2px;min-width:260px;}
     .auth-box b{color:var(--text)}
     .btn{
-      border:none;
-      cursor:pointer;
-      border-radius:999px;
-      padding:10px 14px;
-      font-weight:700;
-      background:var(--brand);
-      color:#fff;
-      box-shadow:0 10px 20px rgba(0,0,0,.18);
-      transition:transform .1s ease, opacity .1s ease;
-      white-space:nowrap;
+      border:none;cursor:pointer;border-radius:999px;padding:10px 14px;font-weight:700;
+      background:var(--brand);color:#fff;box-shadow:0 10px 20px rgba(0,0,0,.18);
+      transition:transform .1s ease, opacity .1s ease;white-space:nowrap;
     }
     .btn:active{transform:translateY(1px);opacity:.92}
-    .btn.secondary{
-      background:#fff;color:var(--text);
-      border:1px solid var(--line);
-      box-shadow:none;
-      font-weight:700;
-    }
-    .btn.small{padding:8px 12px;font-size:13px}
-    .layout{
-      display:grid;
-      grid-template-columns: minmax(320px, 0.9fr) minmax(0, 1.6fr);
-      gap:16px;
-    }
-    @media (max-width: 980px){
-      .layout{grid-template-columns:1fr}
-      .auth-box{min-width:auto}
-    }
-    .card{
-      background:var(--card);
-      border-radius:var(--r-lg);
-      box-shadow:var(--shadow);
-      border:1px solid rgba(0,0,0,.04);
-      padding:16px;
-    }
-    .card h3{
-      margin:0 0 12px 0;
-      font-size:18px;
-      font-weight:800;
-    }
-    .pill{
-      display:inline-flex;
-      align-items:center;
-      gap:6px;
-      padding:6px 10px;
-      border-radius:999px;
-      font-size:12px;
-      color:var(--muted);
-      background:#f3f4f6;
-      border:1px solid #eef0f3;
-    }
-    .row{
-      display:flex;
-      align-items:center;
-      justify-content:space-between;
-      gap:10px;
-      margin-bottom:10px;
-    }
-    .form-grid{
-      display:grid;
-      grid-template-columns:1fr 1fr;
-      gap:10px 12px;
-    }
-    @media (max-width: 560px){
-      .form-grid{grid-template-columns:1fr}
-    }
-    label{
-      display:block;
-      font-size:12px;
-      font-weight:700;
-      margin:0 0 6px 0;
-      color:#111827;
-    }
-    input, select{
-      width:100%;
-      padding:10px 10px;
-      border-radius:12px;
-      border:1px solid var(--line);
-      background:#fafafa;
-      outline:none;
-      font-size:14px;
-    }
-    input:focus, select:focus{
-      background:#fff;
-      border-color:#ff9a9a;
-      box-shadow:0 0 0 3px rgba(255,107,107,.18);
-    }
-    .toggle-list{
-      margin-top:10px;
-      border:1px solid var(--line);
-      border-radius:14px;
-      overflow:hidden;
-    }
-    .toggle-item{
-      display:flex;
-      justify-content:space-between;
-      align-items:center;
-      padding:12px 12px;
-      border-top:1px solid var(--line);
-    }
+    .btn.secondary{background:#fff;color:var(--text);border:1px solid var(--line);box-shadow:none;font-weight:700;}
+    .layout{display:grid;grid-template-columns: minmax(320px, 0.9fr) minmax(0, 1.6fr);gap:16px;}
+    @media (max-width: 980px){.layout{grid-template-columns:1fr}.auth-box{min-width:auto}}
+    .card{background:var(--card);border-radius:var(--r-lg);box-shadow:var(--shadow);border:1px solid rgba(0,0,0,.04);padding:16px;}
+    .pill{display:inline-flex;align-items:center;gap:6px;padding:6px 10px;border-radius:999px;font-size:12px;color:var(--muted);background:#f3f4f6;border:1px solid #eef0f3;}
+    .row{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:10px;}
+    .form-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px 12px;}
+    @media (max-width: 560px){.form-grid{grid-template-columns:1fr}}
+    label{display:block;font-size:12px;font-weight:700;margin:0 0 6px 0;color:#111827;}
+    input, select{width:100%;padding:10px 10px;border-radius:12px;border:1px solid var(--line);background:#fafafa;outline:none;font-size:14px;}
+    input:focus, select:focus{background:#fff;border-color:#ff9a9a;box-shadow:0 0 0 3px rgba(255,107,107,.18);}
+    .toggle-list{margin-top:10px;border:1px solid var(--line);border-radius:14px;overflow:hidden;}
+    .toggle-item{display:flex;justify-content:space-between;align-items:center;padding:12px 12px;border-top:1px solid var(--line);}
     .toggle-item:first-child{border-top:none}
-    .toggle-item .left{
-      display:flex;
-      flex-direction:column;
-      gap:2px;
-    }
-    .toggle-item .name{
-      font-weight:800;
-      font-size:14px;
-    }
-    .toggle-item .desc{
-      font-size:12px;
-      color:var(--muted);
-    }
-    .switch{
-      width:44px;height:24px;border-radius:999px;
-      background:#e5e7eb;
-      position:relative;
-      cursor:pointer;
-      flex:0 0 auto;
-    }
-    .switch::after{
-      content:"";
-      position:absolute;
-      top:3px;left:3px;
-      width:18px;height:18px;border-radius:999px;
-      background:#fff;
-      box-shadow:0 3px 8px rgba(0,0,0,.18);
-      transition:transform .15s ease;
-    }
+    .toggle-item .left{display:flex;flex-direction:column;gap:2px;}
+    .toggle-item .name{font-weight:800;font-size:14px;}
+    .toggle-item .desc{font-size:12px;color:var(--muted);}
+    .switch{width:44px;height:24px;border-radius:999px;background:#e5e7eb;position:relative;cursor:pointer;flex:0 0 auto;}
+    .switch::after{content:"";position:absolute;top:3px;left:3px;width:18px;height:18px;border-radius:999px;background:#fff;box-shadow:0 3px 8px rgba(0,0,0,.18);transition:transform .15s ease;}
     .switch.on{background:#111827}
     .switch.on::after{transform:translateX(20px)}
-    .primary-wide{
-      width:100%;
-      margin-top:12px;
-      padding:14px 14px;
-      border-radius:14px;
-      font-size:15px;
-      font-weight:900;
-      background:#111827;
-      color:#fff;
-      border:none;
-      cursor:pointer;
-    }
-    .primary-wide:disabled{
-      opacity:.55;cursor:default;
-    }
-    .hint{
-      margin-top:10px;
-      font-size:12px;
-      color:var(--muted);
-    }
+    .primary-wide{width:100%;margin-top:12px;padding:14px 14px;border-radius:14px;font-size:15px;font-weight:900;background:#111827;color:#fff;border:none;cursor:pointer;}
+    .primary-wide:disabled{opacity:.55;cursor:default;}
+    .hint{margin-top:10px;font-size:12px;color:var(--muted);}
     .hint.error{color:var(--warn);font-weight:800}
-    .right-head{
-      display:flex;
-      align-items:center;
-      justify-content:space-between;
-      gap:10px;
-      margin-bottom:10px;
-    }
+    .right-head{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:10px;}
     .right-head h3{margin:0;font-size:18px;font-weight:900}
-    .debug-toggle{
-      display:flex;
-      align-items:center;
-      gap:8px;
-      font-size:13px;
-      color:var(--muted);
-      user-select:none;
-      cursor:pointer;
-    }
-    .preview-wrap{
-      border:1px solid var(--line);
-      border-radius:18px;
-      background:linear-gradient(125deg,#fff7f7,#f9fbff);
-      padding:12px;
-    }
-    .preview-inner{
-      height:520px;
-      border-radius:16px;
-      background:#fff;
-      border:1px solid #f0f0f5;
-      display:flex;
-      align-items:center;
-      justify-content:center;
-      overflow:hidden;
-      position:relative;
-    }
+    .debug-toggle{display:flex;align-items:center;gap:8px;font-size:13px;color:var(--muted);user-select:none;cursor:pointer;}
+    .preview-wrap{border:1px solid var(--line);border-radius:18px;background:linear-gradient(125deg,#fff7f7,#f9fbff);padding:12px;}
+    .preview-inner{height:520px;border-radius:16px;background:#fff;border:1px solid #f0f0f5;display:flex;align-items:center;justify-content:center;overflow:hidden;position:relative;}
     @media (max-width:980px){ .preview-inner{height:420px} }
-    img#outfit-image{
-      max-width:100%;
-      max-height:100%;
-      object-fit:contain;
-      display:none;
-    }
-    .placeholder{
-      text-align:center;
-      color:var(--muted);
-      font-size:14px;
-      padding:20px;
-    }
-    .section-title{
-      margin:14px 0 8px;
-      display:flex;
-      gap:8px;
-      align-items:center;
-    }
+    img#outfit-image{max-width:100%;max-height:100%;object-fit:contain;display:none;}
+    .placeholder{text-align:center;color:var(--muted);font-size:14px;padding:20px;}
+    .section-title{margin:14px 0 8px;display:flex;gap:8px;align-items:center;}
     .section-title .pill{font-weight:800}
-    .products{
-      border:1px solid var(--line);
-      border-radius:18px;
-      padding:12px;
-      background:#fff;
-      min-height:160px;
-    }
-    .product-item{
-      display:grid;
-      grid-template-columns:60px 1fr;
-      gap:10px;
-      padding:10px;
-      border-radius:14px;
-      background:#fafafa;
-      border:1px solid #f1f2f4;
-      margin-bottom:10px;
-    }
+    .products{border:1px solid var(--line);border-radius:18px;padding:12px;background:#fff;min-height:160px;}
+    .product-item{display:grid;grid-template-columns:60px 1fr;gap:10px;padding:10px;border-radius:14px;background:#fafafa;border:1px solid #f1f2f4;margin-bottom:10px;}
     .product-item:last-child{margin-bottom:0}
-    .thumb{
-      width:60px;height:60px;border-radius:12px;
-      background:#fff;
-      border:1px solid #eee;
-      display:flex;align-items:center;justify-content:center;
-      overflow:hidden;
-      color:var(--muted);
-      font-size:12px;
-    }
+    .thumb{width:60px;height:60px;border-radius:12px;background:#fff;border:1px solid #eee;display:flex;align-items:center;justify-content:center;overflow:hidden;color:var(--muted);font-size:12px;}
     .thumb img{width:100%;height:100%;object-fit:cover}
     .pname{font-weight:900;font-size:14px;margin:0 0 4px}
     .pmeta{font-size:12px;color:var(--muted);display:flex;gap:8px;flex-wrap:wrap;margin-bottom:6px}
     .plink{font-size:12px;color:#ff6b6b;text-decoration:none;font-weight:900}
     .plink:hover{text-decoration:underline}
-    .statusbar{
-      margin-top:10px;
-      font-size:12px;
-      color:var(--muted);
-    }
+    .statusbar{margin-top:10px;font-size:12px;color:var(--muted);}
     .statusbar .ok{color:var(--ok);font-weight:900}
     .statusbar .bad{color:var(--warn);font-weight:900}
-    .debug{
-      margin-top:12px;
-      display:none;
-      border:1px dashed #d1d5db;
-      background:#fff;
-      border-radius:14px;
-      padding:10px;
-      font-size:12px;
-      color:#111827;
-      max-height:280px;
-      overflow:auto;
-      white-space:pre-wrap;
-      word-break:break-word;
-    }
+    .debug{margin-top:12px;display:none;border:1px dashed #d1d5db;background:#fff;border-radius:14px;padding:10px;font-size:12px;color:#111827;max-height:280px;overflow:auto;white-space:pre-wrap;word-break:break-word;}
     .debug.on{display:block}
-    .mini{
-      margin-top:6px;
-      font-size:12px;
-      color:var(--muted);
-    }
   </style>
 </head>
 
@@ -359,7 +105,7 @@
         <div class="auth-box">
           <div id="login-status">未登入</div>
           <div>點數：<b><span id="credits">—</span></b></div>
-          <div id="auth-hint" class="mini"></div>
+          <div id="auth-hint" style="font-size:12px;color:var(--muted)"></div>
         </div>
         <button id="login-btn" class="btn">Google 登入</button>
         <button id="logout-btn" class="btn secondary" style="display:none;">登出</button>
@@ -499,51 +245,38 @@
 
   <script>
     /***********************
-     * 0) CONFIG（只需確認這裡）
+     * 0) CONFIG（你只要填 ANON KEY）
      ***********************/
-    const SUPABASE_PROJECT_REF = "auiwcsolpvufxxyhnvaf"; // 你的 supabase project ref
+    const SUPABASE_PROJECT_REF = "auiwcsolpvufxxyhnvaf";
     const SUPABASE_URL = `https://${SUPABASE_PROJECT_REF}.supabase.co`;
 
-    // ✅ 改成永遠回到「當前頁」：避免 preview domain / www / localhost 不一致導致 localStorage 永遠讀不到
+    // ✅ 這個是公開 anon key（不是 service_role）
+    const SUPABASE_ANON_KEY = "請貼上你的 SUPABASE_ANON_KEY";
+
+    // ✅ 永遠回到當前頁（避免 domain 不一致）
     const REDIRECT_TO = `${location.origin}${location.pathname}`;
 
     /***********************
-     * 1) AUTH helpers
+     * 1) Supabase client
      ***********************/
+    const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
+      auth: {
+        persistSession: true,
+        autoRefreshToken: true,
+        detectSessionInUrl: true
+      }
+    });
+
+    // 你原本後端 /api/me 用的 key（維持不變）
     const AUTH_KEY = "os_supabase_access_token_v1";
 
-    function parseHashTokens() {
-      const hash = window.location.hash || "";
-      if (!hash.startsWith("#")) return null;
-      const params = new URLSearchParams(hash.slice(1));
-      const access_token = params.get("access_token");
-      if (!access_token) return null;
-      return { access_token };
-    }
+    function saveBearerForApi(token) { localStorage.setItem(AUTH_KEY, token); }
+    function getBearerForApi() { return localStorage.getItem(AUTH_KEY); }
+    function clearBearerForApi() { localStorage.removeItem(AUTH_KEY); }
 
-    function detectCodeFlow() {
-      const sp = new URLSearchParams(window.location.search);
-      const code = sp.get("code");
-      return code || null;
-    }
-
-    function saveAccessToken(t){ localStorage.setItem(AUTH_KEY, t); }
-    function getAccessToken(){ return localStorage.getItem(AUTH_KEY); }
-    function clearAccessToken(){ localStorage.removeItem(AUTH_KEY); }
-
-    async function apiMe() {
-      const token = getAccessToken();
-      if (!token) return { ok:false, error:"no token" };
-
-      const r = await fetch("/api/me", {
-        headers: { Authorization: "Bearer " + token }
-      });
-
-      const j = await r.json().catch(()=> ({}));
-      if (!r.ok) return { ok:false, error:j?.error || "me failed", detail:j?.detail };
-      return j;
-    }
-
+    /***********************
+     * 2) AUTH UI
+     ***********************/
     function setAuthUI({ loggedIn, email, credits, hint }) {
       const st = document.getElementById("login-status");
       const cr = document.getElementById("credits");
@@ -566,42 +299,62 @@
       }
     }
 
+    async function apiMe() {
+      const token = getBearerForApi();
+      if (!token) return { ok:false, error:"no token" };
+
+      const r = await fetch("/api/me", {
+        headers: { Authorization: "Bearer " + token }
+      });
+
+      const j = await r.json().catch(()=> ({}));
+      if (!r.ok) return { ok:false, error:j?.error || "me failed", detail:j?.detail };
+      return j;
+    }
+
     async function refreshAuthUI() {
-      const token = getAccessToken();
-      if (!token) {
+      // 1) 先從 supabase session 拿 JWT
+      const { data } = await supabase.auth.getSession();
+      const access = data?.session?.access_token;
+
+      if (!access) {
+        clearBearerForApi();
         setAuthUI({ loggedIn:false, hint:"未登入" });
         return;
       }
 
+      // 2) 把 JWT 存回你原本 /api/me 要用的 localStorage key
+      saveBearerForApi(access);
+
+      // 3) 用 /api/me 拉點數
       const me = await apiMe();
       if (!me.ok) {
-        clearAccessToken();
-        setAuthUI({ loggedIn:false, hint:"登入狀態異常（請重新登入）" });
+        setAuthUI({ loggedIn:false, hint:"登入狀態異常（/api/me 失敗）" });
         return;
       }
       setAuthUI({ loggedIn:true, email: me.user?.email, credits: me.credits_left, hint:"" });
     }
 
-    function loginGoogle() {
-      const url =
-        `${SUPABASE_URL}/auth/v1/authorize` +
-        `?provider=google` +
-        `&redirect_to=${encodeURIComponent(REDIRECT_TO)}` +
-        `&response_type=token`;
-
-      // ✅ 超重要：用這行立刻確認你實際丟出去的 OAuth URL 是否正確
-      console.log("[OAuth URL]", url);
-
-      window.location.href = url;
+    async function loginGoogle() {
+      // ✅ 交給 SDK：它會自己處理 state / PKCE / callback
+      const { error } = await supabase.auth.signInWithOAuth({
+        provider: "google",
+        options: { redirectTo: REDIRECT_TO }
+      });
+      if (error) {
+        console.error(error);
+        setAuthUI({ loggedIn:false, hint:"登入失敗：" + (error.message || String(error)) });
+      }
     }
 
-    function logout() {
-      clearAccessToken();
+    async function logout() {
+      clearBearerForApi();
+      await supabase.auth.signOut();
       setAuthUI({ loggedIn:false, hint:"已登出" });
     }
 
     /***********************
-     * 2) UI switches
+     * 3) UI switches
      ***********************/
     function bindSwitch(id, initial=false) {
       const el = document.getElementById(id);
@@ -627,7 +380,7 @@
     });
 
     /***********************
-     * 3) Render helpers
+     * 4) Render helpers
      ***********************/
     function setStatus(text, ok=null) {
       const sb = document.getElementById("statusbar");
@@ -676,10 +429,7 @@
         const div = document.createElement("div");
         div.className = "product-item";
 
-        const thumb = p.thumbnail
-          ? `<img src="${p.thumbnail}" alt="">`
-          : `示意`;
-
+        const thumb = p.thumbnail ? `<img src="${p.thumbnail}" alt="">` : `示意`;
         const price = p.price || p.extracted_price || "";
         const link = p.link || p.product_link || p.url || "#";
 
@@ -714,12 +464,12 @@
     }
 
     /***********************
-     * 4) Main flow: Spec -> Image -> Products
+     * 5) Main flow: Spec -> Image -> Products
      ***********************/
     async function postJson(url, body, withAuth=true) {
       const headers = { "Content-Type": "application/json" };
       if (withAuth) {
-        const token = getAccessToken();
+        const token = getBearerForApi();
         if (!token) throw new Error("未登入（沒有 Bearer token）");
         headers["Authorization"] = "Bearer " + token;
       }
@@ -747,10 +497,9 @@
       clearImage();
       renderProducts([]);
 
-      // ensure logged in
       const me = await apiMe();
       if (!me.ok) {
-        setAuthUI({ loggedIn:false, hint:"登入 token 失效或 /api/me 失敗，請按 Google 登入重試。" });
+        setAuthUI({ loggedIn:false, hint:"未登入或 token 失效，請按 Google 登入重試。" });
         throw new Error("未登入或 token 失效");
       }
 
@@ -767,36 +516,24 @@
         withCoat: !!getCoat()
       };
 
-      // 1) Spec (扣點)
       setStatus("Step 1/3：產生 Outfit Spec（扣點）…");
       const spec = await postJson("/api/generate-outfit-spec", payload, true);
       setDebug({ step:"spec", spec });
 
-      // 更新點數 UI（如果 spec 有回 credits_left）
       if (typeof spec.credits_left !== "undefined") {
         setAuthUI({ loggedIn:true, email: me.user?.email, credits: spec.credits_left });
       } else {
         await refreshAuthUI();
       }
 
-      // 2) Image
       setStatus("Step 2/3：產生穿搭示意圖…");
-      const imgResp = await postJson("/api/generate-image", {
-        ...payload,
-        outfitSpec: spec
-      }, true);
-
+      const imgResp = await postJson("/api/generate-image", { ...payload, outfitSpec: spec }, true);
       if (!imgResp.image) throw new Error("Image API 沒回傳 image");
       setImageBase64(imgResp.image, imgResp.mime || "image/png");
       setDebug({ step:"image", imgResp, spec });
 
-      // 3) Products
       setStatus("Step 3/3：搜尋類似商品…");
-      const prodResp = await postJson("/api/search-products", {
-        items: spec.items || [],
-        locale: "tw"
-      }, true);
-
+      const prodResp = await postJson("/api/search-products", { items: spec.items || [], locale: "tw" }, true);
       const list = prodResp.products || prodResp.items || prodResp.shopping_results || [];
       renderProducts(list);
       setDebug({ step:"products", prodResp, spec });
@@ -805,31 +542,12 @@
     }
 
     /***********************
-     * 5) INIT
+     * 6) INIT
      ***********************/
     (function init() {
-      // 5-1) 如果回來是 ?code=...，代表你目前走的是 Code Flow（純 HTML 不交換 code 就拿不到 token）
-      const code = detectCodeFlow();
-      if (code) {
-        setAuthUI({
-          loggedIn:false,
-          hint:"偵測到 ?code=（Code Flow）。純 HTML 不交換 code 無法取得 token。請確認 OAuth URL 是否包含 response_type=token，且 redirect URL 已加入 Supabase 白名單。"
-        });
-        // 仍然繼續往下跑，避免影響其他功能顯示
-      }
-
-      // 5-2) consume hash token（Implicit Flow）
-      const tokens = parseHashTokens();
-      if (tokens?.access_token) {
-        saveAccessToken(tokens.access_token);
-        history.replaceState(null, "", window.location.pathname + window.location.search);
-      }
-
-      // 5-3) bind auth buttons
       document.getElementById("login-btn").addEventListener("click", loginGoogle);
       document.getElementById("logout-btn").addEventListener("click", logout);
 
-      // 5-4) bind main button
       const goBtn = document.getElementById("go-btn");
       goBtn.addEventListener("click", async () => {
         goBtn.disabled = true;
@@ -844,10 +562,15 @@
         }
       });
 
-      // 5-5) show debug if toggled
       document.getElementById("debug-box").classList.toggle("on", getDebug());
 
-      // 5-6) refresh auth state
+      // ✅ SDK 會自動 detectSessionInUrl：OAuth 回來時就能建立 session
+      // 監聽 auth 事件，確保 token 落地後立刻刷新點數 UI
+      supabase.auth.onAuthStateChange((event) => {
+        if (getDebug()) console.log("[auth event]", event);
+        refreshAuthUI();
+      });
+
       refreshAuthUI();
     })();
   </script>
