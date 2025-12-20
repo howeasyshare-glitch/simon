@@ -497,7 +497,7 @@
      ***********************/
     // 你的 Supabase project ref（看你的網址：https://auiwcsolpvufxxyhnvaf.supabase.co）
     const SUPABASE_PROJECT_REF = "auiwcsolpvufxxyhnvaf"; // ←如果不同請改
-    const REDIRECT_TO = window.location.origin + "/body-test.html";
+    const REDIRECT_TO =  "https://simon-one-ochre.vercel.app/body-test.html";
 
     /***********************
      * 1) AUTH helpers
@@ -567,10 +567,13 @@
     }
 
     function loginGoogle() {
-      const url =
-        `https://${SUPABASE_PROJECT_REF}.supabase.co/auth/v1/authorize` +
-        `?provider=google&redirect_to=${encodeURIComponent(REDIRECT_TO)}`;
-      window.location.href = url;
+       const url =
+    `https://${SUPABASE_PROJECT_REF}.supabase.co/auth/v1/authorize` +
+    `?provider=google` +
+    `&redirect_to=${encodeURIComponent(REDIRECT_TO)}` +
+    `&response_type=token`; // ★ 關鍵在這一行
+
+  window.location.href = url;
     }
 
     function logout() {
