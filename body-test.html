@@ -269,6 +269,92 @@
 </div>
 
 <script>
+
+  <script>
+  const AUTH_KEY = "os_supabase_access_token_v1";
+
+  function parseHashTokens() {
+    // Supabase implicit flow: #access_token=...&refresh_token=...&expires_in=...
+    const hash = window.location.hash || "";
+    if (!hash.startsWith("#")) return null;
+
+    const params = new URLSearchParams(hash.slice(1));
+    const access_token = params.get("access_token");
+    const refresh_token = params.get("refresh_token");
+    const expires_in = params.get("expires_in");
+
+    if (!access_token) return null;
+
+    return {
+      access_token,
+      refresh_token,
+      expires_in: expires_in ? Number(expires_in) : null,
+      received_at: Date.now()
+    };
+  }
+
+  function saveAccessToken(accessToken) {
+    localStorage.setItem(AUTH_KEY, accessToken);
+  }
+
+  function getAccessToken() {
+    return localStorage.getItem(AUTH_KEY);
+  }
+
+  function clearAccessToken() {
+    localStorage.removeItem(AUTH_KEY);
+  }
+
+  async function fetchMeAndUpdateUI() {
+    const token = getAccessToken();
+    const elStatus = document.getElementById("login-status");
+    const elCredits = document.getElementById("credits");
+
+    if (!token) {
+      if (elStatus) elStatus.textContent = "未登入";
+      if (elCredits) elCredits.textContent = "—";
+      return;
+    }
+
+    try {
+      const r = await fetch("/api/me", {
+        headers: { Authorization: "Bearer " + token }
+      });
+      const j = await r.json();
+
+      if (!r.ok || !j.ok) {
+        // token 失效
+        clearAccessToken();
+        if (elStatus) elStatus.textContent = "登入狀態異常（請重新登入）";
+        if (elCredits) elCredits.textContent = "—";
+        return;
+      }
+
+      if (elStatus) elStatus.textContent = j.user?.email ? `已登入：${j.user.email}` : "已登入";
+      if (elCredits) elCredits.textContent = String(j.credits_left ?? 0);
+    } catch (e) {
+      console.error("me failed:", e);
+      if (elStatus) elStatus.textContent = "登入狀態異常（請重新登入）";
+      if (elCredits) elCredits.textContent = "—";
+    }
+  }
+
+  // ====== page init ======
+  (function initAuth() {
+    // 1) 如果網址 hash 帶 token，存起來並清掉 hash
+    const tokens = parseHashTokens();
+    if (tokens?.access_token) {
+      saveAccessToken(tokens.access_token);
+
+      // 清除 hash，避免每次重整都重跑
+      history.replaceState(null, "", window.location.pathname + window.location.search);
+    }
+
+    // 2) 更新 UI（登入狀態 / 點數）
+    fetchMeAndUpdateUI();
+  })();
+</script>
+
 /** 你 Supabase 專案 URL（若更換請改這行） */
 const SUPABASE_URL = "https://auiwcsolpvufxxyhnvaf.supabase.co";
 
