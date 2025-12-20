@@ -333,8 +333,14 @@
       max-height:280px;
       overflow:auto;
       white-space:pre-wrap;
+      word-break:break-word;
     }
     .debug.on{display:block}
+    .mini{
+      margin-top:6px;
+      font-size:12px;
+      color:var(--muted);
+    }
   </style>
 </head>
 
@@ -353,7 +359,7 @@
         <div class="auth-box">
           <div id="login-status">未登入</div>
           <div>點數：<b><span id="credits">—</span></b></div>
-          <div id="auth-hint" style="font-size:12px;color:var(--muted)"></div>
+          <div id="auth-hint" class="mini"></div>
         </div>
         <button id="login-btn" class="btn">Google 登入</button>
         <button id="logout-btn" class="btn secondary" style="display:none;">登出</button>
@@ -493,11 +499,13 @@
 
   <script>
     /***********************
-     * 0) CONFIG (請改這裡)
+     * 0) CONFIG（只需確認這裡）
      ***********************/
-    // 你的 Supabase project ref（看你的網址：https://auiwcsolpvufxxyhnvaf.supabase.co）
-    const SUPABASE_PROJECT_REF = "auiwcsolpvufxxyhnvaf"; // ←如果不同請改
-    const REDIRECT_TO =  "https://simon-one-ochre.vercel.app/body-test.html";
+    const SUPABASE_PROJECT_REF = "auiwcsolpvufxxyhnvaf"; // 你的 supabase project ref
+    const SUPABASE_URL = `https://${SUPABASE_PROJECT_REF}.supabase.co`;
+
+    // ✅ 改成永遠回到「當前頁」：避免 preview domain / www / localhost 不一致導致 localStorage 永遠讀不到
+    const REDIRECT_TO = `${location.origin}${location.pathname}`;
 
     /***********************
      * 1) AUTH helpers
@@ -513,6 +521,12 @@
       return { access_token };
     }
 
+    function detectCodeFlow() {
+      const sp = new URLSearchParams(window.location.search);
+      const code = sp.get("code");
+      return code || null;
+    }
+
     function saveAccessToken(t){ localStorage.setItem(AUTH_KEY, t); }
     function getAccessToken(){ return localStorage.getItem(AUTH_KEY); }
     function clearAccessToken(){ localStorage.removeItem(AUTH_KEY); }
@@ -520,9 +534,11 @@
     async function apiMe() {
       const token = getAccessToken();
       if (!token) return { ok:false, error:"no token" };
+
       const r = await fetch("/api/me", {
         headers: { Authorization: "Bearer " + token }
       });
+
       const j = await r.json().catch(()=> ({}));
       if (!r.ok) return { ok:false, error:j?.error || "me failed", detail:j?.detail };
       return j;
@@ -567,13 +583,16 @@
     }
 
     function loginGoogle() {
-       const url =
-    `https://${SUPABASE_PROJECT_REF}.supabase.co/auth/v1/authorize` +
-    `?provider=google` +
-    `&redirect_to=${encodeURIComponent(REDIRECT_TO)}` +
-    `&response_type=token`; // ★ 關鍵在這一行
+      const url =
+        `${SUPABASE_URL}/auth/v1/authorize` +
+        `?provider=google` +
+        `&redirect_to=${encodeURIComponent(REDIRECT_TO)}` +
+        `&response_type=token`;
 
-  window.location.href = url;
+      // ✅ 超重要：用這行立刻確認你實際丟出去的 OAuth URL 是否正確
+      console.log("[OAuth URL]", url);
+
+      window.location.href = url;
     }
 
     function logout() {
@@ -602,7 +621,6 @@
     const getDebug = bindSwitch("sw-debug", false);
 
     document.getElementById("debug-toggle").addEventListener("click", (e) => {
-      // 避免點到 switch 之外沒反應
       if (e.target.id !== "sw-debug") document.getElementById("sw-debug").click();
       const box = document.getElementById("debug-box");
       box.classList.toggle("on", getDebug());
@@ -758,7 +776,6 @@
       if (typeof spec.credits_left !== "undefined") {
         setAuthUI({ loggedIn:true, email: me.user?.email, credits: spec.credits_left });
       } else {
-        // 沒回就再拉一次 me（保險）
         await refreshAuthUI();
       }
 
@@ -791,19 +808,28 @@
      * 5) INIT
      ***********************/
     (function init() {
-      // consume hash token
+      // 5-1) 如果回來是 ?code=...，代表你目前走的是 Code Flow（純 HTML 不交換 code 就拿不到 token）
+      const code = detectCodeFlow();
+      if (code) {
+        setAuthUI({
+          loggedIn:false,
+          hint:"偵測到 ?code=（Code Flow）。純 HTML 不交換 code 無法取得 token。請確認 OAuth URL 是否包含 response_type=token，且 redirect URL 已加入 Supabase 白名單。"
+        });
+        // 仍然繼續往下跑，避免影響其他功能顯示
+      }
+
+      // 5-2) consume hash token（Implicit Flow）
       const tokens = parseHashTokens();
       if (tokens?.access_token) {
         saveAccessToken(tokens.access_token);
-        // clear hash
         history.replaceState(null, "", window.location.pathname + window.location.search);
       }
 
-      // bind auth buttons
+      // 5-3) bind auth buttons
       document.getElementById("login-btn").addEventListener("click", loginGoogle);
       document.getElementById("logout-btn").addEventListener("click", logout);
 
-      // bind main button
+      // 5-4) bind main button
       const goBtn = document.getElementById("go-btn");
       goBtn.addEventListener("click", async () => {
         goBtn.disabled = true;
@@ -818,10 +844,10 @@
         }
       });
 
-      // show debug if toggled
+      // 5-5) show debug if toggled
       document.getElementById("debug-box").classList.toggle("on", getDebug());
 
-      // refresh auth state
+      // 5-6) refresh auth state
       refreshAuthUI();
     })();
   </script>
