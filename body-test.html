@@ -2,7 +2,7 @@
 <html lang="zh-Hant">
 <head>
 <meta charset="UTF-8" />
-<title>Body Test · Outfit + Products</title>
+<title>Body Test · Outfit + Image + Products</title>
 <meta name="viewport" content="width=device-width, initial-scale=1" />
 <style>
   :root{
@@ -13,7 +13,6 @@
     --border:#e5e7eb;
     --shadow:0 14px 36px rgba(0,0,0,.08);
     --radius:18px;
-    --radius-sm:12px;
     --accent:#111;
     --ok:#0a7;
     --err:#c33;
@@ -25,244 +24,72 @@
     background: radial-gradient(circle at top, #ffecec 0, #f5f5f7 45%, #f5f5f7 100%);
     color:var(--text);
   }
-  .page{
-    max-width:1180px;
-    margin:0 auto;
-    padding:22px 16px 36px;
-  }
-  header{
-    display:flex; align-items:flex-start; justify-content:space-between;
-    gap:12px; margin-bottom:14px;
-  }
-  .brand{
-    display:flex; align-items:center; gap:10px;
-  }
-  .brand-dot{
-    width:28px; height:28px; border-radius:999px;
-    background: linear-gradient(135deg, #111, #444);
-    box-shadow:0 10px 18px rgba(0,0,0,.22);
-  }
-  .brand h1{
-    font-size:20px; margin:0; letter-spacing:.02em;
-  }
-  .sub{
-    font-size:12px; color:var(--muted); margin-top:4px;
-  }
+  .page{max-width:1180px;margin:0 auto;padding:22px 16px 36px;}
+  header{display:flex;align-items:flex-start;justify-content:space-between;gap:12px;margin-bottom:14px;}
+  .brand{display:flex;align-items:center;gap:10px;}
+  .brand-dot{width:28px;height:28px;border-radius:999px;background:linear-gradient(135deg,#111,#444);box-shadow:0 10px 18px rgba(0,0,0,.22);}
+  .brand h1{font-size:20px;margin:0;letter-spacing:.02em;}
+  .sub{font-size:12px;color:var(--muted);margin-top:4px;}
 
-  .layout{
-    display:grid;
-    grid-template-columns: 420px minmax(0, 1fr);
-    gap:16px;
-    align-items:stretch;
-  }
-  @media(max-width:960px){
-    .layout{grid-template-columns:1fr;}
-  }
+  .layout{display:grid;grid-template-columns:420px minmax(0,1fr);gap:16px;align-items:stretch;}
+  @media(max-width:960px){.layout{grid-template-columns:1fr;}}
 
-  .card{
-    background:var(--card);
-    border:1px solid var(--border);
-    border-radius:var(--radius);
-    box-shadow:var(--shadow);
-    padding:16px;
-  }
-  .card-head{
-    display:flex; align-items:center; justify-content:space-between;
-    gap:10px; margin-bottom:12px;
-  }
-  .title{
-    font-size:16px; font-weight:800; margin:0;
-  }
-  .pill{
-    font-size:11px; padding:5px 10px; border-radius:999px;
-    background:#f3f4f6; color:#666;
-    white-space:nowrap;
-  }
+  .card{background:var(--card);border:1px solid var(--border);border-radius:var(--radius);box-shadow:var(--shadow);padding:16px;}
+  .card-head{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:12px;}
+  .title{font-size:16px;font-weight:800;margin:0;}
+  .pill{font-size:11px;padding:5px 10px;border-radius:999px;background:#f3f4f6;color:#666;white-space:nowrap;}
 
-  /* login bar */
-  .authbar{
-    display:flex; gap:8px; align-items:center; flex-wrap:wrap;
-    justify-content:flex-end;
-  }
-  .authbar .who{
-    font-size:12px; color:var(--muted);
-  }
-  .btn{
-    border:1px solid var(--border);
-    background:#fff;
-    border-radius:999px;
-    padding:8px 12px;
-    font-size:13px;
-    cursor:pointer;
-  }
-  .btn.primary{
-    background:#111; color:#fff; border-color:#111;
-  }
-  .btn:disabled{opacity:.6; cursor:not-allowed;}
+  .authbar{display:flex;gap:8px;align-items:center;flex-wrap:wrap;justify-content:flex-end;}
+  .authbar .who{font-size:12px;color:var(--muted);}
+  .btn{border:1px solid var(--border);background:#fff;border-radius:999px;padding:8px 12px;font-size:13px;cursor:pointer;}
+  .btn.primary{background:#111;color:#fff;border-color:#111;}
+  .btn:disabled{opacity:.55;cursor:not-allowed;}
 
-  /* form */
   .field{margin-bottom:12px;}
-  label{display:block; font-size:12px; font-weight:700; margin-bottom:6px;}
-  input, select{
-    width:100%;
-    border:1px solid var(--border);
-    border-radius:12px;
-    padding:10px 12px;
-    background:#fafafa;
-    outline:none;
-    font-size:14px;
-  }
-  input:focus, select:focus{
-    background:#fff;
-    border-color:#c7c7d4;
-  }
+  label{display:block;font-size:12px;font-weight:700;margin-bottom:6px;}
+  input,select{width:100%;border:1px solid var(--border);border-radius:12px;padding:10px 12px;background:#fafafa;outline:none;font-size:14px;}
+  input:focus,select:focus{background:#fff;border-color:#c7c7d4;}
 
-  .grid2{
-    display:grid;
-    grid-template-columns: 1fr 1fr;
-    gap:12px;
-  }
-  @media(max-width:520px){
-    .grid2{grid-template-columns:1fr;}
-  }
+  .grid2{display:grid;grid-template-columns:1fr 1fr;gap:12px;}
+  @media(max-width:520px){.grid2{grid-template-columns:1fr;}}
 
-  /* options rows (checkbox alignment fix) */
-  .optlist{
-    margin-top:8px;
-    border:1px solid var(--border);
-    border-radius:14px;
-    overflow:hidden;
-    background:#fafafa;
-  }
-  .optrow{
-    display:flex; align-items:center; justify-content:space-between;
-    padding:12px 12px;
-    border-top:1px solid var(--border);
-  }
+  .optlist{margin-top:8px;border:1px solid var(--border);border-radius:14px;overflow:hidden;background:#fafafa;}
+  .optrow{display:flex;align-items:center;justify-content:space-between;padding:12px;border-top:1px solid var(--border);}
   .optrow:first-child{border-top:none;}
-  .optname{
-    font-size:13px; font-weight:800;
-  }
-  .optdesc{
-    font-size:12px; color:var(--muted); margin-top:2px;
-  }
-  .optleft{display:flex; flex-direction:column; gap:2px;}
-  .toggle{
-    width:42px; height:24px; border-radius:999px;
-    background:#e5e7eb; position:relative; cursor:pointer; flex:0 0 auto;
-  }
-  .toggle::after{
-    content:"";
-    width:18px; height:18px; border-radius:999px;
-    background:#fff; position:absolute; top:3px; left:3px;
-    box-shadow:0 6px 12px rgba(0,0,0,.12);
-    transition: all .15s ease;
-  }
+  .optname{font-size:13px;font-weight:800;}
+  .optdesc{font-size:12px;color:var(--muted);margin-top:2px;}
+  .optleft{display:flex;flex-direction:column;gap:2px;}
+  .toggle{width:42px;height:24px;border-radius:999px;background:#e5e7eb;position:relative;cursor:pointer;flex:0 0 auto;}
+  .toggle::after{content:"";width:18px;height:18px;border-radius:999px;background:#fff;position:absolute;top:3px;left:3px;box-shadow:0 6px 12px rgba(0,0,0,.12);transition:all .15s ease;}
   input[type="checkbox"]{display:none;}
-  input[type="checkbox"]:checked + .toggle{
-    background:#111;
-  }
-  input[type="checkbox"]:checked + .toggle::after{
-    left:21px;
-  }
+  input[type="checkbox"]:checked + .toggle{background:#111;}
+  input[type="checkbox"]:checked + .toggle::after{left:21px;}
 
-  .actionrow{
-    display:flex; gap:10px; align-items:center; justify-content:space-between;
-    margin-top:12px;
-  }
-  .status{
-    font-size:12px; color:var(--muted);
-    line-height:1.35;
-    min-height:18px;
-  }
+  .actionrow{display:flex;gap:10px;align-items:center;justify-content:space-between;margin-top:12px;}
+  .status{font-size:12px;color:var(--muted);line-height:1.35;min-height:18px;}
   .status.ok{color:var(--ok);}
   .status.err{color:var(--err);}
 
-  /* right side */
-  .resultGrid{
-    display:grid;
-    grid-template-rows: auto auto;
-    gap:14px;
-  }
-  .imageWrap{
-    border-radius:var(--radius);
-    border:1px solid var(--border);
-    background:#f3f4f6;
-    height:440px;
-    display:flex; align-items:center; justify-content:center;
-    overflow:hidden;
-  }
-  .imageWrap img{
-    width:100%; height:100%;
-    object-fit:contain; display:block;
-  }
-  .placeholder{
-    color:var(--muted);
-    font-size:13px;
-    text-align:center;
-    padding:12px;
-  }
+  .resultGrid{display:grid;grid-template-rows:auto auto auto;gap:14px;}
+  .imageWrap{border-radius:var(--radius);border:1px solid var(--border);background:#f3f4f6;height:440px;display:flex;align-items:center;justify-content:center;overflow:hidden;}
+  .imageWrap img{width:100%;height:100%;object-fit:contain;display:block;}
+  .placeholder{color:var(--muted);font-size:13px;text-align:center;padding:12px;}
 
-  .sectionLabel{
-    font-size:12px; font-weight:900; color:#555;
-    margin-bottom:8px;
-    display:flex; align-items:center; justify-content:space-between;
-    gap:10px;
-  }
-  .debugToggle{
-    display:flex; align-items:center; gap:8px;
-    font-size:12px; color:var(--muted);
-    user-select:none;
-  }
-  .products{
-    display:grid;
-    grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
-    gap:10px;
-  }
-  .pitem{
-    border:1px solid var(--border);
-    border-radius:14px;
-    background:#fff;
-    padding:10px;
-    display:flex; gap:10px;
-  }
-  .pthumb{
-    width:64px; height:64px;
-    border-radius:12px;
-    border:1px solid var(--border);
-    background:#fafafa;
-    overflow:hidden;
-    flex:0 0 auto;
-    display:flex; align-items:center; justify-content:center;
-    color:var(--muted); font-size:11px;
-  }
-  .pthumb img{width:100%; height:100%; object-fit:cover;}
-  .pmeta{min-width:0; display:flex; flex-direction:column; gap:4px;}
-  .ptitle{
-    font-size:13px; font-weight:900; line-height:1.2;
-    display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical;
-    overflow:hidden;
-  }
-  .psub{
-    font-size:12px; color:var(--muted);
-    display:flex; flex-wrap:wrap; gap:6px;
-  }
-  .plink{
-    font-size:12px; color:#1a73e8; text-decoration:none;
-  }
+  .sectionLabel{font-size:12px;font-weight:900;color:#555;margin-bottom:8px;display:flex;align-items:center;justify-content:space-between;gap:10px;}
+  .debugToggle{display:flex;align-items:center;gap:8px;font-size:12px;color:var(--muted);user-select:none;}
+
+  .products{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:10px;}
+  .pitem{border:1px solid var(--border);border-radius:14px;background:#fff;padding:10px;display:flex;gap:10px;}
+  .pthumb{width:64px;height:64px;border-radius:12px;border:1px solid var(--border);background:#fafafa;overflow:hidden;flex:0 0 auto;display:flex;align-items:center;justify-content:center;color:var(--muted);font-size:11px;}
+  .pthumb img{width:100%;height:100%;object-fit:cover;}
+  .pmeta{min-width:0;display:flex;flex-direction:column;gap:4px;}
+  .ptitle{font-size:13px;font-weight:900;line-height:1.2;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;}
+  .psub{font-size:12px;color:var(--muted);display:flex;flex-wrap:wrap;gap:6px;}
+  .plink{font-size:12px;color:#1a73e8;text-decoration:none;}
   .plink:hover{text-decoration:underline;}
-  .badge{
-    font-size:11px; padding:2px 8px; border-radius:999px;
-    background:#f1f2f6; color:#555;
-  }
+  .badge{font-size:11px;padding:2px 8px;border-radius:999px;background:#f1f2f6;color:#555;}
 
-  pre{
-    margin:0;
-    background:#0f1115; color:#d6e0ff;
-    padding:12px; border-radius:14px;
-    font-size:12px; overflow:auto;
-    border:1px solid #222;
-  }
+  pre{margin:0;background:#0f1115;color:#d6e0ff;padding:12px;border-radius:14px;font-size:12px;overflow:auto;border:1px solid #222;}
 </style>
 </head>
 
@@ -275,7 +102,7 @@
         <div class="brand-dot"></div>
         <div>
           <h1>Outfit Studio · Body Test</h1>
-          <div class="sub">先把「Outfit Spec → 商品」跑穩，圖片下一步再接 image API。</div>
+          <div class="sub">流程：Spec（扣點）→ Image → Products。右上可開 Debug。</div>
         </div>
       </div>
     </div>
@@ -290,7 +117,7 @@
 
   <main class="layout">
 
-    <!-- Left: form -->
+    <!-- Left -->
     <section class="card">
       <div class="card-head">
         <div class="title">穿搭條件</div>
@@ -359,7 +186,6 @@
         <input id="temp" type="number" value="22" min="-5" max="40" />
       </div>
 
-      <!-- options -->
       <div class="optlist">
         <div class="optrow">
           <div class="optleft">
@@ -397,14 +223,14 @@
 
       <div class="actionrow">
         <button id="btn" class="btn primary" style="width:100%; border-radius:14px;" onclick="generate()">
-          產生穿搭 & 搜尋商品
+          產生穿搭圖 & 搜尋商品
         </button>
       </div>
 
-      <div id="status" class="status">提示：請先登入，才可呼叫扣點的 Spec API。</div>
+      <div id="status" class="status">提示：請先登入。點數不足時會自動禁止產生。</div>
     </section>
 
-    <!-- Right: result -->
+    <!-- Right -->
     <section class="card">
       <div class="card-head">
         <div class="title">AI 穿搭示意圖 & 類似商品</div>
@@ -419,15 +245,13 @@
         <div>
           <div class="sectionLabel"><span class="pill">AI 穿搭示意圖</span></div>
           <div id="imageWrap" class="imageWrap">
-            <div class="placeholder">尚未產生示意圖（下一步接 image API）</div>
+            <div class="placeholder">尚未產生示意圖</div>
           </div>
         </div>
 
         <!-- Products -->
         <div>
-          <div class="sectionLabel">
-            <span class="pill">類似商品（Google Shopping）</span>
-          </div>
+          <div class="sectionLabel"><span class="pill">類似商品（Google Shopping）</span></div>
           <div id="products" class="products">
             <div class="placeholder">尚未產生商品</div>
           </div>
@@ -445,99 +269,92 @@
 </div>
 
 <script>
-/** ====== 你需要確認這個是你真正的 Supabase 專案網址 ====== */
+/** 你 Supabase 專案 URL（若更換請改這行） */
 const SUPABASE_URL = "https://auiwcsolpvufxxyhnvaf.supabase.co";
 
-/** ====== Auth helpers ====== */
+/** ===== Auth token helpers ===== */
 function getSupabaseSessionFromLocalStorage() {
   const key = Object.keys(localStorage).find(k => k.startsWith("sb-") && k.endsWith("-auth-token"));
   if (!key) return null;
   try { return JSON.parse(localStorage.getItem(key)); } catch { return null; }
 }
-
 function getToken() {
-  // 1) 你自己的簡化 token
   const t = localStorage.getItem("access_token");
   if (t) return t;
-
-  // 2) Supabase auth token（sb-xxx-auth-token）
   const s = getSupabaseSessionFromLocalStorage();
   return s?.access_token || null;
 }
-
-function setToken(t){
-  if (!t) return;
-  localStorage.setItem("access_token", t);
-}
-
-function clearToken(){
-  localStorage.removeItem("access_token");
-}
-
-/** Supabase implicit flow redirect 回來會帶 #access_token=... */
+function setToken(t){ if (t) localStorage.setItem("access_token", t); }
+function clearToken(){ localStorage.removeItem("access_token"); }
 function consumeHashTokenIfAny(){
   const hash = location.hash || "";
   if (!hash.includes("access_token=")) return;
-
   const params = new URLSearchParams(hash.replace(/^#/, ""));
   const accessToken = params.get("access_token");
   if (accessToken) setToken(accessToken);
-
-  // 清掉 hash（避免一直帶著 token 在網址列）
   history.replaceState(null, "", location.pathname + location.search);
 }
-
-/** Login / Logout UI */
 function loginGoogle(){
-  const redirectTo = location.origin + location.pathname; // 回到本頁
+  const redirectTo = location.origin + location.pathname;
   const url = `${SUPABASE_URL}/auth/v1/authorize?provider=google&redirect_to=${encodeURIComponent(redirectTo)}`;
   location.href = url;
 }
-
 function logout(){
-  // 簡單版：清 local token + 清 sb-xxx-auth-token（如果存在）
   clearToken();
   const sbKey = Object.keys(localStorage).find(k => k.startsWith("sb-") && k.endsWith("-auth-token"));
   if (sbKey) localStorage.removeItem(sbKey);
   location.reload();
 }
-
 function toggleDebug(el){
   document.getElementById("debugPanel").style.display = el.checked ? "block" : "none";
 }
 
-/** ====== credits / user info: 用你之前要的 /api/me.js ====== */
+/** ===== Credits / me ===== */
+let CURRENT_CREDITS = null;
+
+function setCreditsUI(v){
+  CURRENT_CREDITS = v;
+  const credit = document.getElementById("credit");
+  credit.textContent = `點數：${v ?? "—"}`;
+
+  const btn = document.getElementById("btn");
+  if (typeof v === "number" && v <= 0){
+    btn.disabled = true;
+    const status = document.getElementById("status");
+    status.className = "status err";
+    status.textContent = "點數不足：請補點後再試。";
+  }else{
+    btn.disabled = false;
+  }
+}
+
 async function refreshMe(){
   const token = getToken();
   const who = document.getElementById("who");
-  const credit = document.getElementById("credit");
   const loginBtn = document.getElementById("loginBtn");
   const logoutBtn = document.getElementById("logoutBtn");
 
   if (!token){
     who.textContent = "未登入";
-    credit.textContent = "點數：—";
+    setCreditsUI(null);
     loginBtn.style.display = "inline-block";
     logoutBtn.style.display = "none";
     return;
   }
 
-  // 嘗試打 /api/me 取得 email + credits_left
   try{
-    const r = await fetch("/api/me", {
-      headers: { "Authorization": "Bearer " + token }
-    });
+    const r = await fetch("/api/me", { headers: { "Authorization": "Bearer " + token } });
     const data = await r.json().catch(()=> ({}));
     if (!r.ok) throw new Error(data?.error || "me api failed");
 
     who.textContent = data?.email ? `已登入：${data.email}` : "已登入";
-    credit.textContent = `點數：${data.credits_left ?? "—"}`;
+    setCreditsUI(data.credits_left ?? null);
+
     loginBtn.style.display = "none";
     logoutBtn.style.display = "inline-block";
   }catch(e){
-    // token 可能失效
     who.textContent = "登入狀態異常（請重新登入）";
-    credit.textContent = "點數：—";
+    setCreditsUI(null);
     document.getElementById("status").className = "status err";
     document.getElementById("status").textContent = "登入 token 失效或 /api/me 失敗，請按 Google 登入重試。";
     loginBtn.style.display = "inline-block";
@@ -545,19 +362,26 @@ async function refreshMe(){
   }
 }
 
-/** ====== UI render ====== */
-function renderImagePlaceholder(){
+/** ===== Render helpers ===== */
+function renderImagePlaceholder(msg){
   const wrap = document.getElementById("imageWrap");
-  wrap.innerHTML = `<div class="placeholder">尚未產生示意圖（下一步接 image API）</div>`;
+  wrap.innerHTML = `<div class="placeholder">${msg || "尚未產生示意圖"}</div>`;
+}
+function renderImageBase64(base64, mime){
+  const wrap = document.getElementById("imageWrap");
+  const img = document.createElement("img");
+  img.alt = "Outfit preview";
+  img.src = `data:${mime || "image/png"};base64,` + base64;
+  wrap.innerHTML = "";
+  wrap.appendChild(img);
 }
 
 function slotLabel(slot){
   const m = { top:"上衣", bottom:"下身", shoes:"鞋子", outer:"外套", bag:"包包", hat:"帽子" };
   return m[slot] || slot;
 }
-
 function escapeHtml(str){
-  return String(str).replace(/[&<>"']/g, (m) => ({
+  return String(str ?? "").replace(/[&<>"']/g, (m) => ({
     "&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#039;"
   }[m]));
 }
@@ -589,8 +413,12 @@ function renderProductsFromSerp(resultsBySlot){
             ${p.source ? `<span>${escapeHtml(p.source)}</span>` : ``}
             ${p.price ? `<span>· ${escapeHtml(p.price)}</span>` : ``}
           </div>
-          <div class="ptitle">${escapeHtml(p.title || "")}</div>
-          ${p.link ? `<a class="plink" href="${p.link}" target="_blank" rel="noopener noreferrer">前往查看商品</a>` : `<span class="small">無連結</span>`}
+          <div class="ptitle">${escapeHtml(p.title)}</div>
+          ${
+            p.link
+              ? `<a class="plink" href="${p.link}" target="_blank" rel="noopener noreferrer">前往查看商品</a>`
+              : `<span class="psub">無連結</span>`
+          }
         </div>
       `;
       box.appendChild(el);
@@ -598,7 +426,7 @@ function renderProductsFromSerp(resultsBySlot){
   }
 }
 
-/** ====== main generate flow ====== */
+/** ===== Main flow ===== */
 async function generate(){
   const status = document.getElementById("status");
   const btn = document.getElementById("btn");
@@ -608,6 +436,11 @@ async function generate(){
   if (!token){
     status.className = "status err";
     status.textContent = "未登入：請先按右上角 Google 登入。";
+    return;
+  }
+  if (typeof CURRENT_CREDITS === "number" && CURRENT_CREDITS <= 0){
+    status.className = "status err";
+    status.textContent = "點數不足：請補點後再試。";
     return;
   }
 
@@ -626,8 +459,8 @@ async function generate(){
 
   btn.disabled = true;
   status.className = "status";
-  status.textContent = "Step 1/2：產生 Outfit Spec（會扣 1 點）...";
-  renderImagePlaceholder();
+  status.textContent = "Step 1/3：產生 Outfit Spec（會扣 1 點）...";
+  renderImagePlaceholder("準備產生示意圖…");
   document.getElementById("products").innerHTML = `<div class="placeholder">搜尋中…</div>`;
 
   try{
@@ -651,14 +484,42 @@ async function generate(){
       return;
     }
 
-    // 更新點數顯示（如果 spec API 有回 credits_left）
-    const credit = document.getElementById("credit");
-    if (specData.credits_left !== undefined) credit.textContent = `點數：${specData.credits_left}`;
+    // 更新點數
+    if (specData.credits_left !== undefined) setCreditsUI(specData.credits_left);
 
     status.className = "status ok";
-    status.textContent = `Step 1/2 完成：已扣 1 點。剩餘點數：${specData.credits_left ?? "—"}，Step 2/2：搜尋商品中...`;
+    status.textContent = `Step 1/3 完成：已扣 1 點。剩餘點數：${specData.credits_left ?? "—"}；Step 2/3：產生穿搭圖...`;
 
-    // 2) Serp API products
+    // 2) Image（用同樣 payload 或你想要的字段）
+    const imgResp = await fetch("/api/generate-image", {
+      method:"POST",
+      headers:{ "Content-Type":"application/json" },
+      body: JSON.stringify(payload)
+    });
+
+    const imgData = await imgResp.json().catch(()=> ({}));
+    if (!imgResp.ok){
+      status.className = "status err";
+      status.textContent = `Image API 失敗：${imgData.error || imgResp.status}`;
+      renderImagePlaceholder("圖片產生失敗（請看 Debug / logs）");
+      btn.disabled = false;
+      return;
+    }
+
+    if (!imgData.image){
+      status.className = "status err";
+      status.textContent = `Image API 無回傳 image`;
+      renderImagePlaceholder("圖片產生失敗（無 image）");
+      btn.disabled = false;
+      return;
+    }
+
+    renderImageBase64(imgData.image, imgData.mime);
+
+    status.className = "status ok";
+    status.textContent = `Step 2/3 完成：已產生穿搭圖；Step 3/3：搜尋商品...`;
+
+    // 3) Products（依 spec items 搜尋）
     const items = Array.isArray(specData.items) ? specData.items : [];
     const prodResp = await fetch("/api/search-products-from-spec", {
       method:"POST",
@@ -677,14 +538,17 @@ async function generate(){
 
     renderProductsFromSerp(prodData.results || {});
     status.className = "status ok";
-    status.textContent = `完成 ✅（Spec + 商品）剩餘點數：${specData.credits_left ?? "—"}`;
+    status.textContent = `完成 ✅（Spec + 圖片 + 商品）剩餘點數：${specData.credits_left ?? "—"}`;
 
   }catch(e){
     console.error(e);
     status.className = "status err";
     status.textContent = "發生錯誤：" + (e.message || "Unknown error");
   }finally{
-    btn.disabled = false;
+    // 若點數被扣到 0，setCreditsUI 會把按鈕 disable
+    if (!(typeof CURRENT_CREDITS === "number" && CURRENT_CREDITS <= 0)){
+      btn.disabled = false;
+    }
   }
 }
 
