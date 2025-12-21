@@ -433,7 +433,7 @@
 
         const thumb = p.thumbnail ? `<img src="${p.thumbnail}" alt="">` : `示意`;
         const price = p.price || p.extracted_price || "";
-        const link = p.link || p.product_link || p.url || "#";
+        const link = p.product_link || p.link || p.url || "#";
 
         div.innerHTML = `
           <div class="thumb">${thumb}</div>
@@ -535,7 +535,11 @@
       setDebug({ step:"image", imgResp, spec });
 
       setStatus("Step 3/3：搜尋類似商品…");
-      const prodResp = await postJson("/api/search-products", { items: spec.items || [], locale: "tw" }, true);
+      const prodResp = await postJson("/api/search-products", {
+  items: spec.items || [],
+  locale: "tw",
+  gender: document.getElementById("gender").value
+}, true);
       const list = prodResp.products || prodResp.items || prodResp.shopping_results || [];
       renderProducts(list);
       setDebug({ step:"products", prodResp, spec });
