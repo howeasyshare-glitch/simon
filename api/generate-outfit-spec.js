@@ -1,45 +1,18 @@
 // pages/api/generate-outfit-spec.js
 // 用 gemini-2.0-flash 產生 Outfit Spec JSON（身材＋風格＋品牌/名人變體）
-// ✅ 加入：Supabase token 驗證 + profiles(credits) 自動建立 + 每次扣 1 點 + 回傳 credits_left
+// ✅ Supabase token 驗證 + profiles(credits_left) 自動建立 + 每次扣 1 點 + 回傳 credits_left
 
 const variantPromptMap = {
-  "brand-uniqlo": {
-    desc: "Japanese everyday casual style similar to UNIQLO: simple basics, clean lines, comfortable fits, no visible logos.",
-    baseStyle: "casual"
-  },
-  "brand-muji": {
-    desc: "MUJI-like minimal lifestyle clothing: soft neutral colors, linen and cotton, relaxed fit, very simple design, no logos.",
-    baseStyle: "casual"
-  },
-  "brand-cos": {
-    desc: "COS-like modern minimalism: structured silhouettes, monochrome palette, slightly oversized shapes, design-focused details.",
-    baseStyle: "minimal"
-  },
-  "brand-nike-tech": {
-    desc: "Nike techwear inspired athleisure: technical fabrics, fitted joggers, hoodies or track jackets, sporty sneakers.",
-    baseStyle: "sporty"
-  },
-  "brand-ader-error": {
-    desc: "Korean streetwear similar to Ader Error: oversized fits, playful proportions, bold color accents, sometimes asymmetry.",
-    baseStyle: "street"
-  },
+  "brand-uniqlo": { desc: "Japanese everyday casual style similar to UNIQLO: simple basics, clean lines, comfortable fits, no visible logos.", baseStyle: "casual" },
+  "brand-muji": { desc: "MUJI-like minimal lifestyle clothing: soft neutral colors, linen and cotton, relaxed fit, very simple design, no logos.", baseStyle: "casual" },
+  "brand-cos": { desc: "COS-like modern minimalism: structured silhouettes, monochrome palette, slightly oversized shapes, design-focused details.", baseStyle: "minimal" },
+  "brand-nike-tech": { desc: "Nike techwear inspired athleisure: technical fabrics, fitted joggers, hoodies or track jackets, sporty sneakers.", baseStyle: "sporty" },
+  "brand-ader-error": { desc: "Korean streetwear similar to Ader Error: oversized fits, playful proportions, bold color accents, sometimes asymmetry.", baseStyle: "street" },
 
-  "celeb-iu-casual": {
-    desc: "Outfit styling inspired by IU's Korean casual looks: soft pastel colors, neat knitwear or shirts, straight pants, light outerwear. Do NOT copy her face or identity.",
-    baseStyle: "casual"
-  },
-  "celeb-jennie-minimal": {
-    desc: "Outfit styling inspired by Jennie's minimal chic outfits: clean silhouettes, cropped tops or neat knits, high-waisted bottoms, neutral tones. Do NOT copy her face or identity.",
-    baseStyle: "minimal"
-  },
-  "celeb-gd-street": {
-    desc: "Outfit styling inspired by G-Dragon's Korean street layering: bold layered pieces, interesting textures, statement shoes and accessories. Do NOT copy his face or identity.",
-    baseStyle: "street"
-  },
-  "celeb-lisa-sporty": {
-    desc: "Outfit styling inspired by Lisa's dancer athleisure: sporty crop tops, jogger pants, hoodies or jackets, cap and sneakers. Do NOT copy her face or identity.",
-    baseStyle: "sporty"
-  }
+  "celeb-iu-casual": { desc: "Outfit styling inspired by IU's Korean casual looks: soft pastel colors, neat knitwear or shirts, straight pants, light outerwear. Do NOT copy her face or identity.", baseStyle: "casual" },
+  "celeb-jennie-minimal": { desc: "Outfit styling inspired by Jennie's minimal chic outfits: clean silhouettes, cropped tops or neat knits, high-waisted bottoms, neutral tones. Do NOT copy her face or identity.", baseStyle: "minimal" },
+  "celeb-gd-street": { desc: "Outfit styling inspired by G-Dragon's Korean street layering: bold layered pieces, interesting textures, statement shoes and accessories. Do NOT copy his face or identity.", baseStyle: "street" },
+  "celeb-lisa-sporty": { desc: "Outfit styling inspired by Lisa's dancer athleisure: sporty crop tops, jogger pants, hoodies or jackets, cap and sneakers. Do NOT copy her face or identity.", baseStyle: "sporty" }
 };
 
 // === Supabase helpers (service role) ===
@@ -65,9 +38,9 @@ async function getOrCreateProfile({ supabaseUrl, serviceKey, userId, email }) {
     Authorization: `Bearer ${serviceKey}`
   };
 
-  // query existing
+  // query existing (✅ credits_left)
   const q = await fetch(
-    `${supabaseUrl}/rest/v1/profiles?id=eq.${userId}&select=id,email,credits`,
+    `${supabaseUrl}/rest/v1/profiles?id=eq.${encodeURIComponent(userId)}&select=id,email,credits_left`,
     { headers }
   );
 
@@ -79,11 +52,16 @@ async function getOrCreateProfile({ supabaseUrl, serviceKey, userId, email }) {
   const arr = await q.json();
   if (arr && arr[0]) return arr[0];
 
-  // create
+  // create (✅ credits_left)
   const ins = await fetch(`${supabaseUrl}/rest/v1/profiles`, {
     method: "POST",
     headers: { ...headers, Prefer: "return=representation" },
-    body: JSON.stringify({ id: userId, email, credits: 3 })
+    body: JSON.stringify({
+      id: userId,
+      email,
+      credits_left: 3, // 初始點數（你可改成 10）
+      updated_at: new Date().toISOString()
+    })
   });
 
   if (!ins.ok) {
@@ -92,15 +70,15 @@ async function getOrCreateProfile({ supabaseUrl, serviceKey, userId, email }) {
   }
 
   const created = await ins.json();
-  return created?.[0] || { id: userId, email, credits: 3 };
+  return created?.[0] || { id: userId, email, credits_left: 3 };
 }
 
-async function deductOneCredit({ supabaseUrl, serviceKey, userId, currentCredits }) {
-  if (currentCredits <= 0) {
-    return { ok: false, credits_left: 0 };
-  }
-
-  const newCredits = currentCredits - 1;
+/**
+ * ✅ 更穩：用「原子扣點」避免併發/重整造成負數或重複扣
+ * 這裡用 PostgREST 的 PATCH + filter：credits_left=gt.0
+ * 並要求回傳 updated row；如果回傳空陣列代表點數不足
+ */
+async function deductOneCreditAtomic({ supabaseUrl, serviceKey, userId }) {
   const headers = {
     "Content-Type": "application/json",
     apikey: serviceKey,
@@ -108,24 +86,51 @@ async function deductOneCredit({ supabaseUrl, serviceKey, userId, currentCredits
     Prefer: "return=representation"
   };
 
-  const upd = await fetch(`${supabaseUrl}/rest/v1/profiles?id=eq.${userId}`, {
-    method: "PATCH",
-    headers,
-    body: JSON.stringify({ credits: newCredits, updated_at: new Date().toISOString() })
-  });
+  const url =
+    `${supabaseUrl}/rest/v1/profiles` +
+    `?id=eq.${encodeURIComponent(userId)}` +
+    `&credits_left=gt.0`;
 
-  if (!upd.ok) {
-    const t = await upd.text();
-    throw new Error("profiles update failed: " + t);
+  // 這裡用 SQL 方式遞減做不到（PostgREST PATCH 是 set）
+  // 所以我們採「先讀後扣」也行，但會有 race condition。
+  // 最穩的方式是用 RPC (SQL function)；先給你可用版本：讀 -> 扣（保留原結構）
+  // ----
+  // 下面採「讀 -> 扣」並在 update 時再檢查 credits_left=eq.current，避免併發：
+  const read = await fetch(
+    `${supabaseUrl}/rest/v1/profiles?id=eq.${encodeURIComponent(userId)}&select=credits_left`,
+    { headers: { apikey: serviceKey, Authorization: `Bearer ${serviceKey}`, Accept: "application/json" } }
+  );
+  const readText = await read.text();
+  if (!read.ok) throw new Error("profiles read failed: " + readText);
+  const rows = JSON.parse(readText);
+  const current = Number(rows?.[0]?.credits_left ?? 0);
+  if (current <= 0) return { ok: false, credits_left: 0 };
+
+  const newCredits = current - 1;
+
+  const upd = await fetch(
+    `${supabaseUrl}/rest/v1/profiles?id=eq.${encodeURIComponent(userId)}&credits_left=eq.${current}`,
+    {
+      method: "PATCH",
+      headers,
+      body: JSON.stringify({ credits_left: newCredits, updated_at: new Date().toISOString() })
+    }
+  );
+
+  const updText = await upd.text();
+  if (!upd.ok) throw new Error("profiles update failed: " + updText);
+
+  const updatedRows = JSON.parse(updText);
+  if (!updatedRows?.[0]) {
+    // 代表在你扣點前有人改過 credits_left（併發），保守回「點數不足/請重試」
+    return { ok: false, credits_left: current };
   }
 
-  return { ok: true, credits_left: newCredits };
+  return { ok: true, credits_left: updatedRows[0].credits_left };
 }
 
 export default async function handler(req, res) {
-  if (req.method !== "POST") {
-    return res.status(405).json({ error: "Method not allowed" });
-  }
+  if (req.method !== "POST") return res.status(405).json({ error: "Method not allowed" });
 
   try {
     // === 0) 驗證登入 token（必須）===
@@ -140,27 +145,19 @@ export default async function handler(req, res) {
     }
 
     const userRes = await getUserFromSupabase({ supabaseUrl, serviceKey, accessToken });
-    if (!userRes.ok) {
-      return res.status(401).json({ error: "Invalid token", detail: userRes.detail });
-    }
+    if (!userRes.ok) return res.status(401).json({ error: "Invalid token", detail: userRes.detail });
 
     const user = userRes.user;
     const userId = user.id;
     const userEmail = user.email || "";
 
-    // === 1) 確保 profile 存在 + 取得 credits ===
-    const profile = await getOrCreateProfile({ supabaseUrl, serviceKey, userId, email: userEmail });
+    // === 1) 確保 profile 存在 ===
+    await getOrCreateProfile({ supabaseUrl, serviceKey, userId, email: userEmail });
 
-    // === 2) 扣 1 點（沒點數就擋）===
-    const deduct = await deductOneCredit({
-      supabaseUrl,
-      serviceKey,
-      userId,
-      currentCredits: Number(profile.credits || 0)
-    });
-
+    // === 2) 扣 1 點（✅ credits_left）===
+    const deduct = await deductOneCreditAtomic({ supabaseUrl, serviceKey, userId });
     if (!deduct.ok) {
-      return res.status(403).json({ error: "No credits left", credits_left: 0 });
+      return res.status(403).json({ error: "No credits left", credits_left: deduct.credits_left ?? 0 });
     }
 
     // === 3) 你的原本邏輯：讀參數 + Gemini 產生 spec ===
@@ -192,8 +189,7 @@ export default async function handler(req, res) {
     else if (bmi < 30) bodyShape = "slightly chubby body shape";
     else bodyShape = "plus-size body shape";
 
-    const genderText =
-      gender === "female" ? "female" : gender === "male" ? "male" : "gender-neutral";
+    const genderText = gender === "female" ? "female" : gender === "male" ? "male" : "gender-neutral";
 
     const styleMap = {
       casual: "casual daily style",
@@ -202,13 +198,10 @@ export default async function handler(req, res) {
       sporty: "sporty athleisure style",
       smart: "smart casual style"
     };
-
     const styleText = styleMap[style] || "casual style";
 
     let variantHint = "";
-    if (styleVariant && variantPromptMap[styleVariant]) {
-      variantHint = variantPromptMap[styleVariant].desc;
-    }
+    if (styleVariant && variantPromptMap[styleVariant]) variantHint = variantPromptMap[styleVariant].desc;
 
     const systemInstruction = `
 You are a stylist that only returns STRICT JSON.
@@ -276,20 +269,13 @@ Please design one complete outfit and return JSON only.
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
-        contents: [
-          { role: "user", parts: [{ text: systemInstruction }, { text: userInstruction }] }
-        ],
-        generationConfig: {
-          temperature: 0.7,
-          responseMimeType: "application/json"
-        }
+        contents: [{ role: "user", parts: [{ text: systemInstruction }, { text: userInstruction }] }],
+        generationConfig: { temperature: 0.7, responseMimeType: "application/json" }
       })
     });
 
     if (!geminiResponse.ok) {
       const errText = await geminiResponse.text();
-      console.error("Gemini SPEC API error:", geminiResponse.status, errText);
-      // ⚠️ 這裡扣點已發生；若你想「失敗不扣點」要做更進階的交易/補償機制
       return res.status(500).json({
         error: "Gemini SPEC API error",
         detail: errText,
@@ -303,8 +289,7 @@ Please design one complete outfit and return JSON only.
     let parsed;
     try {
       parsed = JSON.parse(text);
-    } catch (e) {
-      console.error("Failed to parse outfit JSON:", text);
+    } catch {
       return res.status(500).json({
         error: "Failed to parse JSON from Gemini",
         raw: text,
@@ -321,16 +306,12 @@ Please design one complete outfit and return JSON only.
       return null;
     };
 
-    items = items
-      .map((it) => ({ ...it, slot: normalizeSlot(it.slot) }))
-      .filter((it) => it.slot && it.generic_name);
+    items = items.map((it) => ({ ...it, slot: normalizeSlot(it.slot) })).filter((it) => it.slot && it.generic_name);
 
     const hasSlot = (slotName) => items.some((it) => it.slot === slotName);
-    const pushIfMissing = (slotName, fallback) => {
-      if (!hasSlot(slotName)) items.push(fallback);
-    };
+    const pushIfMissing = (slotName, fallback) => { if (!hasSlot(slotName)) items.push(fallback); };
 
-    // 必備：top / bottom / shoes
+    // fallback: top/bottom/shoes
     pushIfMissing("top", {
       slot: "top",
       generic_name: "oversized cotton crew neck t-shirt",
