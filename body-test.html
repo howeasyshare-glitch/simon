@@ -41,31 +41,15 @@
       gap:12px;
       padding:10px 10px 16px;
     }
-    .brand{
-      display:flex;
-      gap:10px;
-      align-items:center;
-    }
+    .brand{display:flex;gap:10px;align-items:center}
     .dot{
       width:28px;height:28px;border-radius:999px;
       background: linear-gradient(135deg, #111827, #111827);
       box-shadow:0 10px 20px rgba(0,0,0,.2);
     }
-    .title{
-      font-size:20px;
-      font-weight:800;
-      letter-spacing:.02em;
-    }
-    .subtitle{
-      color:var(--muted);
-      font-size:13px;
-      margin-top:4px;
-    }
-    .top-right{
-      display:flex;
-      align-items:flex-start;
-      gap:12px;
-    }
+    .title{font-size:20px;font-weight:800;letter-spacing:.02em}
+    .subtitle{color:var(--muted);font-size:13px;margin-top:4px}
+    .top-right{display:flex;align-items:flex-start;gap:12px}
     .auth-box{
       text-align:right;
       font-size:13px;
@@ -76,13 +60,9 @@
     }
     .auth-box b{color:var(--text)}
     .btn{
-      border:none;
-      cursor:pointer;
-      border-radius:999px;
-      padding:10px 14px;
-      font-weight:700;
-      background:var(--brand);
-      color:#fff;
+      border:none;cursor:pointer;border-radius:999px;
+      padding:10px 14px;font-weight:700;
+      background:var(--brand);color:#fff;
       box-shadow:0 10px 20px rgba(0,0,0,.18);
       transition:transform .1s ease, opacity .1s ease;
       white-space:nowrap;
@@ -94,7 +74,6 @@
       box-shadow:none;
       font-weight:700;
     }
-    .btn.small{padding:8px 12px;font-size:13px}
 
     .layout{
       display:grid;
@@ -114,28 +93,15 @@
       border:1px solid rgba(0,0,0,.04);
       padding:16px;
     }
-    .card h3{
-      margin:0 0 12px 0;
-      font-size:18px;
-      font-weight:800;
-    }
     .pill{
-      display:inline-flex;
-      align-items:center;
-      gap:6px;
-      padding:6px 10px;
-      border-radius:999px;
-      font-size:12px;
-      color:var(--muted);
-      background:#f3f4f6;
-      border:1px solid #eef0f3;
+      display:inline-flex;align-items:center;gap:6px;
+      padding:6px 10px;border-radius:999px;
+      font-size:12px;color:var(--muted);
+      background:#f3f4f6;border:1px solid #eef0f3;
     }
     .row{
-      display:flex;
-      align-items:center;
-      justify-content:space-between;
-      gap:10px;
-      margin-bottom:10px;
+      display:flex;align-items:center;justify-content:space-between;
+      gap:10px;margin-bottom:10px;
     }
     .form-grid{
       display:grid;
@@ -147,72 +113,47 @@
     }
     label{
       display:block;
-      font-size:12px;
-      font-weight:700;
-      margin:0 0 6px 0;
-      color:#111827;
+      font-size:12px;font-weight:700;
+      margin:0 0 6px 0;color:#111827;
     }
     input, select{
       width:100%;
-      padding:10px 10px;
-      border-radius:12px;
+      padding:10px 10px;border-radius:12px;
       border:1px solid var(--line);
-      background:#fafafa;
-      outline:none;
+      background:#fafafa;outline:none;
       font-size:14px;
     }
     input:focus, select:focus{
-      background:#fff;
-      border-color:#ff9a9a;
+      background:#fff;border-color:#ff9a9a;
       box-shadow:0 0 0 3px rgba(255,107,107,.18);
     }
 
     /* Slider UI */
     .slider-group{
-      padding:10px;
-      border-radius:14px;
+      padding:10px;border-radius:14px;
       border:1px solid var(--line);
       background:#fafafa;
     }
     .slider-head{
-      display:flex;
-      align-items:center;
-      justify-content:space-between;
-      gap:10px;
-      margin-bottom:8px;
+      display:flex;align-items:center;justify-content:space-between;
+      gap:10px;margin-bottom:8px;
     }
-    .slider-head .label{
-      font-size:12px;
-      font-weight:800;
-      color:#111827;
-    }
+    .slider-head .label{font-size:12px;font-weight:800;color:#111827}
     .value-chip{
-      display:inline-flex;
-      align-items:baseline;
-      gap:6px;
-      padding:6px 10px;
-      border-radius:999px;
-      background:#fff;
-      border:1px solid #eef0f3;
-      font-size:12px;
-      color:var(--muted);
-      white-space:nowrap;
+      display:inline-flex;align-items:baseline;gap:6px;
+      padding:6px 10px;border-radius:999px;
+      background:#fff;border:1px solid #eef0f3;
+      font-size:12px;color:var(--muted);white-space:nowrap;
     }
-    .value-chip b{color:#111827; font-weight:900}
+    .value-chip b{color:#111827;font-weight:900}
     input[type="range"]{
       width:100%;
-      padding:0;
-      border:none;
-      background:transparent;
-      accent-color:#111827;
-      height:26px;
+      padding:0;border:none;background:transparent;
+      accent-color:#111827;height:26px;
     }
     .range-sub{
-      display:flex;
-      justify-content:space-between;
-      font-size:11px;
-      color:var(--muted);
-      margin-top:4px;
+      display:flex;justify-content:space-between;
+      font-size:11px;color:var(--muted);margin-top:4px;
     }
 
     .toggle-list{
@@ -222,37 +163,20 @@
       overflow:hidden;
     }
     .toggle-item{
-      display:flex;
-      justify-content:space-between;
-      align-items:center;
-      padding:12px 12px;
-      border-top:1px solid var(--line);
+      display:flex;justify-content:space-between;align-items:center;
+      padding:12px 12px;border-top:1px solid var(--line);
     }
     .toggle-item:first-child{border-top:none}
-    .toggle-item .left{
-      display:flex;
-      flex-direction:column;
-      gap:2px;
-    }
-    .toggle-item .name{
-      font-weight:800;
-      font-size:14px;
-    }
-    .toggle-item .desc{
-      font-size:12px;
-      color:var(--muted);
-    }
+    .toggle-item .left{display:flex;flex-direction:column;gap:2px}
+    .toggle-item .name{font-weight:800;font-size:14px}
+    .toggle-item .desc{font-size:12px;color:var(--muted)}
     .switch{
-      width:44px;height:24px;border-radius:999px;
-      background:#e5e7eb;
-      position:relative;
-      cursor:pointer;
-      flex:0 0 auto;
+      width:44px;height:24px;border-radius:999px;background:#e5e7eb;
+      position:relative;cursor:pointer;flex:0 0 auto;
     }
     .switch::after{
       content:"";
-      position:absolute;
-      top:3px;left:3px;
+      position:absolute;top:3px;left:3px;
       width:18px;height:18px;border-radius:999px;
       background:#fff;
       box-shadow:0 3px 8px rgba(0,0,0,.18);
@@ -264,18 +188,12 @@
     .primary-wide{
       width:100%;
       margin-top:12px;
-      padding:14px 14px;
-      border-radius:14px;
-      font-size:15px;
-      font-weight:900;
-      background:#111827;
-      color:#fff;
-      border:none;
+      padding:14px 14px;border-radius:14px;
+      font-size:15px;font-weight:900;
+      background:#111827;color:#fff;border:none;
       cursor:pointer;
     }
     .primary-wide:disabled{opacity:.55;cursor:default}
-
-    /* Mobile-friendly: sticky CTA */
     @media (max-width: 640px){
       .primary-wide{
         position: sticky;
@@ -285,29 +203,18 @@
       }
     }
 
-    .hint{
-      margin-top:10px;
-      font-size:12px;
-      color:var(--muted);
-    }
+    .hint{margin-top:10px;font-size:12px;color:var(--muted)}
     .hint.error{color:var(--warn);font-weight:800}
 
     .right-head{
-      display:flex;
-      align-items:center;
-      justify-content:space-between;
-      gap:10px;
-      margin-bottom:10px;
+      display:flex;align-items:center;justify-content:space-between;
+      gap:10px;margin-bottom:10px;
     }
     .right-head h3{margin:0;font-size:18px;font-weight:900}
     .debug-toggle{
-      display:flex;
-      align-items:center;
-      gap:8px;
-      font-size:13px;
-      color:var(--muted);
-      user-select:none;
-      cursor:pointer;
+      display:flex;align-items:center;gap:8px;
+      font-size:13px;color:var(--muted);
+      user-select:none;cursor:pointer;
     }
 
     .preview-wrap{
@@ -327,13 +234,9 @@
       border-radius:16px;
       background:#fff;
       border:1px solid #f0f0f5;
-      display:flex;
-      align-items:center;
-      justify-content:center;
-      overflow:hidden;
-      position:relative;
+      display:flex;align-items:center;justify-content:center;
+      overflow:hidden;position:relative;
     }
-
     img#outfit-image{
       width:100%;
       height:100%;
@@ -341,46 +244,31 @@
       display:none;
     }
     .placeholder{
-      text-align:center;
-      color:var(--muted);
-      font-size:14px;
-      padding:20px;
+      text-align:center;color:var(--muted);
+      font-size:14px;padding:20px;
     }
 
-    .section-title{
-      margin:14px 0 8px;
-      display:flex;
-      gap:8px;
-      align-items:center;
-    }
+    .section-title{margin:14px 0 8px;display:flex;gap:8px;align-items:center}
     .section-title .pill{font-weight:800}
 
     .products{
       border:1px solid var(--line);
       border-radius:18px;
-      padding:12px;
-      background:#fff;
+      padding:12px;background:#fff;
       min-height:160px;
     }
     .product-item{
-      display:grid;
-      grid-template-columns:60px 1fr;
-      gap:10px;
-      padding:10px;
-      border-radius:14px;
-      background:#fafafa;
-      border:1px solid #f1f2f4;
+      display:grid;grid-template-columns:60px 1fr;
+      gap:10px;padding:10px;border-radius:14px;
+      background:#fafafa;border:1px solid #f1f2f4;
       margin-bottom:10px;
     }
     .product-item:last-child{margin-bottom:0}
     .thumb{
       width:60px;height:60px;border-radius:12px;
-      background:#fff;
-      border:1px solid #eee;
+      background:#fff;border:1px solid #eee;
       display:flex;align-items:center;justify-content:center;
-      overflow:hidden;
-      color:var(--muted);
-      font-size:12px;
+      overflow:hidden;color:var(--muted);font-size:12px;
     }
     .thumb img{width:100%;height:100%;object-fit:cover}
     .pname{font-weight:900;font-size:14px;margin:0 0 4px}
@@ -388,25 +276,16 @@
     .plink{font-size:12px;color:#ff6b6b;text-decoration:none;font-weight:900}
     .plink:hover{text-decoration:underline}
 
-    .statusbar{
-      margin-top:10px;
-      font-size:12px;
-      color:var(--muted);
-    }
+    .statusbar{margin-top:10px;font-size:12px;color:var(--muted)}
     .statusbar .ok{color:var(--ok);font-weight:900}
     .statusbar .bad{color:var(--warn);font-weight:900}
 
     .debug{
-      margin-top:12px;
-      display:none;
-      border:1px dashed #d1d5db;
-      background:#fff;
-      border-radius:14px;
-      padding:10px;
-      font-size:12px;
-      color:#111827;
-      max-height:280px;
-      overflow:auto;
+      margin-top:12px;display:none;
+      border:1px dashed #d1d5db;background:#fff;
+      border-radius:14px;padding:10px;
+      font-size:12px;color:#111827;
+      max-height:280px;overflow:auto;
       white-space:pre-wrap;
     }
     .debug.on{display:block}
@@ -453,7 +332,6 @@
             </select>
           </div>
 
-          <!-- Age slider -->
           <div class="slider-group">
             <div class="slider-head">
               <div class="label">年齡</div>
@@ -463,7 +341,6 @@
             <div class="range-sub"><span>13</span><span>70</span></div>
           </div>
 
-          <!-- Height slider -->
           <div class="slider-group">
             <div class="slider-head">
               <div class="label">身高</div>
@@ -473,7 +350,6 @@
             <div class="range-sub"><span>140</span><span>200</span></div>
           </div>
 
-          <!-- Weight slider -->
           <div class="slider-group">
             <div class="slider-head">
               <div class="label">體重</div>
@@ -514,7 +390,6 @@
             </select>
           </div>
 
-          <!-- Temp slider full width -->
           <div class="slider-group" style="grid-column:1/-1">
             <div class="slider-head">
               <div class="label">溫度</div>
@@ -550,7 +425,7 @@
         </div>
 
         <button id="go-btn" class="primary-wide">產生穿搭圖 & 搜尋商品</button>
-        <div class="hint" id="form-hint">提示：需先登入（Bearer token）才能呼叫扣點的 Spec API。</div>
+        <div class="hint" id="form-hint">提示：需先登入（Google）才能呼叫扣點的 Spec API。</div>
         <div class="hint error" id="error-hint" style="display:none;"></div>
       </section>
 
@@ -588,11 +463,21 @@
     </main>
   </div>
 
+  <!-- ✅ Supabase JS SDK (v2) -->
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
   <script>
     /***********************
      * 0) CONFIG (請改這裡)
      ***********************/
     const SUPABASE_PROJECT_REF = "auiwcsolpvufxxyhnvaf";
+    const SUPABASE_URL = `https://${SUPABASE_PROJECT_REF}.supabase.co`;
+
+    // ✅ 你必須填這個：Supabase Dashboard → Settings → API → anon public key
+    //    （這是公開 key，放前端沒關係）
+    const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImF1aXdjc29scHZ1Znh4eWhudmFmIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjQ5MzUwMDEsImV4cCI6MjA4MDUxMTAwMX0.KeD8JXdHs5Iu7-wf0F0GpUPp-_y5X5ha6mwBcR5eYDA";
+
+    // ✅ 本頁網址（用於 OAuth redirect）
     const REDIRECT_TO = "https://simon-one-ochre.vercel.app/body-test.html";
 
     /***********************
@@ -607,29 +492,33 @@
     }
 
     /***********************
-     * 1) AUTH helpers
+     * 1) AUTH (Supabase JS)
      ***********************/
     const AUTH_KEY = "os_supabase_access_token_v1";
-
-    function parseHashTokens() {
-      const hash = window.location.hash || "";
-      if (!hash.startsWith("#")) return null;
-      const params = new URLSearchParams(hash.slice(1));
-      const access_token = params.get("access_token");
-      if (!access_token) return null;
-      return { access_token };
-    }
 
     function saveAccessToken(t){ localStorage.setItem(AUTH_KEY, t); }
     function getAccessToken(){ return localStorage.getItem(AUTH_KEY); }
     function clearAccessToken(){ localStorage.removeItem(AUTH_KEY); }
 
+    // ✅ 防止 "Identifier 'supabase' has already been declared"
+    //   我們用 osSupabase 這個名字
+    const osSupabase = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
+      auth: {
+        persistSession: true,
+        autoRefreshToken: true,
+        detectSessionInUrl: true, // ✅ 讓 SDK 自己處理 state / callback
+        flowType: "pkce"          // ✅ v2 預設就是 pkce；明寫更清楚
+      }
+    });
+
     async function apiMe() {
       const token = getAccessToken();
       if (!token) return { ok:false, error:"no token" };
+
       const r = await fetch("/api/me", {
         headers: { Authorization: "Bearer " + token }
       });
+
       const j = await r.json().catch(()=> ({}));
       if (!r.ok) return { ok:false, error:j?.error || "me failed", detail:j?.detail };
       return j;
@@ -666,25 +555,85 @@
 
       const me = await apiMe();
       if (!me.ok) {
-        clearAccessToken();
         setAuthUI({ loggedIn:false, hint:"登入狀態異常（/api/me 失敗）" });
         return;
       }
-      setAuthUI({ loggedIn:true, email: me.user?.email, credits: me.credits_left, hint:"" });
+
+      setAuthUI({
+        loggedIn:true,
+        email: me.user?.email,
+        credits: me.credits_left,
+        hint:""
+      });
     }
 
-    function loginGoogle() {
-      const url =
-        `https://${SUPABASE_PROJECT_REF}.supabase.co/auth/v1/authorize` +
-        `?provider=google` +
-        `&redirect_to=${encodeURIComponent(REDIRECT_TO)}` +
-        `&response_type=token`;
-      window.location.href = url;
+    async function ensureTokenFromSession() {
+      // 1) 讓 SDK 吃掉 callback（detectSessionInUrl:true 會做）
+      // 2) 把 session access_token 同步到你自己的 AUTH_KEY，讓後端 API 用 Bearer
+      const { data, error } = await osSupabase.auth.getSession();
+      if (error) return { ok:false, error: error.message };
+
+      const session = data?.session;
+      if (!session?.access_token) {
+        clearAccessToken();
+        return { ok:false, error:"no session" };
+      }
+
+      saveAccessToken(session.access_token);
+
+      // 清掉網址 query/hash（保持乾淨）
+      if (location.hash || location.search) {
+        history.replaceState(null, "", location.pathname);
+      }
+
+      return { ok:true, session };
     }
 
-    function logout() {
+    async function loginGoogle() {
+      if (SUPABASE_ANON_KEY.startsWith("PASTE_")) {
+        alert("請先在 body-test.html 填入 SUPABASE_ANON_KEY（Supabase → Settings → API → anon public key）");
+        return;
+      }
+
+      const { error } = await osSupabase.auth.signInWithOAuth({
+        provider: "google",
+        options: {
+          redirectTo: REDIRECT_TO,
+          // queryParams: { prompt: "consent" } // 若你要每次都跳帳號選擇可開
+        }
+      });
+
+      if (error) {
+        console.error(error);
+        setAuthUI({ loggedIn:false, hint:"登入啟動失敗：" + error.message });
+      }
+    }
+
+    async function logout() {
+      // ✅ 用 SDK signOut（會把 state/session 清乾淨）
+      try { await osSupabase.auth.signOut(); } catch {}
+
+      // 清你自訂的 token
       clearAccessToken();
+
+      // 保險：把 supabase 可能留下的 storage 也清掉
+      try {
+        const keys = Object.keys(localStorage);
+        for (const k of keys) {
+          if (k.startsWith("sb-") || k.includes("supabase") || k.includes("auth")) {
+            localStorage.removeItem(k);
+          }
+        }
+        const skeys = Object.keys(sessionStorage);
+        for (const k of skeys) {
+          if (k.startsWith("sb-") || k.includes("supabase") || k.includes("auth")) {
+            sessionStorage.removeItem(k);
+          }
+        }
+      } catch {}
+
       setAuthUI({ loggedIn:false, hint:"已登出" });
+      window.location.href = "/body-test.html";
     }
 
     /***********************
@@ -763,13 +712,9 @@
         const div = document.createElement("div");
         div.className = "product-item";
 
-        const thumb = p.thumbnail
-          ? `<img src="${p.thumbnail}" alt="">`
-          : `示意`;
-
+        const thumb = p.thumbnail ? `<img src="${p.thumbnail}" alt="">` : `示意`;
         const price = p.price || p.extracted_price || "";
-        // ✅ product_link 優先
-        const link = p.product_link || p.link || p.url || "#";
+        const link = p.product_link || p.link || p.url || "#"; // ✅ product_link 優先
 
         div.innerHTML = `
           <div class="thumb">${thumb}</div>
@@ -813,11 +758,7 @@
         headers["Authorization"] = "Bearer " + token;
       }
 
-      const r = await fetch(url, {
-        method: "POST",
-        headers,
-        body: JSON.stringify(body)
-      });
+      const r = await fetch(url, { method:"POST", headers, body: JSON.stringify(body) });
 
       const text = await r.text();
       let j = null;
@@ -836,10 +777,17 @@
       clearImage();
       renderProducts([]);
 
+      // 確保 session token 已同步
+      const ensured = await ensureTokenFromSession();
+      if (!ensured.ok) {
+        setAuthUI({ loggedIn:false, hint:"未登入（請按 Google 登入）" });
+        throw new Error("未登入或 session 不存在");
+      }
+
       const me = await apiMe();
       if (!me.ok) {
-        setAuthUI({ loggedIn:false, hint:"登入 token 失效或 /api/me 失敗，請按 Google 登入重試。" });
-        throw new Error("未登入或 token 失效");
+        setAuthUI({ loggedIn:false, hint:"登入狀態異常（/api/me 失敗）" });
+        throw new Error("登入狀態異常（/api/me 失敗）");
       }
 
       const payload = {
@@ -888,19 +836,12 @@
     /***********************
      * 5) INIT
      ***********************/
-    (function init() {
+    (async function init() {
       // sliders
       bindRange("age", "age-val");
       bindRange("height", "height-val");
       bindRange("weight", "weight-val");
       bindRange("temp", "temp-val");
-
-      // consume hash token
-      const tokens = parseHashTokens();
-      if (tokens?.access_token) {
-        saveAccessToken(tokens.access_token);
-        history.replaceState(null, "", window.location.pathname + window.location.search);
-      }
 
       // bind auth buttons
       document.getElementById("login-btn").addEventListener("click", loginGoogle);
@@ -926,7 +867,19 @@
 
       document.getElementById("debug-box").classList.toggle("on", getDebug());
 
-      refreshAuthUI();
+      // ✅ 關鍵：讓 SDK 在頁面載入時就處理 callback & 同步 token
+      await ensureTokenFromSession();
+      await refreshAuthUI();
+
+      // ✅ 監聽 auth 狀態改變：一旦登入/刷新/登出，立刻同步 token + 更新 UI
+      osSupabase.auth.onAuthStateChange(async (_event, session) => {
+        if (session?.access_token) {
+          saveAccessToken(session.access_token);
+        } else {
+          clearAccessToken();
+        }
+        await refreshAuthUI();
+      });
     })();
   </script>
 </body>
