@@ -164,7 +164,7 @@ Rendering requirements:
         generationConfig: {
           imageConfig: {
             aspectRatio: ar,
-            imageSize: size
+           
           }
         }
       })
