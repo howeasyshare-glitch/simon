@@ -29,17 +29,10 @@
       color:var(--text);
       background: radial-gradient(circle at top, #ffecec 0, var(--bg) 45%, var(--bg) 100%);
     }
-    .page{
-      max-width:1280px;
-      margin:0 auto;
-      padding:20px 14px 40px;
-    }
+    .page{max-width:1280px;margin:0 auto;padding:20px 14px 40px}
     header{
-      display:flex;
-      align-items:flex-start;
-      justify-content:space-between;
-      gap:12px;
-      padding:10px 10px 16px;
+      display:flex;align-items:flex-start;justify-content:space-between;
+      gap:12px;padding:10px 10px 16px;
     }
     .brand{display:flex;gap:10px;align-items:center}
     .dot{
@@ -51,29 +44,18 @@
     .subtitle{color:var(--muted);font-size:13px;margin-top:4px}
     .top-right{display:flex;align-items:flex-start;gap:12px}
     .auth-box{
-      text-align:right;
-      font-size:13px;
-      color:var(--muted);
-      line-height:1.6;
-      margin-top:2px;
-      min-width:260px;
+      text-align:right;font-size:13px;color:var(--muted);
+      line-height:1.6;margin-top:2px;min-width:260px;
     }
     .auth-box b{color:var(--text)}
     .btn{
       border:none;cursor:pointer;border-radius:999px;
-      padding:10px 14px;font-weight:700;
-      background:var(--brand);color:#fff;
+      padding:10px 14px;font-weight:700;background:var(--brand);color:#fff;
       box-shadow:0 10px 20px rgba(0,0,0,.18);
-      transition:transform .1s ease, opacity .1s ease;
-      white-space:nowrap;
+      transition:transform .1s ease, opacity .1s ease;white-space:nowrap;
     }
     .btn:active{transform:translateY(1px);opacity:.92}
-    .btn.secondary{
-      background:#fff;color:var(--text);
-      border:1px solid var(--line);
-      box-shadow:none;
-      font-weight:700;
-    }
+    .btn.secondary{background:#fff;color:var(--text);border:1px solid var(--line);box-shadow:none;font-weight:700}
 
     .layout{
       display:grid;
@@ -99,10 +81,38 @@
       font-size:12px;color:var(--muted);
       background:#f3f4f6;border:1px solid #eef0f3;
     }
-    .row{
+    .row{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:10px}
+
+    /* ✅ 表單視覺分段 */
+    .section-block{
+      padding:12px;
+      border:1px solid var(--line);
+      border-radius:16px;
+      background:linear-gradient(135deg,#fff,#fafafa);
+      margin-bottom:12px;
+    }
+    .section-head{
       display:flex;align-items:center;justify-content:space-between;
       gap:10px;margin-bottom:10px;
     }
+    .section-head .stitle{
+      font-weight:900;
+      font-size:14px;
+      color:#111827;
+      display:flex;
+      align-items:center;
+      gap:8px;
+    }
+    .tag{
+      font-size:11px;
+      padding:4px 8px;
+      border-radius:999px;
+      border:1px solid #eef0f3;
+      background:#fff;
+      color:var(--muted);
+      white-space:nowrap;
+    }
+
     .form-grid{
       display:grid;
       grid-template-columns:1fr 1fr;
@@ -112,16 +122,12 @@
       .form-grid{grid-template-columns:1fr}
     }
     label{
-      display:block;
-      font-size:12px;font-weight:700;
+      display:block;font-size:12px;font-weight:700;
       margin:0 0 6px 0;color:#111827;
     }
     input, select{
-      width:100%;
-      padding:10px 10px;border-radius:12px;
-      border:1px solid var(--line);
-      background:#fafafa;outline:none;
-      font-size:14px;
+      width:100%;padding:10px 10px;border-radius:12px;
+      border:1px solid var(--line);background:#fafafa;outline:none;font-size:14px;
     }
     input:focus, select:focus{
       background:#fff;border-color:#ff9a9a;
@@ -130,37 +136,63 @@
 
     /* Slider UI */
     .slider-group{
-      padding:10px;border-radius:14px;
-      border:1px solid var(--line);
-      background:#fafafa;
+      padding:10px;border-radius:14px;border:1px solid var(--line);background:#fafafa;
     }
-    .slider-head{
-      display:flex;align-items:center;justify-content:space-between;
-      gap:10px;margin-bottom:8px;
-    }
+    .slider-head{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:8px}
     .slider-head .label{font-size:12px;font-weight:800;color:#111827}
     .value-chip{
       display:inline-flex;align-items:baseline;gap:6px;
-      padding:6px 10px;border-radius:999px;
-      background:#fff;border:1px solid #eef0f3;
+      padding:6px 10px;border-radius:999px;background:#fff;border:1px solid #eef0f3;
       font-size:12px;color:var(--muted);white-space:nowrap;
     }
     .value-chip b{color:#111827;font-weight:900}
     input[type="range"]{
-      width:100%;
-      padding:0;border:none;background:transparent;
-      accent-color:#111827;height:26px;
+      width:100%;padding:0;border:none;background:transparent;accent-color:#111827;height:26px;
     }
-    .range-sub{
-      display:flex;justify-content:space-between;
-      font-size:11px;color:var(--muted);margin-top:4px;
+    .range-sub{display:flex;justify-content:space-between;font-size:11px;color:var(--muted);margin-top:4px}
+
+    /* ✅ 風格卡片化 */
+    .style-grid{
+      display:grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap:10px;
+    }
+    @media (max-width:560px){
+      .style-grid{grid-template-columns:1fr 1fr}
+    }
+    .style-card{
+      border:1px solid var(--line);
+      background:#fff;
+      border-radius:16px;
+      padding:12px 12px;
+      cursor:pointer;
+      user-select:none;
+      transition:transform .08s ease, border-color .08s ease, box-shadow .08s ease;
+      display:flex;
+      flex-direction:column;
+      gap:6px;
+      min-height:76px;
+    }
+    .style-card:active{transform:translateY(1px)}
+    .style-card .name{font-weight:900;font-size:14px;color:#111827}
+    .style-card .desc{font-size:12px;color:var(--muted);line-height:1.4}
+    .style-card.selected{
+      border-color:#111827;
+      box-shadow:0 10px 20px rgba(17,24,39,.12);
+    }
+    .style-card .chip{
+      align-self:flex-start;
+      font-size:11px;
+      padding:4px 8px;
+      border-radius:999px;
+      border:1px solid #eef0f3;
+      background:#f9fafb;
+      color:#111827;
+      font-weight:800;
     }
 
     .toggle-list{
-      margin-top:10px;
-      border:1px solid var(--line);
-      border-radius:14px;
-      overflow:hidden;
+      margin-top:10px;border:1px solid var(--line);border-radius:14px;overflow:hidden;
     }
     .toggle-item{
       display:flex;justify-content:space-between;align-items:center;
@@ -175,47 +207,29 @@
       position:relative;cursor:pointer;flex:0 0 auto;
     }
     .switch::after{
-      content:"";
-      position:absolute;top:3px;left:3px;
-      width:18px;height:18px;border-radius:999px;
-      background:#fff;
-      box-shadow:0 3px 8px rgba(0,0,0,.18);
-      transition:transform .15s ease;
+      content:"";position:absolute;top:3px;left:3px;width:18px;height:18px;border-radius:999px;
+      background:#fff;box-shadow:0 3px 8px rgba(0,0,0,.18);transition:transform .15s ease;
     }
     .switch.on{background:#111827}
     .switch.on::after{transform:translateX(20px)}
 
     .primary-wide{
-      width:100%;
-      margin-top:12px;
-      padding:14px 14px;border-radius:14px;
-      font-size:15px;font-weight:900;
-      background:#111827;color:#fff;border:none;
-      cursor:pointer;
+      width:100%;margin-top:12px;padding:14px 14px;border-radius:14px;
+      font-size:15px;font-weight:900;background:#111827;color:#fff;border:none;cursor:pointer;
     }
     .primary-wide:disabled{opacity:.55;cursor:default}
     @media (max-width: 640px){
       .primary-wide{
-        position: sticky;
-        bottom: 12px;
-        z-index: 5;
-        box-shadow:0 16px 30px rgba(0,0,0,.12);
+        position: sticky;bottom: 12px;z-index: 5;box-shadow:0 16px 30px rgba(0,0,0,.12);
       }
     }
 
     .hint{margin-top:10px;font-size:12px;color:var(--muted)}
     .hint.error{color:var(--warn);font-weight:800}
 
-    .right-head{
-      display:flex;align-items:center;justify-content:space-between;
-      gap:10px;margin-bottom:10px;
-    }
+    .right-head{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:10px}
     .right-head h3{margin:0;font-size:18px;font-weight:900}
-    .debug-toggle{
-      display:flex;align-items:center;gap:8px;
-      font-size:13px;color:var(--muted);
-      user-select:none;cursor:pointer;
-    }
+    .debug-toggle{display:flex;align-items:center;gap:8px;font-size:13px;color:var(--muted);user-select:none;cursor:pointer}
 
     .preview-wrap{
       border:1px solid var(--line);
@@ -243,10 +257,7 @@
       object-fit:contain;
       display:none;
     }
-    .placeholder{
-      text-align:center;color:var(--muted);
-      font-size:14px;padding:20px;
-    }
+    .placeholder{text-align:center;color:var(--muted);font-size:14px;padding:20px}
 
     .section-title{margin:14px 0 8px;display:flex;gap:8px;align-items:center}
     .section-title .pill{font-weight:800}
@@ -258,17 +269,13 @@
       min-height:160px;
     }
     .product-item{
-      display:grid;grid-template-columns:60px 1fr;
-      gap:10px;padding:10px;border-radius:14px;
-      background:#fafafa;border:1px solid #f1f2f4;
-      margin-bottom:10px;
+      display:grid;grid-template-columns:60px 1fr;gap:10px;padding:10px;border-radius:14px;
+      background:#fafafa;border:1px solid #f1f2f4;margin-bottom:10px;
     }
     .product-item:last-child{margin-bottom:0}
     .thumb{
-      width:60px;height:60px;border-radius:12px;
-      background:#fff;border:1px solid #eee;
-      display:flex;align-items:center;justify-content:center;
-      overflow:hidden;color:var(--muted);font-size:12px;
+      width:60px;height:60px;border-radius:12px;background:#fff;border:1px solid #eee;
+      display:flex;align-items:center;justify-content:center;overflow:hidden;color:var(--muted);font-size:12px;
     }
     .thumb img{width:100%;height:100%;object-fit:cover}
     .pname{font-weight:900;font-size:14px;margin:0 0 4px}
@@ -276,19 +283,74 @@
     .plink{font-size:12px;color:#ff6b6b;text-decoration:none;font-weight:900}
     .plink:hover{text-decoration:underline}
 
+    /* ✅ 生成動畫細節：狀態 + 進度條 + shimmer */
     .statusbar{margin-top:10px;font-size:12px;color:var(--muted)}
     .statusbar .ok{color:var(--ok);font-weight:900}
     .statusbar .bad{color:var(--warn);font-weight:900}
 
+    .progress{
+      margin-top:8px;
+      height:8px;
+      border-radius:999px;
+      background:#eef0f3;
+      overflow:hidden;
+      border:1px solid #e9ecf1;
+    }
+    .progress > div{
+      height:100%;
+      width:0%;
+      background:#111827;
+      transition:width .25s ease;
+    }
+    .dots{
+      display:inline-flex;
+      gap:3px;
+      vertical-align:middle;
+      margin-left:6px;
+    }
+    .dot{
+      width:5px;height:5px;border-radius:999px;background:var(--muted);
+      opacity:.3;
+      animation:blink 1s infinite;
+    }
+    .dot:nth-child(2){animation-delay:.15s}
+    .dot:nth-child(3){animation-delay:.3s}
+    @keyframes blink{
+      0%,100%{opacity:.25;transform:translateY(0)}
+      50%{opacity:.9;transform:translateY(-1px)}
+    }
+    .shimmer{
+      position:relative;
+      overflow:hidden;
+      border-radius:16px;
+    }
+    .shimmer::after{
+      content:"";
+      position:absolute;inset:0;
+      background:linear-gradient(90deg, rgba(255,255,255,0) 0%, rgba(255,255,255,.7) 50%, rgba(255,255,255,0) 100%);
+      transform:translateX(-120%);
+      animation:shimmer 1.2s infinite;
+    }
+    @keyframes shimmer{
+      0%{transform:translateX(-120%)}
+      100%{transform:translateX(120%)}
+    }
+
     .debug{
       margin-top:12px;display:none;
-      border:1px dashed #d1d5db;background:#fff;
-      border-radius:14px;padding:10px;
-      font-size:12px;color:#111827;
-      max-height:280px;overflow:auto;
-      white-space:pre-wrap;
+      border:1px dashed #d1d5db;background:#fff;border-radius:14px;
+      padding:10px;font-size:12px;color:#111827;
+      max-height:280px;overflow:auto;white-space:pre-wrap;
     }
     .debug.on{display:block}
+
+    /* Mobile polish */
+    @media (max-width: 640px){
+      .page{padding:16px 12px 34px}
+      header{padding:8px 6px 12px}
+      .title{font-size:18px}
+      .subtitle{font-size:12px}
+    }
   </style>
 </head>
 
@@ -322,55 +384,95 @@
           <span class="pill">扣 1 點 / 次</span>
         </div>
 
-        <div class="form-grid">
-          <div>
-            <label>性別</label>
-            <select id="gender">
-              <option value="female">女性</option>
-              <option value="male">男性</option>
-              <option value="neutral">中性</option>
-            </select>
+        <!-- ✅ 分段 1：基本資料 -->
+        <div class="section-block">
+          <div class="section-head">
+            <div class="stitle">① 基本資料 <span class="tag">拖拉更快</span></div>
           </div>
 
-          <div class="slider-group">
-            <div class="slider-head">
-              <div class="label">年齡</div>
-              <div class="value-chip"><b id="age-val">25</b> 歲</div>
+          <div class="form-grid">
+            <div>
+              <label>性別</label>
+              <select id="gender">
+                <option value="female">女性</option>
+                <option value="male">男性</option>
+                <option value="neutral">中性</option>
+              </select>
             </div>
-            <input id="age" type="range" min="13" max="70" step="1" value="25" aria-label="年齡" />
-            <div class="range-sub"><span>13</span><span>70</span></div>
-          </div>
 
-          <div class="slider-group">
-            <div class="slider-head">
-              <div class="label">身高</div>
-              <div class="value-chip"><b id="height-val">165</b> cm</div>
+            <div class="slider-group">
+              <div class="slider-head">
+                <div class="label">年齡</div>
+                <div class="value-chip"><b id="age-val">25</b> 歲</div>
+              </div>
+              <input id="age" type="range" min="13" max="70" step="1" value="25" aria-label="年齡" />
+              <div class="range-sub"><span>13</span><span>70</span></div>
             </div>
-            <input id="height" type="range" min="140" max="200" step="1" value="165" aria-label="身高" />
-            <div class="range-sub"><span>140</span><span>200</span></div>
-          </div>
 
-          <div class="slider-group">
-            <div class="slider-head">
-              <div class="label">體重</div>
-              <div class="value-chip"><b id="weight-val">55</b> kg</div>
+            <div class="slider-group">
+              <div class="slider-head">
+                <div class="label">身高</div>
+                <div class="value-chip"><b id="height-val">165</b> cm</div>
+              </div>
+              <input id="height" type="range" min="140" max="200" step="1" value="165" aria-label="身高" />
+              <div class="range-sub"><span>140</span><span>200</span></div>
             </div>
-            <input id="weight" type="range" min="35" max="120" step="1" value="55" aria-label="體重" />
-            <div class="range-sub"><span>35</span><span>120</span></div>
+
+            <div class="slider-group">
+              <div class="slider-head">
+                <div class="label">體重</div>
+                <div class="value-chip"><b id="weight-val">55</b> kg</div>
+              </div>
+              <input id="weight" type="range" min="35" max="120" step="1" value="55" aria-label="體重" />
+              <div class="range-sub"><span>35</span><span>120</span></div>
+            </div>
+
+            <div class="slider-group" style="grid-column:1/-1">
+              <div class="slider-head">
+                <div class="label">溫度</div>
+                <div class="value-chip"><b id="temp-val">22</b> °C</div>
+              </div>
+              <input id="temp" type="range" min="0" max="35" step="1" value="22" aria-label="溫度" />
+              <div class="range-sub"><span>0</span><span>35</span></div>
+            </div>
+          </div>
+        </div>
+
+        <!-- ✅ 分段 2：風格（卡片） -->
+        <div class="section-block">
+          <div class="section-head">
+            <div class="stitle">② 風格選擇 <span class="tag">點一下就好</span></div>
           </div>
 
-          <div>
-            <label>風格</label>
-            <select id="style">
-              <option value="casual">休閒</option>
-              <option value="minimal">極簡</option>
-              <option value="street">街頭</option>
-              <option value="sporty">運動</option>
-              <option value="smart">Smart Casual</option>
-            </select>
+          <div class="style-grid" id="style-grid">
+            <div class="style-card selected" data-style="casual">
+              <div class="chip">Casual</div>
+              <div class="name">休閒</div>
+              <div class="desc">舒服、日常、好搭配</div>
+            </div>
+            <div class="style-card" data-style="minimal">
+              <div class="chip">Minimal</div>
+              <div class="name">極簡</div>
+              <div class="desc">乾淨俐落、低彩度</div>
+            </div>
+            <div class="style-card" data-style="street">
+              <div class="chip">Street</div>
+              <div class="name">街頭</div>
+              <div class="desc">層次、比例、個性</div>
+            </div>
+            <div class="style-card" data-style="sporty">
+              <div class="chip">Sporty</div>
+              <div class="name">運動</div>
+              <div class="desc">機能、輕鬆、好活動</div>
+            </div>
+            <div class="style-card" data-style="smart" style="grid-column:1/-1">
+              <div class="chip">Smart</div>
+              <div class="name">Smart Casual</div>
+              <div class="desc">正式一點但不拘謹</div>
+            </div>
           </div>
 
-          <div>
+          <div style="margin-top:10px">
             <label>風格變體（品牌 / 名人）</label>
             <select id="styleVariant">
               <option value="">（不使用變體）</option>
@@ -390,37 +492,38 @@
             </select>
           </div>
 
-          <div class="slider-group" style="grid-column:1/-1">
-            <div class="slider-head">
-              <div class="label">溫度</div>
-              <div class="value-chip"><b id="temp-val">22</b> °C</div>
-            </div>
-            <input id="temp" type="range" min="0" max="35" step="1" value="22" aria-label="溫度" />
-            <div class="range-sub"><span>0</span><span>35</span></div>
-          </div>
+          <!-- hidden style value for JS -->
+          <input type="hidden" id="style" value="casual" />
         </div>
 
-        <div class="toggle-list">
-          <div class="toggle-item">
-            <div class="left">
-              <div class="name">包包</div>
-              <div class="desc">需要 bag 才會出現在 Spec + 商品</div>
-            </div>
-            <div class="switch" id="sw-bag" role="switch" aria-checked="false"></div>
+        <!-- ✅ 分段 3：配件 -->
+        <div class="section-block" style="margin-bottom:0">
+          <div class="section-head">
+            <div class="stitle">③ 配件 <span class="tag">選填</span></div>
           </div>
-          <div class="toggle-item">
-            <div class="left">
-              <div class="name">帽子</div>
-              <div class="desc">需要 hat 才會出現在 Spec + 商品</div>
+
+          <div class="toggle-list" style="margin-top:0">
+            <div class="toggle-item">
+              <div class="left">
+                <div class="name">包包</div>
+                <div class="desc">需要 bag 才會出現在 Spec + 商品</div>
+              </div>
+              <div class="switch" id="sw-bag" role="switch" aria-checked="false"></div>
             </div>
-            <div class="switch" id="sw-hat" role="switch" aria-checked="false"></div>
-          </div>
-          <div class="toggle-item">
-            <div class="left">
-              <div class="name">外套</div>
-              <div class="desc">勾選或溫度 ≤ 20°C 時會生成 outer</div>
+            <div class="toggle-item">
+              <div class="left">
+                <div class="name">帽子</div>
+                <div class="desc">需要 hat 才會出現在 Spec + 商品</div>
+              </div>
+              <div class="switch" id="sw-hat" role="switch" aria-checked="false"></div>
             </div>
-            <div class="switch" id="sw-coat" role="switch" aria-checked="false"></div>
+            <div class="toggle-item">
+              <div class="left">
+                <div class="name">外套</div>
+                <div class="desc">勾選或溫度 ≤ 20°C 時會生成 outer</div>
+              </div>
+              <div class="switch" id="sw-coat" role="switch" aria-checked="false"></div>
+            </div>
           </div>
         </div>
 
@@ -444,11 +547,18 @@
         </div>
 
         <div class="preview-wrap">
-          <div class="preview-inner">
+          <div class="preview-inner" id="preview-box">
             <img id="outfit-image" alt="Outfit preview" />
             <div class="placeholder" id="img-placeholder">尚未產生示意圖</div>
           </div>
-          <div class="statusbar" id="statusbar">狀態：<span>等待操作</span></div>
+
+          <div class="statusbar" id="statusbar">
+            狀態：<span id="status-text">等待操作</span>
+            <span id="status-dots" style="display:none">
+              <span class="dots"><span class="dot"></span><span class="dot"></span><span class="dot"></span></span>
+            </span>
+            <div class="progress"><div id="progress-bar"></div></div>
+          </div>
         </div>
 
         <div class="section-title">
@@ -473,11 +583,9 @@
     const SUPABASE_PROJECT_REF = "auiwcsolpvufxxyhnvaf";
     const SUPABASE_URL = `https://${SUPABASE_PROJECT_REF}.supabase.co`;
 
-    // ✅ 你必須填這個：Supabase Dashboard → Settings → API → anon public key
-    //    （這是公開 key，放前端沒關係）
-    const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImF1aXdjc29scHZ1Znh4eWhudmFmIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjQ5MzUwMDEsImV4cCI6MjA4MDUxMTAwMX0.KeD8JXdHs5Iu7-wf0F0GpUPp-_y5X5ha6mwBcR5eYDA";
+    // ✅ Supabase Dashboard → Settings → API → anon public key
+    const SUPABASE_ANON_KEY = "PASTE_YOUR_SUPABASE_ANON_KEY_HERE";
 
-    // ✅ 本頁網址（用於 OAuth redirect）
     const REDIRECT_TO = "https://simon-one-ochre.vercel.app/body-test.html";
 
     /***********************
@@ -492,33 +600,47 @@
     }
 
     /***********************
+     * 0.6) Style cards
+     ***********************/
+    function bindStyleCards() {
+      const grid = document.getElementById("style-grid");
+      const hidden = document.getElementById("style");
+      const cards = Array.from(grid.querySelectorAll(".style-card"));
+
+      const select = (style) => {
+        hidden.value = style;
+        cards.forEach(c => c.classList.toggle("selected", c.dataset.style === style));
+      };
+
+      cards.forEach(c => {
+        c.addEventListener("click", () => select(c.dataset.style));
+      });
+
+      // default
+      select(hidden.value || "casual");
+    }
+
+    /***********************
      * 1) AUTH (Supabase JS)
      ***********************/
     const AUTH_KEY = "os_supabase_access_token_v1";
-
     function saveAccessToken(t){ localStorage.setItem(AUTH_KEY, t); }
     function getAccessToken(){ return localStorage.getItem(AUTH_KEY); }
     function clearAccessToken(){ localStorage.removeItem(AUTH_KEY); }
 
-    // ✅ 防止 "Identifier 'supabase' has already been declared"
-    //   我們用 osSupabase 這個名字
     const osSupabase = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
       auth: {
         persistSession: true,
         autoRefreshToken: true,
-        detectSessionInUrl: true, // ✅ 讓 SDK 自己處理 state / callback
-        flowType: "pkce"          // ✅ v2 預設就是 pkce；明寫更清楚
+        detectSessionInUrl: true,
+        flowType: "pkce"
       }
     });
 
     async function apiMe() {
       const token = getAccessToken();
       if (!token) return { ok:false, error:"no token" };
-
-      const r = await fetch("/api/me", {
-        headers: { Authorization: "Bearer " + token }
-      });
-
+      const r = await fetch("/api/me", { headers: { Authorization: "Bearer " + token } });
       const j = await r.json().catch(()=> ({}));
       if (!r.ok) return { ok:false, error:j?.error || "me failed", detail:j?.detail };
       return j;
@@ -559,17 +681,10 @@
         return;
       }
 
-      setAuthUI({
-        loggedIn:true,
-        email: me.user?.email,
-        credits: me.credits_left,
-        hint:""
-      });
+      setAuthUI({ loggedIn:true, email: me.user?.email, credits: me.credits_left, hint:"" });
     }
 
     async function ensureTokenFromSession() {
-      // 1) 讓 SDK 吃掉 callback（detectSessionInUrl:true 會做）
-      // 2) 把 session access_token 同步到你自己的 AUTH_KEY，讓後端 API 用 Bearer
       const { data, error } = await osSupabase.auth.getSession();
       if (error) return { ok:false, error: error.message };
 
@@ -581,7 +696,6 @@
 
       saveAccessToken(session.access_token);
 
-      // 清掉網址 query/hash（保持乾淨）
       if (location.hash || location.search) {
         history.replaceState(null, "", location.pathname);
       }
@@ -597,10 +711,7 @@
 
       const { error } = await osSupabase.auth.signInWithOAuth({
         provider: "google",
-        options: {
-          redirectTo: REDIRECT_TO,
-          // queryParams: { prompt: "consent" } // 若你要每次都跳帳號選擇可開
-        }
+        options: { redirectTo: REDIRECT_TO }
       });
 
       if (error) {
@@ -610,25 +721,17 @@
     }
 
     async function logout() {
-      // ✅ 用 SDK signOut（會把 state/session 清乾淨）
       try { await osSupabase.auth.signOut(); } catch {}
-
-      // 清你自訂的 token
       clearAccessToken();
 
-      // 保險：把 supabase 可能留下的 storage 也清掉
       try {
         const keys = Object.keys(localStorage);
         for (const k of keys) {
-          if (k.startsWith("sb-") || k.includes("supabase") || k.includes("auth")) {
-            localStorage.removeItem(k);
-          }
+          if (k.startsWith("sb-") || k.includes("supabase") || k.includes("auth")) localStorage.removeItem(k);
         }
         const skeys = Object.keys(sessionStorage);
         for (const k of skeys) {
-          if (k.startsWith("sb-") || k.includes("supabase") || k.includes("auth")) {
-            sessionStorage.removeItem(k);
-          }
+          if (k.startsWith("sb-") || k.includes("supabase") || k.includes("auth")) sessionStorage.removeItem(k);
         }
       } catch {}
 
@@ -658,18 +761,37 @@
 
     document.getElementById("debug-toggle").addEventListener("click", (e) => {
       if (e.target.id !== "sw-debug") document.getElementById("sw-debug").click();
-      const box = document.getElementById("debug-box");
-      box.classList.toggle("on", getDebug());
+      document.getElementById("debug-box").classList.toggle("on", getDebug());
     });
 
     /***********************
-     * 3) Render helpers
+     * 3) Render helpers + loading animation
      ***********************/
-    function setStatus(text, ok=null) {
-      const sb = document.getElementById("statusbar");
-      const span = sb.querySelector("span");
-      span.textContent = text;
-      span.className = ok === true ? "ok" : ok === false ? "bad" : "";
+    const statusTextEl = document.getElementById("status-text");
+    const statusDotsEl = document.getElementById("status-dots");
+    const progressBarEl = document.getElementById("progress-bar");
+    const previewBox = document.getElementById("preview-box");
+
+    function setStatus(text, ok=null, loading=false) {
+      statusTextEl.textContent = text;
+      statusTextEl.className = ok === true ? "ok" : ok === false ? "bad" : "";
+      statusDotsEl.style.display = loading ? "inline" : "none";
+    }
+
+    function setProgress(pct) {
+      const v = Math.max(0, Math.min(100, Number(pct || 0)));
+      progressBarEl.style.width = v + "%";
+    }
+
+    function setLoadingUI(on) {
+      const products = document.getElementById("products");
+      if (on) {
+        previewBox.classList.add("shimmer");
+        products.classList.add("shimmer");
+      } else {
+        previewBox.classList.remove("shimmer");
+        products.classList.remove("shimmer");
+      }
     }
 
     function showError(msg) {
@@ -714,7 +836,7 @@
 
         const thumb = p.thumbnail ? `<img src="${p.thumbnail}" alt="">` : `示意`;
         const price = p.price || p.extracted_price || "";
-        const link = p.product_link || p.link || p.url || "#"; // ✅ product_link 優先
+        const link = p.product_link || p.link || p.url || "#";
 
         div.innerHTML = `
           <div class="thumb">${thumb}</div>
@@ -773,11 +895,13 @@
 
     async function generateAll() {
       clearError();
-      setStatus("開始…");
       clearImage();
       renderProducts([]);
+      setProgress(0);
+      setLoadingUI(true);
 
-      // 確保 session token 已同步
+      setStatus("開始", null, true);
+
       const ensured = await ensureTokenFromSession();
       if (!ensured.ok) {
         setAuthUI({ loggedIn:false, hint:"未登入（請按 Google 登入）" });
@@ -795,7 +919,7 @@
         age: Number(document.getElementById("age").value),
         height: Number(document.getElementById("height").value),
         weight: Number(document.getElementById("weight").value),
-        style: document.getElementById("style").value,
+        style: document.getElementById("style").value, // ✅ from hidden (cards)
         styleVariant: document.getElementById("styleVariant").value || "",
         temp: Number(document.getElementById("temp").value),
         withBag: !!getBag(),
@@ -803,7 +927,9 @@
         withCoat: !!getCoat()
       };
 
-      setStatus("Step 1/3：產生 Outfit Spec（扣點）…");
+      // 1) Spec
+      setStatus("Step 1/3：產生 Outfit Spec（扣點）", null, true);
+      setProgress(20);
       const spec = await postJson("/api/generate-outfit-spec", payload, true);
       setDebug({ step:"spec", spec });
 
@@ -813,13 +939,17 @@
         await refreshAuthUI();
       }
 
-      setStatus("Step 2/3：產生穿搭示意圖…");
+      // 2) Image
+      setStatus("Step 2/3：產生穿搭示意圖", null, true);
+      setProgress(55);
       const imgResp = await postJson("/api/generate-image", { ...payload, outfitSpec: spec }, true);
       if (!imgResp.image) throw new Error("Image API 沒回傳 image");
       setImageBase64(imgResp.image, imgResp.mime || "image/png");
       setDebug({ step:"image", imgResp, spec });
 
-      setStatus("Step 3/3：搜尋類似商品…");
+      // 3) Products
+      setStatus("Step 3/3：搜尋類似商品", null, true);
+      setProgress(80);
       const prodResp = await postJson("/api/search-products", {
         items: spec.items || [],
         locale: "tw",
@@ -830,24 +960,23 @@
       renderProducts(list);
       setDebug({ step:"products", prodResp, spec });
 
-      setStatus("完成 ✅", true);
+      setProgress(100);
+      setStatus("完成 ✅", true, false);
     }
 
     /***********************
      * 5) INIT
      ***********************/
     (async function init() {
-      // sliders
       bindRange("age", "age-val");
       bindRange("height", "height-val");
       bindRange("weight", "weight-val");
       bindRange("temp", "temp-val");
+      bindStyleCards();
 
-      // bind auth buttons
       document.getElementById("login-btn").addEventListener("click", loginGoogle);
       document.getElementById("logout-btn").addEventListener("click", logout);
 
-      // bind main button
       const goBtn = document.getElementById("go-btn");
       goBtn.addEventListener("click", async () => {
         goBtn.disabled = true;
@@ -857,9 +986,11 @@
           await generateAll();
         } catch (e) {
           console.error(e);
-          setStatus("失敗 ❌", false);
+          setProgress(0);
+          setStatus("失敗 ❌", false, false);
           showError(String(e.message || e));
         } finally {
+          setLoadingUI(false);
           goBtn.textContent = oldText;
           goBtn.disabled = false;
         }
@@ -867,19 +998,18 @@
 
       document.getElementById("debug-box").classList.toggle("on", getDebug());
 
-      // ✅ 關鍵：讓 SDK 在頁面載入時就處理 callback & 同步 token
       await ensureTokenFromSession();
       await refreshAuthUI();
 
-      // ✅ 監聽 auth 狀態改變：一旦登入/刷新/登出，立刻同步 token + 更新 UI
       osSupabase.auth.onAuthStateChange(async (_event, session) => {
-        if (session?.access_token) {
-          saveAccessToken(session.access_token);
-        } else {
-          clearAccessToken();
-        }
+        if (session?.access_token) saveAccessToken(session.access_token);
+        else clearAccessToken();
         await refreshAuthUI();
       });
+
+      setProgress(0);
+      setStatus("等待操作", null, false);
+      setLoadingUI(false);
     })();
   </script>
 </body>
