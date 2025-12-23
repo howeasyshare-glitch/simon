@@ -242,7 +242,7 @@
     .preview-inner{
       width:100%;
       max-width:450px;
-      aspect-ratio: 9 / 14;
+      aspect-ratio: 9 / 16;
       height:auto;
       margin:0 auto;
       border-radius:16px;
@@ -942,7 +942,12 @@
       // 2) Image
       setStatus("Step 2/3：產生穿搭示意圖", null, true);
       setProgress(55);
-      const imgResp = await postJson("/api/generate-image", { ...payload, outfitSpec: spec }, true);
+      const imgResp = await postJson("/api/generate-image", {
+  ...payload,
+  outfitSpec: spec,
+  aspectRatio: "9:16",  // ✅
+  imageSize: "1K"       // 可省略
+}, true);
       if (!imgResp.image) throw new Error("Image API 沒回傳 image");
       setImageBase64(imgResp.image, imgResp.mime || "image/png");
       setDebug({ step:"image", imgResp, spec });
