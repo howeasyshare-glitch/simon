@@ -40,7 +40,7 @@ async function getOrCreateProfile({ supabaseUrl, serviceKey, userId, email }) {
 
   // query existing (✅ credits_left)
   const q = await fetch(
-    `${supabaseUrl}/rest/v1/profiles?id=eq.${encodeURIComponent(userId)}&select=id,email,credits_left`,
+    `${supabaseUrl}/rest/v1/profiles?id=eq.${encodeURIComponent(userId)}&select=id,email,credits_left,is_tester`,
     { headers }
   );
 
@@ -97,7 +97,7 @@ async function deductOneCreditAtomic({ supabaseUrl, serviceKey, userId }) {
   // ----
   // 下面採「讀 -> 扣」並在 update 時再檢查 credits_left=eq.current，避免併發：
   const read = await fetch(
-    `${supabaseUrl}/rest/v1/profiles?id=eq.${encodeURIComponent(userId)}&select=credits_left`,
+    `${supabaseUrl}/rest/v1/profiles?id=eq.${encodeURIComponent(userId)}&select=credits_left,is_tester`,
     { headers: { apikey: serviceKey, Authorization: `Bearer ${serviceKey}`, Accept: "application/json" } }
   );
   const readText = await read.text();
@@ -152,13 +152,32 @@ export default async function handler(req, res) {
     const userEmail = user.email || "";
 
     // === 1) 確保 profile 存在 ===
-    await getOrCreateProfile({ supabaseUrl, serviceKey, userId, email: userEmail });
+    const profile = await getOrCreateProfile({ supabaseUrl, serviceKey, userId, email: userEmail });
+
 
     // === 2) 扣 1 點（✅ credits_left）===
-    const deduct = await deductOneCreditAtomic({ supabaseUrl, serviceKey, userId });
-    if (!deduct.ok) {
-      return res.status(403).json({ error: "No credits left", credits_left: deduct.credits_left ?? 0 });
-    }
+    // === 2) 扣 1 點（測試者不扣）===
+const isTester = !!profile.is_tester;
+
+let creditsLeftAfter = Number(profile.credits_left ?? 0);
+
+if (!isTester) {
+  const deduct = await deductOneCreditAtomic({ supabaseUrl, serviceKey, userId });
+
+  if (!deduct.ok) {
+    return res.status(403).json({
+      error: "No credits left",
+      credits_left: deduct.credits_left ?? 0
+    });
+  }
+
+  creditsLeftAfter = deduct.credits_left;
+} else {
+  // 🎯 測試者：不扣點
+  // 如果你想 UI 看起來是無限點數，可以改成：
+  // creditsLeftAfter = 9999;
+}
+
 
     // === 3) 你的原本邏輯：讀參數 + Gemini 產生 spec ===
     const {
@@ -428,11 +447,13 @@ Please design one complete outfit and return JSON only.
     items = items.filter((it) => !!it.slot && !!it.generic_name);
 
     // ✅ 回傳加上 credits_left
-    return res.status(200).json({
-      credits_left: deduct.credits_left,
-      summary: parsed.summary || "",
-      items
-    });
+   return res.status(200).json({
+  credits_left: creditsLeftAfter,
+  is_tester: isTester,
+  summary: parsed.summary || "",
+  items
+});
+
   } catch (err) {
     console.error("generate-outfit-spec error:", err);
     return res.status(500).json({ error: err.message || "Unknown error" });
