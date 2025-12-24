@@ -29,6 +29,76 @@
       color:var(--text);
       background: radial-gradient(circle at top, #ffecec 0, var(--bg) 45%, var(--bg) 100%);
     }
+
+    /* ---------- Loading / Skeleton ---------- */
+.skel {
+  position: relative;
+  overflow: hidden;
+  background: #f3f4f6;
+  border-radius: 14px;
+  border: 1px solid #eef0f3;
+}
+.skel::after{
+  content:"";
+  position:absolute; inset:0;
+  background: linear-gradient(90deg, rgba(255,255,255,0) 0%, rgba(255,255,255,.65) 50%, rgba(255,255,255,0) 100%);
+  transform:translateX(-120%);
+  animation: skelmove 1.15s infinite;
+}
+@keyframes skelmove { 0%{transform:translateX(-120%)} 100%{transform:translateX(120%)} }
+
+.img-skel-wrap{
+  width:100%;
+  height:100%;
+  padding:14px;
+  display:flex;
+  flex-direction:column;
+  gap:12px;
+  justify-content:flex-start;
+}
+.img-skel-line{ height:14px; border-radius:999px }
+.img-skel-block{ height:100%; min-height:220px; border-radius:18px; flex: 1 1 auto; }
+
+.products-skel{
+  display:flex;
+  flex-direction:column;
+  gap:10px;
+}
+.products-skel .row{
+  display:grid;
+  grid-template-columns:60px 1fr;
+  gap:10px;
+}
+.products-skel .thumb{ width:60px; height:60px; border-radius:12px }
+.products-skel .t1{ height:14px; border-radius:999px; width:75% }
+.products-skel .t2{ height:12px; border-radius:999px; width:45%; margin-top:8px }
+
+/* ---------- Mobile thumb-friendly tweaks ---------- */
+@media (max-width: 640px){
+  .page{ padding:14px 12px 86px; }
+  header{ padding:8px 6px 10px; }
+  .card{ padding:14px; border-radius:16px; }
+  .toggle-item{ padding:12px 10px; }
+  .style-card{ min-height:72px; padding:12px; }
+  .products{ padding:10px; }
+  .product-item{ padding:10px; }
+
+  /* Sticky action bar */
+  .primary-wide{
+    position: fixed;
+    left: 12px;
+    right: 12px;
+    bottom: 14px;
+    z-index: 50;
+    border-radius: 16px;
+    padding: 14px 16px;
+    box-shadow: 0 18px 38px rgba(0,0,0,.18);
+  }
+
+  /* avoid being covered by sticky button */
+  .layout{ gap:12px; }
+}
+
     .page{max-width:1280px;margin:0 auto;padding:20px 14px 40px}
     header{
       display:flex;align-items:flex-start;justify-content:space-between;
@@ -548,9 +618,18 @@
 
         <div class="preview-wrap">
           <div class="preview-inner" id="preview-box">
-            <img id="outfit-image" alt="Outfit preview" />
-            <div class="placeholder" id="img-placeholder">尚未產生示意圖</div>
-          </div>
+  <div id="img-skeleton" style="display:none;width:100%;height:100%;">
+    <div class="img-skel-wrap">
+      <div class="skel img-skel-line" style="width:68%"></div>
+      <div class="skel img-skel-line" style="width:52%"></div>
+      <div class="skel img-skel-block"></div>
+    </div>
+  </div>
+
+  <img id="outfit-image" alt="Outfit preview" />
+  <div class="placeholder" id="img-placeholder">尚未產生示意圖</div>
+</div>
+
 
           <div class="statusbar" id="statusbar">
             狀態：<span id="status-text">等待操作</span>
@@ -821,6 +900,39 @@
       ph.style.display = "block";
     }
 
+    function showImageSkeleton(on){
+  const sk = document.getElementById("img-skeleton");
+  const img = document.getElementById("outfit-image");
+  const ph = document.getElementById("img-placeholder");
+  if (!sk) return;
+
+  if (on) {
+    sk.style.display = "block";
+    img.style.display = "none";
+    ph.style.display = "none";
+  } else {
+    sk.style.display = "none";
+  }
+}
+
+function renderProductsSkeleton(rows = 4) {
+  const root = document.getElementById("products");
+  root.innerHTML = `
+    <div class="products-skel">
+      ${Array.from({length: rows}).map(()=>`
+        <div class="row">
+          <div class="skel thumb"></div>
+          <div>
+            <div class="skel t1"></div>
+            <div class="skel t2"></div>
+          </div>
+        </div>
+      `).join("")}
+    </div>
+  `;
+}
+
+
     function renderProducts(list) {
       const root = document.getElementById("products");
       root.innerHTML = "";
@@ -895,12 +1007,13 @@
 
     async function generateAll() {
       clearError();
-      clearImage();
-      renderProducts([]);
-      setProgress(0);
-      setLoadingUI(true);
+clearImage();
+showImageSkeleton(true);
+renderProductsSkeleton(4);
+setProgress(0);
+setLoadingUI(true);
+setStatus("開始", null, true);
 
-      setStatus("開始", null, true);
 
       const ensured = await ensureTokenFromSession();
       if (!ensured.ok) {
@@ -950,6 +1063,7 @@
 }, true);
       if (!imgResp.image) throw new Error("Image API 沒回傳 image");
       setImageBase64(imgResp.image, imgResp.mime || "image/png");
+      showImageSkeleton(false);
       setDebug({ step:"image", imgResp, spec });
 
       // 3) Products
