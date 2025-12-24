@@ -1,6 +1,6 @@
 // /api/search-products.js
 export const config = { runtime: "nodejs" };
-
+renderProductsSkeleton(4);
 function genderHint(locale, gender) {
   // locale: "tw" / "us"
   if (gender === "male") return locale === "tw" ? "男款" : "men";
@@ -113,6 +113,8 @@ export default async function handler(req, res) {
 
     return res.status(200).json({ ok: true, products: all });
   } catch (e) {
+    showImageSkeleton(false);
     return res.status(500).json({ error: e?.message || "Unknown error" });
   }
 }
+setLoadingUI(false);
