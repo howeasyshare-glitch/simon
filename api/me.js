@@ -52,7 +52,7 @@ export default async function handler(req, res) {
 
     // 2) 讀取 credits
     const profResp = await fetch(
-      `${SUPABASE_URL}/rest/v1/profiles?id=eq.${user.id}&select=credits_left`,
+      `${SUPABASE_URL}/rest/v1/profiles?id=eq.${user.id}&select=credits_left,is_tester`,
       {
         headers: {
           apikey: SERVICE_ROLE,
@@ -61,6 +61,14 @@ export default async function handler(req, res) {
         },
       }
     );
+const is_tester = rows?.[0]?.is_tester ?? false;
+
+return res.status(200).json({
+  ok: true,
+  user: { id: uid, email },
+  credits_left,
+  is_tester,
+});
 
     const profText = await profResp.text();
     if (!profResp.ok) {
