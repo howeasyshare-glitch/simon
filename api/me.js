@@ -19,6 +19,7 @@ export default async function handler(req, res) {
       });
     }
 
+    // 0) 取 Bearer token
     const auth = req.headers.authorization || "";
     const match = auth.match(/^Bearer\s+(.+)$/i);
     const accessToken = match?.[1];
@@ -28,7 +29,6 @@ export default async function handler(req, res) {
     }
 
     // 1) 驗證使用者 token
-    let user;
     const userResp = await fetch(`${SUPABASE_URL}/auth/v1/user`, {
       headers: {
         Authorization: `Bearer ${accessToken}`,
@@ -45,14 +45,16 @@ export default async function handler(req, res) {
       });
     }
 
-    user = JSON.parse(userText);
+    const user = JSON.parse(userText);
     if (!user?.id) {
       return res.status(401).json({ error: "Invalid user payload", user });
     }
 
-    // 2) 讀取 credits
+    // 2) 讀取 profile（credits_left + is_tester）
     const profResp = await fetch(
-      `${SUPABASE_URL}/rest/v1/profiles?id=eq.${user.id}&select=credits_left,is_tester`,
+      `${SUPABASE_URL}/rest/v1/profiles?id=eq.${encodeURIComponent(
+        user.id
+      )}&select=credits_left,is_tester`,
       {
         headers: {
           apikey: SERVICE_ROLE,
@@ -61,14 +63,6 @@ export default async function handler(req, res) {
         },
       }
     );
-const is_tester = rows?.[0]?.is_tester ?? false;
-
-return res.status(200).json({
-  ok: true,
-  user: { id: uid, email },
-  credits_left,
-  is_tester,
-});
 
     const profText = await profResp.text();
     if (!profResp.ok) {
@@ -80,11 +74,18 @@ return res.status(200).json({
     }
 
     const rows = JSON.parse(profText);
+    const credits_left = rows?.[0]?.credits_left ?? 0;
+    const is_tester = rows?.[0]?.is_tester ?? false;
 
+    // 3) 回傳
     return res.status(200).json({
       ok: true,
-      user: { id: user.id, email: user.email || null },
-      credits_left: rows?.[0]?.credits_left ?? 0,
+      user: {
+        id: user.id,
+        email: user.email || null,
+      },
+      credits_left,
+      is_tester,
     });
   } catch (err) {
     console.error("me error:", err);
