@@ -46,7 +46,32 @@
   animation: skelmove 1.15s infinite;
 }
 @keyframes skelmove { 0%{transform:translateX(-120%)} 100%{transform:translateX(120%)} }
+/* 手機底部固定生成按鈕 */
+@media (max-width: 768px) {
+  .sticky-generate {
+    position: sticky;
+    bottom: 12px;
+    z-index: 30;
+    padding: 10px;
+    background: linear-gradient(
+      to top,
+      rgba(245,245,247,0.98),
+      rgba(245,245,247,0.6),
+      rgba(245,245,247,0)
+    );
+  }
 
+  .sticky-generate .primary-wide {
+    width: 100%;
+    height: 52px;
+    font-size: 16px;
+    border-radius: 14px;
+  }
+}
+.form-disabled {
+  pointer-events: none;
+  opacity: 0.6;
+}
 .img-skel-wrap{
   width:100%;
   height:100%;
@@ -336,6 +361,31 @@
       background:linear-gradient(125deg,#fff7f7,#f9fbff);
       padding:12px;
     }
+.loading-dots::after {
+  content: "";
+  animation: dots 1.4s infinite;
+}
+@media (max-width: 768px) {
+  .card {
+    padding: 18px 16px;
+  }
+
+  .section-title {
+    margin-top: 18px;
+  }
+
+  .product-item {
+    padding: 12px;
+    gap: 12px;
+  }
+}
+
+@keyframes dots {
+  0% { content: ""; }
+  33% { content: "."; }
+  66% { content: ".."; }
+  100% { content: "..."; }
+}
 
     /* ✅ Image aspect: 450x700 ~ 9:14 */
     .preview-inner{
@@ -626,7 +676,9 @@
           </div>
         </div>
 
-        <button id="go-btn" class="primary-wide">產生穿搭圖 & 搜尋商品</button>
+        <div class="sticky-generate">
+  <button id="go-btn" class="primary-wide">產生穿搭圖</button>
+</div>
         <div class="hint" id="form-hint">提示：需先登入（Google）才能呼叫扣點的 Spec API。</div>
         <div class="hint error" id="error-hint" style="display:none;"></div>
       </section>
@@ -693,7 +745,11 @@
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 
   <script>
-
+function setFormDisabled(disabled) {
+  const form = document.querySelector(".card"); // 左側那張
+  if (!form) return;
+  form.classList.toggle("form-disabled", disabled);
+}
     const GENERATE_STEPS = {
   idle: {
     btn: "產生穿搭圖",
@@ -1094,7 +1150,7 @@ throw new Error(`${url} 失敗：${msg}`);
       }
       return j;
     }
-
+setFormDisabled(true);
     async function generateAll() {
       clearError();
 clearImage();
@@ -1176,7 +1232,7 @@ setGenerateStep("image");
       setProgress(100);
       setStatus("完成 ✅", true, false);
     }
-
+setFormDisabled(false);
     /***********************
      * 5) INIT
      ***********************/
