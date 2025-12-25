@@ -978,7 +978,7 @@ function renderOutfitSummary(summary) {
       img.style.display = "block";
       ph.style.display = "none";
     }
-
+renderOutfitSummary(null);
     function clearImage() {
       const img = document.getElementById("outfit-image");
       const ph = document.getElementById("img-placeholder");
@@ -1104,7 +1104,7 @@ renderProductsSkeleton(4);
 setProgress(0);
 setLoadingUI(true);
 setStatus("開始", null, true);
-renderOutfitSummary(spec.summary);
+
 
       const ensured = await ensureTokenFromSession();
       if (!ensured.ok) {
@@ -1136,6 +1136,7 @@ renderOutfitSummary(spec.summary);
       setProgress(20);
       const spec = await postJson("/api/generate-outfit-spec", payload, true);
       setDebug({ step:"spec", spec });
+      renderOutfitSummary(spec.summary);
 setGenerateStep("image");
       if (typeof spec.credits_left !== "undefined") {
         setAuthUI({ loggedIn:true, email: me.user?.email, credits: spec.credits_left });
