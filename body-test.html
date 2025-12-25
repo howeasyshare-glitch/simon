@@ -1,250 +1,1404 @@
 <!DOCTYPE html>
 <html lang="zh-Hant">
 <head>
-<meta charset="UTF-8" />
-<title>Outfit Studio · Body Test</title>
-<meta name="viewport" content="width=device-width, initial-scale=1" />
-<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@300;400;500;700&display=swap" rel="stylesheet">
+  <meta charset="UTF-8" />
+  <title>Outfit Studio · Body Test</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@300;400;500;700&display=swap" rel="stylesheet">
 
-<style>
-/* ===============================
-   基本變數與 Reset
-================================ */
-:root{
-  --bg:#f5f5f7;
-  --card:#fff;
-  --text:#1b1b1f;
-  --muted:#6b7280;
-  --line:#e5e7eb;
-  --brand:#111827;
-  --accent:#ff6b6b;
-  --ok:#16a34a;
-  --warn:#ef4444;
-  --shadow:0 12px 30px rgba(0,0,0,.08);
-  --r-lg:18px;
-  --r-md:14px;
-  --r-sm:10px;
-}
-*{box-sizing:border-box}
-body{
-  margin:0;
-  font-family:"Noto Sans TC",system-ui,-apple-system,Segoe UI,Roboto,Helvetica,Arial,sans-serif;
-  color:var(--text);
-  background: radial-gradient(circle at top, #ffecec 0, var(--bg) 45%, var(--bg) 100%);
-}
+  <style>
+    :root{
+      --bg:#f5f5f7;
+      --card:#fff;
+      --text:#1b1b1f;
+      --muted:#6b7280;
+      --line:#e5e7eb;
+      --brand:#111827;
+      --accent:#ff6b6b;
+      --ok:#16a34a;
+      --warn:#ef4444;
+      --shadow:0 12px 30px rgba(0,0,0,.08);
+      --r-lg:18px;
+      --r-md:14px;
+      --r-sm:10px;
+    }
 
-/* ===============================
-   Layout
-================================ */
-.page{max-width:1280px;margin:0 auto;padding:20px 14px 40px}
-.layout{
-  display:grid;
-  grid-template-columns:minmax(320px,0.9fr) minmax(0,1.6fr);
-  gap:16px;
-  align-items:start;
-}
-@media(max-width:980px){
-  .layout{grid-template-columns:1fr}
-}
+    *{box-sizing:border-box}
+    body{
+      margin:0;
+      font-family:"Noto Sans TC",system-ui,-apple-system,Segoe UI,Roboto,Helvetica,Arial,sans-serif;
+      color:var(--text);
+      background: radial-gradient(circle at top, #ffecec 0, var(--bg) 45%, var(--bg) 100%);
+    }
 
-/* ===============================
-   Card
-================================ */
-.card{
-  background:var(--card);
-  border-radius:var(--r-lg);
-  box-shadow:var(--shadow);
-  border:1px solid rgba(0,0,0,.04);
-  padding:16px;
-}
+    /* ---------- Loading / Skeleton ---------- */
+    .skel {
+      position: relative;
+      overflow: hidden;
+      background: #f3f4f6;
+      border-radius: 14px;
+      border: 1px solid #eef0f3;
+    }
+    .skel::after{
+      content:"";
+      position:absolute; inset:0;
+      background: linear-gradient(90deg, rgba(255,255,255,0) 0%, rgba(255,255,255,.65) 50%, rgba(255,255,255,0) 100%);
+      transform:translateX(-120%);
+      animation: skelmove 1.15s infinite;
+    }
+    @keyframes skelmove { 0%{transform:translateX(-120%)} 100%{transform:translateX(120%)} }
 
-/* ===============================
-   LEFT PANEL（關鍵修正）
-================================ */
-@media(min-width:1024px){
-  .left-panel{
-    position:sticky;
-    top:24px;
-    max-height:calc(100vh - 32px);
-    display:flex;
-    flex-direction:column;
-  }
-  .left-scroll{
-    flex:1 1 auto;
-    overflow-y:auto;
-    padding-right:6px;
-    min-height:0;
-  }
-  .left-footer{
-    flex:0 0 auto;
-    position:sticky;
-    bottom:0;
-    padding-top:10px;
-    background:linear-gradient(to top,#fff 70%,rgba(255,255,255,0));
-  }
-}
+    .form-disabled { pointer-events: none; opacity: 0.6; }
 
-/* ===============================
-   Buttons
-================================ */
-.primary-wide{
-  width:100%;
-  padding:14px;
-  border-radius:14px;
-  font-weight:900;
-  font-size:15px;
-  border:none;
-  cursor:pointer;
-  background:#111827;
-  color:#fff;
-}
-.primary-wide:disabled{opacity:.55}
+    .img-skel-wrap{
+      width:100%;
+      height:100%;
+      padding:14px;
+      display:flex;
+      flex-direction:column;
+      gap:12px;
+      justify-content:flex-start;
+    }
+    .img-skel-line{ height:14px; border-radius:999px }
+    .img-skel-block{ height:100%; min-height:220px; border-radius:18px; flex: 1 1 auto; }
 
-/* ===============================
-   Mobile bottom button
-================================ */
-@media(max-width:640px){
-  .primary-wide{
-    position:fixed;
-    left:12px;
-    right:12px;
-    bottom:14px;
-    z-index:50;
-    box-shadow:0 18px 38px rgba(0,0,0,.18);
-  }
-  .page{padding-bottom:100px}
-}
+    .products-skel{
+      display:flex;
+      flex-direction:column;
+      gap:10px;
+    }
+    .products-skel .row{
+      display:grid;
+      grid-template-columns:60px 1fr;
+      gap:10px;
+    }
+    .products-skel .thumb{ width:60px; height:60px; border-radius:12px }
+    .products-skel .t1{ height:14px; border-radius:999px; width:75% }
+    .products-skel .t2{ height:12px; border-radius:999px; width:45%; margin-top:8px }
 
-/* ===============================
-   Preview
-================================ */
-.preview-inner{
-  width:100%;
-  max-width:450px;
-  aspect-ratio:9/16;
-  margin:0 auto;
-  border-radius:16px;
-  background:#fff;
-  border:1px solid #eee;
-  display:flex;
-  align-items:center;
-  justify-content:center;
-  overflow:hidden;
-}
-img#outfit-image{
-  width:100%;
-  height:100%;
-  object-fit:contain;
-  display:none;
-}
+    /* ---------- Page layout ---------- */
+    .page{max-width:1280px;margin:0 auto;padding:20px 14px 40px}
 
-/* ===============================
-   Status
-================================ */
-.statusbar{margin-top:10px;font-size:12px;color:var(--muted)}
-.progress{height:8px;border-radius:999px;background:#eee;overflow:hidden}
-.progress>div{height:100%;width:0;background:#111827;transition:width .25s}
+    header{
+      display:flex;
+      align-items:flex-start;
+      justify-content:space-between;
+      gap:12px;
+      padding:10px 10px 16px;
+    }
+    .brand{
+      display:flex;
+      gap:10px;
+      align-items:center;
+    }
+    .brand-dot{
+      width:28px;height:28px;border-radius:999px;
+      background: linear-gradient(135deg, #111827, #111827);
+      box-shadow:0 10px 20px rgba(0,0,0,.2);
+      flex: 0 0 auto;
+    }
+    .title{font-size:20px;font-weight:800;letter-spacing:.02em}
+    .subtitle{color:var(--muted);font-size:13px;margin-top:4px}
+    .top-right{display:flex;align-items:flex-start;gap:12px}
+    .auth-box{
+      text-align:right;
+      font-size:13px;
+      color:var(--muted);
+      line-height:1.6;
+      margin-top:2px;
+      min-width:260px;
+    }
+    .auth-box b{color:var(--text)}
 
-/* ===============================
-   Loading dots
-================================ */
-.loading-dots::after{
-  content:"";
-  animation:dots 1.4s infinite;
-}
-@keyframes dots{
-  0%{content:""}
-  33%{content:"."}
-  66%{content:".."}
-  100%{content:"..."}
-}
-</style>
+    .btn{
+      border:none;
+      cursor:pointer;
+      border-radius:999px;
+      padding:10px 14px;
+      font-weight:700;
+      background:var(--brand);
+      color:#fff;
+      box-shadow:0 10px 20px rgba(0,0,0,.18);
+      transition:transform .1s ease, opacity .1s ease;
+      white-space:nowrap;
+    }
+    .btn:active{transform:translateY(1px);opacity:.92}
+    .btn.secondary{
+      background:#fff;color:var(--text);
+      border:1px solid var(--line);
+      box-shadow:none;
+      font-weight:700;
+    }
+
+    .layout{
+      display:grid;
+      grid-template-columns: minmax(320px, 0.9fr) minmax(0, 1.6fr);
+      gap:16px;
+      align-items:start;
+    }
+    @media (max-width: 980px){
+      .layout{grid-template-columns:1fr}
+      .auth-box{min-width:auto}
+    }
+
+    .card{
+      background:var(--card);
+      border-radius:var(--r-lg);
+      box-shadow:var(--shadow);
+      border:1px solid rgba(0,0,0,.04);
+      padding:16px;
+    }
+
+    .pill{
+      display:inline-flex;
+      align-items:center;
+      gap:6px;
+      padding:6px 10px;
+      border-radius:999px;
+      font-size:12px;
+      color:var(--muted);
+      background:#f3f4f6;
+      border:1px solid #eef0f3;
+    }
+    .row{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:10px}
+
+    /* ✅ 表單視覺分段 */
+    .section-block{
+      padding:12px;
+      border:1px solid var(--line);
+      border-radius:16px;
+      background:linear-gradient(135deg,#fff,#fafafa);
+      margin-bottom:12px;
+    }
+    .section-head{
+      display:flex;align-items:center;justify-content:space-between;
+      gap:10px;margin-bottom:10px;
+    }
+    .section-head .stitle{
+      font-weight:900;
+      font-size:14px;
+      color:#111827;
+      display:flex;
+      align-items:center;
+      gap:8px;
+    }
+    .tag{
+      font-size:11px;
+      padding:4px 8px;
+      border-radius:999px;
+      border:1px solid #eef0f3;
+      background:#fff;
+      color:var(--muted);
+      white-space:nowrap;
+    }
+
+    .form-grid{
+      display:grid;
+      grid-template-columns:1fr 1fr;
+      gap:10px 12px;
+    }
+    @media (max-width: 560px){
+      .form-grid{grid-template-columns:1fr}
+    }
+    label{
+      display:block;
+      font-size:12px;
+      font-weight:700;
+      margin:0 0 6px 0;
+      color:#111827;
+    }
+    input, select{
+      width:100%;
+      padding:10px 10px;
+      border-radius:12px;
+      border:1px solid var(--line);
+      background:#fafafa;
+      outline:none;
+      font-size:14px;
+    }
+    input:focus, select:focus{
+      background:#fff;
+      border-color:#ff9a9a;
+      box-shadow:0 0 0 3px rgba(255,107,107,.18);
+    }
+
+    /* Slider UI */
+    .slider-group{
+      padding:10px;
+      border-radius:14px;
+      border:1px solid var(--line);
+      background:#fafafa;
+    }
+    .slider-head{
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+      gap:10px;
+      margin-bottom:8px;
+    }
+    .slider-head .label{
+      font-size:12px;
+      font-weight:800;
+      color:#111827;
+    }
+    .value-chip{
+      display:inline-flex;
+      align-items:baseline;
+      gap:6px;
+      padding:6px 10px;
+      border-radius:999px;
+      background:#fff;
+      border:1px solid #eef0f3;
+      font-size:12px;
+      color:var(--muted);
+      white-space:nowrap;
+    }
+    .value-chip b{color:#111827;font-weight:900}
+    input[type="range"]{
+      width:100%;
+      padding:0;
+      border:none;
+      background:transparent;
+      accent-color:#111827;
+      height:26px;
+    }
+    .range-sub{
+      display:flex;
+      justify-content:space-between;
+      font-size:11px;
+      color:var(--muted);
+      margin-top:4px;
+    }
+
+    /* ✅ 風格卡片化 */
+    .style-grid{
+      display:grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap:10px;
+    }
+    @media (max-width:560px){
+      .style-grid{grid-template-columns:1fr 1fr}
+    }
+    .style-card{
+      border:1px solid var(--line);
+      background:#fff;
+      border-radius:16px;
+      padding:12px 12px;
+      cursor:pointer;
+      user-select:none;
+      transition:transform .08s ease, border-color .08s ease, box-shadow .08s ease;
+      display:flex;
+      flex-direction:column;
+      gap:6px;
+      min-height:76px;
+    }
+    .style-card:active{transform:translateY(1px)}
+    .style-card .name{font-weight:900;font-size:14px;color:#111827}
+    .style-card .desc{font-size:12px;color:var(--muted);line-height:1.4}
+    .style-card.selected{
+      border-color:#111827;
+      box-shadow:0 10px 20px rgba(17,24,39,.12);
+    }
+    .style-card .chip{
+      align-self:flex-start;
+      font-size:11px;
+      padding:4px 8px;
+      border-radius:999px;
+      border:1px solid #eef0f3;
+      background:#f9fafb;
+      color:#111827;
+      font-weight:800;
+    }
+
+    .toggle-list{
+      margin-top:10px;
+      border:1px solid var(--line);
+      border-radius:14px;
+      overflow:hidden;
+    }
+    .toggle-item{
+      display:flex;
+      justify-content:space-between;
+      align-items:center;
+      padding:12px 12px;
+      border-top:1px solid var(--line);
+    }
+    .toggle-item:first-child{border-top:none}
+    .toggle-item .left{display:flex;flex-direction:column;gap:2px}
+    .toggle-item .name{font-weight:800;font-size:14px}
+    .toggle-item .desc{font-size:12px;color:var(--muted)}
+    .switch{
+      width:44px;height:24px;border-radius:999px;background:#e5e7eb;
+      position:relative;cursor:pointer;flex:0 0 auto;
+    }
+    .switch::after{
+      content:"";
+      position:absolute;
+      top:3px;left:3px;
+      width:18px;height:18px;border-radius:999px;
+      background:#fff;
+      box-shadow:0 3px 8px rgba(0,0,0,.18);
+      transition:transform .15s ease;
+    }
+    .switch.on{background:#111827}
+    .switch.on::after{transform:translateX(20px)}
+
+    .primary-wide{
+      width:100%;
+      margin-top:12px;
+      padding:14px 14px;
+      border-radius:14px;
+      font-size:15px;
+      font-weight:900;
+      background:#111827;
+      color:#fff;
+      border:none;
+      cursor:pointer;
+    }
+    .primary-wide:disabled{opacity:.55;cursor:default}
+
+    .hint{margin-top:10px;font-size:12px;color:var(--muted)}
+    .hint.error{color:var(--warn);font-weight:800}
+
+    .right-head{
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+      gap:10px;
+      margin-bottom:10px;
+    }
+    .right-head h3{margin:0;font-size:18px;font-weight:900}
+    .debug-toggle{
+      display:flex;
+      align-items:center;
+      gap:8px;
+      font-size:13px;
+      color:var(--muted);
+      user-select:none;
+      cursor:pointer;
+    }
+
+    .preview-wrap{
+      border:1px solid var(--line);
+      border-radius:18px;
+      background:linear-gradient(125deg,#fff7f7,#f9fbff);
+      padding:12px;
+    }
+
+    /* ✅ Image aspect: 450x700 ~ 9:16 */
+    .preview-inner{
+      width:100%;
+      max-width:450px;
+      aspect-ratio: 9 / 16;
+      height:auto;
+      margin:0 auto;
+      border-radius:16px;
+      background:#fff;
+      border:1px solid #f0f0f5;
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      overflow:hidden;
+      position:relative;
+    }
+    img#outfit-image{
+      width:100%;
+      height:100%;
+      object-fit:contain;
+      display:none;
+    }
+    .placeholder{text-align:center;color:var(--muted);font-size:14px;padding:20px}
+
+    .section-title{margin:14px 0 8px;display:flex;gap:8px;align-items:center}
+    .section-title .pill{font-weight:800}
+
+    .products{
+      border:1px solid var(--line);
+      border-radius:18px;
+      padding:12px;
+      background:#fff;
+      min-height:160px;
+    }
+    .product-item{
+      display:grid;
+      grid-template-columns:60px 1fr;
+      gap:10px;
+      padding:10px;
+      border-radius:14px;
+      background:#fafafa;
+      border:1px solid #f1f2f4;
+      margin-bottom:10px;
+    }
+    .product-item:last-child{margin-bottom:0}
+    .thumb{
+      width:60px;height:60px;border-radius:12px;background:#fff;border:1px solid #eee;
+      display:flex;align-items:center;justify-content:center;overflow:hidden;color:var(--muted);font-size:12px;
+    }
+    .thumb img{width:100%;height:100%;object-fit:cover}
+    .pname{font-weight:900;font-size:14px;margin:0 0 4px}
+    .pmeta{font-size:12px;color:var(--muted);display:flex;gap:8px;flex-wrap:wrap;margin-bottom:6px}
+    .plink{font-size:12px;color:#ff6b6b;text-decoration:none;font-weight:900}
+    .plink:hover{text-decoration:underline}
+
+    /* ✅ 生成動畫細節：狀態 + 進度條 + shimmer */
+    .statusbar{margin-top:10px;font-size:12px;color:var(--muted)}
+    .statusbar .ok{color:var(--ok);font-weight:900}
+    .statusbar .bad{color:var(--warn);font-weight:900}
+
+    .progress{
+      margin-top:8px;
+      height:8px;
+      border-radius:999px;
+      background:#eef0f3;
+      overflow:hidden;
+      border:1px solid #e9ecf1;
+    }
+    .progress > div{
+      height:100%;
+      width:0%;
+      background:#111827;
+      transition:width .25s ease;
+    }
+
+    .dots{
+      display:inline-flex;
+      gap:3px;
+      vertical-align:middle;
+      margin-left:6px;
+    }
+    .ldot{
+      width:5px;height:5px;border-radius:999px;background:var(--muted);
+      opacity:.3;
+      animation:blink 1s infinite;
+    }
+    .ldot:nth-child(2){animation-delay:.15s}
+    .ldot:nth-child(3){animation-delay:.3s}
+    @keyframes blink{
+      0%,100%{opacity:.25;transform:translateY(0)}
+      50%{opacity:.9;transform:translateY(-1px)}
+    }
+
+    .shimmer{
+      position:relative;
+      overflow:hidden;
+      border-radius:16px;
+    }
+    .shimmer::after{
+      content:"";
+      position:absolute;inset:0;
+      background:linear-gradient(90deg, rgba(255,255,255,0) 0%, rgba(255,255,255,.7) 50%, rgba(255,255,255,0) 100%);
+      transform:translateX(-120%);
+      animation:shimmer 1.2s infinite;
+      pointer-events:none;
+    }
+    @keyframes shimmer{
+      0%{transform:translateX(-120%)}
+      100%{transform:translateX(120%)}
+    }
+
+    .debug{
+      margin-top:12px;
+      display:none;
+      border:1px dashed #d1d5db;
+      background:#fff;
+      border-radius:14px;
+      padding:10px;
+      font-size:12px;
+      color:#111827;
+      max-height:280px;
+      overflow:auto;
+      white-space:pre-wrap;
+    }
+    .debug.on{display:block}
+
+    .outfit-summary{
+      margin-top:14px;
+      background:#fafafa;
+      border:1px solid #e5e7eb;
+    }
+    .summary-head{
+      display:flex;
+      align-items:center;
+      gap:8px;
+      font-weight:800;
+      font-size:14px;
+      margin-bottom:6px;
+    }
+    .summary-icon{font-size:18px}
+    .summary-title{color:#111827}
+    .summary-text{
+      font-size:14px;
+      line-height:1.6;
+      color:#374151;
+    }
+
+    /* ==========================
+       ✅ 關鍵：桌機左側可捲 + 底部固定按鈕（根治消失）
+       ========================== */
+    @media (min-width: 1024px) {
+      .layout { overflow: visible; }
+
+      .left-panel{
+        position: sticky;
+        top: 24px;
+        align-self: flex-start;
+        max-height: calc(100vh - 32px);
+        display: flex;
+        flex-direction: column;
+        padding: 14px;
+      }
+
+      /* 左側內容可捲（避免按鈕被捲走） */
+      .left-scroll{
+        flex: 1 1 auto;
+        min-height: 0;
+        overflow-y: auto;
+        padding-right: 6px;
+      }
+
+      /* 左側底部固定區 */
+      .left-footer{
+        flex: 0 0 auto;
+        position: sticky;
+        bottom: 0;
+        padding-top: 10px;
+        background: linear-gradient(to top, #fff 70%, rgba(255,255,255,0));
+      }
+
+      /* 緊湊間距 */
+      .left-panel .row { margin-bottom: 8px; }
+      .left-panel .section-block{ margin-bottom: 10px; }
+      .left-panel .form-grid { gap: 8px 10px; }
+      .left-panel label { margin-bottom: 4px; font-size: 12px; }
+      .left-panel input, .left-panel select { padding: 8px 10px; }
+      .left-panel .toggle-list { margin-top: 8px; }
+      .left-panel .toggle-item { padding: 10px 10px; }
+
+      .preview-inner { max-height: 70vh; }
+    }
+
+    /* ---------- Mobile thumb-friendly tweaks ---------- */
+    @media (max-width: 640px){
+      .page{ padding:14px 12px 96px; }
+      header{ padding:8px 6px 10px; }
+      .card{ padding:14px; border-radius:16px; }
+      .toggle-item{ padding:12px 10px; }
+      .style-card{ min-height:72px; padding:12px; }
+      .products{ padding:10px; }
+      .product-item{ padding:10px; }
+
+      /* 手機按鈕固定底部（你原本需求） */
+      .left-footer{
+        position: fixed;
+        left: 12px;
+        right: 12px;
+        bottom: 14px;
+        z-index: 50;
+      }
+      .left-footer .primary-wide{
+        width:100%;
+        border-radius: 16px;
+        padding: 14px 16px;
+        box-shadow: 0 18px 38px rgba(0,0,0,.18);
+      }
+      /* 避免內容被底部按鈕蓋住 */
+      .layout{ gap:12px; }
+    }
+  </style>
 </head>
 
 <body>
-<div class="page">
+  <div class="page">
+    <header>
+      <div class="brand">
+        <div class="brand-dot"></div>
+        <div>
+          <div class="title">Outfit Studio · Body Test</div>
+          <div class="subtitle">流程：Spec（扣點）→ Image → Products。右上可開 Debug。</div>
+        </div>
+      </div>
 
-<header>
-  <h2>Outfit Studio · Body Test</h2>
-</header>
+      <div class="top-right">
+        <div class="auth-box">
+          <div id="login-status">未登入</div>
+          <div>點數：<b><span id="credits">—</span></b></div>
+          <div id="auth-hint" style="font-size:12px;color:var(--muted)"></div>
+        </div>
+        <button id="login-btn" class="btn">Google 登入</button>
+        <button id="logout-btn" class="btn secondary" style="display:none;">登出</button>
+      </div>
+    </header>
 
-<main class="layout">
+    <main class="layout">
+      <!-- LEFT -->
+      <section class="card left-panel" id="left-panel">
+        <!-- ✅ 這裡是「可捲內容」 -->
+        <div class="left-scroll">
+          <div class="row">
+            <h3 style="margin:0">穿搭條件</h3>
+            <span class="pill">扣 1 點 / 次</span>
+          </div>
 
-<!-- ================= LEFT ================= -->
-<section class="card left-panel">
+          <!-- ✅ 分段 1：基本資料 -->
+          <div class="section-block">
+            <div class="section-head">
+              <div class="stitle">① 基本資料 <span class="tag">拖拉更快</span></div>
+            </div>
 
-  <div class="left-scroll">
+            <div class="form-grid">
+              <div>
+                <label>性別</label>
+                <select id="gender">
+                  <option value="female">女性</option>
+                  <option value="male">男性</option>
+                  <option value="neutral">中性</option>
+                </select>
+              </div>
 
-    <h3>穿搭條件</h3>
+              <div class="slider-group">
+                <div class="slider-head">
+                  <div class="label">年齡</div>
+                  <div class="value-chip"><b id="age-val">25</b> 歲</div>
+                </div>
+                <input id="age" type="range" min="13" max="70" step="1" value="25" aria-label="年齡" />
+                <div class="range-sub"><span>13</span><span>70</span></div>
+              </div>
 
-    <!-- 你原本所有表單內容 그대로 -->
-    <!-- ⚠️ 這裡我略寫，實際你可以直接放回原本那段 -->
-    <!-- 為了不讓訊息爆炸，我保留結構，功能完全相同 -->
+              <div class="slider-group">
+                <div class="slider-head">
+                  <div class="label">身高</div>
+                  <div class="value-chip"><b id="height-val">165</b> cm</div>
+                </div>
+                <input id="height" type="range" min="140" max="200" step="1" value="165" aria-label="身高" />
+                <div class="range-sub"><span>140</span><span>200</span></div>
+              </div>
 
-    <!-- 表單略（性別 / slider / style / 配件） -->
+              <div class="slider-group">
+                <div class="slider-head">
+                  <div class="label">體重</div>
+                  <div class="value-chip"><b id="weight-val">55</b> kg</div>
+                </div>
+                <input id="weight" type="range" min="35" max="120" step="1" value="55" aria-label="體重" />
+                <div class="range-sub"><span>35</span><span>120</span></div>
+              </div>
 
+              <div class="slider-group" style="grid-column:1/-1">
+                <div class="slider-head">
+                  <div class="label">溫度</div>
+                  <div class="value-chip"><b id="temp-val">22</b> °C</div>
+                </div>
+                <input id="temp" type="range" min="0" max="35" step="1" value="22" aria-label="溫度" />
+                <div class="range-sub"><span>0</span><span>35</span></div>
+              </div>
+            </div>
+          </div>
+
+          <!-- ✅ 分段 2：風格（卡片） -->
+          <div class="section-block">
+            <div class="section-head">
+              <div class="stitle">② 風格選擇 <span class="tag">點一下就好</span></div>
+            </div>
+
+            <div class="style-grid" id="style-grid">
+              <div class="style-card selected" data-style="casual">
+                <div class="chip">Casual</div>
+                <div class="name">休閒</div>
+                <div class="desc">舒服、日常、好搭配</div>
+              </div>
+              <div class="style-card" data-style="minimal">
+                <div class="chip">Minimal</div>
+                <div class="name">極簡</div>
+                <div class="desc">乾淨俐落、低彩度</div>
+              </div>
+              <div class="style-card" data-style="street">
+                <div class="chip">Street</div>
+                <div class="name">街頭</div>
+                <div class="desc">層次、比例、個性</div>
+              </div>
+              <div class="style-card" data-style="sporty">
+                <div class="chip">Sporty</div>
+                <div class="name">運動</div>
+                <div class="desc">機能、輕鬆、好活動</div>
+              </div>
+              <div class="style-card" data-style="smart" style="grid-column:1/-1">
+                <div class="chip">Smart</div>
+                <div class="name">Smart Casual</div>
+                <div class="desc">正式一點但不拘謹</div>
+              </div>
+            </div>
+
+            <div style="margin-top:10px">
+              <label>風格變體（品牌 / 名人）</label>
+              <select id="styleVariant">
+                <option value="">（不使用變體）</option>
+                <optgroup label="品牌">
+                  <option value="brand-uniqlo">UNIQLO（日系基本）</option>
+                  <option value="brand-muji">MUJI（生活極簡）</option>
+                  <option value="brand-cos">COS（結構極簡）</option>
+                  <option value="brand-nike-tech">Nike Tech（機能運動）</option>
+                  <option value="brand-ader-error">Ader Error（韓系街頭）</option>
+                </optgroup>
+                <optgroup label="名人（風格靈感，不模仿臉）">
+                  <option value="celeb-iu-casual">IU（韓系清新）</option>
+                  <option value="celeb-jennie-minimal">Jennie（極簡辣）</option>
+                  <option value="celeb-gd-street">G-Dragon（街頭層次）</option>
+                  <option value="celeb-lisa-sporty">Lisa（舞者運動）</option>
+                </optgroup>
+              </select>
+            </div>
+
+            <input type="hidden" id="style" value="casual" />
+          </div>
+
+          <!-- ✅ 分段 3：配件 -->
+          <div class="section-block" style="margin-bottom:0">
+            <div class="section-head">
+              <div class="stitle">③ 配件 <span class="tag">選填</span></div>
+            </div>
+
+            <div class="toggle-list" style="margin-top:0">
+              <div class="toggle-item">
+                <div class="left">
+                  <div class="name">包包</div>
+                  <div class="desc">需要 bag 才會出現在 Spec + 商品</div>
+                </div>
+                <div class="switch" id="sw-bag" role="switch" aria-checked="false"></div>
+              </div>
+              <div class="toggle-item">
+                <div class="left">
+                  <div class="name">帽子</div>
+                  <div class="desc">需要 hat 才會出現在 Spec + 商品</div>
+                </div>
+                <div class="switch" id="sw-hat" role="switch" aria-checked="false"></div>
+              </div>
+              <div class="toggle-item">
+                <div class="left">
+                  <div class="name">外套</div>
+                  <div class="desc">勾選或溫度 ≤ 20°C 時會生成 outer</div>
+                </div>
+                <div class="switch" id="sw-coat" role="switch" aria-checked="false"></div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- ✅ 這裡是「底部固定區」：桌機 sticky + 手機 fixed -->
+        <div class="left-footer" id="left-footer">
+          <button id="go-btn" class="primary-wide">產生穿搭圖</button>
+          <div class="hint" id="form-hint">提示：需先登入（Google）才能呼叫扣點的 Spec API。</div>
+          <div class="hint error" id="error-hint" style="display:none;"></div>
+        </div>
+      </section>
+
+      <!-- RIGHT -->
+      <section class="card">
+        <div class="right-head">
+          <h3>AI 穿搭示意圖 & 類似商品</h3>
+          <div class="debug-toggle" id="debug-toggle">
+            <div class="switch" id="sw-debug" aria-checked="false"></div>
+            <div>Debug</div>
+          </div>
+        </div>
+
+        <div class="section-title">
+          <span class="pill">AI 穿搭示意圖</span>
+        </div>
+
+        <div class="preview-wrap">
+          <div class="preview-inner" id="preview-box">
+            <div id="img-skeleton" style="display:none;width:100%;height:100%;">
+              <div class="img-skel-wrap">
+                <div class="skel img-skel-line" style="width:68%"></div>
+                <div class="skel img-skel-line" style="width:52%"></div>
+                <div class="skel img-skel-block"></div>
+              </div>
+            </div>
+
+            <img id="outfit-image" alt="Outfit preview" />
+            <div class="placeholder" id="img-placeholder">尚未產生示意圖</div>
+          </div>
+
+          <div class="statusbar" id="statusbar">
+            狀態：<span id="status-text">等待操作</span>
+            <span id="status-dots" style="display:none">
+              <span class="dots"><span class="ldot"></span><span class="ldot"></span><span class="ldot"></span></span>
+            </span>
+            <div class="progress"><div id="progress-bar"></div></div>
+          </div>
+        </div>
+
+        <!-- AI Outfit Summary -->
+        <div class="outfit-summary card" id="outfit-summary" style="display:none;">
+          <div class="summary-head">
+            <span class="summary-icon">👔</span>
+            <span class="summary-title">AI 穿搭建議</span>
+          </div>
+          <div class="summary-text" id="summary-text"></div>
+        </div>
+
+        <div class="section-title">
+          <span class="pill">類似商品（Google Shopping）</span>
+        </div>
+
+        <div class="products" id="products">
+          <div class="placeholder" style="padding:16px;">尚未產生商品</div>
+        </div>
+
+        <pre class="debug" id="debug-box"></pre>
+      </section>
+    </main>
   </div>
 
-  <div class="left-footer">
-    <button id="go-btn" class="primary-wide">產生穿搭圖</button>
-    <div class="hint" id="form-hint">需登入才能生成</div>
-    <div class="hint error" id="error-hint" style="display:none;"></div>
-  </div>
+  <!-- ✅ Supabase JS SDK (v2) -->
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 
-</section>
+  <script>
+    /***********************
+     * Utils: scroll helpers
+     ***********************/
+    function isMobileLike() {
+      return window.matchMedia("(max-width: 768px)").matches;
+    }
 
-<!-- ================= RIGHT ================= -->
-<section class="card">
+    function scrollToPreview({ behavior = "smooth" } = {}) {
+      const el = document.getElementById("preview-box");
+      if (!el) return;
+      // 手機上生成按鈕固定在底部，往上預留空間
+      const y = el.getBoundingClientRect().top + window.scrollY - (isMobileLike() ? 14 : 18);
+      window.scrollTo({ top: Math.max(0, y), behavior });
+    }
 
-  <h3>AI 穿搭示意圖</h3>
+    /***********************
+     * 0) CONFIG (請改這裡)
+     ***********************/
+    const SUPABASE_PROJECT_REF = "auiwcsolpvufxxyhnvaf";
+    const SUPABASE_URL = `https://${SUPABASE_PROJECT_REF}.supabase.co`;
 
-  <div class="preview-inner" id="preview-box">
-    <img id="outfit-image" />
-    <div id="img-placeholder">尚未產生</div>
-  </div>
+    // ✅ Supabase Dashboard → Settings → API → anon public key
+    const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImF1aXdjc29scHZ1Znh4eWhudmFmIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjQ5MzUwMDEsImV4cCI6MjA4MDUxMTAwMX0.KeD8JXdHs5Iu7-wf0F0GpUPp-_y5X5ha6mwBcR5eYDA";
 
-  <div class="statusbar">
-    狀態：<span id="status-text">等待操作</span>
-    <div class="progress"><div id="progress-bar"></div></div>
-  </div>
+    const REDIRECT_TO = "https://simon-one-ochre.vercel.app/body-test.html";
 
-</section>
+    /***********************
+     * Slider bindings
+     ***********************/
+    function bindRange(rangeId, valueId) {
+      const r = document.getElementById(rangeId);
+      const v = document.getElementById(valueId);
+      const paint = () => { v.textContent = String(r.value); };
+      r.addEventListener("input", paint);
+      paint();
+    }
 
-</main>
-</div>
+    /***********************
+     * Style cards
+     ***********************/
+    function bindStyleCards() {
+      const grid = document.getElementById("style-grid");
+      const hidden = document.getElementById("style");
+      const cards = Array.from(grid.querySelectorAll(".style-card"));
 
-<script>
-/* ===============================
-   Mobile auto scroll
-================================ */
-function scrollToPreviewIfMobile(){
-  if(!window.matchMedia("(max-width:768px)").matches) return;
-  const el=document.getElementById("preview-box");
-  if(el) el.scrollIntoView({behavior:"smooth",block:"start"});
-}
+      const select = (style) => {
+        hidden.value = style;
+        cards.forEach(c => c.classList.toggle("selected", c.dataset.style === style));
+      };
 
-/* ===============================
-   Generate flow（簡化示意）
-================================ */
-const btn=document.getElementById("go-btn");
-btn.addEventListener("click",async()=>{
-  scrollToPreviewIfMobile();
-  btn.disabled=true;
-  btn.textContent="生成中…";
-  document.getElementById("status-text").classList.add("loading-dots");
+      cards.forEach(c => c.addEventListener("click", () => select(c.dataset.style)));
+      select(hidden.value || "casual");
+    }
 
-  try{
-    // 呼叫你的 generateAll()
-    // await generateAll();
-  }catch(e){
-    console.error(e);
-  }finally{
-    document.getElementById("status-text").classList.remove("loading-dots");
-    btn.disabled=false;
-    btn.textContent="再生成一套";
-  }
-});
-</script>
+    /***********************
+     * AUTH (Supabase JS)
+     ***********************/
+    const AUTH_KEY = "os_supabase_access_token_v1";
+    function saveAccessToken(t){ localStorage.setItem(AUTH_KEY, t); }
+    function getAccessToken(){ return localStorage.getItem(AUTH_KEY); }
+    function clearAccessToken(){ localStorage.removeItem(AUTH_KEY); }
 
+    const osSupabase = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
+      auth: {
+        persistSession: true,
+        autoRefreshToken: true,
+        detectSessionInUrl: true,
+        flowType: "pkce"
+      }
+    });
+
+    async function apiMe() {
+      const token = getAccessToken();
+      if (!token) return { ok:false, error:"no token" };
+      const r = await fetch("/api/me", { headers: { Authorization: "Bearer " + token } });
+      const j = await r.json().catch(()=> ({}));
+      if (!r.ok) return { ok:false, error:j?.error || "me failed", detail:j?.detail };
+      return j;
+    }
+
+    function setAuthUI({ loggedIn, email, credits, hint }) {
+      const st = document.getElementById("login-status");
+      const cr = document.getElementById("credits");
+      const hintEl = document.getElementById("auth-hint");
+      const loginBtn = document.getElementById("login-btn");
+      const logoutBtn = document.getElementById("logout-btn");
+
+      if (loggedIn) {
+        st.textContent = email ? `已登入：${email}` : "已登入";
+        cr.textContent = String(credits ?? 0);
+        hintEl.textContent = hint || "";
+        loginBtn.style.display = "none";
+        logoutBtn.style.display = "inline-flex";
+      } else {
+        st.textContent = hint || "未登入";
+        cr.textContent = "—";
+        hintEl.textContent = "";
+        loginBtn.style.display = "inline-flex";
+        logoutBtn.style.display = "none";
+      }
+    }
+
+    async function refreshAuthUI() {
+      const token = getAccessToken();
+      if (!token) {
+        setAuthUI({ loggedIn:false, hint:"未登入" });
+        return;
+      }
+
+      const me = await apiMe();
+      if (!me.ok) {
+        setAuthUI({ loggedIn:false, hint:"登入狀態異常（/api/me 失敗）" });
+        return;
+      }
+
+      setAuthUI({ loggedIn:true, email: me.user?.email, credits: me.credits_left, hint:"" });
+    }
+
+    async function ensureTokenFromSession() {
+      const { data, error } = await osSupabase.auth.getSession();
+      if (error) return { ok:false, error: error.message };
+
+      const session = data?.session;
+      if (!session?.access_token) {
+        clearAccessToken();
+        return { ok:false, error:"no session" };
+      }
+
+      saveAccessToken(session.access_token);
+
+      // 清理 URL
+      if (location.hash || location.search) {
+        history.replaceState(null, "", location.pathname);
+      }
+
+      return { ok:true, session };
+    }
+
+    async function loginGoogle() {
+      if (!SUPABASE_ANON_KEY || SUPABASE_ANON_KEY.startsWith("PASTE_")) {
+        alert("請先在 body-test.html 填入 SUPABASE_ANON_KEY（Supabase → Settings → API → anon public key）");
+        return;
+      }
+
+      const { error } = await osSupabase.auth.signInWithOAuth({
+        provider: "google",
+        options: { redirectTo: REDIRECT_TO }
+      });
+
+      if (error) {
+        console.error(error);
+        setAuthUI({ loggedIn:false, hint:"登入啟動失敗：" + error.message });
+      }
+    }
+
+    async function logout() {
+      try { await osSupabase.auth.signOut(); } catch {}
+      clearAccessToken();
+
+      // 清掉 supabase 相關 key（保守）
+      try {
+        const keys = Object.keys(localStorage);
+        for (const k of keys) {
+          if (k.startsWith("sb-") || k.includes("supabase") || k.includes("auth")) localStorage.removeItem(k);
+        }
+        const skeys = Object.keys(sessionStorage);
+        for (const k of skeys) {
+          if (k.startsWith("sb-") || k.includes("supabase") || k.includes("auth")) sessionStorage.removeItem(k);
+        }
+      } catch {}
+
+      setAuthUI({ loggedIn:false, hint:"已登出" });
+      window.location.href = "/body-test.html";
+    }
+
+    /***********************
+     * UI switches
+     ***********************/
+    function bindSwitch(id, initial=false) {
+      const el = document.getElementById(id);
+      let on = initial;
+      const paint = () => {
+        el.classList.toggle("on", on);
+        el.setAttribute("aria-checked", on ? "true" : "false");
+      };
+      paint();
+      el.addEventListener("click", () => { on = !on; paint(); });
+      return () => on;
+    }
+
+    const getBag = bindSwitch("sw-bag", false);
+    const getHat = bindSwitch("sw-hat", false);
+    const getCoat = bindSwitch("sw-coat", false);
+    const getDebug = bindSwitch("sw-debug", false);
+
+    document.getElementById("debug-toggle").addEventListener("click", (e) => {
+      if (e.target.id !== "sw-debug") document.getElementById("sw-debug").click();
+      document.getElementById("debug-box").classList.toggle("on", getDebug());
+    });
+
+    /***********************
+     * Loading / status helpers
+     ***********************/
+    const statusTextEl = document.getElementById("status-text");
+    const statusDotsEl = document.getElementById("status-dots");
+    const progressBarEl = document.getElementById("progress-bar");
+    const previewBox = document.getElementById("preview-box");
+
+    function setStatus(text, ok=null, loading=false) {
+      statusTextEl.textContent = text;
+      statusTextEl.className = ok === true ? "ok" : ok === false ? "bad" : "";
+      statusDotsEl.style.display = loading ? "inline" : "none";
+    }
+
+    function setProgress(pct) {
+      const v = Math.max(0, Math.min(100, Number(pct || 0)));
+      progressBarEl.style.width = v + "%";
+    }
+
+    function setLoadingUI(on) {
+      const products = document.getElementById("products");
+      if (on) {
+        previewBox.classList.add("shimmer");
+        products.classList.add("shimmer");
+      } else {
+        previewBox.classList.remove("shimmer");
+        products.classList.remove("shimmer");
+      }
+    }
+
+    function showError(msg) {
+      const el = document.getElementById("error-hint");
+      el.style.display = "block";
+      el.textContent = msg;
+    }
+    function clearError() {
+      const el = document.getElementById("error-hint");
+      el.style.display = "none";
+      el.textContent = "";
+    }
+
+    function setImageBase64(base64, mime="image/png") {
+      const img = document.getElementById("outfit-image");
+      const ph = document.getElementById("img-placeholder");
+      img.src = `data:${mime};base64,${base64}`;
+      img.style.display = "block";
+      ph.style.display = "none";
+    }
+
+    function clearImage() {
+      const img = document.getElementById("outfit-image");
+      const ph = document.getElementById("img-placeholder");
+      img.src = "";
+      img.style.display = "none";
+      ph.style.display = "block";
+    }
+
+    function showImageSkeleton(on){
+      const sk = document.getElementById("img-skeleton");
+      const img = document.getElementById("outfit-image");
+      const ph = document.getElementById("img-placeholder");
+      if (!sk) return;
+
+      if (on) {
+        sk.style.display = "block";
+        img.style.display = "none";
+        ph.style.display = "none";
+      } else {
+        sk.style.display = "none";
+      }
+    }
+
+    function renderProductsSkeleton(rows = 4) {
+      const root = document.getElementById("products");
+      root.innerHTML = `
+        <div class="products-skel">
+          ${Array.from({length: rows}).map(()=>`
+            <div class="row">
+              <div class="skel thumb"></div>
+              <div>
+                <div class="skel t1"></div>
+                <div class="skel t2"></div>
+              </div>
+            </div>
+          `).join("")}
+        </div>
+      `;
+    }
+
+    function escapeHtml(str){
+      return String(str)
+        .replaceAll("&","&amp;")
+        .replaceAll("<","&lt;")
+        .replaceAll(">","&gt;")
+        .replaceAll('"',"&quot;")
+        .replaceAll("'","&#039;");
+    }
+
+    function renderProducts(list) {
+      const root = document.getElementById("products");
+      root.innerHTML = "";
+
+      if (!Array.isArray(list) || list.length === 0) {
+        root.innerHTML = `<div class="placeholder" style="padding:16px;">沒有找到商品（或 API 尚未回傳）</div>`;
+        return;
+      }
+
+      list.forEach(p => {
+        const div = document.createElement("div");
+        div.className = "product-item";
+
+        const thumb = p.thumbnail ? `<img src="${p.thumbnail}" alt="">` : `示意`;
+        const price = p.price || p.extracted_price || "";
+        const link = p.product_link || p.link || p.url || "#";
+
+        div.innerHTML = `
+          <div class="thumb">${thumb}</div>
+          <div>
+            <div class="pname">${escapeHtml(p.title || p.name || "商品")}</div>
+            <div class="pmeta">
+              ${price ? `<span>價格：${escapeHtml(String(price))}</span>` : ""}
+              ${p.source ? `<span>來源：${escapeHtml(String(p.source))}</span>` : ""}
+              ${p.slot ? `<span>類別：${escapeHtml(String(p.slot))}</span>` : ""}
+            </div>
+            <a class="plink" href="${link}" target="_blank" rel="noopener noreferrer">前往查看</a>
+          </div>
+        `;
+        root.appendChild(div);
+      });
+    }
+
+    function setDebug(obj) {
+      const box = document.getElementById("debug-box");
+      box.textContent = typeof obj === "string" ? obj : JSON.stringify(obj, null, 2);
+      box.classList.toggle("on", getDebug());
+    }
+
+    function renderOutfitSummary(summary) {
+      const box = document.getElementById("outfit-summary");
+      const text = document.getElementById("summary-text");
+
+      if (!summary) {
+        box.style.display = "none";
+        text.textContent = "";
+        return;
+      }
+      text.textContent = summary;
+      box.style.display = "block";
+    }
+
+    function setFormDisabled(disabled) {
+      const left = document.getElementById("left-panel");
+      if (!left) return;
+      left.classList.toggle("form-disabled", disabled);
+    }
+
+    /***********************
+     * 三段文字狀態（按鈕/狀態列）
+     ***********************/
+    const GENERATE_STEPS = {
+      idle: { btn: "產生穿搭圖", text: "等待操作" },
+      spec: { btn: "分析中…", text: "分析你的身形與風格…" },
+      image: { btn: "設計中…", text: "設計整體穿搭組合…" },
+      products: { btn: "搜尋商品中…", text: "搜尋可購買商品…" },
+      done: { btn: "再生成一套", text: "完成" },
+    };
+
+    function setGenerateStep(step) {
+      const cfg = GENERATE_STEPS[step] || GENERATE_STEPS.idle;
+
+      const btn = document.getElementById("go-btn");
+      if (btn) btn.textContent = cfg.btn;
+
+      setStatus(cfg.text, null, step !== "idle" && step !== "done");
+    }
+
+    /***********************
+     * API helper
+     ***********************/
+    async function postJson(url, body, withAuth=true) {
+      const headers = { "Content-Type": "application/json" };
+      if (withAuth) {
+        const token = getAccessToken();
+        if (!token) throw new Error("未登入（沒有 Bearer token）");
+        headers["Authorization"] = "Bearer " + token;
+      }
+
+      const r = await fetch(url, { method:"POST", headers, body: JSON.stringify(body) });
+      const text = await r.text();
+      let j = null;
+      try { j = JSON.parse(text); } catch { j = { raw: text }; }
+
+      if (!r.ok) {
+        const msg = j?.error
+          ? `${j.error}${j.detail ? " / " + (typeof j.detail === "string" ? j.detail : JSON.stringify(j.detail)) : ""}`
+          : `HTTP ${r.status} / ${text.slice(0, 500)}`;
+        throw new Error(`${url} 失敗：${msg}`);
+      }
+      return j;
+    }
+
+    /***********************
+     * Main flow: Spec -> Image -> Products
+     ***********************/
+    async function generateAll() {
+      clearError();
+      renderOutfitSummary(null);
+      clearImage();
+
+      // ✅ 手機：一按就帶到圖的位置（新手不迷路）
+      if (isMobileLike()) scrollToPreview({ behavior: "smooth" });
+
+      showImageSkeleton(true);
+      renderProductsSkeleton(4);
+
+      setFormDisabled(true);
+      setLoadingUI(true);
+      setProgress(0);
+      setGenerateStep("spec");
+
+      try {
+        const ensured = await ensureTokenFromSession();
+        if (!ensured.ok) {
+          setAuthUI({ loggedIn:false, hint:"未登入（請按 Google 登入）" });
+          throw new Error("未登入或 session 不存在");
+        }
+
+        const me = await apiMe();
+        if (!me.ok) {
+          setAuthUI({ loggedIn:false, hint:"登入狀態異常（/api/me 失敗）" });
+          throw new Error("登入狀態異常（/api/me 失敗）");
+        }
+
+        const payload = {
+          gender: document.getElementById("gender").value,
+          age: Number(document.getElementById("age").value),
+          height: Number(document.getElementById("height").value),
+          weight: Number(document.getElementById("weight").value),
+          style: document.getElementById("style").value,
+          styleVariant: document.getElementById("styleVariant").value || "",
+          temp: Number(document.getElementById("temp").value),
+          withBag: !!getBag(),
+          withHat: !!getHat(),
+          withCoat: !!getCoat()
+        };
+
+        // 1) Spec
+        setProgress(20);
+        const spec = await postJson("/api/generate-outfit-spec", payload, true);
+        setDebug({ step:"spec", spec });
+        renderOutfitSummary(spec.summary);
+
+        if (typeof spec.credits_left !== "undefined") {
+          setAuthUI({ loggedIn:true, email: me.user?.email, credits: spec.credits_left });
+        } else {
+          await refreshAuthUI();
+        }
+
+        // 2) Image
+        setGenerateStep("image");
+        setProgress(55);
+
+        const imgResp = await postJson("/api/generate-image", {
+          ...payload,
+          outfitSpec: spec,
+          aspectRatio: "9:16",
+          imageSize: "1K"
+        }, true);
+
+        if (!imgResp.image) throw new Error("Image API 沒回傳 image");
+        setImageBase64(imgResp.image, imgResp.mime || "image/png");
+        showImageSkeleton(false);
+        setDebug({ step:"image", imgResp, spec });
+
+        // ✅ 手機：圖一出來再滑一次（更直覺）
+        if (isMobileLike()) scrollToPreview({ behavior: "smooth" });
+
+        // 3) Products
+        setGenerateStep("products");
+        setProgress(80);
+
+        const prodResp = await postJson("/api/search-products", {
+          items: spec.items || [],
+          locale: "tw",
+          gender: payload.gender
+        }, true);
+
+        const list = prodResp.products || prodResp.items || prodResp.shopping_results || [];
+        renderProducts(list);
+        setDebug({ step:"products", prodResp, spec });
+
+        setGenerateStep("done");
+        setProgress(100);
+        setStatus("完成 ✅", true, false);
+      } finally {
+        setLoadingUI(false);
+        setFormDisabled(false);
+      }
+    }
+
+    /***********************
+     * INIT
+     ***********************/
+    (async function init() {
+      bindRange("age", "age-val");
+      bindRange("height", "height-val");
+      bindRange("weight", "weight-val");
+      bindRange("temp", "temp-val");
+      bindStyleCards();
+
+      document.getElementById("login-btn").addEventListener("click", loginGoogle);
+      document.getElementById("logout-btn").addEventListener("click", logout);
+
+      const goBtn = document.getElementById("go-btn");
+      goBtn.addEventListener("click", async () => {
+        goBtn.disabled = true;
+        try {
+          await generateAll();
+        } catch (e) {
+          console.error(e);
+          setGenerateStep("idle");
+          setProgress(0);
+          setStatus("失敗 ❌", false, false);
+          showError(String(e.message || e));
+          showImageSkeleton(false);
+        } finally {
+          goBtn.disabled = false;
+        }
+      });
+
+      document.getElementById("debug-box").classList.toggle("on", getDebug());
+
+      await ensureTokenFromSession();
+      await refreshAuthUI();
+
+      osSupabase.auth.onAuthStateChange(async (_event, session) => {
+        if (session?.access_token) saveAccessToken(session.access_token);
+        else clearAccessToken();
+        await refreshAuthUI();
+      });
+
+      setProgress(0);
+      setGenerateStep("idle");
+      setLoadingUI(false);
+      setStatus("等待操作", null, false);
+    })();
+  </script>
 </body>
 </html>
