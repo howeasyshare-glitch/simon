@@ -999,8 +999,11 @@ function renderProductsSkeleton(rows = 4) {
       try { j = JSON.parse(text); } catch { j = { raw: text }; }
 
       if (!r.ok) {
-        const msg = j?.error ? `${j.error}${j.detail ? " / " + j.detail : ""}` : `HTTP ${r.status}`;
-        throw new Error(`${url} 失敗：${msg}`);
+        const msg = j?.error
+  ? `${j.error}${j.detail ? " / " + (typeof j.detail === "string" ? j.detail : JSON.stringify(j.detail)) : ""}`
+  : `HTTP ${r.status} / ${text.slice(0, 500)}`;
+throw new Error(`${url} 失敗：${msg}`);
+
       }
       return j;
     }
