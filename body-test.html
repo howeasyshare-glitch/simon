@@ -98,6 +98,37 @@
 .products-skel .t1{ height:14px; border-radius:999px; width:75% }
 .products-skel .t2{ height:12px; border-radius:999px; width:45%; margin-top:8px }
 
+   @media (min-width: 1024px) {
+  .layout { overflow: visible; }
+
+  .left-panel {
+    position: sticky;
+    top: 24px;
+    align-self: flex-start;
+    max-height: calc(100vh - 32px);
+    overflow-y: auto;
+    padding-right: 6px;
+  }
+
+  .left-panel.card { padding: 14px; }
+  .left-panel .row { margin-bottom: 8px; }
+  .left-panel .form-grid { gap: 8px 10px; }
+  .left-panel label { margin-bottom: 4px; font-size: 12px; }
+  .left-panel input, .left-panel select { padding: 8px 10px; }
+  .left-panel .toggle-list { margin-top: 8px; }
+  .left-panel .toggle-item { padding: 10px 10px; }
+
+  .left-panel .sticky-generate {
+    position: sticky;
+    bottom: 0;
+    padding-top: 10px;
+    background: linear-gradient(to top, #fff 60%, rgba(255,255,255,0));
+  }
+
+  .preview-inner { height: 520px; max-height: 70vh; }
+}
+
+
 /* ---------- Mobile thumb-friendly tweaks ---------- */
 @media (max-width: 640px){
   .page{ padding:14px 12px 86px; }
@@ -527,7 +558,7 @@
 
     <main class="layout">
       <!-- LEFT -->
-      <section class="card">
+      <section class="card left-panel">
         <div class="row">
           <h3 style="margin:0">穿搭條件</h3>
           <span class="pill">扣 1 點 / 次</span>
