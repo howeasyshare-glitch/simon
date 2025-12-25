@@ -153,6 +153,35 @@
     }
     .row{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:10px}
 
+    .outfit-summary {
+  margin-top: 14px;
+  background: #fafafa;
+  border: 1px solid #e5e7eb;
+}
+
+.summary-head {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-weight: 800;
+  font-size: 14px;
+  margin-bottom: 6px;
+}
+
+.summary-icon {
+  font-size: 18px;
+}
+
+.summary-title {
+  color: #111827;
+}
+
+.summary-text {
+  font-size: 14px;
+  line-height: 1.6;
+  color: #374151;
+}
+
     /* ✅ 表單視覺分段 */
     .section-block{
       padding:12px;
@@ -639,6 +668,14 @@
             <div class="progress"><div id="progress-bar"></div></div>
           </div>
         </div>
+<!-- AI Outfit Summary -->
+<div class="outfit-summary card" id="outfit-summary" style="display:none;">
+  <div class="summary-head">
+    <span class="summary-icon">👔</span>
+    <span class="summary-title">AI 穿搭建議</span>
+  </div>
+  <div class="summary-text" id="summary-text"></div>
+</div>
 
         <div class="section-title">
           <span class="pill">類似商品（Google Shopping）</span>
@@ -762,6 +799,18 @@ function setGenerateStep(step) {
       if (!r.ok) return { ok:false, error:j?.error || "me failed", detail:j?.detail };
       return j;
     }
+function renderOutfitSummary(summary) {
+  const box = document.getElementById("outfit-summary");
+  const text = document.getElementById("summary-text");
+
+  if (!summary) {
+    box.style.display = "none";
+    return;
+  }
+
+  text.textContent = summary;
+  box.style.display = "block";
+}
 
     function setAuthUI({ loggedIn, email, credits, hint }) {
       const st = document.getElementById("login-status");
@@ -1055,7 +1104,7 @@ renderProductsSkeleton(4);
 setProgress(0);
 setLoadingUI(true);
 setStatus("開始", null, true);
-
+renderOutfitSummary(spec.summary);
 
       const ensured = await ensureTokenFromSession();
       if (!ensured.ok) {
