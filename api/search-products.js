@@ -1,6 +1,5 @@
 // /api/search-products.js
 export const config = { runtime: "nodejs" };
-renderProductsSkeleton(4);
 function genderHint(locale, gender) {
   // locale: "tw" / "us"
   if (gender === "male") return locale === "tw" ? "男款" : "men";
