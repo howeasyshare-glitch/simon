@@ -656,6 +656,44 @@
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 
   <script>
+
+    const GENERATE_STEPS = {
+  idle: {
+    btn: "產生穿搭圖",
+    text: "等待操作",
+  },
+  spec: {
+    btn: "分析中…",
+    text: "分析你的身形與風格…",
+  },
+  image: {
+    btn: "設計中…",
+    text: "設計整體穿搭組合…",
+  },
+  products: {
+    btn: "搜尋商品中…",
+    text: "搜尋可購買商品…",
+  },
+  done: {
+    btn: "再生成一套",
+    text: "完成",
+  },
+};
+function setGenerateStep(step) {
+  const cfg = GENERATE_STEPS[step] || GENERATE_STEPS.idle;
+
+  // 按鈕文字
+  const btn = document.getElementById("go-btn");
+  if (btn) btn.textContent = cfg.btn;
+
+  // 狀態列文字（你原本的 statusbar）
+  const sb = document.getElementById("statusbar");
+  if (sb) {
+    const span = sb.querySelector("span");
+    if (span) span.textContent = cfg.text;
+  }
+}
+
     /***********************
      * 0) CONFIG (請改這裡)
      ***********************/
@@ -1013,6 +1051,7 @@ throw new Error(`${url} 失敗：${msg}`);
 clearImage();
 showImageSkeleton(true);
 renderProductsSkeleton(4);
+      setGenerateStep("spec");
 setProgress(0);
 setLoadingUI(true);
 setStatus("開始", null, true);
@@ -1048,7 +1087,7 @@ setStatus("開始", null, true);
       setProgress(20);
       const spec = await postJson("/api/generate-outfit-spec", payload, true);
       setDebug({ step:"spec", spec });
-
+setGenerateStep("image");
       if (typeof spec.credits_left !== "undefined") {
         setAuthUI({ loggedIn:true, email: me.user?.email, credits: spec.credits_left });
       } else {
@@ -1066,6 +1105,7 @@ setStatus("開始", null, true);
 }, true);
       if (!imgResp.image) throw new Error("Image API 沒回傳 image");
       setImageBase64(imgResp.image, imgResp.mime || "image/png");
+      setGenerateStep("products");
       showImageSkeleton(false);
       setDebug({ step:"image", imgResp, spec });
 
@@ -1080,6 +1120,7 @@ setStatus("開始", null, true);
 
       const list = prodResp.products || prodResp.items || prodResp.shopping_results || [];
       renderProducts(list);
+      setGenerateStep("done");
       setDebug({ step:"products", prodResp, spec });
 
       setProgress(100);
@@ -1108,6 +1149,7 @@ setStatus("開始", null, true);
           await generateAll();
         } catch (e) {
           console.error(e);
+          setGenerateStep("idle");
           setProgress(0);
           setStatus("失敗 ❌", false, false);
           showError(String(e.message || e));
