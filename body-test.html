@@ -577,6 +577,129 @@
     .anchor {
       scroll-margin-top: 12px;
     }
+    /* ✅ Fullscreen image modal */
+#img-modal{
+  position: fixed;
+  inset: 0;
+  z-index: 2000;
+}
+.img-modal-backdrop{
+  position: absolute;
+  inset: 0;
+  background: rgba(0,0,0,.55);
+  backdrop-filter: blur(6px);
+}
+.img-modal-panel{
+  position: absolute;
+  inset: 10px;
+  background: #fff;
+  border-radius: 18px;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  box-shadow: 0 22px 60px rgba(0,0,0,.35);
+}
+@media (min-width: 768px){
+  .img-modal-panel{
+    inset: 24px;
+    border-radius: 22px;
+  }
+}
+.img-modal-top{
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:10px;
+  padding: 12px 12px;
+  border-bottom: 1px solid #eef0f3;
+  background: linear-gradient(135deg, #fff, #fafafa);
+}
+.img-modal-title{
+  font-weight: 900;
+  color: #111827;
+  font-size: 14px;
+}
+.img-modal-actions{
+  display:flex;
+  gap:10px;
+  align-items:center;
+  flex-wrap:wrap;
+}
+.img-modal-body{
+  flex: 1 1 auto;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  background: #0b0b0f;
+  padding: 10px;
+}
+.img-modal-body img{
+  max-width: 100%;
+  max-height: 100%;
+  object-fit: contain;
+  border-radius: 14px;
+  background: #111827;
+}
+
+/* ✅ history list */
+.history-item{
+  display:grid;
+  grid-template-columns: 62px 1fr;
+  gap:10px;
+  padding:10px;
+  border-radius:14px;
+  border:1px solid #eef0f3;
+  background:#fff;
+  margin-bottom:10px;
+}
+.history-item:last-child{margin-bottom:0}
+.hthumb{
+  width:62px;
+  height:62px;
+  border-radius:12px;
+  border:1px solid #eee;
+  overflow:hidden;
+  background:#f9fafb;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+}
+.hthumb img{
+  width:100%;
+  height:100%;
+  object-fit:cover;
+}
+.hmeta{
+  display:flex;
+  flex-direction:column;
+  gap:6px;
+}
+.hline1{
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:10px;
+}
+.htitle{
+  font-weight:900;
+  color:#111827;
+  font-size:13px;
+}
+.hsub{
+  font-size:12px;
+  color: var(--muted);
+  line-height:1.35;
+}
+.hactions{
+  display:flex;
+  gap:8px;
+  flex-wrap:wrap;
+}
+.hactions .mini-btn{
+  padding:8px 10px;
+  font-size:12px;
+}
+
   </style>
 </head>
 
@@ -789,6 +912,12 @@
             <img id="outfit-image" alt="Outfit preview" />
             <div class="placeholder" id="img-placeholder">尚未產生示意圖</div>
           </div>
+<!-- ✅ Image tools -->
+<div class="action-row" id="img-tools" style="margin-top:10px;">
+  <button class="mini-btn" id="fullscreen-btn">全螢幕預覽</button>
+  <button class="mini-btn" id="favorite-btn">♡ 收藏這套</button>
+  <div class="mini-hint" id="fav-hint"></div>
+</div>
 
           <div class="statusbar" id="statusbar">
             狀態：<span id="status-text">等待操作</span>
@@ -821,6 +950,20 @@
         <div class="products" id="products">
           <div class="placeholder" style="padding:16px;">尚未產生商品</div>
         </div>
+<!-- ✅ 收藏 / 最近 10 套 -->
+<div class="section-title" style="margin-top:16px;">
+  <span class="pill">收藏 / 最近 10 套</span>
+</div>
+
+<div class="card" style="padding:12px;" id="history-card">
+  <div class="action-row" style="margin-top:0;">
+    <button class="mini-btn" id="tab-recent">最近</button>
+    <button class="mini-btn" id="tab-fav">收藏</button>
+    <div class="mini-hint" id="history-hint">會儲存在此裝置（localStorage）</div>
+  </div>
+
+  <div id="history-list" style="margin-top:10px;"></div>
+</div>
 
         <pre class="debug" id="debug-box"></pre>
       </section>
@@ -1267,6 +1410,315 @@
       }
       return j;
     }
+    /***********************
+ * D) Fullscreen modal + History (localStorage)
+ ***********************/
+const LS_RECENT_KEY = "os_recent_10_v1";
+const LS_FAV_KEY = "os_favorites_v1";
+
+function nowTs() { return Date.now(); }
+
+function safeJsonParse(s, fallback) {
+  try { return JSON.parse(s); } catch { return fallback; }
+}
+
+function loadRecent() {
+  return safeJsonParse(localStorage.getItem(LS_RECENT_KEY) || "[]", []);
+}
+function saveRecent(arr) {
+  localStorage.setItem(LS_RECENT_KEY, JSON.stringify(arr || []));
+}
+
+function loadFav() {
+  return safeJsonParse(localStorage.getItem(LS_FAV_KEY) || "[]", []);
+}
+function saveFav(arr) {
+  localStorage.setItem(LS_FAV_KEY, JSON.stringify(arr || []));
+}
+
+function makeLookId(payload) {
+  // 同一組條件算同一套（避免重覆塞爆）
+  const core = {
+    gender: payload.gender,
+    age: payload.age,
+    height: payload.height,
+    weight: payload.weight,
+    style: payload.style,
+    styleVariant: payload.styleVariant,
+    temp: payload.temp,
+    withBag: payload.withBag,
+    withHat: payload.withHat,
+    withCoat: payload.withCoat
+  };
+  return btoa(unescape(encodeURIComponent(JSON.stringify(core)))).slice(0, 24);
+}
+
+function formatLookTitle(payload) {
+  const g = payload.gender === "female" ? "女" : payload.gender === "male" ? "男" : "中性";
+  const sv = payload.styleVariant ? ` · ${payload.styleVariant}` : "";
+  return `${g} · ${payload.style}${sv} · ${payload.temp}°C`;
+}
+
+function truncate(s, n=46) {
+  const t = String(s || "");
+  return t.length > n ? t.slice(0, n) + "…" : t;
+}
+
+function currentOutfitImageDataUrl() {
+  const img = document.getElementById("outfit-image");
+  const src = img?.getAttribute("src") || "";
+  return src.startsWith("data:") ? src : "";
+}
+function openImageModal(dataUrl) {
+  const modal = document.getElementById("img-modal");
+  const modalImg = document.getElementById("img-modal-img");
+  const download = document.getElementById("img-download");
+  if (!modal || !modalImg || !download) return;
+
+  modalImg.src = dataUrl;
+  download.href = dataUrl;
+
+  modal.style.display = "block";
+  document.body.style.overflow = "hidden";
+}
+
+function closeImageModal() {
+  const modal = document.getElementById("img-modal");
+  const modalImg = document.getElementById("img-modal-img");
+  if (!modal || !modalImg) return;
+
+  modal.style.display = "none";
+  modalImg.src = "";
+  document.body.style.overflow = "";
+}
+
+function bindImageModal() {
+  const modal = document.getElementById("img-modal");
+  const closeBtn = document.getElementById("img-modal-close");
+  const backdrop = document.getElementById("img-modal-backdrop");
+  if (!modal || !closeBtn || !backdrop) return;
+
+  closeBtn.addEventListener("click", closeImageModal);
+  backdrop.addEventListener("click", closeImageModal);
+
+  document.addEventListener("keydown", (e) => {
+    if (modal.style.display === "block" && e.key === "Escape") {
+      closeImageModal();
+    }
+  });
+
+  // 點圖也可放大：讓它像產品
+  const img = document.getElementById("outfit-image");
+  const previewBtn = document.getElementById("fullscreen-btn");
+  if (img) {
+    img.style.cursor = "zoom-in";
+    img.addEventListener("click", () => {
+      const dataUrl = currentOutfitImageDataUrl();
+      if (dataUrl) openImageModal(dataUrl);
+    });
+  }
+  if (previewBtn) {
+    previewBtn.addEventListener("click", () => {
+      const dataUrl = currentOutfitImageDataUrl();
+      if (!dataUrl) return;
+      openImageModal(dataUrl);
+    });
+  }
+}
+function buildLookSnapshot({ payload, spec, products, imgDataUrl, summary }) {
+  return {
+    id: makeLookId(payload),
+    created_at: nowTs(),
+    title: formatLookTitle(payload),
+    payload,
+    summary: summary || "",
+    image: imgDataUrl || "",
+    products: Array.isArray(products) ? products : [],
+    // 你也可以視需求放 spec（但會比較大）
+    // spec
+  };
+}
+
+function upsertRecent(look) {
+  const arr = loadRecent();
+  const idx = arr.findIndex(x => x.id === look.id);
+  if (idx >= 0) arr.splice(idx, 1);
+  arr.unshift(look);
+  saveRecent(arr.slice(0, 10));
+}
+
+function isFavorited(id) {
+  const fav = loadFav();
+  return fav.some(x => x.id === id);
+}
+
+function toggleFavorite(look) {
+  const fav = loadFav();
+  const idx = fav.findIndex(x => x.id === look.id);
+  if (idx >= 0) {
+    fav.splice(idx, 1);
+    saveFav(fav);
+    return false;
+  }
+  fav.unshift(look);
+  saveFav(fav.slice(0, 50));
+  return true;
+}
+let historyTab = "recent"; // "recent" | "fav"
+function syncFavoriteButton(lookId) {
+  const btn = document.getElementById("favorite-btn");
+  const hint = document.getElementById("fav-hint");
+  if (!btn) return;
+
+  const fav = isFavorited(lookId);
+  btn.textContent = fav ? "♥ 已收藏" : "♡ 收藏這套";
+  if (hint) hint.textContent = "";
+  btn.dataset.lookId = lookId;
+}
+
+function renderHistory() {
+  const root = document.getElementById("history-list");
+  const hint = document.getElementById("history-hint");
+  const tabRecent = document.getElementById("tab-recent");
+  const tabFav = document.getElementById("tab-fav");
+  if (!root || !hint || !tabRecent || !tabFav) return;
+
+  tabRecent.classList.toggle("primary", historyTab === "recent");
+  tabFav.classList.toggle("primary", historyTab === "fav");
+
+  const list = historyTab === "recent" ? loadRecent() : loadFav();
+
+  if (!list.length) {
+    root.innerHTML = `<div class="placeholder" style="padding:12px;">尚無${historyTab === "recent" ? "最近紀錄" : "收藏"}</div>`;
+    return;
+  }
+
+  root.innerHTML = "";
+  list.forEach((look) => {
+    const item = document.createElement("div");
+    item.className = "history-item";
+
+    const imgHtml = look.image
+      ? `<img src="${look.image}" alt="">`
+      : `<div style="font-size:12px;color:var(--muted);">No image</div>`;
+
+    const favNow = isFavorited(look.id);
+    const sub = `${truncate(look.summary, 64)}`;
+
+    item.innerHTML = `
+      <div class="hthumb">${imgHtml}</div>
+      <div class="hmeta">
+        <div class="hline1">
+          <div class="htitle">${escapeHtml(look.title || "Outfit")}</div>
+          <div class="slot-count">${new Date(look.created_at).toLocaleString()}</div>
+        </div>
+        <div class="hsub">${escapeHtml(sub)}</div>
+        <div class="hactions">
+          <button class="mini-btn primary" data-act="load" data-id="${look.id}">載入</button>
+          <button class="mini-btn" data-act="fav" data-id="${look.id}">${favNow ? "♥ 已收藏" : "♡ 收藏"}</button>
+          <button class="mini-btn danger" data-act="del" data-id="${look.id}">刪除</button>
+        </div>
+      </div>
+    `;
+    root.appendChild(item);
+  });
+
+  // Delegation
+  root.onclick = (e) => {
+    const btn = e.target.closest("button[data-act]");
+    if (!btn) return;
+    const act = btn.dataset.act;
+    const id = btn.dataset.id;
+    const list2 = historyTab === "recent" ? loadRecent() : loadFav();
+    const look = list2.find(x => x.id === id);
+    if (!look) return;
+
+    if (act === "load") {
+      loadLookToUI(look);
+    } else if (act === "fav") {
+      const becameFav = toggleFavorite(look);
+      const favHint = document.getElementById("fav-hint");
+      if (favHint) favHint.textContent = becameFav ? "已加入收藏" : "已取消收藏";
+      syncFavoriteButton(look.id);
+      renderHistory();
+    } else if (act === "del") {
+      if (historyTab === "recent") {
+        const arr = loadRecent().filter(x => x.id !== id);
+        saveRecent(arr);
+      } else {
+        const arr = loadFav().filter(x => x.id !== id);
+        saveFav(arr);
+      }
+      renderHistory();
+    }
+  };
+}
+
+function setFormValuesFromPayload(payload) {
+  // 基本條件
+  document.getElementById("gender").value = payload.gender || "female";
+  document.getElementById("age").value = String(payload.age ?? 25);
+  document.getElementById("height").value = String(payload.height ?? 165);
+  document.getElementById("weight").value = String(payload.weight ?? 55);
+  document.getElementById("temp").value = String(payload.temp ?? 22);
+
+  // range label sync
+  document.getElementById("age-val").textContent = String(document.getElementById("age").value);
+  document.getElementById("height-val").textContent = String(document.getElementById("height").value);
+  document.getElementById("weight-val").textContent = String(document.getElementById("weight").value);
+  document.getElementById("temp-val").textContent = String(document.getElementById("temp").value);
+
+  // style
+  document.getElementById("style").value = payload.style || "casual";
+  // 觸發 style card 外觀
+  const cards = Array.from(document.querySelectorAll(".style-card"));
+  cards.forEach(c => c.classList.toggle("selected", c.dataset.style === (payload.style || "casual")));
+
+  // styleVariant
+  document.getElementById("styleVariant").value = payload.styleVariant || "";
+
+  // switches（你的 bindSwitch 回傳的是 getter，沒有 setter，所以這裡用 click 去對齊）
+  // 這裡做最穩的方式：用 aria-checked 檢查，差異才點
+  function ensureSwitch(id, wantOn) {
+    const el = document.getElementById(id);
+    const on = el.getAttribute("aria-checked") === "true";
+    if (!!wantOn !== on) el.click();
+  }
+  ensureSwitch("sw-bag", payload.withBag);
+  ensureSwitch("sw-hat", payload.withHat);
+  ensureSwitch("sw-coat", payload.withCoat);
+}
+
+function loadLookToUI(look) {
+  clearError();
+  showRetryUI(false);
+  setFormValuesFromPayload(look.payload || {});
+  renderOutfitSummary(look.summary || "");
+
+  if (look.image) {
+    // dataURL
+    const img = document.getElementById("outfit-image");
+    const ph = document.getElementById("img-placeholder");
+    const sk = document.getElementById("img-skeleton");
+    if (sk) sk.style.display = "none";
+    img.src = look.image;
+    img.style.display = "block";
+    ph.style.display = "none";
+  } else {
+    clearImage();
+  }
+
+  renderProductsGrouped(look.products || []);
+  setGenerateStep("done");
+  setProgress(100);
+  setStatus("已載入 ✅", true, false);
+
+  syncFavoriteButton(look.id);
+
+  // 滑到示意圖區讓使用者看到結果
+  scrollToEl("anchor-preview", "smooth", "start");
+}
+
 
     /***********************
      * A) Step retry state machine
@@ -1483,6 +1935,19 @@
         setProgress(100);
         setStatus("完成 ✅", true, false);
         autoScrollOnDone();
+        // ✅ Save "最近 10 套" + sync 收藏狀態
+const imgDataUrl = currentOutfitImageDataUrl();
+const look = buildLookSnapshot({
+  payload,
+  spec,
+  products: flowState.products,   // 你 products 在 runStepProducts 有塞
+  imgDataUrl,
+  summary: spec?.summary || ""
+});
+upsertRecent(look);
+syncFavoriteButton(look.id);
+renderHistory();
+
       } catch (e) {
         console.error(e);
         setGenerateStep("failed");
@@ -1526,6 +1991,49 @@
 
       document.getElementById("login-btn").addEventListener("click", loginGoogle);
       document.getElementById("logout-btn").addEventListener("click", logout);
+// ✅ modal
+bindImageModal();
+
+// ✅ history tabs
+document.getElementById("tab-recent").addEventListener("click", () => {
+  historyTab = "recent";
+  renderHistory();
+});
+document.getElementById("tab-fav").addEventListener("click", () => {
+  historyTab = "fav";
+  renderHistory();
+});
+
+// ✅ favorite button
+document.getElementById("favorite-btn").addEventListener("click", () => {
+  const id = document.getElementById("favorite-btn").dataset.lookId || "";
+  if (!id) {
+    const fh = document.getElementById("fav-hint");
+    if (fh) fh.textContent = "先生成或載入一套";
+    return;
+  }
+
+  // 以「最近」為主來源拿 snapshot（沒有就用當前畫面組一個）
+  const recent = loadRecent();
+  const fromRecent = recent.find(x => x.id === id);
+
+  const fallbackLook = fromRecent || buildLookSnapshot({
+    payload: flowState.payload || {},
+    spec: flowState.spec || {},
+    products: flowState.products || [],
+    imgDataUrl: currentOutfitImageDataUrl(),
+    summary: document.getElementById("summary-text")?.textContent || ""
+  });
+
+  const becameFav = toggleFavorite(fallbackLook);
+  const fh = document.getElementById("fav-hint");
+  if (fh) fh.textContent = becameFav ? "已加入收藏" : "已取消收藏";
+  syncFavoriteButton(id);
+  renderHistory();
+});
+
+// 初次渲染 history
+renderHistory();
 
       // Mobile actionbar toggle
       const mobileBar = document.getElementById("mobile-actionbar");
