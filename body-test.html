@@ -21,6 +21,9 @@
       --r-lg:18px;
       --r-md:14px;
       --r-sm:10px;
+
+      /* Mobile safe area */
+      --safe-b: env(safe-area-inset-bottom, 0px);
     }
     *{box-sizing:border-box}
     body{
@@ -47,7 +50,7 @@
     }
     @keyframes skelmove { 0%{transform:translateX(-120%)} 100%{transform:translateX(120%)} }
 
-    .form-disabled { pointer-events: none; opacity: 0.6; }
+    .form-disabled { pointer-events:none; opacity:.6; }
 
     .img-skel-wrap{
       width:100%;
@@ -86,18 +89,16 @@
       width:28px;height:28px;border-radius:999px;
       background: linear-gradient(135deg, #111827, #111827);
       box-shadow:0 10px 20px rgba(0,0,0,.2);
-      flex: 0 0 auto;
+      flex:0 0 auto;
     }
     .title{font-size:20px;font-weight:800;letter-spacing:.02em}
     .subtitle{color:var(--muted);font-size:13px;margin-top:4px}
-
     .top-right{display:flex;align-items:flex-start;gap:12px}
     .auth-box{
       text-align:right;font-size:13px;color:var(--muted);
       line-height:1.6;margin-top:2px;min-width:260px;
     }
     .auth-box b{color:var(--text)}
-
     .btn{
       border:none;cursor:pointer;border-radius:999px;
       padding:10px 14px;font-weight:700;background:var(--brand);color:#fff;
@@ -125,7 +126,6 @@
       border:1px solid rgba(0,0,0,.04);
       padding:16px;
     }
-
     .pill{
       display:inline-flex;align-items:center;gap:6px;
       padding:6px 10px;border-radius:999px;
@@ -133,27 +133,6 @@
       background:#f3f4f6;border:1px solid #eef0f3;
     }
     .row{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:10px}
-
-    .outfit-summary {
-      margin-top: 14px;
-      background: #fafafa;
-      border: 1px solid #e5e7eb;
-    }
-    .summary-head {
-      display: flex;
-      align-items: center;
-      gap: 8px;
-      font-weight: 800;
-      font-size: 14px;
-      margin-bottom: 6px;
-    }
-    .summary-icon { font-size: 18px; }
-    .summary-title { color: #111827; }
-    .summary-text {
-      font-size: 14px;
-      line-height: 1.6;
-      color: #374151;
-    }
 
     /* ✅ 表單視覺分段 */
     .section-block{
@@ -193,7 +172,6 @@
     @media (max-width: 560px){
       .form-grid{grid-template-columns:1fr}
     }
-
     label{
       display:block;font-size:12px;font-weight:700;
       margin:0 0 6px 0;color:#111827;
@@ -220,7 +198,12 @@
     }
     .value-chip b{color:#111827;font-weight:900}
     input[type="range"]{
-      width:100%;padding:0;border:none;background:transparent;accent-color:#111827;height:26px;
+      width:100%;
+      padding:0;
+      border:none;
+      background:transparent;
+      accent-color:#111827;
+      height:26px;
     }
     .range-sub{display:flex;justify-content:space-between;font-size:11px;color:var(--muted);margin-top:4px}
 
@@ -286,7 +269,6 @@
     .switch.on{background:#111827}
     .switch.on::after{transform:translateX(20px)}
 
-    /* 主要 CTA（桌機 / 左側內部使用） */
     .primary-wide{
       width:100%;
       margin-top:12px;
@@ -315,7 +297,7 @@
       padding:12px;
     }
 
-    /* ✅ Image aspect: 450x700 ~ 9:16 */
+    /* ✅ Image aspect: 9:16 (450x800-ish) */
     .preview-inner{
       width:100%;
       max-width:450px;
@@ -345,9 +327,44 @@
       padding:12px;background:#fff;
       min-height:160px;
     }
+
+    /* ✅ products grouped */
+    .slot-group{
+      border:1px solid #f1f2f4;
+      background:#fafafa;
+      border-radius:16px;
+      padding:10px;
+      margin-bottom:12px;
+    }
+    .slot-group:last-child{margin-bottom:0}
+    .slot-head{
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+      gap:10px;
+      margin-bottom:8px;
+    }
+    .slot-title{
+      font-weight:900;
+      color:#111827;
+      font-size:14px;
+      display:flex;
+      align-items:center;
+      gap:8px;
+    }
+    .slot-count{
+      font-size:12px;
+      color:var(--muted);
+      border:1px solid #eef0f3;
+      background:#fff;
+      padding:4px 8px;
+      border-radius:999px;
+      white-space:nowrap;
+    }
+
     .product-item{
       display:grid;grid-template-columns:60px 1fr;gap:10px;padding:10px;border-radius:14px;
-      background:#fafafa;border:1px solid #f1f2f4;margin-bottom:10px;
+      background:#fff;border:1px solid #f1f2f4;margin-bottom:10px;
     }
     .product-item:last-child{margin-bottom:0}
     .thumb{
@@ -421,24 +438,73 @@
     }
     .debug.on{display:block}
 
-    /* ------------------------
-       ✅ Desktop refinements
-    ------------------------ */
+    /* ✅ Outfit summary */
+    .outfit-summary {
+      margin-top: 14px;
+      background: #fafafa;
+      border: 1px solid #e5e7eb;
+    }
+    .summary-head {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-weight: 800;
+      font-size: 14px;
+      margin-bottom: 6px;
+    }
+    .summary-icon { font-size: 18px; }
+    .summary-title { color: #111827; }
+    .summary-text {
+      font-size: 14px;
+      line-height: 1.6;
+      color: #374151;
+    }
+
+    /* ✅ Action / retry bar on right */
+    .action-row{
+      display:flex;
+      gap:10px;
+      align-items:center;
+      margin-top:10px;
+      flex-wrap:wrap;
+    }
+    .mini-btn{
+      border:1px solid var(--line);
+      background:#fff;
+      color:#111827;
+      padding:9px 12px;
+      border-radius:999px;
+      cursor:pointer;
+      font-weight:900;
+      font-size:13px;
+    }
+    .mini-btn:disabled{opacity:.55; cursor:default}
+    .mini-btn.primary{
+      background:#111827;
+      color:#fff;
+      border-color:#111827;
+    }
+    .mini-btn.danger{
+      background:#fff;
+      color:#ef4444;
+      border-color:#fecaca;
+    }
+    .mini-hint{
+      font-size:12px;
+      color:var(--muted);
+    }
+
+    /* ---------- Desktop: left panel sticky + compact spacing ---------- */
     @media (min-width: 1024px) {
       .layout { overflow: visible; }
-
       .left-panel {
         position: sticky;
-        top: 24px;
+        top: 18px;
         align-self: flex-start;
-        max-height: calc(100vh - 32px);
+        max-height: calc(100vh - 24px);
         overflow-y: auto;
         padding-right: 6px;
-
-        /* 避免 sticky/fixed z-index 交錯 */
-        overflow-x: visible;
       }
-
       .left-panel.card { padding: 14px; }
       .left-panel .row { margin-bottom: 8px; }
       .left-panel .form-grid { gap: 8px 10px; }
@@ -447,109 +513,69 @@
       .left-panel .toggle-list { margin-top: 8px; }
       .left-panel .toggle-item { padding: 10px 10px; }
 
-      /* ✅ Desktop: left panel 內部 bottom sticky（不會被吃掉） */
       .left-panel .sticky-generate {
         position: sticky;
         bottom: 0;
-        z-index: 5;
         padding-top: 10px;
-        background: linear-gradient(to top, #fff 70%, rgba(255,255,255,0));
+        background: linear-gradient(to top, #fff 60%, rgba(255,255,255,0));
+        z-index: 5;
       }
 
       .preview-inner { max-height: 70vh; }
     }
 
-    /* ------------------------
-       ✅ Mobile: compact header + bottom action bar (only one)
-    ------------------------ */
+    /* ---------- Mobile thumb-friendly tweaks + fix header height + fixed action button ---------- */
     @media (max-width: 640px){
-      /* ✅ header 太高：改成更緊湊 */
+      .page{ padding:14px 12px calc(96px + var(--safe-b)); }
       header{
-        padding: 10px 6px 8px;
-        align-items: center;
+        padding:10px 6px 10px;
+        align-items:flex-start;
       }
-      .brand{ gap:10px; align-items:center; }
-      .dot{ width:22px; height:22px; box-shadow:0 8px 16px rgba(0,0,0,.18); }
-      .title{
-        font-size:16px;
-        line-height:1.15;
-        max-width: 55vw;
-      }
+      .dot{ width:24px; height:24px; }
+      .title{ font-size:18px; line-height:1.2; }
       .subtitle{
-        font-size:11px;
-        margin-top:2px;
-        line-height:1.25;
-        max-width: 55vw;
-      }
-
-      .top-right{
-        gap:10px;
-        align-items:center;
-      }
-      .auth-box{
-        min-width: 0;
         font-size:12px;
         line-height:1.35;
-        margin-top:0;
+        margin-top:6px;
+        max-width: 260px;
       }
-      .btn{
-        padding:8px 12px;
-        box-shadow:none;
-        border-radius:12px;
+      .auth-box{
+        min-width:auto;
+        font-size:12px;
+        line-height:1.35;
       }
-      .btn.secondary{ border-radius:12px; }
+      .btn{ padding:9px 12px; font-size:13px; }
 
-      /* ✅ Mobile: page bottom needs space for action bar */
-      .page{
-        padding: 14px 12px calc(120px + env(safe-area-inset-bottom)) !important;
-      }
+      .card{ padding:14px; border-radius:16px; }
+      .toggle-item{ padding:12px 10px; }
+      .style-card{ min-height:72px; padding:12px; }
+      .products{ padding:10px; }
+      .product-item{ padding:10px; }
 
-      .layout{ gap:12px; }
-
-      /* ✅ 手機不要 left-panel sticky + scroll，避免層級干擾 */
-      .left-panel{
-        position: static !important;
-        max-height: none !important;
-        overflow: visible !important;
-      }
-
-      /* ✅ 手機：不要用 left-panel 裡的 sticky-generate（會跟底部 action bar 打架） */
-      .left-panel .sticky-generate{ display:none !important; }
-
-      /* ✅ Mobile bottom action bar (唯一的固定按鈕容器) */
+      /* ✅ fixed bottom button (always visible + not covered) */
       .mobile-actionbar{
         position: fixed;
         left: 12px;
         right: 12px;
-        bottom: calc(12px + env(safe-area-inset-bottom));
-        z-index: 9999;
-        background: rgba(245,245,247,0.72);
-        backdrop-filter: blur(10px);
-        -webkit-backdrop-filter: blur(10px);
-        border: 1px solid rgba(229,231,235,0.7);
-        border-radius: 18px;
-        padding: 10px;
-        box-shadow: 0 18px 38px rgba(0,0,0,.18);
+        bottom: calc(14px + var(--safe-b));
+        z-index: 999;
+        pointer-events:none; /* allow button only */
       }
-
       .mobile-actionbar .primary-wide{
-        margin-top: 0;
-        width: 100%;
-        height: 52px;
-        font-size: 16px;
-        border-radius: 14px;
+        width:100%;
+        height:54px;
+        font-size:16px;
+        border-radius:16px;
+        box-shadow:0 18px 38px rgba(0,0,0,.18);
+        pointer-events:auto;
       }
-
-      /* ✅ 避免右側 shimmer/卡片蓋住 action bar（用 z-index 拉開） */
-      .card, .preview-wrap, .products, .debug { position: relative; z-index: 1; }
-      .mobile-actionbar { z-index: 9999; }
+      /* Keep left sticky-generate invisible on mobile, use fixed bar instead */
+      .left-panel .sticky-generate{ display:none; }
     }
 
-    /* 小螢幕微調 */
-    @media (max-width: 768px) {
-      .card { padding: 18px 16px; }
-      .section-title { margin-top: 18px; }
-      .product-item { padding: 12px; gap: 12px; }
+    /* ---------- Utilities ---------- */
+    .anchor {
+      scroll-margin-top: 12px;
     }
   </style>
 </head>
@@ -561,7 +587,7 @@
         <div class="dot"></div>
         <div>
           <div class="title">Outfit Studio · Body Test</div>
-          <div class="subtitle">Spec（扣點）→ Image → Products。右上可開 Debug。</div>
+          <div class="subtitle">流程：Spec（扣點）→ Image → Products。右上可開 Debug。</div>
         </div>
       </div>
 
@@ -727,7 +753,7 @@
           </div>
         </div>
 
-        <!-- Desktop: sticky bottom inside left panel -->
+        <!-- Desktop sticky generate area (hidden on mobile by CSS) -->
         <div class="sticky-generate">
           <button id="go-btn" class="primary-wide">產生穿搭圖</button>
         </div>
@@ -737,7 +763,7 @@
       </section>
 
       <!-- RIGHT -->
-      <section class="card" id="right-panel">
+      <section class="card">
         <div class="right-head">
           <h3>AI 穿搭示意圖 & 類似商品</h3>
           <div class="debug-toggle" id="debug-toggle">
@@ -750,7 +776,7 @@
           <span class="pill">AI 穿搭示意圖</span>
         </div>
 
-        <div class="preview-wrap" id="preview-wrap">
+        <div class="preview-wrap anchor" id="anchor-preview">
           <div class="preview-inner" id="preview-box">
             <div id="img-skeleton" style="display:none;width:100%;height:100%;">
               <div class="img-skel-wrap">
@@ -770,6 +796,13 @@
               <span class="dots"><span class="dot"></span><span class="dot"></span><span class="dot"></span></span>
             </span>
             <div class="progress"><div id="progress-bar"></div></div>
+
+            <!-- ✅ Retry controls -->
+            <div class="action-row" id="retry-row" style="display:none;">
+              <button class="mini-btn primary" id="retry-btn">重試目前步驟</button>
+              <button class="mini-btn danger" id="restart-btn">從頭重跑</button>
+              <div class="mini-hint" id="retry-hint"></div>
+            </div>
           </div>
         </div>
 
@@ -782,7 +815,7 @@
           <div class="summary-text" id="summary-text"></div>
         </div>
 
-        <div class="section-title">
+        <div class="section-title anchor" id="anchor-products">
           <span class="pill">類似商品（Google Shopping）</span>
         </div>
         <div class="products" id="products">
@@ -794,7 +827,7 @@
     </main>
   </div>
 
-  <!-- ✅ Mobile bottom action bar (only) -->
+  <!-- ✅ Mobile fixed action bar -->
   <div class="mobile-actionbar" id="mobile-actionbar" style="display:none;">
     <button id="go-btn-mobile" class="primary-wide">產生穿搭圖</button>
   </div>
@@ -803,30 +836,46 @@
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 
   <script>
+    /***********************
+     * Helpers
+     ***********************/
+    function isMobile() {
+      return window.matchMedia && window.matchMedia("(max-width: 640px)").matches;
+    }
+    function scrollToEl(id, behavior="smooth", block="start") {
+      const el = document.getElementById(id);
+      if (!el) return;
+      el.scrollIntoView({ behavior, block });
+    }
+
     function setFormDisabled(disabled) {
       const form = document.getElementById("left-panel");
       if (!form) return;
       form.classList.toggle("form-disabled", disabled);
     }
 
+    /***********************
+     * Step text (3段按鈕文字 + 狀態文字同步)
+     ***********************/
     const GENERATE_STEPS = {
       idle: { btn: "產生穿搭圖", text: "等待操作" },
       spec: { btn: "分析中…", text: "分析你的身形與風格…" },
       image: { btn: "設計中…", text: "設計整體穿搭組合…" },
-      products: { btn: "搜尋商品中…", text: "搜尋可購買商品…" },
-      done: { btn: "再生成一套", text: "完成" },
+      products: { btn: "找商品中…", text: "搜尋可購買商品…" },
+      done: { btn: "再生成一套", text: "完成 ✅" },
+      failed: { btn: "再試一次", text: "失敗 ❌" },
     };
 
     function setGenerateStep(step) {
       const cfg = GENERATE_STEPS[step] || GENERATE_STEPS.idle;
 
-      const btn = document.getElementById("go-btn");
-      const btnM = document.getElementById("go-btn-mobile");
-      if (btn) btn.textContent = cfg.btn;
-      if (btnM) btnM.textContent = cfg.btn;
+      const btn1 = document.getElementById("go-btn");
+      const btn2 = document.getElementById("go-btn-mobile");
+      if (btn1) btn1.textContent = cfg.btn;
+      if (btn2) btn2.textContent = cfg.btn;
 
-      const sb = document.getElementById("status-text");
-      if (sb) sb.textContent = cfg.text;
+      const statusTextEl = document.getElementById("status-text");
+      if (statusTextEl) statusTextEl.textContent = cfg.text;
     }
 
     /***********************
@@ -837,26 +886,6 @@
 
     const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImF1aXdjc29scHZ1Znh4eWhudmFmIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjQ5MzUwMDEsImV4cCI6MjA4MDUxMTAwMX0.KeD8JXdHs5Iu7-wf0F0GpUPp-_y5X5ha6mwBcR5eYDA";
     const REDIRECT_TO = "https://simon-one-ochre.vercel.app/body-test.html";
-
-    /***********************
-     * Mobile action bar toggle
-     ***********************/
-    function isMobile() { return window.matchMedia("(max-width: 640px)").matches; }
-
-    function syncActionBar() {
-      const bar = document.getElementById("mobile-actionbar");
-      if (!bar) return;
-      bar.style.display = isMobile() ? "block" : "none";
-    }
-
-    /***********************
-     * Auto scroll (mobile): jump to preview
-     ***********************/
-    function scrollToPreview() {
-      const el = document.getElementById("preview-wrap") || document.getElementById("right-panel");
-      if (!el) return;
-      el.scrollIntoView({ behavior: "smooth", block: "start" });
-    }
 
     /***********************
      * 0.5) Slider bindings
@@ -882,7 +911,10 @@
         cards.forEach(c => c.classList.toggle("selected", c.dataset.style === style));
       };
 
-      cards.forEach(c => c.addEventListener("click", () => select(c.dataset.style)));
+      cards.forEach(c => {
+        c.addEventListener("click", () => select(c.dataset.style));
+      });
+
       select(hidden.value || "casual");
     }
 
@@ -895,7 +927,12 @@
     function clearAccessToken(){ localStorage.removeItem(AUTH_KEY); }
 
     const osSupabase = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
-      auth: { persistSession: true, autoRefreshToken: true, detectSessionInUrl: true, flowType: "pkce" }
+      auth: {
+        persistSession: true,
+        autoRefreshToken: true,
+        detectSessionInUrl: true,
+        flowType: "pkce"
+      }
     });
 
     async function apiMe() {
@@ -943,6 +980,7 @@
 
       const me = await apiMe();
       if (!me.ok) { setAuthUI({ loggedIn:false, hint:"登入狀態異常（/api/me 失敗）" }); return; }
+
       setAuthUI({ loggedIn:true, email: me.user?.email, credits: me.credits_left, hint:"" });
     }
 
@@ -961,6 +999,7 @@
       if (location.hash || location.search) {
         history.replaceState(null, "", location.pathname);
       }
+
       return { ok:true, session };
     }
 
@@ -969,10 +1008,12 @@
         alert("請先在 body-test.html 填入 SUPABASE_ANON_KEY（Supabase → Settings → API → anon public key）");
         return;
       }
+
       const { error } = await osSupabase.auth.signInWithOAuth({
         provider: "google",
         options: { redirectTo: REDIRECT_TO }
       });
+
       if (error) {
         console.error(error);
         setAuthUI({ loggedIn:false, hint:"登入啟動失敗：" + error.message });
@@ -1112,39 +1153,6 @@
       `;
     }
 
-    function renderProducts(list) {
-      const root = document.getElementById("products");
-      root.innerHTML = "";
-
-      if (!Array.isArray(list) || list.length === 0) {
-        root.innerHTML = `<div class="placeholder" style="padding:16px;">沒有找到商品（或 API 尚未回傳）</div>`;
-        return;
-      }
-
-      list.forEach(p => {
-        const div = document.createElement("div");
-        div.className = "product-item";
-
-        const thumb = p.thumbnail ? `<img src="${p.thumbnail}" alt="">` : `示意`;
-        const price = p.price || p.extracted_price || "";
-        const link = p.product_link || p.link || p.url || "#";
-
-        div.innerHTML = `
-          <div class="thumb">${thumb}</div>
-          <div>
-            <div class="pname">${escapeHtml(p.title || p.name || "商品")}</div>
-            <div class="pmeta">
-              ${price ? `<span>價格：${escapeHtml(String(price))}</span>` : ""}
-              ${p.source ? `<span>來源：${escapeHtml(String(p.source))}</span>` : ""}
-              ${p.slot ? `<span>類別：${escapeHtml(String(p.slot))}</span>` : ""}
-            </div>
-            <a class="plink" href="${link}" target="_blank" rel="noopener noreferrer">前往查看</a>
-          </div>
-        `;
-        root.appendChild(div);
-      });
-    }
-
     function escapeHtml(str){
       return String(str)
         .replaceAll("&","&amp;")
@@ -1161,7 +1169,81 @@
     }
 
     /***********************
-     * 4) Main flow: Spec -> Image -> Products
+     * C) Products grouped by slot
+     ***********************/
+    const SLOT_ORDER = ["top","bottom","shoes","outer","bag","hat"];
+    const SLOT_LABEL_ZH = {
+      top: "上衣",
+      bottom: "下身",
+      shoes: "鞋子",
+      outer: "外套",
+      bag: "包包",
+      hat: "帽子"
+    };
+
+    function groupProductsBySlot(list) {
+      const groups = {};
+      for (const s of SLOT_ORDER) groups[s] = [];
+      (list || []).forEach(p => {
+        const slot = (p.slot || "").toLowerCase();
+        if (!groups[slot]) groups[slot] = [];
+        groups[slot].push(p);
+      });
+      return groups;
+    }
+
+    function renderProductsGrouped(list) {
+      const root = document.getElementById("products");
+      root.innerHTML = "";
+
+      if (!Array.isArray(list) || list.length === 0) {
+        root.innerHTML = `<div class="placeholder" style="padding:16px;">沒有找到商品（或 API 尚未回傳）</div>`;
+        return;
+      }
+
+      const groups = groupProductsBySlot(list);
+
+      for (const slot of SLOT_ORDER) {
+        const items = groups[slot] || [];
+        if (items.length === 0) continue;
+
+        const wrap = document.createElement("div");
+        wrap.className = "slot-group";
+
+        wrap.innerHTML = `
+          <div class="slot-head">
+            <div class="slot-title">🧩 ${escapeHtml(SLOT_LABEL_ZH[slot] || slot)}</div>
+            <div class="slot-count">${items.length} 個</div>
+          </div>
+        `;
+
+        items.forEach(p => {
+          const div = document.createElement("div");
+          div.className = "product-item";
+          const thumb = p.thumbnail ? `<img src="${p.thumbnail}" alt="">` : `示意`;
+          const price = p.price || p.extracted_price || "";
+          const link = p.product_link || p.link || p.url || "#";
+
+          div.innerHTML = `
+            <div class="thumb">${thumb}</div>
+            <div>
+              <div class="pname">${escapeHtml(p.title || p.name || "商品")}</div>
+              <div class="pmeta">
+                ${price ? `<span>價格：${escapeHtml(String(price))}</span>` : ""}
+                ${p.source ? `<span>來源：${escapeHtml(String(p.source))}</span>` : ""}
+              </div>
+              <a class="plink" href="${link}" target="_blank" rel="noopener noreferrer">前往查看</a>
+            </div>
+          `;
+          wrap.appendChild(div);
+        });
+
+        root.appendChild(wrap);
+      }
+    }
+
+    /***********************
+     * 4) API helper
      ***********************/
     async function postJson(url, body, withAuth=true) {
       const headers = { "Content-Type": "application/json" };
@@ -1186,25 +1268,172 @@
       return j;
     }
 
-    async function generateAll() {
-      clearError();
-      renderOutfitSummary(null);
-      clearImage();
-      showImageSkeleton(true);
-      renderProductsSkeleton(4);
+    /***********************
+     * A) Step retry state machine
+     ***********************/
+    const flowState = {
+      lastStep: "idle",      // "spec" | "image" | "products"
+      payload: null,
+      spec: null,
+      imgResp: null,
+      products: null
+    };
 
+    function showRetryUI(show, step="", hint="") {
+      const row = document.getElementById("retry-row");
+      const ht = document.getElementById("retry-hint");
+      if (!row || !ht) return;
+      if (!show) {
+        row.style.display = "none";
+        ht.textContent = "";
+        return;
+      }
+      row.style.display = "flex";
+      ht.textContent = hint ? hint : (step ? `可重試：${step}` : "");
+    }
+
+    async function runStepSpec(payload, me) {
       setGenerateStep("spec");
-      setProgress(0);
+      setStatus("Step 1/3：產生 Outfit Spec（扣點）", null, true);
+      setProgress(20);
+
+      const spec = await postJson("/api/generate-outfit-spec", payload, true);
+      flowState.spec = spec;
+      flowState.lastStep = "spec";
+      setDebug({ step:"spec", spec });
+
+      renderOutfitSummary(spec.summary);
+
+      if (typeof spec.credits_left !== "undefined") {
+        setAuthUI({ loggedIn:true, email: me.user?.email, credits: spec.credits_left });
+      } else {
+        await refreshAuthUI();
+      }
+      return spec;
+    }
+
+    async function runStepImage(payload, spec) {
+      setGenerateStep("image");
+      setStatus("Step 2/3：產生穿搭示意圖", null, true);
+      setProgress(55);
+
+      const imgResp = await postJson("/api/generate-image", {
+        ...payload,
+        outfitSpec: spec,
+        aspectRatio: "9:16",
+        imageSize: "1K"
+      }, true);
+
+      if (!imgResp.image) throw new Error("Image API 沒回傳 image");
+      flowState.imgResp = imgResp;
+      flowState.lastStep = "image";
+      setDebug({ step:"image", imgResp, spec });
+
+      setImageBase64(imgResp.image, imgResp.mime || "image/png");
+      showImageSkeleton(false);
+      return imgResp;
+    }
+
+    async function runStepProducts(payload, spec) {
+      setGenerateStep("products");
+      setStatus("Step 3/3：搜尋類似商品", null, true);
+      setProgress(80);
+
+      const prodResp = await postJson("/api/search-products", {
+        items: spec.items || [],
+        locale: "tw",
+        gender: payload.gender
+      }, true);
+
+      const list = prodResp.products || prodResp.items || prodResp.shopping_results || [];
+      flowState.products = list;
+      flowState.lastStep = "products";
+      setDebug({ step:"products", prodResp, spec });
+
+      renderProductsGrouped(list);
+      return list;
+    }
+
+    async function retryCurrentStep() {
+      showRetryUI(false);
+      clearError();
+
+      const ensured = await ensureTokenFromSession();
+      if (!ensured.ok) throw new Error("未登入或 session 不存在");
+
+      const me = await apiMe();
+      if (!me.ok) throw new Error("登入狀態異常（/api/me 失敗）");
+
+      const payload = flowState.payload;
+      if (!payload) throw new Error("沒有可重試的 payload（請從頭重跑）");
+
+      if (flowState.lastStep === "spec") {
+        // spec成功但後面失敗 => 重試 image
+        if (!flowState.spec) throw new Error("spec 不存在（請從頭重跑）");
+        showImageSkeleton(true);
+        await runStepImage(payload, flowState.spec);
+        renderProductsSkeleton(4);
+        await runStepProducts(payload, flowState.spec);
+        setGenerateStep("done");
+        setProgress(100);
+        setStatus("完成 ✅", true, false);
+        // 完成後滑到商品
+        scrollToEl("anchor-products", "smooth", "start");
+        return;
+      }
+
+      if (flowState.lastStep === "image") {
+        // image成功但 products失敗 => 重試 products
+        if (!flowState.spec) throw new Error("spec 不存在（請從頭重跑）");
+        renderProductsSkeleton(4);
+        await runStepProducts(payload, flowState.spec);
+        setGenerateStep("done");
+        setProgress(100);
+        setStatus("完成 ✅", true, false);
+        scrollToEl("anchor-products", "smooth", "start");
+        return;
+      }
+
+      // 如果根本沒走到 spec 或狀態混亂，就從頭跑
+      await generateAll(true);
+    }
+
+    /***********************
+     * B) Auto scroll behavior
+     ***********************/
+    function autoScrollOnStart() {
+      // 按下生成後：直接滑到示意圖（手機最重要）
+      if (isMobile()) scrollToEl("anchor-preview", "smooth", "start");
+    }
+    function autoScrollOnDone() {
+      // 完成後：滑到商品（更符合「下一步要買」）
+      if (isMobile()) scrollToEl("anchor-products", "smooth", "start");
+    }
+
+    /***********************
+     * 5) Main flow (A+B+C all in)
+     ***********************/
+    async function generateAll(forceRestart=false) {
+      showRetryUI(false);
+      clearError();
       setLoadingUI(true);
-      setStatus("開始", null, true);
-
-      // ✅ mobile: click後直接帶到生成圖區（避免新手不知道往下滑）
-      if (isMobile()) scrollToPreview();
-
-      // ✅ 生成中鎖表單
       setFormDisabled(true);
 
       try {
+        // Start UI
+        setGenerateStep("spec");
+        setProgress(0);
+        setStatus("開始", null, true);
+
+        autoScrollOnStart();
+
+        // Reset visuals
+        clearImage();
+        showImageSkeleton(true);
+        renderProductsSkeleton(4);
+        renderOutfitSummary(null);
+
+        // Auth checks
         const ensured = await ensureTokenFromSession();
         if (!ensured.ok) {
           setAuthUI({ loggedIn:false, hint:"未登入（請按 Google 登入）" });
@@ -1217,6 +1446,7 @@
           throw new Error("登入狀態異常（/api/me 失敗）");
         }
 
+        // Build payload
         const payload = {
           gender: document.getElementById("gender").value,
           age: Number(document.getElementById("age").value),
@@ -1230,54 +1460,54 @@
           withCoat: !!getCoat()
         };
 
-        // 1) Spec
-        setStatus("Step 1/3：產生 Outfit Spec（扣點）", null, true);
-        setProgress(20);
-        const spec = await postJson("/api/generate-outfit-spec", payload, true);
-        setDebug({ step:"spec", spec });
-        renderOutfitSummary(spec.summary);
-        setGenerateStep("image");
-
-        if (typeof spec.credits_left !== "undefined") {
-          setAuthUI({ loggedIn:true, email: me.user?.email, credits: spec.credits_left });
-        } else {
-          await refreshAuthUI();
+        // Save for retry
+        flowState.payload = payload;
+        if (forceRestart) {
+          flowState.spec = null;
+          flowState.imgResp = null;
+          flowState.products = null;
+          flowState.lastStep = "idle";
         }
 
-        // 2) Image
-        setStatus("Step 2/3：產生穿搭示意圖", null, true);
-        setProgress(55);
-        const imgResp = await postJson("/api/generate-image", {
-          ...payload,
-          outfitSpec: spec,
-          aspectRatio: "9:16",
-          imageSize: "1K"
-        }, true);
+        // Step 1: Spec
+        const spec = await runStepSpec(payload, me);
 
-        if (!imgResp.image) throw new Error("Image API 沒回傳 image");
+        // Step 2: Image
+        await runStepImage(payload, spec);
 
-        setImageBase64(imgResp.image, imgResp.mime || "image/png");
-        setGenerateStep("products");
-        showImageSkeleton(false);
-        setDebug({ step:"image", imgResp, spec });
+        // Step 3: Products
+        await runStepProducts(payload, spec);
 
-        // 3) Products
-        setStatus("Step 3/3：搜尋類似商品", null, true);
-        setProgress(80);
-        const prodResp = await postJson("/api/search-products", {
-          items: spec.items || [],
-          locale: "tw",
-          gender: payload.gender
-        }, true);
-
-        const list = prodResp.products || prodResp.items || prodResp.shopping_results || [];
-        renderProducts(list);
-
+        // Done
         setGenerateStep("done");
-        setDebug({ step:"products", prodResp, spec });
-
         setProgress(100);
         setStatus("完成 ✅", true, false);
+        autoScrollOnDone();
+      } catch (e) {
+        console.error(e);
+        setGenerateStep("failed");
+        setStatus("失敗 ❌", false, false);
+        setProgress(0);
+
+        const msg = String(e?.message || e);
+
+        // Show retry UI:
+        // - if spec success => retry image
+        // - if image success => retry products
+        // else => restart
+        if (flowState.spec && !flowState.imgResp) {
+          showRetryUI(true, "Image", "Spec 已完成，可重試產生示意圖");
+          flowState.lastStep = "spec";
+        } else if (flowState.spec && flowState.imgResp) {
+          showRetryUI(true, "Products", "示意圖已完成，可重試搜尋商品");
+          flowState.lastStep = "image";
+        } else {
+          showRetryUI(true, "Restart", "可從頭重跑（重新扣點）");
+          flowState.lastStep = "idle";
+        }
+
+        showError(msg);
+        throw e;
       } finally {
         setLoadingUI(false);
         setFormDisabled(false);
@@ -1285,7 +1515,7 @@
     }
 
     /***********************
-     * 5) INIT
+     * 6) INIT
      ***********************/
     (async function init() {
       bindRange("age", "age-val");
@@ -1294,36 +1524,79 @@
       bindRange("temp", "temp-val");
       bindStyleCards();
 
-      // ✅ action bar
-      syncActionBar();
-      window.addEventListener("resize", syncActionBar);
-
       document.getElementById("login-btn").addEventListener("click", loginGoogle);
       document.getElementById("logout-btn").addEventListener("click", logout);
 
-      const goBtn = document.getElementById("go-btn");
-      const goBtnMobile = document.getElementById("go-btn-mobile");
+      // Mobile actionbar toggle
+      const mobileBar = document.getElementById("mobile-actionbar");
+      if (mobileBar) mobileBar.style.display = isMobile() ? "block" : "none";
+      window.addEventListener("resize", () => {
+        if (mobileBar) mobileBar.style.display = isMobile() ? "block" : "none";
+      });
 
-      async function onClickGenerate(btnEl){
-        btnEl.disabled = true;
-        const oldText = btnEl.textContent;
-        btnEl.textContent = "生成中…";
+      // Retry buttons
+      document.getElementById("retry-btn").addEventListener("click", async () => {
+        const btn = document.getElementById("retry-btn");
+        btn.disabled = true;
         try {
-          await generateAll();
+          setLoadingUI(true);
+          await retryCurrentStep();
         } catch (e) {
           console.error(e);
-          setGenerateStep("idle");
-          setProgress(0);
-          setStatus("失敗 ❌", false, false);
-          showError(String(e.message || e));
+          showError(String(e?.message || e));
         } finally {
-          btnEl.textContent = oldText;
-          btnEl.disabled = false;
+          setLoadingUI(false);
+          btn.disabled = false;
+        }
+      });
+
+      document.getElementById("restart-btn").addEventListener("click", async () => {
+        const btn = document.getElementById("restart-btn");
+        btn.disabled = true;
+        try {
+          setLoadingUI(true);
+          await generateAll(true);
+        } catch (e) {
+          console.error(e);
+          showError(String(e?.message || e));
+        } finally {
+          setLoadingUI(false);
+          btn.disabled = false;
+        }
+      });
+
+      // Shared click handler for both buttons
+      async function onGenerateClick() {
+        showRetryUI(false);
+        try {
+          await generateAll(false);
+        } catch (e) {
+          // errors already shown
         }
       }
 
-      goBtn.addEventListener("click", () => onClickGenerate(goBtn));
-      goBtnMobile.addEventListener("click", () => onClickGenerate(goBtnMobile));
+      const goBtnDesktop = document.getElementById("go-btn");
+      const goBtnMobile = document.getElementById("go-btn-mobile");
+
+      if (goBtnDesktop) goBtnDesktop.addEventListener("click", async () => {
+        goBtnDesktop.disabled = true;
+        if (goBtnMobile) goBtnMobile.disabled = true;
+        try { await onGenerateClick(); }
+        finally {
+          goBtnDesktop.disabled = false;
+          if (goBtnMobile) goBtnMobile.disabled = false;
+        }
+      });
+
+      if (goBtnMobile) goBtnMobile.addEventListener("click", async () => {
+        goBtnMobile.disabled = true;
+        if (goBtnDesktop) goBtnDesktop.disabled = true;
+        try { await onGenerateClick(); }
+        finally {
+          goBtnMobile.disabled = false;
+          if (goBtnDesktop) goBtnDesktop.disabled = false;
+        }
+      });
 
       document.getElementById("debug-box").classList.toggle("on", getDebug());
 
@@ -1336,10 +1609,10 @@
         await refreshAuthUI();
       });
 
+      setGenerateStep("idle");
       setProgress(0);
       setStatus("等待操作", null, false);
       setLoadingUI(false);
-      setGenerateStep("idle");
     })();
   </script>
 </body>
