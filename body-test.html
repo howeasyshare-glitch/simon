@@ -47,10 +47,8 @@
     }
     @keyframes skelmove { 0%{transform:translateX(-120%)} 100%{transform:translateX(120%)} }
 
-    .form-disabled {
-      pointer-events: none;
-      opacity: 0.6;
-    }
+    .form-disabled { pointer-events: none; opacity: 0.6; }
+
     .img-skel-wrap{
       width:100%;
       height:100%;
@@ -72,14 +70,13 @@
       display:grid;
       grid-template-columns:60px 1fr;
       gap:10px;
-      margin: 0;
     }
     .products-skel .thumb{ width:60px; height:60px; border-radius:12px }
     .products-skel .t1{ height:14px; border-radius:999px; width:75% }
     .products-skel .t2{ height:12px; border-radius:999px; width:45%; margin-top:8px }
 
-    /* ---------- Layout ---------- */
     .page{max-width:1280px;margin:0 auto;padding:20px 14px 40px}
+
     header{
       display:flex;align-items:flex-start;justify-content:space-between;
       gap:12px;padding:10px 10px 16px;
@@ -89,15 +86,18 @@
       width:28px;height:28px;border-radius:999px;
       background: linear-gradient(135deg, #111827, #111827);
       box-shadow:0 10px 20px rgba(0,0,0,.2);
+      flex: 0 0 auto;
     }
     .title{font-size:20px;font-weight:800;letter-spacing:.02em}
     .subtitle{color:var(--muted);font-size:13px;margin-top:4px}
+
     .top-right{display:flex;align-items:flex-start;gap:12px}
     .auth-box{
       text-align:right;font-size:13px;color:var(--muted);
       line-height:1.6;margin-top:2px;min-width:260px;
     }
     .auth-box b{color:var(--text)}
+
     .btn{
       border:none;cursor:pointer;border-radius:999px;
       padding:10px 14px;font-weight:700;background:var(--brand);color:#fff;
@@ -125,6 +125,7 @@
       border:1px solid rgba(0,0,0,.04);
       padding:16px;
     }
+
     .pill{
       display:inline-flex;align-items:center;gap:6px;
       padding:6px 10px;border-radius:999px;
@@ -132,6 +133,27 @@
       background:#f3f4f6;border:1px solid #eef0f3;
     }
     .row{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:10px}
+
+    .outfit-summary {
+      margin-top: 14px;
+      background: #fafafa;
+      border: 1px solid #e5e7eb;
+    }
+    .summary-head {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-weight: 800;
+      font-size: 14px;
+      margin-bottom: 6px;
+    }
+    .summary-icon { font-size: 18px; }
+    .summary-title { color: #111827; }
+    .summary-text {
+      font-size: 14px;
+      line-height: 1.6;
+      color: #374151;
+    }
 
     /* ✅ 表單視覺分段 */
     .section-block{
@@ -171,6 +193,7 @@
     @media (max-width: 560px){
       .form-grid{grid-template-columns:1fr}
     }
+
     label{
       display:block;font-size:12px;font-weight:700;
       margin:0 0 6px 0;color:#111827;
@@ -263,6 +286,7 @@
     .switch.on{background:#111827}
     .switch.on::after{transform:translateX(20px)}
 
+    /* 主要 CTA（桌機 / 左側內部使用） */
     .primary-wide{
       width:100%;
       margin-top:12px;
@@ -291,7 +315,7 @@
       padding:12px;
     }
 
-    /* ✅ Image aspect (直式) */
+    /* ✅ Image aspect: 450x700 ~ 9:16 */
     .preview-inner{
       width:100%;
       max-width:450px;
@@ -397,100 +421,131 @@
     }
     .debug.on{display:block}
 
-    /* Outfit summary */
-    .outfit-summary {
-      margin-top: 14px;
-      background: #fafafa;
-      border: 1px solid #e5e7eb;
-    }
-    .summary-head {
-      display: flex;
-      align-items: center;
-      gap: 8px;
-      font-weight: 800;
-      font-size: 14px;
-      margin-bottom: 6px;
-    }
-    .summary-icon { font-size: 18px; }
-    .summary-title { color: #111827; }
-    .summary-text {
-      font-size: 14px;
-      line-height: 1.6;
-      color: #374151;
-    }
-
-    /* ✅ 桌機：左欄按鈕固定在欄底 + 左欄內容可捲動 */
+    /* ------------------------
+       ✅ Desktop refinements
+    ------------------------ */
     @media (min-width: 1024px) {
       .layout { overflow: visible; }
 
-      .left-panel{
+      .left-panel {
         position: sticky;
-        top: 18px;
+        top: 24px;
         align-self: flex-start;
-        max-height: calc(100vh - 24px);
-        display:flex;
-        flex-direction:column;
-        overflow:hidden;            /* 重要 */
+        max-height: calc(100vh - 32px);
+        overflow-y: auto;
         padding-right: 6px;
-      }
-      .left-panel.card{ padding:14px; }
-      .left-panel .row{ margin-bottom:8px; }
-      .left-panel .form-grid{ gap: 8px 10px; }
-      .left-panel label{ margin-bottom:4px; font-size:12px; }
-      .left-panel input, .left-panel select{ padding:8px 10px; }
-      .left-panel .toggle-list{ margin-top:8px; }
-      .left-panel .toggle-item{ padding:10px 10px; }
 
-      .left-panel-scroll{
-        overflow-y:auto;
-        flex: 1 1 auto;
-        padding-right: 6px;
+        /* 避免 sticky/fixed z-index 交錯 */
+        overflow-x: visible;
       }
 
-      .left-panel-footer{
+      .left-panel.card { padding: 14px; }
+      .left-panel .row { margin-bottom: 8px; }
+      .left-panel .form-grid { gap: 8px 10px; }
+      .left-panel label { margin-bottom: 4px; font-size: 12px; }
+      .left-panel input, .left-panel select { padding: 8px 10px; }
+      .left-panel .toggle-list { margin-top: 8px; }
+      .left-panel .toggle-item { padding: 10px 10px; }
+
+      /* ✅ Desktop: left panel 內部 bottom sticky（不會被吃掉） */
+      .left-panel .sticky-generate {
         position: sticky;
         bottom: 0;
-        z-index: 20;
+        z-index: 5;
         padding-top: 10px;
-        padding-bottom: 10px;
         background: linear-gradient(to top, #fff 70%, rgba(255,255,255,0));
       }
-      .left-panel-footer .primary-wide{ margin-top:0; }
+
+      .preview-inner { max-height: 70vh; }
     }
 
-    /* ---------- Mobile thumb-friendly tweaks ---------- */
+    /* ------------------------
+       ✅ Mobile: compact header + bottom action bar (only one)
+    ------------------------ */
     @media (max-width: 640px){
-      .page{ padding:14px 12px calc(96px + env(safe-area-inset-bottom)); }
-      header{ padding:8px 6px 10px; }
-      .card{ padding:14px; border-radius:16px; }
-      .toggle-item{ padding:12px 10px; }
-      .style-card{ min-height:72px; padding:12px; }
-      .products{ padding:10px; }
-      .product-item{ padding:10px; }
+      /* ✅ header 太高：改成更緊湊 */
+      header{
+        padding: 10px 6px 8px;
+        align-items: center;
+      }
+      .brand{ gap:10px; align-items:center; }
+      .dot{ width:22px; height:22px; box-shadow:0 8px 16px rgba(0,0,0,.18); }
+      .title{
+        font-size:16px;
+        line-height:1.15;
+        max-width: 55vw;
+      }
+      .subtitle{
+        font-size:11px;
+        margin-top:2px;
+        line-height:1.25;
+        max-width: 55vw;
+      }
 
-      /* ✅ 手機底部固定按鈕（避免被其他元件遮住） */
-      .left-panel-footer{
+      .top-right{
+        gap:10px;
+        align-items:center;
+      }
+      .auth-box{
+        min-width: 0;
+        font-size:12px;
+        line-height:1.35;
+        margin-top:0;
+      }
+      .btn{
+        padding:8px 12px;
+        box-shadow:none;
+        border-radius:12px;
+      }
+      .btn.secondary{ border-radius:12px; }
+
+      /* ✅ Mobile: page bottom needs space for action bar */
+      .page{
+        padding: 14px 12px calc(120px + env(safe-area-inset-bottom)) !important;
+      }
+
+      .layout{ gap:12px; }
+
+      /* ✅ 手機不要 left-panel sticky + scroll，避免層級干擾 */
+      .left-panel{
+        position: static !important;
+        max-height: none !important;
+        overflow: visible !important;
+      }
+
+      /* ✅ 手機：不要用 left-panel 裡的 sticky-generate（會跟底部 action bar 打架） */
+      .left-panel .sticky-generate{ display:none !important; }
+
+      /* ✅ Mobile bottom action bar (唯一的固定按鈕容器) */
+      .mobile-actionbar{
         position: fixed;
         left: 12px;
         right: 12px;
-        bottom: calc(14px + env(safe-area-inset-bottom));
-        z-index: 9999; /* 重要：避免被其他元件遮住 */
-        padding: 0;
-        background: transparent;
-      }
-      .left-panel-footer .primary-wide{
-        height: 52px;
-        font-size: 16px;
-        border-radius: 16px;
+        bottom: calc(12px + env(safe-area-inset-bottom));
+        z-index: 9999;
+        background: rgba(245,245,247,0.72);
+        backdrop-filter: blur(10px);
+        -webkit-backdrop-filter: blur(10px);
+        border: 1px solid rgba(229,231,235,0.7);
+        border-radius: 18px;
+        padding: 10px;
         box-shadow: 0 18px 38px rgba(0,0,0,.18);
       }
 
-      /* 左欄內容不要被固定按鈕蓋到 */
-      .left-panel-scroll{
-        padding-bottom: calc(88px + env(safe-area-inset-bottom));
+      .mobile-actionbar .primary-wide{
+        margin-top: 0;
+        width: 100%;
+        height: 52px;
+        font-size: 16px;
+        border-radius: 14px;
       }
+
+      /* ✅ 避免右側 shimmer/卡片蓋住 action bar（用 z-index 拉開） */
+      .card, .preview-wrap, .products, .debug { position: relative; z-index: 1; }
+      .mobile-actionbar { z-index: 9999; }
     }
 
+    /* 小螢幕微調 */
     @media (max-width: 768px) {
       .card { padding: 18px 16px; }
       .section-title { margin-top: 18px; }
@@ -506,7 +561,7 @@
         <div class="dot"></div>
         <div>
           <div class="title">Outfit Studio · Body Test</div>
-          <div class="subtitle">流程：Spec（扣點）→ Image → Products。右上可開 Debug。</div>
+          <div class="subtitle">Spec（扣點）→ Image → Products。右上可開 Debug。</div>
         </div>
       </div>
 
@@ -524,166 +579,165 @@
     <main class="layout">
       <!-- LEFT -->
       <section class="card left-panel" id="left-panel">
-        <div class="left-panel-scroll">
-          <div class="row">
-            <h3 style="margin:0">穿搭條件</h3>
-            <span class="pill">扣 1 點 / 次</span>
+        <div class="row">
+          <h3 style="margin:0">穿搭條件</h3>
+          <span class="pill">扣 1 點 / 次</span>
+        </div>
+
+        <!-- ✅ 分段 1：基本資料 -->
+        <div class="section-block">
+          <div class="section-head">
+            <div class="stitle">① 基本資料 <span class="tag">拖拉更快</span></div>
           </div>
 
-          <!-- ✅ 分段 1：基本資料 -->
-          <div class="section-block">
-            <div class="section-head">
-              <div class="stitle">① 基本資料 <span class="tag">拖拉更快</span></div>
-            </div>
-
-            <div class="form-grid">
-              <div>
-                <label>性別</label>
-                <select id="gender">
-                  <option value="female">女性</option>
-                  <option value="male">男性</option>
-                  <option value="neutral">中性</option>
-                </select>
-              </div>
-
-              <div class="slider-group">
-                <div class="slider-head">
-                  <div class="label">年齡</div>
-                  <div class="value-chip"><b id="age-val">25</b> 歲</div>
-                </div>
-                <input id="age" type="range" min="13" max="70" step="1" value="25" aria-label="年齡" />
-                <div class="range-sub"><span>13</span><span>70</span></div>
-              </div>
-
-              <div class="slider-group">
-                <div class="slider-head">
-                  <div class="label">身高</div>
-                  <div class="value-chip"><b id="height-val">165</b> cm</div>
-                </div>
-                <input id="height" type="range" min="140" max="200" step="1" value="165" aria-label="身高" />
-                <div class="range-sub"><span>140</span><span>200</span></div>
-              </div>
-
-              <div class="slider-group">
-                <div class="slider-head">
-                  <div class="label">體重</div>
-                  <div class="value-chip"><b id="weight-val">55</b> kg</div>
-                </div>
-                <input id="weight" type="range" min="35" max="120" step="1" value="55" aria-label="體重" />
-                <div class="range-sub"><span>35</span><span>120</span></div>
-              </div>
-
-              <div class="slider-group" style="grid-column:1/-1">
-                <div class="slider-head">
-                  <div class="label">溫度</div>
-                  <div class="value-chip"><b id="temp-val">22</b> °C</div>
-                </div>
-                <input id="temp" type="range" min="0" max="35" step="1" value="22" aria-label="溫度" />
-                <div class="range-sub"><span>0</span><span>35</span></div>
-              </div>
-            </div>
-          </div>
-
-          <!-- ✅ 分段 2：風格（卡片） -->
-          <div class="section-block">
-            <div class="section-head">
-              <div class="stitle">② 風格選擇 <span class="tag">點一下就好</span></div>
-            </div>
-
-            <div class="style-grid" id="style-grid">
-              <div class="style-card selected" data-style="casual">
-                <div class="chip">Casual</div>
-                <div class="name">休閒</div>
-                <div class="desc">舒服、日常、好搭配</div>
-              </div>
-              <div class="style-card" data-style="minimal">
-                <div class="chip">Minimal</div>
-                <div class="name">極簡</div>
-                <div class="desc">乾淨俐落、低彩度</div>
-              </div>
-              <div class="style-card" data-style="street">
-                <div class="chip">Street</div>
-                <div class="name">街頭</div>
-                <div class="desc">層次、比例、個性</div>
-              </div>
-              <div class="style-card" data-style="sporty">
-                <div class="chip">Sporty</div>
-                <div class="name">運動</div>
-                <div class="desc">機能、輕鬆、好活動</div>
-              </div>
-              <div class="style-card" data-style="smart" style="grid-column:1/-1">
-                <div class="chip">Smart</div>
-                <div class="name">Smart Casual</div>
-                <div class="desc">正式一點但不拘謹</div>
-              </div>
-            </div>
-
-            <div style="margin-top:10px">
-              <label>風格變體（品牌 / 名人）</label>
-              <select id="styleVariant">
-                <option value="">（不使用變體）</option>
-                <optgroup label="品牌">
-                  <option value="brand-uniqlo">UNIQLO（日系基本）</option>
-                  <option value="brand-muji">MUJI（生活極簡）</option>
-                  <option value="brand-cos">COS（結構極簡）</option>
-                  <option value="brand-nike-tech">Nike Tech（機能運動）</option>
-                  <option value="brand-ader-error">Ader Error（韓系街頭）</option>
-                </optgroup>
-                <optgroup label="名人（風格靈感，不模仿臉）">
-                  <option value="celeb-iu-casual">IU（韓系清新）</option>
-                  <option value="celeb-jennie-minimal">Jennie（極簡辣）</option>
-                  <option value="celeb-gd-street">G-Dragon（街頭層次）</option>
-                  <option value="celeb-lisa-sporty">Lisa（舞者運動）</option>
-                </optgroup>
+          <div class="form-grid">
+            <div>
+              <label>性別</label>
+              <select id="gender">
+                <option value="female">女性</option>
+                <option value="male">男性</option>
+                <option value="neutral">中性</option>
               </select>
             </div>
 
-            <input type="hidden" id="style" value="casual" />
-          </div>
-
-          <!-- ✅ 分段 3：配件 -->
-          <div class="section-block" style="margin-bottom:0">
-            <div class="section-head">
-              <div class="stitle">③ 配件 <span class="tag">選填</span></div>
+            <div class="slider-group">
+              <div class="slider-head">
+                <div class="label">年齡</div>
+                <div class="value-chip"><b id="age-val">25</b> 歲</div>
+              </div>
+              <input id="age" type="range" min="13" max="70" step="1" value="25" aria-label="年齡" />
+              <div class="range-sub"><span>13</span><span>70</span></div>
             </div>
 
-            <div class="toggle-list" style="margin-top:0">
-              <div class="toggle-item">
-                <div class="left">
-                  <div class="name">包包</div>
-                  <div class="desc">需要 bag 才會出現在 Spec + 商品</div>
-                </div>
-                <div class="switch" id="sw-bag" role="switch" aria-checked="false"></div>
+            <div class="slider-group">
+              <div class="slider-head">
+                <div class="label">身高</div>
+                <div class="value-chip"><b id="height-val">165</b> cm</div>
               </div>
-              <div class="toggle-item">
-                <div class="left">
-                  <div class="name">帽子</div>
-                  <div class="desc">需要 hat 才會出現在 Spec + 商品</div>
-                </div>
-                <div class="switch" id="sw-hat" role="switch" aria-checked="false"></div>
+              <input id="height" type="range" min="140" max="200" step="1" value="165" aria-label="身高" />
+              <div class="range-sub"><span>140</span><span>200</span></div>
+            </div>
+
+            <div class="slider-group">
+              <div class="slider-head">
+                <div class="label">體重</div>
+                <div class="value-chip"><b id="weight-val">55</b> kg</div>
               </div>
-              <div class="toggle-item">
-                <div class="left">
-                  <div class="name">外套</div>
-                  <div class="desc">勾選或溫度 ≤ 20°C 時會生成 outer</div>
-                </div>
-                <div class="switch" id="sw-coat" role="switch" aria-checked="false"></div>
+              <input id="weight" type="range" min="35" max="120" step="1" value="55" aria-label="體重" />
+              <div class="range-sub"><span>35</span><span>120</span></div>
+            </div>
+
+            <div class="slider-group" style="grid-column:1/-1">
+              <div class="slider-head">
+                <div class="label">溫度</div>
+                <div class="value-chip"><b id="temp-val">22</b> °C</div>
               </div>
+              <input id="temp" type="range" min="0" max="35" step="1" value="22" aria-label="溫度" />
+              <div class="range-sub"><span>0</span><span>35</span></div>
             </div>
           </div>
-
-          <div class="hint" id="form-hint">提示：需先登入（Google）才能呼叫扣點的 Spec API。</div>
-          <div class="hint error" id="error-hint" style="display:none;"></div>
         </div>
 
-        <!-- ✅ 固定底部（桌機在左欄底、手機固定在螢幕底） -->
-        <div class="left-panel-footer">
+        <!-- ✅ 分段 2：風格（卡片） -->
+        <div class="section-block">
+          <div class="section-head">
+            <div class="stitle">② 風格選擇 <span class="tag">點一下就好</span></div>
+          </div>
+
+          <div class="style-grid" id="style-grid">
+            <div class="style-card selected" data-style="casual">
+              <div class="chip">Casual</div>
+              <div class="name">休閒</div>
+              <div class="desc">舒服、日常、好搭配</div>
+            </div>
+            <div class="style-card" data-style="minimal">
+              <div class="chip">Minimal</div>
+              <div class="name">極簡</div>
+              <div class="desc">乾淨俐落、低彩度</div>
+            </div>
+            <div class="style-card" data-style="street">
+              <div class="chip">Street</div>
+              <div class="name">街頭</div>
+              <div class="desc">層次、比例、個性</div>
+            </div>
+            <div class="style-card" data-style="sporty">
+              <div class="chip">Sporty</div>
+              <div class="name">運動</div>
+              <div class="desc">機能、輕鬆、好活動</div>
+            </div>
+            <div class="style-card" data-style="smart" style="grid-column:1/-1">
+              <div class="chip">Smart</div>
+              <div class="name">Smart Casual</div>
+              <div class="desc">正式一點但不拘謹</div>
+            </div>
+          </div>
+
+          <div style="margin-top:10px">
+            <label>風格變體（品牌 / 名人）</label>
+            <select id="styleVariant">
+              <option value="">（不使用變體）</option>
+              <optgroup label="品牌">
+                <option value="brand-uniqlo">UNIQLO（日系基本）</option>
+                <option value="brand-muji">MUJI（生活極簡）</option>
+                <option value="brand-cos">COS（結構極簡）</option>
+                <option value="brand-nike-tech">Nike Tech（機能運動）</option>
+                <option value="brand-ader-error">Ader Error（韓系街頭）</option>
+              </optgroup>
+              <optgroup label="名人（風格靈感，不模仿臉）">
+                <option value="celeb-iu-casual">IU（韓系清新）</option>
+                <option value="celeb-jennie-minimal">Jennie（極簡辣）</option>
+                <option value="celeb-gd-street">G-Dragon（街頭層次）</option>
+                <option value="celeb-lisa-sporty">Lisa（舞者運動）</option>
+              </optgroup>
+            </select>
+          </div>
+
+          <!-- hidden style value for JS -->
+          <input type="hidden" id="style" value="casual" />
+        </div>
+
+        <!-- ✅ 分段 3：配件 -->
+        <div class="section-block" style="margin-bottom:0">
+          <div class="section-head">
+            <div class="stitle">③ 配件 <span class="tag">選填</span></div>
+          </div>
+
+          <div class="toggle-list" style="margin-top:0">
+            <div class="toggle-item">
+              <div class="left">
+                <div class="name">包包</div>
+                <div class="desc">需要 bag 才會出現在 Spec + 商品</div>
+              </div>
+              <div class="switch" id="sw-bag" role="switch" aria-checked="false"></div>
+            </div>
+            <div class="toggle-item">
+              <div class="left">
+                <div class="name">帽子</div>
+                <div class="desc">需要 hat 才會出現在 Spec + 商品</div>
+              </div>
+              <div class="switch" id="sw-hat" role="switch" aria-checked="false"></div>
+            </div>
+            <div class="toggle-item">
+              <div class="left">
+                <div class="name">外套</div>
+                <div class="desc">勾選或溫度 ≤ 20°C 時會生成 outer</div>
+              </div>
+              <div class="switch" id="sw-coat" role="switch" aria-checked="false"></div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Desktop: sticky bottom inside left panel -->
+        <div class="sticky-generate">
           <button id="go-btn" class="primary-wide">產生穿搭圖</button>
         </div>
+
+        <div class="hint" id="form-hint">提示：需先登入（Google）才能呼叫扣點的 Spec API。</div>
+        <div class="hint error" id="error-hint" style="display:none;"></div>
       </section>
 
       <!-- RIGHT -->
-      <section class="card">
+      <section class="card" id="right-panel">
         <div class="right-head">
           <h3>AI 穿搭示意圖 & 類似商品</h3>
           <div class="debug-toggle" id="debug-toggle">
@@ -696,8 +750,7 @@
           <span class="pill">AI 穿搭示意圖</span>
         </div>
 
-        <!-- ✅ anchor：生成後自動滑到這裡 -->
-        <div class="preview-wrap" id="anchor-preview">
+        <div class="preview-wrap" id="preview-wrap">
           <div class="preview-inner" id="preview-box">
             <div id="img-skeleton" style="display:none;width:100%;height:100%;">
               <div class="img-skel-wrap">
@@ -732,8 +785,6 @@
         <div class="section-title">
           <span class="pill">類似商品（Google Shopping）</span>
         </div>
-
-        <!-- ✅ anchor：完成後自動滑到商品區 -->
         <div class="products" id="products">
           <div class="placeholder" style="padding:16px;">尚未產生商品</div>
         </div>
@@ -743,27 +794,19 @@
     </main>
   </div>
 
+  <!-- ✅ Mobile bottom action bar (only) -->
+  <div class="mobile-actionbar" id="mobile-actionbar" style="display:none;">
+    <button id="go-btn-mobile" class="primary-wide">產生穿搭圖</button>
+  </div>
+
   <!-- ✅ Supabase JS SDK (v2) -->
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 
   <script>
-    /***********************
-     * Utility: scroll helpers
-     ***********************/
-    function isMobile() {
-      return window.matchMedia && window.matchMedia("(max-width: 640px)").matches;
-    }
-
-    function scrollToEl(id, behavior="smooth", block="start") {
-      const el = document.getElementById(id);
-      if (!el) return;
-      el.scrollIntoView({ behavior, block });
-    }
-
     function setFormDisabled(disabled) {
-      const panel = document.getElementById("left-panel");
-      if (!panel) return;
-      panel.classList.toggle("form-disabled", disabled);
+      const form = document.getElementById("left-panel");
+      if (!form) return;
+      form.classList.toggle("form-disabled", disabled);
     }
 
     const GENERATE_STEPS = {
@@ -778,22 +821,42 @@
       const cfg = GENERATE_STEPS[step] || GENERATE_STEPS.idle;
 
       const btn = document.getElementById("go-btn");
+      const btnM = document.getElementById("go-btn-mobile");
       if (btn) btn.textContent = cfg.btn;
+      if (btnM) btnM.textContent = cfg.btn;
 
-      const statusText = document.getElementById("status-text");
-      if (statusText) statusText.textContent = cfg.text;
+      const sb = document.getElementById("status-text");
+      if (sb) sb.textContent = cfg.text;
     }
 
     /***********************
-     * 0) CONFIG (請改這裡)
+     * 0) CONFIG
      ***********************/
     const SUPABASE_PROJECT_REF = "auiwcsolpvufxxyhnvaf";
     const SUPABASE_URL = `https://${SUPABASE_PROJECT_REF}.supabase.co`;
 
-    // ✅ Supabase Dashboard → Settings → API → anon public key
     const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImF1aXdjc29scHZ1Znh4eWhudmFmIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjQ5MzUwMDEsImV4cCI6MjA4MDUxMTAwMX0.KeD8JXdHs5Iu7-wf0F0GpUPp-_y5X5ha6mwBcR5eYDA";
-
     const REDIRECT_TO = "https://simon-one-ochre.vercel.app/body-test.html";
+
+    /***********************
+     * Mobile action bar toggle
+     ***********************/
+    function isMobile() { return window.matchMedia("(max-width: 640px)").matches; }
+
+    function syncActionBar() {
+      const bar = document.getElementById("mobile-actionbar");
+      if (!bar) return;
+      bar.style.display = isMobile() ? "block" : "none";
+    }
+
+    /***********************
+     * Auto scroll (mobile): jump to preview
+     ***********************/
+    function scrollToPreview() {
+      const el = document.getElementById("preview-wrap") || document.getElementById("right-panel");
+      if (!el) return;
+      el.scrollIntoView({ behavior: "smooth", block: "start" });
+    }
 
     /***********************
      * 0.5) Slider bindings
@@ -832,12 +895,7 @@
     function clearAccessToken(){ localStorage.removeItem(AUTH_KEY); }
 
     const osSupabase = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
-      auth: {
-        persistSession: true,
-        autoRefreshToken: true,
-        detectSessionInUrl: true,
-        flowType: "pkce"
-      }
+      auth: { persistSession: true, autoRefreshToken: true, detectSessionInUrl: true, flowType: "pkce" }
     });
 
     async function apiMe() {
@@ -852,13 +910,7 @@
     function renderOutfitSummary(summary) {
       const box = document.getElementById("outfit-summary");
       const text = document.getElementById("summary-text");
-      if (!box || !text) return;
-
-      if (!summary) {
-        box.style.display = "none";
-        text.textContent = "";
-        return;
-      }
+      if (!summary) { box.style.display = "none"; return; }
       text.textContent = summary;
       box.style.display = "block";
     }
@@ -887,16 +939,10 @@
 
     async function refreshAuthUI() {
       const token = getAccessToken();
-      if (!token) {
-        setAuthUI({ loggedIn:false, hint:"未登入" });
-        return;
-      }
+      if (!token) { setAuthUI({ loggedIn:false, hint:"未登入" }); return; }
 
       const me = await apiMe();
-      if (!me.ok) {
-        setAuthUI({ loggedIn:false, hint:"登入狀態異常（/api/me 失敗）" });
-        return;
-      }
+      if (!me.ok) { setAuthUI({ loggedIn:false, hint:"登入狀態異常（/api/me 失敗）" }); return; }
       setAuthUI({ loggedIn:true, email: me.user?.email, credits: me.credits_left, hint:"" });
     }
 
@@ -915,7 +961,6 @@
       if (location.hash || location.search) {
         history.replaceState(null, "", location.pathname);
       }
-
       return { ok:true, session };
     }
 
@@ -924,12 +969,10 @@
         alert("請先在 body-test.html 填入 SUPABASE_ANON_KEY（Supabase → Settings → API → anon public key）");
         return;
       }
-
       const { error } = await osSupabase.auth.signInWithOAuth({
         provider: "google",
         options: { redirectTo: REDIRECT_TO }
       });
-
       if (error) {
         console.error(error);
         setAuthUI({ loggedIn:false, hint:"登入啟動失敗：" + error.message });
@@ -1129,6 +1172,7 @@
       }
 
       const r = await fetch(url, { method:"POST", headers, body: JSON.stringify(body) });
+
       const text = await r.text();
       let j = null;
       try { j = JSON.parse(text); } catch { j = { raw: text }; }
@@ -1149,91 +1193,95 @@
       showImageSkeleton(true);
       renderProductsSkeleton(4);
 
-      // ✅ 先滑到右邊示意圖區（桌機也適用）
-      scrollToEl("anchor-preview", "smooth", "start");
-
-      setFormDisabled(true);
       setGenerateStep("spec");
       setProgress(0);
       setLoadingUI(true);
       setStatus("開始", null, true);
 
-      const ensured = await ensureTokenFromSession();
-      if (!ensured.ok) {
-        setAuthUI({ loggedIn:false, hint:"未登入（請按 Google 登入）" });
-        throw new Error("未登入或 session 不存在");
+      // ✅ mobile: click後直接帶到生成圖區（避免新手不知道往下滑）
+      if (isMobile()) scrollToPreview();
+
+      // ✅ 生成中鎖表單
+      setFormDisabled(true);
+
+      try {
+        const ensured = await ensureTokenFromSession();
+        if (!ensured.ok) {
+          setAuthUI({ loggedIn:false, hint:"未登入（請按 Google 登入）" });
+          throw new Error("未登入或 session 不存在");
+        }
+
+        const me = await apiMe();
+        if (!me.ok) {
+          setAuthUI({ loggedIn:false, hint:"登入狀態異常（/api/me 失敗）" });
+          throw new Error("登入狀態異常（/api/me 失敗）");
+        }
+
+        const payload = {
+          gender: document.getElementById("gender").value,
+          age: Number(document.getElementById("age").value),
+          height: Number(document.getElementById("height").value),
+          weight: Number(document.getElementById("weight").value),
+          style: document.getElementById("style").value,
+          styleVariant: document.getElementById("styleVariant").value || "",
+          temp: Number(document.getElementById("temp").value),
+          withBag: !!getBag(),
+          withHat: !!getHat(),
+          withCoat: !!getCoat()
+        };
+
+        // 1) Spec
+        setStatus("Step 1/3：產生 Outfit Spec（扣點）", null, true);
+        setProgress(20);
+        const spec = await postJson("/api/generate-outfit-spec", payload, true);
+        setDebug({ step:"spec", spec });
+        renderOutfitSummary(spec.summary);
+        setGenerateStep("image");
+
+        if (typeof spec.credits_left !== "undefined") {
+          setAuthUI({ loggedIn:true, email: me.user?.email, credits: spec.credits_left });
+        } else {
+          await refreshAuthUI();
+        }
+
+        // 2) Image
+        setStatus("Step 2/3：產生穿搭示意圖", null, true);
+        setProgress(55);
+        const imgResp = await postJson("/api/generate-image", {
+          ...payload,
+          outfitSpec: spec,
+          aspectRatio: "9:16",
+          imageSize: "1K"
+        }, true);
+
+        if (!imgResp.image) throw new Error("Image API 沒回傳 image");
+
+        setImageBase64(imgResp.image, imgResp.mime || "image/png");
+        setGenerateStep("products");
+        showImageSkeleton(false);
+        setDebug({ step:"image", imgResp, spec });
+
+        // 3) Products
+        setStatus("Step 3/3：搜尋類似商品", null, true);
+        setProgress(80);
+        const prodResp = await postJson("/api/search-products", {
+          items: spec.items || [],
+          locale: "tw",
+          gender: payload.gender
+        }, true);
+
+        const list = prodResp.products || prodResp.items || prodResp.shopping_results || [];
+        renderProducts(list);
+
+        setGenerateStep("done");
+        setDebug({ step:"products", prodResp, spec });
+
+        setProgress(100);
+        setStatus("完成 ✅", true, false);
+      } finally {
+        setLoadingUI(false);
+        setFormDisabled(false);
       }
-
-      const me = await apiMe();
-      if (!me.ok) {
-        setAuthUI({ loggedIn:false, hint:"登入狀態異常（/api/me 失敗）" });
-        throw new Error("登入狀態異常（/api/me 失敗）");
-      }
-
-      const payload = {
-        gender: document.getElementById("gender").value,
-        age: Number(document.getElementById("age").value),
-        height: Number(document.getElementById("height").value),
-        weight: Number(document.getElementById("weight").value),
-        style: document.getElementById("style").value,
-        styleVariant: document.getElementById("styleVariant").value || "",
-        temp: Number(document.getElementById("temp").value),
-        withBag: !!getBag(),
-        withHat: !!getHat(),
-        withCoat: !!getCoat()
-      };
-
-      // 1) Spec
-      setStatus("Step 1/3：產生 Outfit Spec（扣點）", null, true);
-      setProgress(20);
-      const spec = await postJson("/api/generate-outfit-spec", payload, true);
-      setDebug({ step:"spec", spec });
-      renderOutfitSummary(spec.summary);
-      setGenerateStep("image");
-
-      if (typeof spec.credits_left !== "undefined") {
-        setAuthUI({ loggedIn:true, email: me.user?.email, credits: spec.credits_left });
-      } else {
-        await refreshAuthUI();
-      }
-
-      // 2) Image
-      setStatus("Step 2/3：產生穿搭示意圖", null, true);
-      setProgress(55);
-      const imgResp = await postJson("/api/generate-image", {
-        ...payload,
-        outfitSpec: spec,
-        aspectRatio: "9:16",
-        imageSize: "1K"
-      }, true);
-
-      if (!imgResp.image) throw new Error("Image API 沒回傳 image");
-      setImageBase64(imgResp.image, imgResp.mime || "image/png");
-      showImageSkeleton(false);
-      setDebug({ step:"image", imgResp, spec });
-
-      setGenerateStep("products");
-
-      // 3) Products
-      setStatus("Step 3/3：搜尋類似商品", null, true);
-      setProgress(80);
-
-      const prodResp = await postJson("/api/search-products", {
-        items: spec.items || [],
-        locale: "tw",
-        gender: payload.gender
-      }, true);
-
-      const list = prodResp.products || prodResp.items || prodResp.shopping_results || [];
-      renderProducts(list);
-      setDebug({ step:"products", prodResp, spec });
-
-      setGenerateStep("done");
-      setProgress(100);
-      setStatus("完成 ✅", true, false);
-
-      // ✅ 完成後自動滑到商品區
-      scrollToEl("products", "smooth", "start");
     }
 
     /***********************
@@ -1246,12 +1294,20 @@
       bindRange("temp", "temp-val");
       bindStyleCards();
 
+      // ✅ action bar
+      syncActionBar();
+      window.addEventListener("resize", syncActionBar);
+
       document.getElementById("login-btn").addEventListener("click", loginGoogle);
       document.getElementById("logout-btn").addEventListener("click", logout);
 
       const goBtn = document.getElementById("go-btn");
-      goBtn.addEventListener("click", async () => {
-        goBtn.disabled = true;
+      const goBtnMobile = document.getElementById("go-btn-mobile");
+
+      async function onClickGenerate(btnEl){
+        btnEl.disabled = true;
+        const oldText = btnEl.textContent;
+        btnEl.textContent = "生成中…";
         try {
           await generateAll();
         } catch (e) {
@@ -1261,16 +1317,13 @@
           setStatus("失敗 ❌", false, false);
           showError(String(e.message || e));
         } finally {
-          setLoadingUI(false);
-          setFormDisabled(false);
-          goBtn.disabled = false;
-          // 若失敗，回到示意圖區讓使用者看到錯誤
-          // （成功情況已滑到 products）
-          if (document.getElementById("error-hint")?.style.display === "block") {
-            scrollToEl("anchor-preview", "smooth", "start");
-          }
+          btnEl.textContent = oldText;
+          btnEl.disabled = false;
         }
-      });
+      }
+
+      goBtn.addEventListener("click", () => onClickGenerate(goBtn));
+      goBtnMobile.addEventListener("click", () => onClickGenerate(goBtnMobile));
 
       document.getElementById("debug-box").classList.toggle("on", getDebug());
 
@@ -1283,11 +1336,10 @@
         await refreshAuthUI();
       });
 
-      setGenerateStep("idle");
       setProgress(0);
       setStatus("等待操作", null, false);
       setLoadingUI(false);
-      setFormDisabled(false);
+      setGenerateStep("idle");
     })();
   </script>
 </body>
