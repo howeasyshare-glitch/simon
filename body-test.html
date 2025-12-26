@@ -21,9 +21,6 @@
       --r-lg:18px;
       --r-md:14px;
       --r-sm:10px;
-
-      /* Mobile safe area */
-      --safe-b: env(safe-area-inset-bottom, 0px);
     }
     *{box-sizing:border-box}
     body{
@@ -50,8 +47,10 @@
     }
     @keyframes skelmove { 0%{transform:translateX(-120%)} 100%{transform:translateX(120%)} }
 
-    .form-disabled { pointer-events:none; opacity:.6; }
-
+    .form-disabled {
+      pointer-events: none;
+      opacity: 0.6;
+    }
     .img-skel-wrap{
       width:100%;
       height:100%;
@@ -73,13 +72,14 @@
       display:grid;
       grid-template-columns:60px 1fr;
       gap:10px;
+      margin: 0;
     }
     .products-skel .thumb{ width:60px; height:60px; border-radius:12px }
     .products-skel .t1{ height:14px; border-radius:999px; width:75% }
     .products-skel .t2{ height:12px; border-radius:999px; width:45%; margin-top:8px }
 
+    /* ---------- Layout ---------- */
     .page{max-width:1280px;margin:0 auto;padding:20px 14px 40px}
-
     header{
       display:flex;align-items:flex-start;justify-content:space-between;
       gap:12px;padding:10px 10px 16px;
@@ -89,7 +89,6 @@
       width:28px;height:28px;border-radius:999px;
       background: linear-gradient(135deg, #111827, #111827);
       box-shadow:0 10px 20px rgba(0,0,0,.2);
-      flex:0 0 auto;
     }
     .title{font-size:20px;font-weight:800;letter-spacing:.02em}
     .subtitle{color:var(--muted);font-size:13px;margin-top:4px}
@@ -198,12 +197,7 @@
     }
     .value-chip b{color:#111827;font-weight:900}
     input[type="range"]{
-      width:100%;
-      padding:0;
-      border:none;
-      background:transparent;
-      accent-color:#111827;
-      height:26px;
+      width:100%;padding:0;border:none;background:transparent;accent-color:#111827;height:26px;
     }
     .range-sub{display:flex;justify-content:space-between;font-size:11px;color:var(--muted);margin-top:4px}
 
@@ -297,7 +291,7 @@
       padding:12px;
     }
 
-    /* ✅ Image aspect: 9:16 (450x800-ish) */
+    /* ✅ Image aspect (直式) */
     .preview-inner{
       width:100%;
       max-width:450px;
@@ -327,44 +321,9 @@
       padding:12px;background:#fff;
       min-height:160px;
     }
-
-    /* ✅ products grouped */
-    .slot-group{
-      border:1px solid #f1f2f4;
-      background:#fafafa;
-      border-radius:16px;
-      padding:10px;
-      margin-bottom:12px;
-    }
-    .slot-group:last-child{margin-bottom:0}
-    .slot-head{
-      display:flex;
-      align-items:center;
-      justify-content:space-between;
-      gap:10px;
-      margin-bottom:8px;
-    }
-    .slot-title{
-      font-weight:900;
-      color:#111827;
-      font-size:14px;
-      display:flex;
-      align-items:center;
-      gap:8px;
-    }
-    .slot-count{
-      font-size:12px;
-      color:var(--muted);
-      border:1px solid #eef0f3;
-      background:#fff;
-      padding:4px 8px;
-      border-radius:999px;
-      white-space:nowrap;
-    }
-
     .product-item{
       display:grid;grid-template-columns:60px 1fr;gap:10px;padding:10px;border-radius:14px;
-      background:#fff;border:1px solid #f1f2f4;margin-bottom:10px;
+      background:#fafafa;border:1px solid #f1f2f4;margin-bottom:10px;
     }
     .product-item:last-child{margin-bottom:0}
     .thumb{
@@ -438,7 +397,7 @@
     }
     .debug.on{display:block}
 
-    /* ✅ Outfit summary */
+    /* Outfit summary */
     .outfit-summary {
       margin-top: 14px;
       background: #fafafa;
@@ -460,122 +419,82 @@
       color: #374151;
     }
 
-    /* ✅ Action / retry bar on right */
-    .action-row{
-      display:flex;
-      gap:10px;
-      align-items:center;
-      margin-top:10px;
-      flex-wrap:wrap;
-    }
-    .mini-btn{
-      border:1px solid var(--line);
-      background:#fff;
-      color:#111827;
-      padding:9px 12px;
-      border-radius:999px;
-      cursor:pointer;
-      font-weight:900;
-      font-size:13px;
-    }
-    .mini-btn:disabled{opacity:.55; cursor:default}
-    .mini-btn.primary{
-      background:#111827;
-      color:#fff;
-      border-color:#111827;
-    }
-    .mini-btn.danger{
-      background:#fff;
-      color:#ef4444;
-      border-color:#fecaca;
-    }
-    .mini-hint{
-      font-size:12px;
-      color:var(--muted);
-    }
-
-    /* ---------- Desktop: left panel sticky + compact spacing ---------- */
+    /* ✅ 桌機：左欄按鈕固定在欄底 + 左欄內容可捲動 */
     @media (min-width: 1024px) {
       .layout { overflow: visible; }
-      .left-panel {
+
+      .left-panel{
         position: sticky;
         top: 18px;
         align-self: flex-start;
         max-height: calc(100vh - 24px);
-        overflow-y: auto;
+        display:flex;
+        flex-direction:column;
+        overflow:hidden;            /* 重要 */
         padding-right: 6px;
       }
-      .left-panel.card { padding: 14px; }
-      .left-panel .row { margin-bottom: 8px; }
-      .left-panel .form-grid { gap: 8px 10px; }
-      .left-panel label { margin-bottom: 4px; font-size: 12px; }
-      .left-panel input, .left-panel select { padding: 8px 10px; }
-      .left-panel .toggle-list { margin-top: 8px; }
-      .left-panel .toggle-item { padding: 10px 10px; }
+      .left-panel.card{ padding:14px; }
+      .left-panel .row{ margin-bottom:8px; }
+      .left-panel .form-grid{ gap: 8px 10px; }
+      .left-panel label{ margin-bottom:4px; font-size:12px; }
+      .left-panel input, .left-panel select{ padding:8px 10px; }
+      .left-panel .toggle-list{ margin-top:8px; }
+      .left-panel .toggle-item{ padding:10px 10px; }
 
-      .left-panel .sticky-generate {
+      .left-panel-scroll{
+        overflow-y:auto;
+        flex: 1 1 auto;
+        padding-right: 6px;
+      }
+
+      .left-panel-footer{
         position: sticky;
         bottom: 0;
+        z-index: 20;
         padding-top: 10px;
-        background: linear-gradient(to top, #fff 60%, rgba(255,255,255,0));
-        z-index: 5;
+        padding-bottom: 10px;
+        background: linear-gradient(to top, #fff 70%, rgba(255,255,255,0));
       }
-
-      .preview-inner { max-height: 70vh; }
+      .left-panel-footer .primary-wide{ margin-top:0; }
     }
 
-    /* ---------- Mobile thumb-friendly tweaks + fix header height + fixed action button ---------- */
+    /* ---------- Mobile thumb-friendly tweaks ---------- */
     @media (max-width: 640px){
-      .page{ padding:14px 12px calc(96px + var(--safe-b)); }
-      header{
-        padding:10px 6px 10px;
-        align-items:flex-start;
-      }
-      .dot{ width:24px; height:24px; }
-      .title{ font-size:18px; line-height:1.2; }
-      .subtitle{
-        font-size:12px;
-        line-height:1.35;
-        margin-top:6px;
-        max-width: 260px;
-      }
-      .auth-box{
-        min-width:auto;
-        font-size:12px;
-        line-height:1.35;
-      }
-      .btn{ padding:9px 12px; font-size:13px; }
-
+      .page{ padding:14px 12px calc(96px + env(safe-area-inset-bottom)); }
+      header{ padding:8px 6px 10px; }
       .card{ padding:14px; border-radius:16px; }
       .toggle-item{ padding:12px 10px; }
       .style-card{ min-height:72px; padding:12px; }
       .products{ padding:10px; }
       .product-item{ padding:10px; }
 
-      /* ✅ fixed bottom button (always visible + not covered) */
-      .mobile-actionbar{
+      /* ✅ 手機底部固定按鈕（避免被其他元件遮住） */
+      .left-panel-footer{
         position: fixed;
         left: 12px;
         right: 12px;
-        bottom: calc(14px + var(--safe-b));
-        z-index: 999;
-        pointer-events:none; /* allow button only */
+        bottom: calc(14px + env(safe-area-inset-bottom));
+        z-index: 9999; /* 重要：避免被其他元件遮住 */
+        padding: 0;
+        background: transparent;
       }
-      .mobile-actionbar .primary-wide{
-        width:100%;
-        height:54px;
-        font-size:16px;
-        border-radius:16px;
-        box-shadow:0 18px 38px rgba(0,0,0,.18);
-        pointer-events:auto;
+      .left-panel-footer .primary-wide{
+        height: 52px;
+        font-size: 16px;
+        border-radius: 16px;
+        box-shadow: 0 18px 38px rgba(0,0,0,.18);
       }
-      /* Keep left sticky-generate invisible on mobile, use fixed bar instead */
-      .left-panel .sticky-generate{ display:none; }
+
+      /* 左欄內容不要被固定按鈕蓋到 */
+      .left-panel-scroll{
+        padding-bottom: calc(88px + env(safe-area-inset-bottom));
+      }
     }
 
-    /* ---------- Utilities ---------- */
-    .anchor {
-      scroll-margin-top: 12px;
+    @media (max-width: 768px) {
+      .card { padding: 18px 16px; }
+      .section-title { margin-top: 18px; }
+      .product-item { padding: 12px; gap: 12px; }
     }
   </style>
 </head>
@@ -605,161 +524,162 @@
     <main class="layout">
       <!-- LEFT -->
       <section class="card left-panel" id="left-panel">
-        <div class="row">
-          <h3 style="margin:0">穿搭條件</h3>
-          <span class="pill">扣 1 點 / 次</span>
-        </div>
-
-        <!-- ✅ 分段 1：基本資料 -->
-        <div class="section-block">
-          <div class="section-head">
-            <div class="stitle">① 基本資料 <span class="tag">拖拉更快</span></div>
+        <div class="left-panel-scroll">
+          <div class="row">
+            <h3 style="margin:0">穿搭條件</h3>
+            <span class="pill">扣 1 點 / 次</span>
           </div>
 
-          <div class="form-grid">
-            <div>
-              <label>性別</label>
-              <select id="gender">
-                <option value="female">女性</option>
-                <option value="male">男性</option>
-                <option value="neutral">中性</option>
+          <!-- ✅ 分段 1：基本資料 -->
+          <div class="section-block">
+            <div class="section-head">
+              <div class="stitle">① 基本資料 <span class="tag">拖拉更快</span></div>
+            </div>
+
+            <div class="form-grid">
+              <div>
+                <label>性別</label>
+                <select id="gender">
+                  <option value="female">女性</option>
+                  <option value="male">男性</option>
+                  <option value="neutral">中性</option>
+                </select>
+              </div>
+
+              <div class="slider-group">
+                <div class="slider-head">
+                  <div class="label">年齡</div>
+                  <div class="value-chip"><b id="age-val">25</b> 歲</div>
+                </div>
+                <input id="age" type="range" min="13" max="70" step="1" value="25" aria-label="年齡" />
+                <div class="range-sub"><span>13</span><span>70</span></div>
+              </div>
+
+              <div class="slider-group">
+                <div class="slider-head">
+                  <div class="label">身高</div>
+                  <div class="value-chip"><b id="height-val">165</b> cm</div>
+                </div>
+                <input id="height" type="range" min="140" max="200" step="1" value="165" aria-label="身高" />
+                <div class="range-sub"><span>140</span><span>200</span></div>
+              </div>
+
+              <div class="slider-group">
+                <div class="slider-head">
+                  <div class="label">體重</div>
+                  <div class="value-chip"><b id="weight-val">55</b> kg</div>
+                </div>
+                <input id="weight" type="range" min="35" max="120" step="1" value="55" aria-label="體重" />
+                <div class="range-sub"><span>35</span><span>120</span></div>
+              </div>
+
+              <div class="slider-group" style="grid-column:1/-1">
+                <div class="slider-head">
+                  <div class="label">溫度</div>
+                  <div class="value-chip"><b id="temp-val">22</b> °C</div>
+                </div>
+                <input id="temp" type="range" min="0" max="35" step="1" value="22" aria-label="溫度" />
+                <div class="range-sub"><span>0</span><span>35</span></div>
+              </div>
+            </div>
+          </div>
+
+          <!-- ✅ 分段 2：風格（卡片） -->
+          <div class="section-block">
+            <div class="section-head">
+              <div class="stitle">② 風格選擇 <span class="tag">點一下就好</span></div>
+            </div>
+
+            <div class="style-grid" id="style-grid">
+              <div class="style-card selected" data-style="casual">
+                <div class="chip">Casual</div>
+                <div class="name">休閒</div>
+                <div class="desc">舒服、日常、好搭配</div>
+              </div>
+              <div class="style-card" data-style="minimal">
+                <div class="chip">Minimal</div>
+                <div class="name">極簡</div>
+                <div class="desc">乾淨俐落、低彩度</div>
+              </div>
+              <div class="style-card" data-style="street">
+                <div class="chip">Street</div>
+                <div class="name">街頭</div>
+                <div class="desc">層次、比例、個性</div>
+              </div>
+              <div class="style-card" data-style="sporty">
+                <div class="chip">Sporty</div>
+                <div class="name">運動</div>
+                <div class="desc">機能、輕鬆、好活動</div>
+              </div>
+              <div class="style-card" data-style="smart" style="grid-column:1/-1">
+                <div class="chip">Smart</div>
+                <div class="name">Smart Casual</div>
+                <div class="desc">正式一點但不拘謹</div>
+              </div>
+            </div>
+
+            <div style="margin-top:10px">
+              <label>風格變體（品牌 / 名人）</label>
+              <select id="styleVariant">
+                <option value="">（不使用變體）</option>
+                <optgroup label="品牌">
+                  <option value="brand-uniqlo">UNIQLO（日系基本）</option>
+                  <option value="brand-muji">MUJI（生活極簡）</option>
+                  <option value="brand-cos">COS（結構極簡）</option>
+                  <option value="brand-nike-tech">Nike Tech（機能運動）</option>
+                  <option value="brand-ader-error">Ader Error（韓系街頭）</option>
+                </optgroup>
+                <optgroup label="名人（風格靈感，不模仿臉）">
+                  <option value="celeb-iu-casual">IU（韓系清新）</option>
+                  <option value="celeb-jennie-minimal">Jennie（極簡辣）</option>
+                  <option value="celeb-gd-street">G-Dragon（街頭層次）</option>
+                  <option value="celeb-lisa-sporty">Lisa（舞者運動）</option>
+                </optgroup>
               </select>
             </div>
 
-            <div class="slider-group">
-              <div class="slider-head">
-                <div class="label">年齡</div>
-                <div class="value-chip"><b id="age-val">25</b> 歲</div>
-              </div>
-              <input id="age" type="range" min="13" max="70" step="1" value="25" aria-label="年齡" />
-              <div class="range-sub"><span>13</span><span>70</span></div>
+            <input type="hidden" id="style" value="casual" />
+          </div>
+
+          <!-- ✅ 分段 3：配件 -->
+          <div class="section-block" style="margin-bottom:0">
+            <div class="section-head">
+              <div class="stitle">③ 配件 <span class="tag">選填</span></div>
             </div>
 
-            <div class="slider-group">
-              <div class="slider-head">
-                <div class="label">身高</div>
-                <div class="value-chip"><b id="height-val">165</b> cm</div>
+            <div class="toggle-list" style="margin-top:0">
+              <div class="toggle-item">
+                <div class="left">
+                  <div class="name">包包</div>
+                  <div class="desc">需要 bag 才會出現在 Spec + 商品</div>
+                </div>
+                <div class="switch" id="sw-bag" role="switch" aria-checked="false"></div>
               </div>
-              <input id="height" type="range" min="140" max="200" step="1" value="165" aria-label="身高" />
-              <div class="range-sub"><span>140</span><span>200</span></div>
-            </div>
-
-            <div class="slider-group">
-              <div class="slider-head">
-                <div class="label">體重</div>
-                <div class="value-chip"><b id="weight-val">55</b> kg</div>
+              <div class="toggle-item">
+                <div class="left">
+                  <div class="name">帽子</div>
+                  <div class="desc">需要 hat 才會出現在 Spec + 商品</div>
+                </div>
+                <div class="switch" id="sw-hat" role="switch" aria-checked="false"></div>
               </div>
-              <input id="weight" type="range" min="35" max="120" step="1" value="55" aria-label="體重" />
-              <div class="range-sub"><span>35</span><span>120</span></div>
-            </div>
-
-            <div class="slider-group" style="grid-column:1/-1">
-              <div class="slider-head">
-                <div class="label">溫度</div>
-                <div class="value-chip"><b id="temp-val">22</b> °C</div>
+              <div class="toggle-item">
+                <div class="left">
+                  <div class="name">外套</div>
+                  <div class="desc">勾選或溫度 ≤ 20°C 時會生成 outer</div>
+                </div>
+                <div class="switch" id="sw-coat" role="switch" aria-checked="false"></div>
               </div>
-              <input id="temp" type="range" min="0" max="35" step="1" value="22" aria-label="溫度" />
-              <div class="range-sub"><span>0</span><span>35</span></div>
             </div>
           </div>
+
+          <div class="hint" id="form-hint">提示：需先登入（Google）才能呼叫扣點的 Spec API。</div>
+          <div class="hint error" id="error-hint" style="display:none;"></div>
         </div>
 
-        <!-- ✅ 分段 2：風格（卡片） -->
-        <div class="section-block">
-          <div class="section-head">
-            <div class="stitle">② 風格選擇 <span class="tag">點一下就好</span></div>
-          </div>
-
-          <div class="style-grid" id="style-grid">
-            <div class="style-card selected" data-style="casual">
-              <div class="chip">Casual</div>
-              <div class="name">休閒</div>
-              <div class="desc">舒服、日常、好搭配</div>
-            </div>
-            <div class="style-card" data-style="minimal">
-              <div class="chip">Minimal</div>
-              <div class="name">極簡</div>
-              <div class="desc">乾淨俐落、低彩度</div>
-            </div>
-            <div class="style-card" data-style="street">
-              <div class="chip">Street</div>
-              <div class="name">街頭</div>
-              <div class="desc">層次、比例、個性</div>
-            </div>
-            <div class="style-card" data-style="sporty">
-              <div class="chip">Sporty</div>
-              <div class="name">運動</div>
-              <div class="desc">機能、輕鬆、好活動</div>
-            </div>
-            <div class="style-card" data-style="smart" style="grid-column:1/-1">
-              <div class="chip">Smart</div>
-              <div class="name">Smart Casual</div>
-              <div class="desc">正式一點但不拘謹</div>
-            </div>
-          </div>
-
-          <div style="margin-top:10px">
-            <label>風格變體（品牌 / 名人）</label>
-            <select id="styleVariant">
-              <option value="">（不使用變體）</option>
-              <optgroup label="品牌">
-                <option value="brand-uniqlo">UNIQLO（日系基本）</option>
-                <option value="brand-muji">MUJI（生活極簡）</option>
-                <option value="brand-cos">COS（結構極簡）</option>
-                <option value="brand-nike-tech">Nike Tech（機能運動）</option>
-                <option value="brand-ader-error">Ader Error（韓系街頭）</option>
-              </optgroup>
-              <optgroup label="名人（風格靈感，不模仿臉）">
-                <option value="celeb-iu-casual">IU（韓系清新）</option>
-                <option value="celeb-jennie-minimal">Jennie（極簡辣）</option>
-                <option value="celeb-gd-street">G-Dragon（街頭層次）</option>
-                <option value="celeb-lisa-sporty">Lisa（舞者運動）</option>
-              </optgroup>
-            </select>
-          </div>
-
-          <!-- hidden style value for JS -->
-          <input type="hidden" id="style" value="casual" />
-        </div>
-
-        <!-- ✅ 分段 3：配件 -->
-        <div class="section-block" style="margin-bottom:0">
-          <div class="section-head">
-            <div class="stitle">③ 配件 <span class="tag">選填</span></div>
-          </div>
-
-          <div class="toggle-list" style="margin-top:0">
-            <div class="toggle-item">
-              <div class="left">
-                <div class="name">包包</div>
-                <div class="desc">需要 bag 才會出現在 Spec + 商品</div>
-              </div>
-              <div class="switch" id="sw-bag" role="switch" aria-checked="false"></div>
-            </div>
-            <div class="toggle-item">
-              <div class="left">
-                <div class="name">帽子</div>
-                <div class="desc">需要 hat 才會出現在 Spec + 商品</div>
-              </div>
-              <div class="switch" id="sw-hat" role="switch" aria-checked="false"></div>
-            </div>
-            <div class="toggle-item">
-              <div class="left">
-                <div class="name">外套</div>
-                <div class="desc">勾選或溫度 ≤ 20°C 時會生成 outer</div>
-              </div>
-              <div class="switch" id="sw-coat" role="switch" aria-checked="false"></div>
-            </div>
-          </div>
-        </div>
-
-        <!-- Desktop sticky generate area (hidden on mobile by CSS) -->
-        <div class="sticky-generate">
+        <!-- ✅ 固定底部（桌機在左欄底、手機固定在螢幕底） -->
+        <div class="left-panel-footer">
           <button id="go-btn" class="primary-wide">產生穿搭圖</button>
         </div>
-
-        <div class="hint" id="form-hint">提示：需先登入（Google）才能呼叫扣點的 Spec API。</div>
-        <div class="hint error" id="error-hint" style="display:none;"></div>
       </section>
 
       <!-- RIGHT -->
@@ -776,7 +696,8 @@
           <span class="pill">AI 穿搭示意圖</span>
         </div>
 
-        <div class="preview-wrap anchor" id="anchor-preview">
+        <!-- ✅ anchor：生成後自動滑到這裡 -->
+        <div class="preview-wrap" id="anchor-preview">
           <div class="preview-inner" id="preview-box">
             <div id="img-skeleton" style="display:none;width:100%;height:100%;">
               <div class="img-skel-wrap">
@@ -796,13 +717,6 @@
               <span class="dots"><span class="dot"></span><span class="dot"></span><span class="dot"></span></span>
             </span>
             <div class="progress"><div id="progress-bar"></div></div>
-
-            <!-- ✅ Retry controls -->
-            <div class="action-row" id="retry-row" style="display:none;">
-              <button class="mini-btn primary" id="retry-btn">重試目前步驟</button>
-              <button class="mini-btn danger" id="restart-btn">從頭重跑</button>
-              <div class="mini-hint" id="retry-hint"></div>
-            </div>
           </div>
         </div>
 
@@ -815,9 +729,11 @@
           <div class="summary-text" id="summary-text"></div>
         </div>
 
-        <div class="section-title anchor" id="anchor-products">
+        <div class="section-title">
           <span class="pill">類似商品（Google Shopping）</span>
         </div>
+
+        <!-- ✅ anchor：完成後自動滑到商品區 -->
         <div class="products" id="products">
           <div class="placeholder" style="padding:16px;">尚未產生商品</div>
         </div>
@@ -827,21 +743,17 @@
     </main>
   </div>
 
-  <!-- ✅ Mobile fixed action bar -->
-  <div class="mobile-actionbar" id="mobile-actionbar" style="display:none;">
-    <button id="go-btn-mobile" class="primary-wide">產生穿搭圖</button>
-  </div>
-
   <!-- ✅ Supabase JS SDK (v2) -->
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 
   <script>
     /***********************
-     * Helpers
+     * Utility: scroll helpers
      ***********************/
     function isMobile() {
       return window.matchMedia && window.matchMedia("(max-width: 640px)").matches;
     }
+
     function scrollToEl(id, behavior="smooth", block="start") {
       const el = document.getElementById(id);
       if (!el) return;
@@ -849,42 +761,38 @@
     }
 
     function setFormDisabled(disabled) {
-      const form = document.getElementById("left-panel");
-      if (!form) return;
-      form.classList.toggle("form-disabled", disabled);
+      const panel = document.getElementById("left-panel");
+      if (!panel) return;
+      panel.classList.toggle("form-disabled", disabled);
     }
 
-    /***********************
-     * Step text (3段按鈕文字 + 狀態文字同步)
-     ***********************/
     const GENERATE_STEPS = {
       idle: { btn: "產生穿搭圖", text: "等待操作" },
       spec: { btn: "分析中…", text: "分析你的身形與風格…" },
       image: { btn: "設計中…", text: "設計整體穿搭組合…" },
-      products: { btn: "找商品中…", text: "搜尋可購買商品…" },
-      done: { btn: "再生成一套", text: "完成 ✅" },
-      failed: { btn: "再試一次", text: "失敗 ❌" },
+      products: { btn: "搜尋商品中…", text: "搜尋可購買商品…" },
+      done: { btn: "再生成一套", text: "完成" },
     };
 
     function setGenerateStep(step) {
       const cfg = GENERATE_STEPS[step] || GENERATE_STEPS.idle;
 
-      const btn1 = document.getElementById("go-btn");
-      const btn2 = document.getElementById("go-btn-mobile");
-      if (btn1) btn1.textContent = cfg.btn;
-      if (btn2) btn2.textContent = cfg.btn;
+      const btn = document.getElementById("go-btn");
+      if (btn) btn.textContent = cfg.btn;
 
-      const statusTextEl = document.getElementById("status-text");
-      if (statusTextEl) statusTextEl.textContent = cfg.text;
+      const statusText = document.getElementById("status-text");
+      if (statusText) statusText.textContent = cfg.text;
     }
 
     /***********************
-     * 0) CONFIG
+     * 0) CONFIG (請改這裡)
      ***********************/
     const SUPABASE_PROJECT_REF = "auiwcsolpvufxxyhnvaf";
     const SUPABASE_URL = `https://${SUPABASE_PROJECT_REF}.supabase.co`;
 
+    // ✅ Supabase Dashboard → Settings → API → anon public key
     const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImF1aXdjc29scHZ1Znh4eWhudmFmIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjQ5MzUwMDEsImV4cCI6MjA4MDUxMTAwMX0.KeD8JXdHs5Iu7-wf0F0GpUPp-_y5X5ha6mwBcR5eYDA";
+
     const REDIRECT_TO = "https://simon-one-ochre.vercel.app/body-test.html";
 
     /***********************
@@ -911,10 +819,7 @@
         cards.forEach(c => c.classList.toggle("selected", c.dataset.style === style));
       };
 
-      cards.forEach(c => {
-        c.addEventListener("click", () => select(c.dataset.style));
-      });
-
+      cards.forEach(c => c.addEventListener("click", () => select(c.dataset.style)));
       select(hidden.value || "casual");
     }
 
@@ -947,7 +852,13 @@
     function renderOutfitSummary(summary) {
       const box = document.getElementById("outfit-summary");
       const text = document.getElementById("summary-text");
-      if (!summary) { box.style.display = "none"; return; }
+      if (!box || !text) return;
+
+      if (!summary) {
+        box.style.display = "none";
+        text.textContent = "";
+        return;
+      }
       text.textContent = summary;
       box.style.display = "block";
     }
@@ -976,11 +887,16 @@
 
     async function refreshAuthUI() {
       const token = getAccessToken();
-      if (!token) { setAuthUI({ loggedIn:false, hint:"未登入" }); return; }
+      if (!token) {
+        setAuthUI({ loggedIn:false, hint:"未登入" });
+        return;
+      }
 
       const me = await apiMe();
-      if (!me.ok) { setAuthUI({ loggedIn:false, hint:"登入狀態異常（/api/me 失敗）" }); return; }
-
+      if (!me.ok) {
+        setAuthUI({ loggedIn:false, hint:"登入狀態異常（/api/me 失敗）" });
+        return;
+      }
       setAuthUI({ loggedIn:true, email: me.user?.email, credits: me.credits_left, hint:"" });
     }
 
@@ -1153,6 +1069,39 @@
       `;
     }
 
+    function renderProducts(list) {
+      const root = document.getElementById("products");
+      root.innerHTML = "";
+
+      if (!Array.isArray(list) || list.length === 0) {
+        root.innerHTML = `<div class="placeholder" style="padding:16px;">沒有找到商品（或 API 尚未回傳）</div>`;
+        return;
+      }
+
+      list.forEach(p => {
+        const div = document.createElement("div");
+        div.className = "product-item";
+
+        const thumb = p.thumbnail ? `<img src="${p.thumbnail}" alt="">` : `示意`;
+        const price = p.price || p.extracted_price || "";
+        const link = p.product_link || p.link || p.url || "#";
+
+        div.innerHTML = `
+          <div class="thumb">${thumb}</div>
+          <div>
+            <div class="pname">${escapeHtml(p.title || p.name || "商品")}</div>
+            <div class="pmeta">
+              ${price ? `<span>價格：${escapeHtml(String(price))}</span>` : ""}
+              ${p.source ? `<span>來源：${escapeHtml(String(p.source))}</span>` : ""}
+              ${p.slot ? `<span>類別：${escapeHtml(String(p.slot))}</span>` : ""}
+            </div>
+            <a class="plink" href="${link}" target="_blank" rel="noopener noreferrer">前往查看</a>
+          </div>
+        `;
+        root.appendChild(div);
+      });
+    }
+
     function escapeHtml(str){
       return String(str)
         .replaceAll("&","&amp;")
@@ -1169,81 +1118,7 @@
     }
 
     /***********************
-     * C) Products grouped by slot
-     ***********************/
-    const SLOT_ORDER = ["top","bottom","shoes","outer","bag","hat"];
-    const SLOT_LABEL_ZH = {
-      top: "上衣",
-      bottom: "下身",
-      shoes: "鞋子",
-      outer: "外套",
-      bag: "包包",
-      hat: "帽子"
-    };
-
-    function groupProductsBySlot(list) {
-      const groups = {};
-      for (const s of SLOT_ORDER) groups[s] = [];
-      (list || []).forEach(p => {
-        const slot = (p.slot || "").toLowerCase();
-        if (!groups[slot]) groups[slot] = [];
-        groups[slot].push(p);
-      });
-      return groups;
-    }
-
-    function renderProductsGrouped(list) {
-      const root = document.getElementById("products");
-      root.innerHTML = "";
-
-      if (!Array.isArray(list) || list.length === 0) {
-        root.innerHTML = `<div class="placeholder" style="padding:16px;">沒有找到商品（或 API 尚未回傳）</div>`;
-        return;
-      }
-
-      const groups = groupProductsBySlot(list);
-
-      for (const slot of SLOT_ORDER) {
-        const items = groups[slot] || [];
-        if (items.length === 0) continue;
-
-        const wrap = document.createElement("div");
-        wrap.className = "slot-group";
-
-        wrap.innerHTML = `
-          <div class="slot-head">
-            <div class="slot-title">🧩 ${escapeHtml(SLOT_LABEL_ZH[slot] || slot)}</div>
-            <div class="slot-count">${items.length} 個</div>
-          </div>
-        `;
-
-        items.forEach(p => {
-          const div = document.createElement("div");
-          div.className = "product-item";
-          const thumb = p.thumbnail ? `<img src="${p.thumbnail}" alt="">` : `示意`;
-          const price = p.price || p.extracted_price || "";
-          const link = p.product_link || p.link || p.url || "#";
-
-          div.innerHTML = `
-            <div class="thumb">${thumb}</div>
-            <div>
-              <div class="pname">${escapeHtml(p.title || p.name || "商品")}</div>
-              <div class="pmeta">
-                ${price ? `<span>價格：${escapeHtml(String(price))}</span>` : ""}
-                ${p.source ? `<span>來源：${escapeHtml(String(p.source))}</span>` : ""}
-              </div>
-              <a class="plink" href="${link}" target="_blank" rel="noopener noreferrer">前往查看</a>
-            </div>
-          `;
-          wrap.appendChild(div);
-        });
-
-        root.appendChild(wrap);
-      }
-    }
-
-    /***********************
-     * 4) API helper
+     * 4) Main flow: Spec -> Image -> Products
      ***********************/
     async function postJson(url, body, withAuth=true) {
       const headers = { "Content-Type": "application/json" };
@@ -1254,7 +1129,6 @@
       }
 
       const r = await fetch(url, { method:"POST", headers, body: JSON.stringify(body) });
-
       const text = await r.text();
       let j = null;
       try { j = JSON.parse(text); } catch { j = { raw: text }; }
@@ -1268,55 +1142,64 @@
       return j;
     }
 
-    /***********************
-     * A) Step retry state machine
-     ***********************/
-    const flowState = {
-      lastStep: "idle",      // "spec" | "image" | "products"
-      payload: null,
-      spec: null,
-      imgResp: null,
-      products: null
-    };
+    async function generateAll() {
+      clearError();
+      renderOutfitSummary(null);
+      clearImage();
+      showImageSkeleton(true);
+      renderProductsSkeleton(4);
 
-    function showRetryUI(show, step="", hint="") {
-      const row = document.getElementById("retry-row");
-      const ht = document.getElementById("retry-hint");
-      if (!row || !ht) return;
-      if (!show) {
-        row.style.display = "none";
-        ht.textContent = "";
-        return;
-      }
-      row.style.display = "flex";
-      ht.textContent = hint ? hint : (step ? `可重試：${step}` : "");
-    }
+      // ✅ 先滑到右邊示意圖區（桌機也適用）
+      scrollToEl("anchor-preview", "smooth", "start");
 
-    async function runStepSpec(payload, me) {
+      setFormDisabled(true);
       setGenerateStep("spec");
+      setProgress(0);
+      setLoadingUI(true);
+      setStatus("開始", null, true);
+
+      const ensured = await ensureTokenFromSession();
+      if (!ensured.ok) {
+        setAuthUI({ loggedIn:false, hint:"未登入（請按 Google 登入）" });
+        throw new Error("未登入或 session 不存在");
+      }
+
+      const me = await apiMe();
+      if (!me.ok) {
+        setAuthUI({ loggedIn:false, hint:"登入狀態異常（/api/me 失敗）" });
+        throw new Error("登入狀態異常（/api/me 失敗）");
+      }
+
+      const payload = {
+        gender: document.getElementById("gender").value,
+        age: Number(document.getElementById("age").value),
+        height: Number(document.getElementById("height").value),
+        weight: Number(document.getElementById("weight").value),
+        style: document.getElementById("style").value,
+        styleVariant: document.getElementById("styleVariant").value || "",
+        temp: Number(document.getElementById("temp").value),
+        withBag: !!getBag(),
+        withHat: !!getHat(),
+        withCoat: !!getCoat()
+      };
+
+      // 1) Spec
       setStatus("Step 1/3：產生 Outfit Spec（扣點）", null, true);
       setProgress(20);
-
       const spec = await postJson("/api/generate-outfit-spec", payload, true);
-      flowState.spec = spec;
-      flowState.lastStep = "spec";
       setDebug({ step:"spec", spec });
-
       renderOutfitSummary(spec.summary);
+      setGenerateStep("image");
 
       if (typeof spec.credits_left !== "undefined") {
         setAuthUI({ loggedIn:true, email: me.user?.email, credits: spec.credits_left });
       } else {
         await refreshAuthUI();
       }
-      return spec;
-    }
 
-    async function runStepImage(payload, spec) {
-      setGenerateStep("image");
+      // 2) Image
       setStatus("Step 2/3：產生穿搭示意圖", null, true);
       setProgress(55);
-
       const imgResp = await postJson("/api/generate-image", {
         ...payload,
         outfitSpec: spec,
@@ -1325,17 +1208,13 @@
       }, true);
 
       if (!imgResp.image) throw new Error("Image API 沒回傳 image");
-      flowState.imgResp = imgResp;
-      flowState.lastStep = "image";
-      setDebug({ step:"image", imgResp, spec });
-
       setImageBase64(imgResp.image, imgResp.mime || "image/png");
       showImageSkeleton(false);
-      return imgResp;
-    }
+      setDebug({ step:"image", imgResp, spec });
 
-    async function runStepProducts(payload, spec) {
       setGenerateStep("products");
+
+      // 3) Products
       setStatus("Step 3/3：搜尋類似商品", null, true);
       setProgress(80);
 
@@ -1346,176 +1225,19 @@
       }, true);
 
       const list = prodResp.products || prodResp.items || prodResp.shopping_results || [];
-      flowState.products = list;
-      flowState.lastStep = "products";
+      renderProducts(list);
       setDebug({ step:"products", prodResp, spec });
 
-      renderProductsGrouped(list);
-      return list;
-    }
+      setGenerateStep("done");
+      setProgress(100);
+      setStatus("完成 ✅", true, false);
 
-    async function retryCurrentStep() {
-      showRetryUI(false);
-      clearError();
-
-      const ensured = await ensureTokenFromSession();
-      if (!ensured.ok) throw new Error("未登入或 session 不存在");
-
-      const me = await apiMe();
-      if (!me.ok) throw new Error("登入狀態異常（/api/me 失敗）");
-
-      const payload = flowState.payload;
-      if (!payload) throw new Error("沒有可重試的 payload（請從頭重跑）");
-
-      if (flowState.lastStep === "spec") {
-        // spec成功但後面失敗 => 重試 image
-        if (!flowState.spec) throw new Error("spec 不存在（請從頭重跑）");
-        showImageSkeleton(true);
-        await runStepImage(payload, flowState.spec);
-        renderProductsSkeleton(4);
-        await runStepProducts(payload, flowState.spec);
-        setGenerateStep("done");
-        setProgress(100);
-        setStatus("完成 ✅", true, false);
-        // 完成後滑到商品
-        scrollToEl("anchor-products", "smooth", "start");
-        return;
-      }
-
-      if (flowState.lastStep === "image") {
-        // image成功但 products失敗 => 重試 products
-        if (!flowState.spec) throw new Error("spec 不存在（請從頭重跑）");
-        renderProductsSkeleton(4);
-        await runStepProducts(payload, flowState.spec);
-        setGenerateStep("done");
-        setProgress(100);
-        setStatus("完成 ✅", true, false);
-        scrollToEl("anchor-products", "smooth", "start");
-        return;
-      }
-
-      // 如果根本沒走到 spec 或狀態混亂，就從頭跑
-      await generateAll(true);
+      // ✅ 完成後自動滑到商品區
+      scrollToEl("products", "smooth", "start");
     }
 
     /***********************
-     * B) Auto scroll behavior
-     ***********************/
-    function autoScrollOnStart() {
-      // 按下生成後：直接滑到示意圖（手機最重要）
-      if (isMobile()) scrollToEl("anchor-preview", "smooth", "start");
-    }
-    function autoScrollOnDone() {
-      // 完成後：滑到商品（更符合「下一步要買」）
-      if (isMobile()) scrollToEl("anchor-products", "smooth", "start");
-    }
-
-    /***********************
-     * 5) Main flow (A+B+C all in)
-     ***********************/
-    async function generateAll(forceRestart=false) {
-      showRetryUI(false);
-      clearError();
-      setLoadingUI(true);
-      setFormDisabled(true);
-
-      try {
-        // Start UI
-        setGenerateStep("spec");
-        setProgress(0);
-        setStatus("開始", null, true);
-
-        autoScrollOnStart();
-
-        // Reset visuals
-        clearImage();
-        showImageSkeleton(true);
-        renderProductsSkeleton(4);
-        renderOutfitSummary(null);
-
-        // Auth checks
-        const ensured = await ensureTokenFromSession();
-        if (!ensured.ok) {
-          setAuthUI({ loggedIn:false, hint:"未登入（請按 Google 登入）" });
-          throw new Error("未登入或 session 不存在");
-        }
-
-        const me = await apiMe();
-        if (!me.ok) {
-          setAuthUI({ loggedIn:false, hint:"登入狀態異常（/api/me 失敗）" });
-          throw new Error("登入狀態異常（/api/me 失敗）");
-        }
-
-        // Build payload
-        const payload = {
-          gender: document.getElementById("gender").value,
-          age: Number(document.getElementById("age").value),
-          height: Number(document.getElementById("height").value),
-          weight: Number(document.getElementById("weight").value),
-          style: document.getElementById("style").value,
-          styleVariant: document.getElementById("styleVariant").value || "",
-          temp: Number(document.getElementById("temp").value),
-          withBag: !!getBag(),
-          withHat: !!getHat(),
-          withCoat: !!getCoat()
-        };
-
-        // Save for retry
-        flowState.payload = payload;
-        if (forceRestart) {
-          flowState.spec = null;
-          flowState.imgResp = null;
-          flowState.products = null;
-          flowState.lastStep = "idle";
-        }
-
-        // Step 1: Spec
-        const spec = await runStepSpec(payload, me);
-
-        // Step 2: Image
-        await runStepImage(payload, spec);
-
-        // Step 3: Products
-        await runStepProducts(payload, spec);
-
-        // Done
-        setGenerateStep("done");
-        setProgress(100);
-        setStatus("完成 ✅", true, false);
-        autoScrollOnDone();
-      } catch (e) {
-        console.error(e);
-        setGenerateStep("failed");
-        setStatus("失敗 ❌", false, false);
-        setProgress(0);
-
-        const msg = String(e?.message || e);
-
-        // Show retry UI:
-        // - if spec success => retry image
-        // - if image success => retry products
-        // else => restart
-        if (flowState.spec && !flowState.imgResp) {
-          showRetryUI(true, "Image", "Spec 已完成，可重試產生示意圖");
-          flowState.lastStep = "spec";
-        } else if (flowState.spec && flowState.imgResp) {
-          showRetryUI(true, "Products", "示意圖已完成，可重試搜尋商品");
-          flowState.lastStep = "image";
-        } else {
-          showRetryUI(true, "Restart", "可從頭重跑（重新扣點）");
-          flowState.lastStep = "idle";
-        }
-
-        showError(msg);
-        throw e;
-      } finally {
-        setLoadingUI(false);
-        setFormDisabled(false);
-      }
-    }
-
-    /***********************
-     * 6) INIT
+     * 5) INIT
      ***********************/
     (async function init() {
       bindRange("age", "age-val");
@@ -1527,74 +1249,26 @@
       document.getElementById("login-btn").addEventListener("click", loginGoogle);
       document.getElementById("logout-btn").addEventListener("click", logout);
 
-      // Mobile actionbar toggle
-      const mobileBar = document.getElementById("mobile-actionbar");
-      if (mobileBar) mobileBar.style.display = isMobile() ? "block" : "none";
-      window.addEventListener("resize", () => {
-        if (mobileBar) mobileBar.style.display = isMobile() ? "block" : "none";
-      });
-
-      // Retry buttons
-      document.getElementById("retry-btn").addEventListener("click", async () => {
-        const btn = document.getElementById("retry-btn");
-        btn.disabled = true;
+      const goBtn = document.getElementById("go-btn");
+      goBtn.addEventListener("click", async () => {
+        goBtn.disabled = true;
         try {
-          setLoadingUI(true);
-          await retryCurrentStep();
+          await generateAll();
         } catch (e) {
           console.error(e);
-          showError(String(e?.message || e));
+          setGenerateStep("idle");
+          setProgress(0);
+          setStatus("失敗 ❌", false, false);
+          showError(String(e.message || e));
         } finally {
           setLoadingUI(false);
-          btn.disabled = false;
-        }
-      });
-
-      document.getElementById("restart-btn").addEventListener("click", async () => {
-        const btn = document.getElementById("restart-btn");
-        btn.disabled = true;
-        try {
-          setLoadingUI(true);
-          await generateAll(true);
-        } catch (e) {
-          console.error(e);
-          showError(String(e?.message || e));
-        } finally {
-          setLoadingUI(false);
-          btn.disabled = false;
-        }
-      });
-
-      // Shared click handler for both buttons
-      async function onGenerateClick() {
-        showRetryUI(false);
-        try {
-          await generateAll(false);
-        } catch (e) {
-          // errors already shown
-        }
-      }
-
-      const goBtnDesktop = document.getElementById("go-btn");
-      const goBtnMobile = document.getElementById("go-btn-mobile");
-
-      if (goBtnDesktop) goBtnDesktop.addEventListener("click", async () => {
-        goBtnDesktop.disabled = true;
-        if (goBtnMobile) goBtnMobile.disabled = true;
-        try { await onGenerateClick(); }
-        finally {
-          goBtnDesktop.disabled = false;
-          if (goBtnMobile) goBtnMobile.disabled = false;
-        }
-      });
-
-      if (goBtnMobile) goBtnMobile.addEventListener("click", async () => {
-        goBtnMobile.disabled = true;
-        if (goBtnDesktop) goBtnDesktop.disabled = true;
-        try { await onGenerateClick(); }
-        finally {
-          goBtnMobile.disabled = false;
-          if (goBtnDesktop) goBtnDesktop.disabled = false;
+          setFormDisabled(false);
+          goBtn.disabled = false;
+          // 若失敗，回到示意圖區讓使用者看到錯誤
+          // （成功情況已滑到 products）
+          if (document.getElementById("error-hint")?.style.display === "block") {
+            scrollToEl("anchor-preview", "smooth", "start");
+          }
         }
       });
 
@@ -1613,6 +1287,7 @@
       setProgress(0);
       setStatus("等待操作", null, false);
       setLoadingUI(false);
+      setFormDisabled(false);
     })();
   </script>
 </body>
