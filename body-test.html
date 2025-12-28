@@ -1948,10 +1948,30 @@
       };
       return JSON.stringify(obj, sorter);
     }
+    // ✅ Safe hash helper: prefer crypto.subtle SHA-256, but fall back gracefully.
+    // Some environments (older iOS Safari / certain WebViews / non-secure contexts)
+    // may not expose crypto.subtle, which would otherwise break the whole flow.
+    function fnv1a32Hex(str){
+      let h = 0x811c9dc5;
+      for (let i = 0; i < str.length; i++) {
+        h ^= str.charCodeAt(i);
+        // 32-bit FNV-1a prime
+        h = (h + ((h << 1) + (h << 4) + (h << 7) + (h << 8) + (h << 24))) >>> 0;
+      }
+      return h.toString(16).padStart(8, "0");
+    }
+
     async function sha256Hex(str){
-      const enc = new TextEncoder().encode(str);
-      const buf = await crypto.subtle.digest("SHA-256", enc);
-      return [...new Uint8Array(buf)].map(b=>b.toString(16).padStart(2,"0")).join("");
+      try {
+        if (!(window.crypto && window.crypto.subtle)) {
+          return fnv1a32Hex(str);
+        }
+        const enc = new TextEncoder().encode(str);
+        const buf = await window.crypto.subtle.digest("SHA-256", enc);
+        return [...new Uint8Array(buf)].map(b=>b.toString(16).padStart(2,"0")).join("");
+      } catch {
+        return fnv1a32Hex(str);
+      }
     }
     async function computeOutfitId(payload, spec){
       const core = {
