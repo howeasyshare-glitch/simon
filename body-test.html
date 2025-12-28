@@ -1,3 +1,4 @@
+
 <!DOCTYPE html>
 <html lang="zh-Hant">
 <head>
@@ -32,6 +33,7 @@
       color:var(--text);
       background: radial-gradient(circle at top, #ffecec 0, var(--bg) 45%, var(--bg) 100%);
     }
+    a{ color:inherit }
 
     /* ---------- Loading / Skeleton ---------- */
     .skel {
@@ -319,6 +321,37 @@
     }
     .placeholder{text-align:center;color:var(--muted);font-size:14px;padding:20px}
 
+    /* preview toolbar */
+    .preview-tools{
+      position:absolute;
+      top:10px;
+      right:10px;
+      display:flex;
+      gap:8px;
+      z-index:5;
+    }
+    .tool-btn{
+      display:inline-flex;
+      align-items:center;
+      gap:6px;
+      border:1px solid rgba(229,231,235,.95);
+      background:rgba(255,255,255,.92);
+      padding:8px 10px;
+      border-radius:999px;
+      cursor:pointer;
+      font-weight:900;
+      font-size:12px;
+      color:#111827;
+      backdrop-filter: blur(6px);
+    }
+    .tool-btn:disabled{opacity:.55; cursor:default}
+    .tool-btn .icon{font-size:14px}
+    .tool-btn.fav.on{
+      border-color:#fecaca;
+      background:rgba(255,245,245,.92);
+      color:#ef4444;
+    }
+
     .section-title{margin:14px 0 8px;display:flex;gap:8px;align-items:center}
     .section-title .pill{font-weight:800}
 
@@ -461,7 +494,7 @@
       color: #374151;
     }
 
-    /* ✅ Action / retry row */
+    /* ✅ Retry controls */
     .action-row{
       display:flex;
       gap:10px;
@@ -495,27 +528,107 @@
       color:var(--muted);
     }
 
-    /* ✅ preview toolbar */
-    .preview-toolbar{
+    /* ✅ Collection / Recent panel */
+    .collection-wrap{
+      margin-top:12px;
+      border:1px solid var(--line);
+      border-radius:18px;
+      overflow:hidden;
+      background:#fff;
+    }
+    .tabs{
       display:flex;
-      align-items:center;
-      justify-content:space-between;
+      gap:0;
+      border-bottom:1px solid var(--line);
+      background:#fafafa;
+    }
+    .tab{
+      flex:1;
+      padding:10px 12px;
+      font-weight:900;
+      font-size:13px;
+      cursor:pointer;
+      border:none;
+      background:transparent;
+      color:#6b7280;
+    }
+    .tab.active{
+      color:#111827;
+      background:#fff;
+    }
+    .tabpanes{ padding:10px; }
+    .pane{ display:none; }
+    .pane.active{ display:block; }
+
+    .mini-list{
+      display:flex;
+      flex-direction:column;
       gap:10px;
-      margin-top:10px;
-      flex-wrap:wrap;
     }
-    .toolbar-left{
-      display:flex;
-      gap:8px;
-      flex-wrap:wrap;
+    .mini-card{
+      display:grid;
+      grid-template-columns:68px 1fr auto;
+      gap:10px;
       align-items:center;
+      padding:10px;
+      border:1px solid #eef0f3;
+      border-radius:14px;
+      background:#fafafa;
     }
-    .toolbar-right{
+    .mini-thumb{
+      width:68px;
+      aspect-ratio: 9/16;
+      border-radius:12px;
+      overflow:hidden;
+      border:1px solid #eee;
+      background:#fff;
       display:flex;
-      gap:8px;
-      flex-wrap:wrap;
       align-items:center;
-      justify-content:flex-end;
+      justify-content:center;
+      color:#9ca3af;
+      font-size:12px;
+    }
+    .mini-thumb img{ width:100%; height:100%; object-fit:cover; display:block; }
+    .mini-info .t{
+      font-weight:900;
+      font-size:13px;
+      margin:0 0 4px;
+      color:#111827;
+    }
+    .mini-info .m{
+      font-size:12px;
+      color:#6b7280;
+      line-height:1.35;
+      overflow:hidden;
+      display:-webkit-box;
+      -webkit-line-clamp:2;
+      -webkit-box-orient:vertical;
+    }
+    .mini-actions{
+      display:flex;
+      flex-direction:column;
+      gap:6px;
+      align-items:flex-end;
+    }
+    .chip-btn{
+      border:1px solid #e5e7eb;
+      background:#fff;
+      padding:7px 10px;
+      border-radius:999px;
+      cursor:pointer;
+      font-weight:900;
+      font-size:12px;
+      color:#111827;
+      white-space:nowrap;
+    }
+    .chip-btn.danger{ color:#ef4444; border-color:#fecaca; }
+    .mini-empty{
+      padding:14px;
+      color:#6b7280;
+      font-size:12px;
+      background:#fff;
+      border:1px dashed #e5e7eb;
+      border-radius:14px;
     }
 
     /* ---------- Desktop: left panel sticky + compact spacing ---------- */
@@ -582,7 +695,7 @@
         left: 12px;
         right: 12px;
         bottom: calc(14px + var(--safe-b));
-        z-index: 999;
+        z-index: 9999;
         pointer-events:none;
       }
       .mobile-actionbar .primary-wide{
@@ -599,217 +712,57 @@
     /* ---------- Utilities ---------- */
     .anchor { scroll-margin-top: 12px; }
 
-    /* ---------- Fullscreen image modal ---------- */
-    .img-modal{
-      display:none;
+    /* ---------- Fullscreen modal ---------- */
+    .modal{
       position:fixed;
       inset:0;
-      z-index: 2000;
-    }
-    .img-modal .backdrop{
-      position:absolute;
-      inset:0;
+      z-index: 10000;
       background: rgba(0,0,0,.72);
-      backdrop-filter: blur(4px);
-    }
-    .img-modal .sheet{
-      position:absolute;
-      inset: 0;
-      display:flex;
+      display:none;
       align-items:center;
       justify-content:center;
-      padding: 18px;
+      padding: 14px;
     }
-    .img-modal .content{
-      width:min(92vw, 560px);
-      max-height: 92vh;
-      border-radius: 18px;
-      background:#0b0b0f;
-      border:1px solid rgba(255,255,255,.12);
-      box-shadow: 0 30px 80px rgba(0,0,0,.55);
-      overflow:hidden;
-      display:flex;
-      flex-direction:column;
-    }
-    .img-modal .topbar{
-      display:flex;
-      align-items:center;
-      justify-content:space-between;
-      gap:10px;
-      padding: 10px 12px;
-      color:#fff;
-      border-bottom: 1px solid rgba(255,255,255,.12);
-      background: rgba(255,255,255,.06);
-    }
-    .img-modal .topbar .left{
-      display:flex;
-      align-items:center;
-      gap:8px;
-      font-weight:900;
-      font-size:13px;
-    }
-    .img-modal .topbar .right{
-      display:flex;
-      gap:8px;
-      align-items:center;
-    }
-    .img-modal .xbtn, .img-modal .dlbtn{
-      border: 1px solid rgba(255,255,255,.18);
-      background: rgba(255,255,255,.06);
-      color:#fff;
-      padding: 8px 10px;
-      border-radius: 999px;
-      cursor:pointer;
-      font-weight:900;
-      font-size:12px;
-      text-decoration:none;
-      display:inline-flex;
-      align-items:center;
-      gap:6px;
-    }
-    .img-modal .xbtn:active, .img-modal .dlbtn:active{ transform: translateY(1px); }
-    .img-modal .viewer{
-      display:flex;
-      align-items:center;
-      justify-content:center;
-      padding: 12px;
-      background:#0b0b0f;
-      flex:1 1 auto;
-      min-height: 0;
-    }
-    .img-modal img{
-      width:100%;
-      height: 100%;
-      max-height: 78vh;
-      object-fit: contain;
-      border-radius: 12px;
-      background:#0b0b0f;
-    }
-
-    /* ---------- History (Favorites + Recent) ---------- */
-    .history-wrap{
-      margin-top: 14px;
-      border:1px solid var(--line);
-      border-radius: 18px;
-      background: #fff;
-      padding: 12px;
-    }
-    .history-head{
-      display:flex;
-      align-items:center;
-      justify-content:space-between;
-      gap:10px;
-      margin-bottom:10px;
-    }
-    .history-head .h-title{
-      font-weight: 900;
-      font-size: 14px;
-      display:flex;
-      align-items:center;
-      gap:8px;
-    }
-    .history-head .h-actions{
-      display:flex;
-      gap:8px;
-      flex-wrap:wrap;
-      justify-content:flex-end;
-    }
-    .tabs{
-      display:flex;
-      gap:8px;
-      margin-bottom:10px;
-      flex-wrap:wrap;
-    }
-    .tab{
-      border:1px solid var(--line);
-      background:#fff;
-      border-radius: 999px;
-      padding: 8px 10px;
-      font-weight: 900;
-      font-size: 12px;
-      cursor:pointer;
-      color:#111827;
-    }
-    .tab.active{
+    .modal.on{ display:flex; }
+    .modal-card{
+      width: min(520px, 100%);
+      aspect-ratio: 9/16;
       background:#111827;
-      border-color:#111827;
-      color:#fff;
-    }
-    .history-list{
-      display:flex;
-      flex-direction:column;
-      gap:10px;
-    }
-    .h-item{
-      display:grid;
-      grid-template-columns: 54px 1fr;
-      gap:10px;
-      padding:10px;
-      border-radius: 16px;
-      border:1px solid #f1f2f4;
-      background:#fafafa;
-    }
-    .h-thumb{
-      width:54px;height:54px;border-radius: 12px;
+      border-radius: 18px;
       overflow:hidden;
-      border:1px solid #eee;
-      background:#fff;
-      display:flex;
-      align-items:center;
-      justify-content:center;
-      color:var(--muted);
-      font-size:12px;
+      position:relative;
+      box-shadow: 0 30px 70px rgba(0,0,0,.35);
     }
-    .h-thumb img{ width:100%; height:100%; object-fit: cover; }
-    .h-main{
-      display:flex;
-      flex-direction:column;
-      gap:6px;
-      min-width:0;
+    .modal-card img{
+      width:100%;
+      height:100%;
+      object-fit:contain;
+      display:block;
+      background:#0b1020;
     }
-    .h-title{
-      font-weight: 900;
-      font-size: 13px;
-      color:#111827;
-      white-space:nowrap;
-      overflow:hidden;
-      text-overflow:ellipsis;
-    }
-    .h-meta{
-      font-size: 12px;
-      color: var(--muted);
+    .modal-top{
+      position:absolute;
+      top:10px;
+      left:10px;
+      right:10px;
       display:flex;
+      justify-content:space-between;
       gap:10px;
-      flex-wrap:wrap;
+      pointer-events:none;
     }
-    .h-btns{
-      display:flex;
-      gap:8px;
-      flex-wrap:wrap;
-      align-items:center;
-    }
-    .h-btn{
-      border:1px solid var(--line);
-      background:#fff;
-      color:#111827;
-      padding:8px 10px;
-      border-radius: 999px;
+    .modal-top .m-btn{
+      pointer-events:auto;
+      border:none;
       cursor:pointer;
-      font-weight: 900;
-      font-size: 12px;
+      background: rgba(255,255,255,.12);
+      color:#fff;
+      padding:9px 12px;
+      border-radius: 999px;
+      font-weight:900;
+      font-size:12px;
+      backdrop-filter: blur(8px);
     }
-    .h-btn.danger{
-      border-color:#fecaca;
-      color:#ef4444;
-    }
-    .h-empty{
-      padding: 12px;
-      border:1px dashed #d1d5db;
-      border-radius: 14px;
-      color: var(--muted);
-      font-size: 12px;
-      background:#fff;
-    }
+    .modal-top .m-btn:active{ transform: translateY(1px); opacity:.95; }
   </style>
 </head>
 
@@ -843,7 +796,7 @@
           <span class="pill">扣 1 點 / 次</span>
         </div>
 
-        <!-- 分段 1：基本資料 -->
+        <!-- ✅ 分段 1：基本資料 -->
         <div class="section-block">
           <div class="section-head">
             <div class="stitle">① 基本資料 <span class="tag">拖拉更快</span></div>
@@ -897,7 +850,7 @@
           </div>
         </div>
 
-        <!-- 分段 2：風格 -->
+        <!-- ✅ 分段 2：風格（卡片） -->
         <div class="section-block">
           <div class="section-head">
             <div class="stitle">② 風格選擇 <span class="tag">點一下就好</span></div>
@@ -951,10 +904,11 @@
             </select>
           </div>
 
+          <!-- hidden style value for JS -->
           <input type="hidden" id="style" value="casual" />
         </div>
 
-        <!-- 分段 3：配件 -->
+        <!-- ✅ 分段 3：配件 -->
         <div class="section-block" style="margin-bottom:0">
           <div class="section-head">
             <div class="stitle">③ 配件 <span class="tag">選填</span></div>
@@ -985,7 +939,7 @@
           </div>
         </div>
 
-        <!-- Desktop sticky generate area -->
+        <!-- Desktop sticky generate area (hidden on mobile by CSS) -->
         <div class="sticky-generate">
           <button id="go-btn" class="primary-wide">產生穿搭圖</button>
         </div>
@@ -1010,6 +964,16 @@
 
         <div class="preview-wrap anchor" id="anchor-preview">
           <div class="preview-inner" id="preview-box">
+            <div class="preview-tools">
+              <button class="tool-btn" id="btn-fullscreen" title="全螢幕預覽" type="button">
+                <span class="icon">⛶</span> 全螢幕
+              </button>
+              <button class="tool-btn fav" id="btn-fav" title="收藏/取消收藏" type="button" disabled>
+                <span class="icon" id="fav-icon">♡</span>
+                <span id="fav-text">收藏</span>
+              </button>
+            </div>
+
             <div id="img-skeleton" style="display:none;width:100%;height:100%;">
               <div class="img-skel-wrap">
                 <div class="skel img-skel-line" style="width:68%"></div>
@@ -1022,17 +986,6 @@
             <div class="placeholder" id="img-placeholder">尚未產生示意圖</div>
           </div>
 
-          <!-- toolbar: fullscreen + favorite -->
-          <div class="preview-toolbar">
-            <div class="toolbar-left">
-              <button class="mini-btn" id="fullscreen-btn">🔍 全螢幕預覽</button>
-            </div>
-            <div class="toolbar-right">
-              <button class="mini-btn" id="favorite-btn" disabled>♡ 收藏這套</button>
-            </div>
-          </div>
-          <div class="mini-hint" id="fav-hint" style="margin-top:8px;"></div>
-
           <div class="statusbar" id="statusbar">
             狀態：<span id="status-text">等待操作</span>
             <span id="status-dots" style="display:none">
@@ -1040,10 +993,10 @@
             </span>
             <div class="progress"><div id="progress-bar"></div></div>
 
-            <!-- Retry controls -->
+            <!-- ✅ Retry controls -->
             <div class="action-row" id="retry-row" style="display:none;">
-              <button class="mini-btn primary" id="retry-btn">重試目前步驟</button>
-              <button class="mini-btn danger" id="restart-btn">從頭重跑</button>
+              <button class="mini-btn primary" id="retry-btn" type="button">重試目前步驟</button>
+              <button class="mini-btn danger" id="restart-btn" type="button">從頭重跑</button>
               <div class="mini-hint" id="retry-hint"></div>
             </div>
           </div>
@@ -1058,6 +1011,25 @@
           <div class="summary-text" id="summary-text"></div>
         </div>
 
+        <!-- 收藏 / 最近 10 套 -->
+        <div class="section-title" style="margin-top:12px;">
+          <span class="pill">收藏 / 最近 10 套</span>
+        </div>
+        <div class="collection-wrap" id="collection-wrap">
+          <div class="tabs">
+            <button class="tab active" id="tab-recents" type="button">最近 10 套</button>
+            <button class="tab" id="tab-favs" type="button">已收藏</button>
+          </div>
+          <div class="tabpanes">
+            <div class="pane active" id="pane-recents">
+              <div class="mini-list" id="recents-list"></div>
+            </div>
+            <div class="pane" id="pane-favs">
+              <div class="mini-list" id="favs-list"></div>
+            </div>
+          </div>
+        </div>
+
         <div class="section-title anchor" id="anchor-products">
           <span class="pill">類似商品（Google Shopping）</span>
         </div>
@@ -1065,54 +1037,28 @@
           <div class="placeholder" style="padding:16px;">尚未產生商品</div>
         </div>
 
-        <!-- History -->
-        <div class="history-wrap" id="history-wrap">
-          <div class="history-head">
-            <div class="h-title">🗂️ 結果管理</div>
-            <div class="h-actions">
-              <button class="h-btn danger" id="clear-fav">清空收藏</button>
-              <button class="h-btn danger" id="clear-recent">清空最近</button>
-            </div>
-          </div>
-
-          <div class="tabs">
-            <button class="tab active" id="tab-recent">最近 10 套</button>
-            <button class="tab" id="tab-fav">已收藏</button>
-          </div>
-
-          <div class="history-list" id="history-list"></div>
-        </div>
-
         <pre class="debug" id="debug-box"></pre>
       </section>
     </main>
   </div>
 
-  <!-- Mobile fixed action bar -->
+  <!-- ✅ Mobile fixed action bar -->
   <div class="mobile-actionbar" id="mobile-actionbar" style="display:none;">
-    <button id="go-btn-mobile" class="primary-wide">產生穿搭圖</button>
+    <button id="go-btn-mobile" class="primary-wide" type="button">產生穿搭圖</button>
   </div>
 
-  <!-- Fullscreen image modal -->
-  <div class="img-modal" id="img-modal" aria-hidden="true">
-    <div class="backdrop" id="img-modal-backdrop"></div>
-    <div class="sheet">
-      <div class="content">
-        <div class="topbar">
-          <div class="left">🖼️ Outfit Preview</div>
-          <div class="right">
-            <a class="dlbtn" id="img-download" href="#" download>⬇️ 下載</a>
-            <button class="xbtn" id="img-modal-close">✕</button>
-          </div>
-        </div>
-        <div class="viewer">
-          <img id="img-modal-img" alt="Fullscreen preview" />
-        </div>
+  <!-- Fullscreen modal -->
+  <div class="modal" id="img-modal" aria-hidden="true">
+    <div class="modal-card" role="dialog" aria-modal="true" aria-label="全螢幕預覽">
+      <div class="modal-top">
+        <button class="m-btn" id="modal-close" type="button">關閉 ✕</button>
+        <button class="m-btn" id="modal-save" type="button">下載圖片 ⬇︎</button>
       </div>
+      <img id="modal-img" alt="Outfit fullscreen preview" />
     </div>
   </div>
 
-  <!-- Supabase JS SDK (v2) -->
+  <!-- ✅ Supabase JS SDK (v2) -->
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 
   <script>
@@ -1127,15 +1073,15 @@
       if (!el) return;
       el.scrollIntoView({ behavior, block });
     }
-
     function setFormDisabled(disabled) {
       const form = document.getElementById("left-panel");
       if (!form) return;
       form.classList.toggle("form-disabled", disabled);
     }
+    function sleep(ms){ return new Promise(r => setTimeout(r, ms)); }
 
     /***********************
-     * Step text
+     * Step text (3段按鈕文字 + 狀態文字同步)
      ***********************/
     const GENERATE_STEPS = {
       idle: { btn: "產生穿搭圖", text: "等待操作" },
@@ -1145,7 +1091,6 @@
       done: { btn: "再生成一套", text: "完成 ✅" },
       failed: { btn: "再試一次", text: "失敗 ❌" },
     };
-
     function setGenerateStep(step) {
       const cfg = GENERATE_STEPS[step] || GENERATE_STEPS.idle;
 
@@ -1163,8 +1108,9 @@
      ***********************/
     const SUPABASE_PROJECT_REF = "auiwcsolpvufxxyhnvaf";
     const SUPABASE_URL = `https://${SUPABASE_PROJECT_REF}.supabase.co`;
-    const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImF1aXdjc29scHZ1Znh4eWhudmFmIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjQ5MzUwMDEsImV4cCI6MjA4MDUxMTAwMX0.KeD8JXdHs5Iu7-wf0F0GpUPp-_y5X5ha6mwBcR5eYDA";
-    const REDIRECT_TO = "https://simon-one-ochre.vercel.app/body-test.html";
+
+    const SUPABASE_ANON_KEY = "PASTE_YOUR_SUPABASE_ANON_KEY_HERE";
+    const REDIRECT_TO = location.origin + "/body-test.html";
 
     /***********************
      * 0.5) Slider bindings
@@ -1283,7 +1229,7 @@
     }
 
     async function loginGoogle() {
-      if (SUPABASE_ANON_KEY.startsWith("PASTE_")) {
+      if (!SUPABASE_ANON_KEY || SUPABASE_ANON_KEY.startsWith("PASTE_")) {
         alert("請先在 body-test.html 填入 SUPABASE_ANON_KEY（Supabase → Settings → API → anon public key）");
         return;
       }
@@ -1448,16 +1394,11 @@
     }
 
     /***********************
-     * C) Products grouped by slot
+     * Products grouped by slot
      ***********************/
     const SLOT_ORDER = ["top","bottom","shoes","outer","bag","hat"];
     const SLOT_LABEL_ZH = {
-      top: "上衣",
-      bottom: "下身",
-      shoes: "鞋子",
-      outer: "外套",
-      bag: "包包",
-      hat: "帽子"
+      top: "上衣", bottom: "下身", shoes: "鞋子", outer: "外套", bag: "包包", hat: "帽子"
     };
 
     function groupProductsBySlot(list) {
@@ -1551,11 +1492,13 @@
      * A) Step retry state machine
      ***********************/
     const flowState = {
-      lastStep: "idle",
+      lastStep: "idle",      // "spec" | "image" | "products"
       payload: null,
+      me: null,
       spec: null,
       imgResp: null,
-      products: null
+      products: null,
+      currentOutfitId: null
     };
 
     function showRetryUI(show, step="", hint="") {
@@ -1652,9 +1595,7 @@
         await runStepImage(payload, flowState.spec);
         renderProductsSkeleton(4);
         await runStepProducts(payload, flowState.spec);
-        setGenerateStep("done");
-        setProgress(100);
-        setStatus("完成 ✅", true, false);
+        finalizeDoneNoThrow();
         scrollToEl("anchor-products", "smooth", "start");
         return;
       }
@@ -1663,9 +1604,7 @@
         if (!flowState.spec) throw new Error("spec 不存在（請從頭重跑）");
         renderProductsSkeleton(4);
         await runStepProducts(payload, flowState.spec);
-        setGenerateStep("done");
-        setProgress(100);
-        setStatus("完成 ✅", true, false);
+        finalizeDoneNoThrow();
         scrollToEl("anchor-products", "smooth", "start");
         return;
       }
@@ -1674,395 +1613,501 @@
     }
 
     /***********************
-     * B) Auto scroll behavior
+     * B) Auto scroll behavior (desktop + mobile)
      ***********************/
     function autoScrollOnStart() {
-      // mobile & desktop: scroll right panel preview into view
+      // 生成後：直接滑到示意圖（桌機/手機都要）
       scrollToEl("anchor-preview", "smooth", "start");
     }
     function autoScrollOnDone() {
+      // 完成後：滑到商品（桌機/手機都要）
       scrollToEl("anchor-products", "smooth", "start");
     }
 
     /***********************
-     * D) Fullscreen image modal
+     * Fullscreen preview
      ***********************/
-    function currentOutfitImageDataUrl(){
+    const modal = document.getElementById("img-modal");
+    const modalImg = document.getElementById("modal-img");
+    const modalClose = document.getElementById("modal-close");
+    const modalSave = document.getElementById("modal-save");
+
+    function openModalWithCurrentImage() {
       const img = document.getElementById("outfit-image");
-      const src = img?.getAttribute("src") || "";
-      return (src && src.startsWith("data:")) ? src : "";
-    }
-
-    function openImageModal(dataUrl) {
-      const modal = document.getElementById("img-modal");
-      const modalImg = document.getElementById("img-modal-img");
-      const download = document.getElementById("img-download");
-      if (!modal || !modalImg || !download) return;
-
-      modalImg.src = dataUrl;
-      download.href = dataUrl;
-
-      const ext = dataUrl.includes("image/jpeg") ? "jpg" : "png";
-      download.setAttribute("download", `outfit-${Date.now()}.${ext}`);
-
-      modal.style.display = "block";
-      modal.setAttribute("aria-hidden","false");
+      if (!img || !img.src) return;
+      modalImg.src = img.src;
+      modal.classList.add("on");
+      modal.setAttribute("aria-hidden", "false");
       document.body.style.overflow = "hidden";
     }
-
-    function closeImageModal(){
-      const modal = document.getElementById("img-modal");
-      const modalImg = document.getElementById("img-modal-img");
-      if (!modal) return;
-      modal.style.display = "none";
-      modal.setAttribute("aria-hidden","true");
-      if (modalImg) modalImg.src = "";
+    function closeModal() {
+      modal.classList.remove("on");
+      modal.setAttribute("aria-hidden", "true");
       document.body.style.overflow = "";
     }
+    modalClose.addEventListener("click", closeModal);
+    modal.addEventListener("click", (e) => { if (e.target === modal) closeModal(); });
+    window.addEventListener("keydown", (e) => { if (e.key === "Escape" && modal.classList.contains("on")) closeModal(); });
 
-    function bindImageModal() {
-      const modal = document.getElementById("img-modal");
-      const closeBtn = document.getElementById("img-modal-close");
-      const backdrop = document.getElementById("img-modal-backdrop");
-      const img = document.getElementById("outfit-image");
-      const previewBtn = document.getElementById("fullscreen-btn");
-      const favHint = document.getElementById("fav-hint");
+    modalSave.addEventListener("click", () => {
+      try{
+        const src = modalImg.src;
+        if (!src) return;
+        const a = document.createElement("a");
+        a.href = src;
+        a.download = "outfit.png";
+        document.body.appendChild(a);
+        a.click();
+        a.remove();
+      }catch(e){ console.error(e); }
+    });
 
-      if (!modal || !closeBtn || !backdrop) {
-        console.warn("[bindImageModal] modal elements missing");
-        return;
-      }
-
-      // prevent double binding by cloning nodes
-      function replaceWithClone(el) {
-        if (!el) return null;
-        const clone = el.cloneNode(true);
-        el.parentNode.replaceChild(clone, el);
-        return clone;
-      }
-
-      const newCloseBtn = replaceWithClone(closeBtn);
-      const newBackdrop = replaceWithClone(backdrop);
-      const newPreviewBtn = replaceWithClone(previewBtn);
-      const newImg = replaceWithClone(img);
-
-      function getDataUrlOrWarn() {
-        const dataUrl = currentOutfitImageDataUrl();
-        if (!dataUrl) {
-          if (favHint) favHint.textContent = "尚未有可預覽的圖片（請先生成）";
-          return "";
-        }
-        return dataUrl;
-      }
-
-      newCloseBtn.addEventListener("click", closeImageModal);
-      newBackdrop.addEventListener("click", closeImageModal);
-
-      document.addEventListener("keydown", (e) => {
-        if (modal.style.display === "block" && e.key === "Escape") closeImageModal();
-      });
-
-      if (newImg) {
-        newImg.style.cursor = "zoom-in";
-        newImg.addEventListener("click", () => {
-          const dataUrl = getDataUrlOrWarn();
-          if (!dataUrl) return;
-          openImageModal(dataUrl);
-        });
-      }
-
-      if (newPreviewBtn) {
-        newPreviewBtn.addEventListener("click", () => {
-          const dataUrl = getDataUrlOrWarn();
-          if (!dataUrl) return;
-          openImageModal(dataUrl);
-        });
-      }
-
-      console.log("[bindImageModal] bound ✅");
-    }
+    document.getElementById("btn-fullscreen").addEventListener("click", openModalWithCurrentImage);
+    document.getElementById("outfit-image").addEventListener("click", openModalWithCurrentImage);
 
     /***********************
-     * E) Favorites + Recent (Top 10)
+     * 收藏 / 最近 10 套（本機儲存）
+     * - metadata: localStorage
+     * - image dataUrl: IndexedDB（避免 localStorage 爆掉）
      ***********************/
-    const STORAGE_RECENT = "os_recent_looks_v1";
-    const STORAGE_FAV = "os_fav_looks_v1";
+    const LS_RECENTS = "os_recents_v2";
+    const LS_FAVS = "os_favs_v2";
 
-    function nowTs(){ return Date.now(); }
+    function safeJsonParse(str, fallback){
+      try{ return JSON.parse(str); }catch{ return fallback; }
+    }
+    function readList(key){
+      const raw = localStorage.getItem(key);
+      const arr = safeJsonParse(raw, []);
+      return Array.isArray(arr) ? arr : [];
+    }
+    function writeList(key, arr){
+      try{ localStorage.setItem(key, JSON.stringify(arr)); return true; }
+      catch(e){ console.warn("localStorage write failed", e); return false; }
+    }
 
-    function loadJson(key, fallback){
+    // IndexedDB tiny wrapper
+    const IDB_NAME = "os_outfits_db_v1";
+    const IDB_STORE = "images";
+    function openDb(){
+      return new Promise((resolve, reject) => {
+        const req = indexedDB.open(IDB_NAME, 1);
+        req.onupgradeneeded = () => {
+          const db = req.result;
+          if (!db.objectStoreNames.contains(IDB_STORE)) {
+            db.createObjectStore(IDB_STORE, { keyPath: "id" });
+          }
+        };
+        req.onsuccess = () => resolve(req.result);
+        req.onerror = () => reject(req.error);
+      });
+    }
+    async function idbPutImage(id, dataUrl){
       try{
-        const raw = localStorage.getItem(key);
-        if (!raw) return fallback;
-        return JSON.parse(raw);
-      }catch{ return fallback; }
-    }
-    function saveJson(key, value){
-      localStorage.setItem(key, JSON.stringify(value));
-    }
-
-    function loadRecent(){ return loadJson(STORAGE_RECENT, []); }
-    function saveRecent(arr){ saveJson(STORAGE_RECENT, arr); }
-
-    function loadFav(){ return loadJson(STORAGE_FAV, []); }
-    function saveFav(arr){ saveJson(STORAGE_FAV, arr); }
-
-    function makeLookKey(payload) {
-      const core = {
-        gender: payload.gender,
-        age: payload.age,
-        height: payload.height,
-        weight: payload.weight,
-        style: payload.style,
-        styleVariant: payload.styleVariant,
-        temp: payload.temp,
-        withBag: payload.withBag,
-        withHat: payload.withHat,
-        withCoat: payload.withCoat
-      };
-      return btoa(unescape(encodeURIComponent(JSON.stringify(core)))).slice(0, 32);
-    }
-
-    function makeLookIdUnique() {
-      if (typeof crypto !== "undefined" && crypto.randomUUID) return crypto.randomUUID();
-      return `look_${Date.now()}_${Math.random().toString(16).slice(2)}`;
-    }
-
-    function formatLookTitle(payload){
-      const style = payload.style || "casual";
-      const g = payload.gender === "male" ? "男" : payload.gender === "female" ? "女" : "中性";
-      const t = (payload.temp ?? "") + "°C";
-      const v = payload.styleVariant ? ` · ${payload.styleVariant}` : "";
-      return `${g} · ${style}${v} · ${t}`;
-    }
-
-    function buildLookSnapshot({ payload, spec, products, imgDataUrl, summary }) {
-      return {
-        id: makeLookIdUnique(),
-        key: makeLookKey(payload),
-        created_at: nowTs(),
-        title: formatLookTitle(payload),
-        payload,
-        summary: summary || "",
-        image: imgDataUrl || "",
-        products: Array.isArray(products) ? products : []
-      };
-    }
-
-    function upsertRecent(look){
-      const arr = loadRecent();
-      const idx = arr.findIndex(x => x.key && look.key && x.key === look.key);
-      if (idx >= 0) arr.splice(idx, 1);
-      arr.unshift(look);
-      saveRecent(arr.slice(0, 10));
-    }
-
-    function isFavorited(lookId){
-      const fav = loadFav();
-      return fav.some(x => x.id === lookId);
-    }
-
-    function toggleFavorite(look){
-      const fav = loadFav();
-      const idx = fav.findIndex(x => x.id === look.id);
-      if (idx >= 0) {
-        fav.splice(idx, 1);
-        saveFav(fav);
+        const db = await openDb();
+        await new Promise((resolve, reject) => {
+          const tx = db.transaction(IDB_STORE, "readwrite");
+          tx.objectStore(IDB_STORE).put({ id, dataUrl });
+          tx.oncomplete = () => resolve(true);
+          tx.onerror = () => reject(tx.error);
+        });
+        db.close();
+        return true;
+      }catch(e){
+        console.warn("idbPutImage failed", e);
         return false;
       }
-      fav.unshift(look);
-      saveFav(fav);
-      return true;
     }
-
-    function resetFavoriteUI() {
-      const btn = document.getElementById("favorite-btn");
-      const hint = document.getElementById("fav-hint");
-      if (!btn) return;
-      btn.textContent = "♡ 收藏這套";
-      btn.dataset.lookId = "";
-      btn.disabled = true;
-      if (hint) hint.textContent = "";
-    }
-
-    function syncFavoriteButton(lookId) {
-      const btn = document.getElementById("favorite-btn");
-      const hint = document.getElementById("fav-hint");
-      if (!btn) return;
-
-      if (!lookId) {
-        btn.textContent = "♡ 收藏這套";
-        if (hint) hint.textContent = "先生成或載入一套";
-        return;
-      }
-
-      const fav = isFavorited(lookId);
-      btn.textContent = fav ? "♥ 已收藏" : "♡ 收藏這套";
-      if (hint) hint.textContent = "";
-    }
-
-    function enableFavoriteUI(lookId) {
-      const btn = document.getElementById("favorite-btn");
-      if (!btn) return;
-      btn.dataset.lookId = lookId || "";
-      btn.disabled = !lookId;
-      syncFavoriteButton(lookId);
-    }
-
-    function renderHistory(activeTab){
-      const tabRecent = document.getElementById("tab-recent");
-      const tabFav = document.getElementById("tab-fav");
-      const listEl = document.getElementById("history-list");
-      if (!tabRecent || !tabFav || !listEl) return;
-
-      const tab = activeTab || (tabFav.classList.contains("active") ? "fav" : "recent");
-      tabRecent.classList.toggle("active", tab === "recent");
-      tabFav.classList.toggle("active", tab === "fav");
-
-      const data = tab === "fav" ? loadFav() : loadRecent();
-      listEl.innerHTML = "";
-
-      if (!data || data.length === 0) {
-        listEl.innerHTML = `<div class="h-empty">${tab === "fav" ? "尚未收藏任何結果" : "尚無最近結果（生成後會出現）"}</div>`;
-        return;
-      }
-
-      data.forEach(look => {
-        const row = document.createElement("div");
-        row.className = "h-item";
-        const img = look.image ? `<img src="${look.image}" alt="">` : "";
-        row.innerHTML = `
-          <div class="h-thumb">${img || "—"}</div>
-          <div class="h-main">
-            <div class="h-title">${escapeHtml(look.title || "Outfit")}</div>
-            <div class="h-meta">
-              <span>${new Date(look.created_at || Date.now()).toLocaleString()}</span>
-              ${look.products?.length ? `<span>商品：${look.products.length}</span>` : `<span>商品：—</span>`}
-            </div>
-            <div class="h-btns">
-              <button class="h-btn" data-act="load" data-id="${look.id}">載入</button>
-              <button class="h-btn" data-act="preview" data-id="${look.id}">預覽</button>
-              <button class="h-btn danger" data-act="remove" data-id="${look.id}">${tab === "fav" ? "移除收藏" : "刪除"}</button>
-            </div>
-          </div>
-        `;
-        listEl.appendChild(row);
-      });
-    }
-
-    function getLookById(id){
-      const fav = loadFav();
-      const recent = loadRecent();
-      return fav.find(x => x.id === id) || recent.find(x => x.id === id) || null;
-    }
-
-    function loadLookIntoUI(look){
-      if (!look) return;
-
-      // Left panel values
-      const payload = look.payload || {};
-      document.getElementById("gender").value = payload.gender || "female";
-      if (payload.age != null) document.getElementById("age").value = payload.age;
-      if (payload.height != null) document.getElementById("height").value = payload.height;
-      if (payload.weight != null) document.getElementById("weight").value = payload.weight;
-      if (payload.temp != null) document.getElementById("temp").value = payload.temp;
-      document.getElementById("styleVariant").value = payload.styleVariant || "";
-
-      // re-paint slider text
-      document.getElementById("age-val").textContent = document.getElementById("age").value;
-      document.getElementById("height-val").textContent = document.getElementById("height").value;
-      document.getElementById("weight-val").textContent = document.getElementById("weight").value;
-      document.getElementById("temp-val").textContent = document.getElementById("temp").value;
-
-      // style cards
-      const hidden = document.getElementById("style");
-      hidden.value = payload.style || "casual";
-      const cards = Array.from(document.querySelectorAll(".style-card"));
-      cards.forEach(c => c.classList.toggle("selected", c.dataset.style === hidden.value));
-
-      // toggles - set switches visually
-      setSwitchState("sw-bag", !!payload.withBag);
-      setSwitchState("sw-hat", !!payload.withHat);
-      setSwitchState("sw-coat", !!payload.withCoat);
-
-      // right panel
-      if (look.image) {
-        const img = document.getElementById("outfit-image");
-        const ph = document.getElementById("img-placeholder");
-        img.src = look.image;
-        img.style.display = "block";
-        ph.style.display = "none";
-        showImageSkeleton(false);
-      } else {
-        clearImage();
-      }
-
-      renderOutfitSummary(look.summary || "");
-
-      if (Array.isArray(look.products)) {
-        renderProductsGrouped(look.products);
-      } else {
-        renderProductsGrouped([]);
-      }
-
-      // set as current look for favorite
-      enableFavoriteUI(look.id);
-      scrollToEl("anchor-preview", "smooth", "start");
-    }
-
-    function setSwitchState(id, on){
-      const el = document.getElementById(id);
-      if (!el) return;
-      el.classList.toggle("on", on);
-      el.setAttribute("aria-checked", on ? "true" : "false");
-      // also update the bound getter by storing on element dataset
-      el.dataset._force = on ? "1" : "0";
-    }
-
-    /***********************
-     * IMPORTANT: bindSwitch upgraded to respect force state
-     ***********************/
-    function bindSwitchUpgraded(id, initial=false) {
-      const el = document.getElementById(id);
-      let on = initial;
-
-      const readForced = () => {
-        if (!el) return null;
-        if (el.dataset._force === "1") return true;
-        if (el.dataset._force === "0") return false;
+    async function idbGetImage(id){
+      try{
+        const db = await openDb();
+        const dataUrl = await new Promise((resolve, reject) => {
+          const tx = db.transaction(IDB_STORE, "readonly");
+          const req = tx.objectStore(IDB_STORE).get(id);
+          req.onsuccess = () => resolve(req.result?.dataUrl || null);
+          req.onerror = () => reject(req.error);
+        });
+        db.close();
+        return dataUrl;
+      }catch(e){
+        console.warn("idbGetImage failed", e);
         return null;
-      };
+      }
+    }
+    async function idbDelImage(id){
+      try{
+        const db = await openDb();
+        await new Promise((resolve, reject) => {
+          const tx = db.transaction(IDB_STORE, "readwrite");
+          tx.objectStore(IDB_STORE).delete(id);
+          tx.oncomplete = () => resolve(true);
+          tx.onerror = () => reject(tx.error);
+        });
+        db.close();
+        return true;
+      }catch(e){
+        console.warn("idbDelImage failed", e);
+        return false;
+      }
+    }
 
-      const paint = () => {
-        const forced = readForced();
-        if (forced !== null) on = forced;
-        el.classList.toggle("on", on);
-        el.setAttribute("aria-checked", on ? "true" : "false");
+    // Outfit identity
+    function stableStringify(obj){
+      const seen = new WeakSet();
+      const sorter = (k, v) => {
+        if (v && typeof v === "object") {
+          if (seen.has(v)) return;
+          seen.add(v);
+          if (Array.isArray(v)) return v;
+          const out = {};
+          Object.keys(v).sort().forEach(key => out[key] = v[key]);
+          return out;
+        }
+        return v;
       };
+      return JSON.stringify(obj, sorter);
+    }
+    async function sha256Hex(str){
+      const enc = new TextEncoder().encode(str);
+      const buf = await crypto.subtle.digest("SHA-256", enc);
+      return [...new Uint8Array(buf)].map(b=>b.toString(16).padStart(2,"0")).join("");
+    }
+    async function computeOutfitId(payload, spec){
+      const core = {
+        payload: {
+          gender: payload.gender,
+          age: payload.age,
+          height: payload.height,
+          weight: payload.weight,
+          style: payload.style,
+          styleVariant: payload.styleVariant || "",
+          temp: payload.temp,
+          withBag: !!payload.withBag,
+          withHat: !!payload.withHat,
+          withCoat: !!payload.withCoat,
+        },
+        items: (spec?.items || []).map(i => ({
+          slot: i.slot, generic_name: i.generic_name, display_name_zh: i.display_name_zh, color: i.color, style: i.style, gender: i.gender, warmth: i.warmth
+        })),
+        summary: spec?.summary || ""
+      };
+      return await sha256Hex(stableStringify(core));
+    }
 
-      paint();
-      el.addEventListener("click", () => {
-        // clear force and toggle
-        el.dataset._force = "";
-        on = !on;
-        paint();
-      });
-      return () => {
-        const forced = readForced();
-        if (forced !== null) return forced;
-        return on;
-      };
+    function fmtTime(ts){
+      try{
+        const d = new Date(ts);
+        const m = String(d.getMonth()+1).padStart(2,"0");
+        const day = String(d.getDate()).padStart(2,"0");
+        const hh = String(d.getHours()).padStart(2,"0");
+        const mm = String(d.getMinutes()).padStart(2,"0");
+        return `${m}/${day} ${hh}:${mm}`;
+      }catch{ return ""; }
+    }
+
+    // UI: tabs
+    const tabRecents = document.getElementById("tab-recents");
+    const tabFavs = document.getElementById("tab-favs");
+    const paneRecents = document.getElementById("pane-recents");
+    const paneFavs = document.getElementById("pane-favs");
+
+    function setTab(which){
+      const rec = which === "recents";
+      tabRecents.classList.toggle("active", rec);
+      tabFavs.classList.toggle("active", !rec);
+      paneRecents.classList.toggle("active", rec);
+      paneFavs.classList.toggle("active", !rec);
+    }
+    tabRecents.addEventListener("click", () => setTab("recents"));
+    tabFavs.addEventListener("click", () => setTab("favs"));
+
+    // Render lists
+    async function renderMiniList(targetId, listKey){
+      const root = document.getElementById(targetId);
+      if (!root) return;
+
+      const list = readList(listKey);
+      root.innerHTML = "";
+
+      if (!list.length) {
+        root.innerHTML = `<div class="mini-empty">目前沒有資料。</div>`;
+        return;
+      }
+
+      for (const item of list) {
+        const row = document.createElement("div");
+        row.className = "mini-card";
+
+        const thumb = document.createElement("div");
+        thumb.className = "mini-thumb";
+        thumb.innerHTML = "載入中…";
+
+        const info = document.createElement("div");
+        info.className = "mini-info";
+        const title = (item.summary || "一套穿搭").trim() || "一套穿搭";
+        const meta = `${fmtTime(item.ts)} · ${item.payload?.gender || ""} · ${item.payload?.style || ""} · ${item.payload?.temp ?? ""}°C`;
+        info.innerHTML = `<div class="t">${escapeHtml(title)}</div><div class="m">${escapeHtml(meta)}</div>`;
+
+        const actions = document.createElement("div");
+        actions.className = "mini-actions";
+
+        const btnLoad = document.createElement("button");
+        btnLoad.className = "chip-btn";
+        btnLoad.type = "button";
+        btnLoad.textContent = "套用";
+        btnLoad.addEventListener("click", async () => {
+          await applySavedOutfit(item.id);
+        });
+
+        const btnDel = document.createElement("button");
+        btnDel.className = "chip-btn danger";
+        btnDel.type = "button";
+        btnDel.textContent = "刪除";
+        btnDel.addEventListener("click", async () => {
+          await removeSavedOutfit(listKey, item.id);
+        });
+
+        actions.appendChild(btnLoad);
+        actions.appendChild(btnDel);
+
+        row.appendChild(thumb);
+        row.appendChild(info);
+        row.appendChild(actions);
+        root.appendChild(row);
+
+        // load thumb async
+        const dataUrl = await idbGetImage(item.imageId || item.id);
+        if (dataUrl) {
+          thumb.innerHTML = `<img src="${dataUrl}" alt="">`;
+        } else {
+          thumb.innerHTML = "無圖";
+        }
+        // click thumb to preview
+        thumb.addEventListener("click", async () => {
+          const dataUrl2 = await idbGetImage(item.imageId || item.id);
+          if (!dataUrl2) return;
+          modalImg.src = dataUrl2;
+          modal.classList.add("on");
+          modal.setAttribute("aria-hidden", "false");
+          document.body.style.overflow = "hidden";
+        });
+      }
+    }
+
+    async function refreshCollectionsUI(){
+      await renderMiniList("recents-list", LS_RECENTS);
+      await renderMiniList("favs-list", LS_FAVS);
+    }
+
+    // Save / Remove
+    async function upsertRecent(outfit){
+      // non-throw
+      try{
+        const list = readList(LS_RECENTS);
+        const filtered = list.filter(x => x.id !== outfit.id);
+        filtered.unshift(outfit);
+        const trimmed = filtered.slice(0, 10);
+        writeList(LS_RECENTS, trimmed);
+      }catch(e){
+        console.warn("upsertRecent failed", e);
+      }
+    }
+
+    function isFav(id){
+      const list = readList(LS_FAVS);
+      return list.some(x => x.id === id);
+    }
+
+    async function setFav(outfit, on){
+      // non-throw
+      try{
+        const list = readList(LS_FAVS);
+        const exists = list.some(x => x.id === outfit.id);
+        let next = list;
+        if (on) {
+          if (!exists) next = [outfit, ...list].slice(0, 200);
+        } else {
+          next = list.filter(x => x.id !== outfit.id);
+        }
+        writeList(LS_FAVS, next);
+      }catch(e){
+        console.warn("setFav failed", e);
+      }
+    }
+
+    async function removeSavedOutfit(listKey, id){
+      try{
+        const list = readList(listKey);
+        const item = list.find(x => x.id === id);
+        const next = list.filter(x => x.id !== id);
+        writeList(listKey, next);
+        // optional: also delete image (only if not referenced elsewhere)
+        // keep it simple: delete always
+        const imageId = item?.imageId || id;
+        await idbDelImage(imageId);
+      }catch(e){
+        console.warn("removeSavedOutfit failed", e);
+      } finally {
+        await refreshCollectionsUI();
+        syncFavButtonUI();
+      }
+    }
+
+    async function applySavedOutfit(id){
+      // Load saved outfit into UI (preview + summary + products if present)
+      const all = [...readList(LS_RECENTS), ...readList(LS_FAVS)];
+      const item = all.find(x => x.id === id);
+      if (!item) return;
+
+      // Fill form payload
+      try{
+        const p = item.payload || {};
+        const setRange = (id, v) => { const el = document.getElementById(id); if (el && v !== undefined && v !== null) { el.value = String(v); el.dispatchEvent(new Event("input")); } };
+        const sel = (id, v) => { const el = document.getElementById(id); if (el && v !== undefined && v !== null) el.value = String(v); };
+
+        sel("gender", p.gender || "neutral");
+        setRange("age", p.age ?? 25);
+        setRange("height", p.height ?? 165);
+        setRange("weight", p.weight ?? 55);
+        setRange("temp", p.temp ?? 22);
+        sel("styleVariant", p.styleVariant || "");
+        // style cards
+        document.getElementById("style").value = p.style || "casual";
+        // repaint style cards
+        document.querySelectorAll(".style-card").forEach(c => c.classList.toggle("selected", c.dataset.style === (p.style || "casual")));
+
+        // switches (simulate click if mismatch)
+        const wantBag = !!p.withBag, wantHat = !!p.withHat, wantCoat = !!p.withCoat;
+        const swBag = document.getElementById("sw-bag");
+        const swHat = document.getElementById("sw-hat");
+        const swCoat = document.getElementById("sw-coat");
+        const isOn = (el) => el.classList.contains("on");
+        if (swBag && isOn(swBag) !== wantBag) swBag.click();
+        if (swHat && isOn(swHat) !== wantHat) swHat.click();
+        if (swCoat && isOn(swCoat) !== wantCoat) swCoat.click();
+
+        // Show preview + summary
+        const dataUrl = await idbGetImage(item.imageId || item.id);
+        if (dataUrl) {
+          const img = document.getElementById("outfit-image");
+          const ph = document.getElementById("img-placeholder");
+          img.src = dataUrl;
+          img.style.display = "block";
+          ph.style.display = "none";
+        }
+        renderOutfitSummary(item.summary || "");
+
+        // Products (if stored)
+        const products = item.products || [];
+        if (Array.isArray(products) && products.length) {
+          renderProductsGrouped(products);
+        } else {
+          // don't override user's current products too aggressively
+        }
+
+        // Update flowState for current
+        flowState.currentOutfitId = item.id;
+        syncFavButtonUI();
+
+        // scroll to preview
+        scrollToEl("anchor-preview", "smooth", "start");
+      }catch(e){
+        console.warn("applySavedOutfit failed", e);
+      }
+    }
+
+    // Fav button UI
+    const favBtn = document.getElementById("btn-fav");
+    const favIcon = document.getElementById("fav-icon");
+    const favText = document.getElementById("fav-text");
+
+    function syncFavButtonUI(){
+      const id = flowState.currentOutfitId;
+      const enabled = !!id && !!flowState.imgResp && !!flowState.spec;
+      favBtn.disabled = !enabled;
+      if (!enabled){
+        favBtn.classList.remove("on");
+        favIcon.textContent = "♡";
+        favText.textContent = "收藏";
+        return;
+      }
+      const on = isFav(id);
+      favBtn.classList.toggle("on", on);
+      favIcon.textContent = on ? "♥" : "♡";
+      favText.textContent = on ? "已收藏" : "收藏";
+    }
+
+    favBtn.addEventListener("click", async () => {
+      const id = flowState.currentOutfitId;
+      if (!id) return;
+
+      // build current outfit payload for saving
+      const outfit = await buildCurrentOutfitSnapshotNoThrow();
+      if (!outfit) return;
+
+      const on = !isFav(id);
+      await setFav(outfit, on);
+      // Ensure UI always refreshes even if storage fails
+      syncFavButtonUI();
+      await refreshCollectionsUI();
+    });
+
+    async function buildCurrentOutfitSnapshotNoThrow(){
+      try{
+        const id = flowState.currentOutfitId;
+        if (!id) return null;
+
+        // persist image into idb (use current image dataURL)
+        const img = document.getElementById("outfit-image");
+        const dataUrl = img?.src || null;
+        if (dataUrl && dataUrl.startsWith("data:")) {
+          await idbPutImage(id, dataUrl);
+        }
+
+        return {
+          id,
+          ts: Date.now(),
+          payload: flowState.payload,
+          summary: flowState.spec?.summary || "",
+          spec: flowState.spec,
+          products: Array.isArray(flowState.products) ? flowState.products : [],
+          imageId: id
+        };
+      }catch(e){
+        console.warn("buildCurrentOutfitSnapshot failed", e);
+        return null;
+      }
     }
 
     /***********************
-     * Rebind switches using upgraded
+     * 5) Main flow (fix: persistence NEVER throws the flow)
      ***********************/
-    // replace old getters
-    const getBag2 = () => false; // placeholder to avoid reference error
+    function resetPerRunUI(){
+      // reset error and retry
+      showRetryUI(false);
+      clearError();
 
-    /***********************
-     * 5) Main flow
-     ***********************/
+      // reset preview UI & products
+      clearImage();
+      showImageSkeleton(true);
+      renderProductsSkeleton(4);
+      renderOutfitSummary(null);
+
+      // reset fav for new run
+      flowState.currentOutfitId = null;
+      flowState.imgResp = null;
+      flowState.spec = null;
+      flowState.products = null;
+      syncFavButtonUI();
+    }
+
+    function finalizeDoneNoThrow(){
+      setGenerateStep("done");
+      setProgress(100);
+      setStatus("完成 ✅", true, false);
+      showRetryUI(false);
+    }
+
     async function generateAll(forceRestart=false) {
       showRetryUI(false);
       clearError();
@@ -2074,14 +2119,9 @@
         setProgress(0);
         setStatus("開始", null, true);
 
-        resetFavoriteUI(); // ✅ reset favorite each run
         autoScrollOnStart();
 
-        // Reset visuals
-        clearImage();
-        showImageSkeleton(true);
-        renderProductsSkeleton(4);
-        renderOutfitSummary(null);
+        resetPerRunUI();
 
         // Auth checks
         const ensured = await ensureTokenFromSession();
@@ -2095,6 +2135,7 @@
           setAuthUI({ loggedIn:false, hint:"登入狀態異常（/api/me 失敗）" });
           throw new Error("登入狀態異常（/api/me 失敗）");
         }
+        flowState.me = me;
 
         // Build payload
         const payload = {
@@ -2122,31 +2163,42 @@
         // Step 1: Spec
         const spec = await runStepSpec(payload, me);
 
+        // compute id early
+        const outfitId = await computeOutfitId(payload, spec);
+        flowState.currentOutfitId = outfitId;
+        syncFavButtonUI();
+
         // Step 2: Image
-        await runStepImage(payload, spec);
+        const imgResp = await runStepImage(payload, spec);
+        syncFavButtonUI();
+
+        // auto-scroll to preview once image exists (helps on mobile & desktop)
+        scrollToEl("anchor-preview", "smooth", "start");
 
         // Step 3: Products
-        await runStepProducts(payload, spec);
+        const products = await runStepProducts(payload, spec);
 
-        // Done UI
-        setGenerateStep("done");
-        setProgress(100);
-        setStatus("完成 ✅", true, false);
-
-        // Save look to recent (unique id) + enable favorite
-        const imgDataUrl = currentOutfitImageDataUrl();
-        const look = buildLookSnapshot({
-          payload,
-          spec,
-          products: flowState.products,
-          imgDataUrl,
-          summary: spec?.summary || ""
-        });
-        upsertRecent(look);
-        enableFavoriteUI(look.id);
-        renderHistory();
-
+        // Done
+        finalizeDoneNoThrow();
         autoScrollOnDone();
+
+        // Persist to recent (NON-THROW)
+        (async () => {
+          try{
+            const outfit = await buildCurrentOutfitSnapshotNoThrow();
+            if (!outfit) return;
+            // ensure products stored
+            outfit.products = Array.isArray(products) ? products : [];
+            // overwrite spec/products ts to actual done time
+            outfit.ts = Date.now();
+            await upsertRecent(outfit);
+            await refreshCollectionsUI();
+            syncFavButtonUI();
+          }catch(e){
+            console.warn("persist recent failed (non-fatal)", e);
+          }
+        })();
+
       } catch (e) {
         console.error(e);
         setGenerateStep("failed");
@@ -2155,6 +2207,7 @@
 
         const msg = String(e?.message || e);
 
+        // Show retry UI:
         if (flowState.spec && !flowState.imgResp) {
           showRetryUI(true, "Image", "Spec 已完成，可重試產生示意圖");
           flowState.lastStep = "spec";
@@ -2175,49 +2228,17 @@
     }
 
     /***********************
-     * retry buttons
-     ***********************/
-    async function onGenerateClick() {
-      showRetryUI(false);
-      try { await generateAll(false); } catch {}
-    }
-
-    /***********************
-     * loading UI
-     ***********************/
-    function setLoadingUI(on) {
-      const products = document.getElementById("products");
-      if (on) {
-        previewBox.classList.add("shimmer");
-        products.classList.add("shimmer");
-      } else {
-        previewBox.classList.remove("shimmer");
-        products.classList.remove("shimmer");
-      }
-    }
-
-    /***********************
-     * switches - set actual getters to upgraded ones
-     ***********************/
-    function initSwitches(){
-      window.getBag = bindSwitchUpgraded("sw-bag", false);
-      window.getHat = bindSwitchUpgraded("sw-hat", false);
-      window.getCoat = bindSwitchUpgraded("sw-coat", false);
-      window.getDebug = bindSwitchUpgraded("sw-debug", false);
-    }
-
-    /***********************
-     * INIT
+     * 6) INIT
      ***********************/
     (async function init() {
+      // sliders
       bindRange("age", "age-val");
       bindRange("height", "height-val");
       bindRange("weight", "weight-val");
       bindRange("temp", "temp-val");
       bindStyleCards();
 
-      initSwitches();
-
+      // auth buttons
       document.getElementById("login-btn").addEventListener("click", loginGoogle);
       document.getElementById("logout-btn").addEventListener("click", logout);
 
@@ -2259,7 +2280,16 @@
         }
       });
 
-      // Generate buttons
+      // Shared click handler for both buttons
+      async function onGenerateClick() {
+        showRetryUI(false);
+        try {
+          await generateAll(false);
+        } catch (e) {
+          // errors already shown
+        }
+      }
+
       const goBtnDesktop = document.getElementById("go-btn");
       const goBtnMobile = document.getElementById("go-btn-mobile");
 
@@ -2283,105 +2313,10 @@
         }
       });
 
-      // Favorite button
-      document.getElementById("favorite-btn").addEventListener("click", () => {
-        const btn = document.getElementById("favorite-btn");
-        const id = btn.dataset.lookId || "";
-        const fh = document.getElementById("fav-hint");
-
-        if (!id) {
-          if (fh) fh.textContent = "先生成或載入一套";
-          return;
-        }
-
-        const recent = loadRecent();
-        let look = recent.find(x => x.id === id);
-
-        if (!look) {
-          const fav = loadFav();
-          look = fav.find(x => x.id === id);
-        }
-
-        if (!look) {
-          look = {
-            id,
-            key: makeLookKey(flowState.payload || {}),
-            created_at: nowTs(),
-            title: formatLookTitle(flowState.payload || {}),
-            payload: flowState.payload || {},
-            summary: document.getElementById("summary-text")?.textContent || "",
-            image: currentOutfitImageDataUrl(),
-            products: flowState.products || []
-          };
-        }
-
-        const becameFav = toggleFavorite(look);
-        if (fh) fh.textContent = becameFav ? "已加入收藏" : "已取消收藏";
-
-        syncFavoriteButton(id);
-        renderHistory();
-      });
-
-      // Tabs
-      document.getElementById("tab-recent").addEventListener("click", () => renderHistory("recent"));
-      document.getElementById("tab-fav").addEventListener("click", () => renderHistory("fav"));
-
-      // Clear actions
-      document.getElementById("clear-fav").addEventListener("click", () => {
-        saveFav([]);
-        renderHistory("fav");
-        const btn = document.getElementById("favorite-btn");
-        const id = btn?.dataset?.lookId || "";
-        if (id) syncFavoriteButton(id);
-      });
-      document.getElementById("clear-recent").addEventListener("click", () => {
-        saveRecent([]);
-        renderHistory("recent");
-      });
-
-      // History list actions (event delegation)
-      document.getElementById("history-list").addEventListener("click", (e) => {
-        const t = e.target;
-        if (!t || !t.dataset || !t.dataset.act) return;
-        const act = t.dataset.act;
-        const id = t.dataset.id;
-        if (!id) return;
-
-        const tabFav = document.getElementById("tab-fav").classList.contains("active");
-
-        if (act === "load") {
-          const look = getLookById(id);
-          if (!look) return;
-          loadLookIntoUI(look);
-          return;
-        }
-
-        if (act === "preview") {
-          const look = getLookById(id);
-          if (!look?.image) return;
-          openImageModal(look.image);
-          return;
-        }
-
-        if (act === "remove") {
-          if (tabFav) {
-            const fav = loadFav().filter(x => x.id !== id);
-            saveFav(fav);
-            renderHistory("fav");
-            const btn = document.getElementById("favorite-btn");
-            if (btn?.dataset?.lookId === id) syncFavoriteButton(id);
-          } else {
-            const recent = loadRecent().filter(x => x.id !== id);
-            saveRecent(recent);
-            renderHistory("recent");
-          }
-          return;
-        }
-      });
-
-      // Debug on/off
+      // Debug pane initial
       document.getElementById("debug-box").classList.toggle("on", getDebug());
 
+      // Ensure session
       await ensureTokenFromSession();
       await refreshAuthUI();
 
@@ -2391,14 +2326,15 @@
         await refreshAuthUI();
       });
 
+      // collections
+      await refreshCollectionsUI();
+
+      // initial status
       setGenerateStep("idle");
       setProgress(0);
       setStatus("等待操作", null, false);
       setLoadingUI(false);
-
-      resetFavoriteUI();
-      renderHistory("recent");
-      bindImageModal();
+      syncFavButtonUI();
     })();
   </script>
 </body>
