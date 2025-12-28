@@ -763,6 +763,106 @@
       backdrop-filter: blur(8px);
     }
     .modal-top .m-btn:active{ transform: translateY(1px); opacity:.95; }
+  
+    /* ✅ UX: Toast + keyword chips + quick nav */
+    .toast{
+      position: fixed;
+      left: 50%;
+      transform: translateX(-50%);
+      bottom: calc(18px + var(--safe-b));
+      z-index: 2000;
+      background: rgba(17,24,39,.92);
+      color: #fff;
+      padding: 10px 12px;
+      border-radius: 999px;
+      font-size: 13px;
+      font-weight: 800;
+      display:none;
+      box-shadow: 0 18px 38px rgba(0,0,0,.22);
+      max-width: min(92vw, 560px);
+      text-align:center;
+    }
+    .toast.show{ display:block; animation: toastIn .18s ease-out; }
+    @keyframes toastIn{ from{ opacity:0; transform:translateX(-50%) translateY(6px);} to{ opacity:1; transform:translateX(-50%) translateY(0);} }
+
+    .quick-nav{
+      display:flex;
+      gap:8px;
+      flex-wrap:wrap;
+      justify-content:flex-end;
+    }
+    .qbtn{
+      border:1px solid var(--line);
+      background:#fff;
+      color:#111827;
+      padding:8px 10px;
+      border-radius:999px;
+      cursor:pointer;
+      font-weight:900;
+      font-size:12px;
+      line-height:1;
+    }
+    .qbtn:active{ transform: translateY(1px); }
+
+    .keywords-panel{
+      margin: 10px 0 12px;
+      padding: 10px;
+      border-radius: 16px;
+      border: 1px solid #eef0f3;
+      background: #fafafa;
+      display:none;
+    }
+    .keywords-head{
+      display:flex; align-items:center; justify-content:space-between;
+      gap:10px; margin-bottom:8px;
+    }
+    .keywords-title{
+      font-weight: 900;
+      font-size: 13px;
+      color:#111827;
+      display:flex; align-items:center; gap:8px;
+    }
+    .keywords-toggle{
+      font-size:12px;
+      color: var(--muted);
+      font-weight: 800;
+      cursor:pointer;
+      user-select:none;
+    }
+    .kw-list{ display:none; }
+    .kw-list.on{ display:block; }
+    .kw-row{
+      display:flex; flex-wrap:wrap; gap:8px;
+      padding: 8px 0;
+      border-top: 1px dashed #e5e7eb;
+    }
+    .kw-row:first-child{ border-top:none; padding-top:0; }
+    .kw-tag{
+      font-size:12px;
+      padding:6px 10px;
+      border-radius:999px;
+      border:1px solid #eef0f3;
+      background:#fff;
+      color:#111827;
+      font-weight: 800;
+      max-width: 100%;
+      overflow:hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+    .kw-slot{
+      background:#111827;
+      color:#fff;
+      border-color:#111827;
+    }
+
+    /* Mobile: keep toast above fixed action bar */
+    @media (max-width: 640px){
+      .toast{
+        bottom: calc(76px + var(--safe-b)); /* above bottom button */
+      }
+    }
+
   </style>
 </head>
 
@@ -952,6 +1052,11 @@
       <section class="card">
         <div class="right-head">
           <h3>AI 穿搭示意圖 & 類似商品</h3>
+
+          <div class="quick-nav">
+            <button class="qbtn" type="button" id="nav-to-preview">看示意圖</button>
+            <button class="qbtn" type="button" id="nav-to-products">看商品</button>
+          </div>
           <div class="debug-toggle" id="debug-toggle">
             <div class="switch" id="sw-debug" aria-checked="false"></div>
             <div>Debug</div>
@@ -1033,6 +1138,15 @@
         <div class="section-title anchor" id="anchor-products">
           <span class="pill">類似商品（Google Shopping）</span>
         </div>
+
+        <div class="keywords-panel" id="keywords-panel">
+          <div class="keywords-head">
+            <div class="keywords-title">🔎 本次搜尋關鍵字</div>
+            <div class="keywords-toggle" id="keywords-toggle">展開</div>
+          </div>
+          <div class="kw-list" id="kw-list"></div>
+        </div>
+
         <div class="products" id="products">
           <div class="placeholder" style="padding:16px;">尚未產生商品</div>
         </div>
@@ -1387,6 +1501,69 @@
         .replaceAll("'","&#039;");
     }
 
+
+    /***********************
+     * UX helpers: Toast + keyword display
+     ***********************/
+    let toastTimer = null;
+    function showToast(msg, ms=1800){
+      const t = document.getElementById("toast");
+      if (!t) return;
+      t.textContent = msg;
+      t.classList.add("show");
+      clearTimeout(toastTimer);
+      toastTimer = setTimeout(()=> t.classList.remove("show"), ms);
+    }
+
+    function buildSearchQueriesFromSpec(items, { locale="tw", gender="neutral" } = {}) {
+      const priority = ["top","bottom","shoes","outer","bag","hat"];
+      const sorted = [...(items||[])].sort((a,b)=> priority.indexOf(a.slot)-priority.indexOf(b.slot)).slice(0,6);
+
+      const g = (gender === "male") ? (locale === "tw" ? "男款" : "men")
+            : (gender === "female") ? (locale === "tw" ? "女款" : "women")
+            : "";
+
+      return sorted.map(it=>{
+        const name = (it.display_name_zh || "").trim() || (it.generic_name || "").trim();
+        if (!name) return null;
+        const color = (it.color || "").trim();
+        const slot = (it.slot || "").trim();
+        const q = `${g ? g + " " : ""}${color ? color + " " : ""}${name}${slot ? " " + slot : ""}`.trim();
+        return { slot, q };
+      }).filter(Boolean);
+    }
+
+    function renderKeywordsPanel(specItems, payload){
+      const panel = document.getElementById("keywords-panel");
+      const list = document.getElementById("kw-list");
+      const toggle = document.getElementById("keywords-toggle");
+      if (!panel || !list || !toggle) return;
+
+      const qs = buildSearchQueriesFromSpec(specItems || [], { locale:"tw", gender: payload?.gender || "neutral" });
+      if (!qs.length) { panel.style.display="none"; return; }
+
+      list.innerHTML = qs.map(({slot,q})=>{
+        const label = SLOT_LABEL_ZH?.[slot] || slot;
+        return `
+          <div class="kw-row">
+            <span class="kw-tag kw-slot">${escapeHtml(label)}</span>
+            <span class="kw-tag" title="${escapeHtml(q)}">${escapeHtml(q)}</span>
+          </div>
+        `;
+      }).join("");
+
+      panel.style.display = "block";
+
+      // default collapsed
+      list.classList.remove("on");
+      toggle.textContent = "展開";
+
+      toggle.onclick = () => {
+        const on = list.classList.toggle("on");
+        toggle.textContent = on ? "收合" : "展開";
+      };
+    }
+
     function setDebug(obj) {
       const box = document.getElementById("debug-box");
       box.textContent = typeof obj === "string" ? obj : JSON.stringify(obj, null, 2);
@@ -1525,6 +1702,8 @@
       setDebug({ step:"spec", spec });
 
       renderOutfitSummary(spec.summary);
+      // UX: show keywords for product search
+      renderKeywordsPanel(spec.items || [], payload);
 
       if (typeof spec.credits_left !== "undefined") {
         setAuthUI({ loggedIn:true, email: me.user?.email, credits: spec.credits_left });
@@ -1573,6 +1752,8 @@
       setDebug({ step:"products", prodResp, spec });
 
       renderProductsGrouped(list);
+      // UX: after products done, toast
+      showToast("商品已更新 ✅");
       return list;
     }
 
@@ -2249,6 +2430,13 @@
         if (mobileBar) mobileBar.style.display = isMobile() ? "block" : "none";
       });
 
+
+      // Quick nav (desktop + mobile)
+      const navPreview = document.getElementById("nav-to-preview");
+      const navProducts = document.getElementById("nav-to-products");
+      if (navPreview) navPreview.addEventListener("click", () => scrollToEl("anchor-preview","smooth","start"));
+      if (navProducts) navProducts.addEventListener("click", () => scrollToEl("anchor-products","smooth","start"));
+
       // Retry buttons
       document.getElementById("retry-btn").addEventListener("click", async () => {
         const btn = document.getElementById("retry-btn");
@@ -2337,5 +2525,8 @@
       syncFavButtonUI();
     })();
   </script>
+
+  <div id="toast" class="toast" role="status" aria-live="polite"></div>
+
 </body>
 </html>
