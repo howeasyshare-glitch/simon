@@ -346,12 +346,7 @@
     }
     .tool-btn:disabled{opacity:.55; cursor:default}
     .tool-btn .icon{font-size:14px}
-    .tool-btn.fav.on{
-      border-color:#fecaca;
-      background:rgba(255,245,245,.92);
-      color:#ef4444;
-    }
-
+    
     .section-title{margin:14px 0 8px;display:flex;gap:8px;align-items:center}
     .section-title .pill{font-weight:800}
 
@@ -1073,11 +1068,7 @@
               <button class="tool-btn" id="btn-fullscreen" title="全螢幕預覽" type="button">
                 <span class="icon">⛶</span> 全螢幕
               </button>
-              <button class="tool-btn fav" id="btn-fav" title="收藏/取消收藏" type="button" disabled>
-                <span class="icon" id="fav-icon">♡</span>
-                <span id="fav-text">收藏</span>
-              </button>
-            </div>
+              </div>
 
             <div id="img-skeleton" style="display:none;width:100%;height:100%;">
               <div class="img-skel-wrap">
@@ -1116,22 +1107,18 @@
           <div class="summary-text" id="summary-text"></div>
         </div>
 
-        <!-- 收藏 / 最近 10 套 -->
+                <!-- 最近 10 套（本機儲存） -->
         <div class="section-title" style="margin-top:12px;">
-          <span class="pill">收藏 / 最近 10 套</span>
+          <span class="pill">最近 10 套</span>
         </div>
         <div class="collection-wrap" id="collection-wrap">
-          <div class="tabs">
-            <button class="tab active" id="tab-recents" type="button">最近 10 套</button>
-            <button class="tab" id="tab-favs" type="button">已收藏</button>
-          </div>
-          <div class="tabpanes">
-            <div class="pane active" id="pane-recents">
-              <div class="mini-list" id="recents-list"></div>
-            </div>
-            <div class="pane" id="pane-favs">
-              <div class="mini-list" id="favs-list"></div>
-            </div>
+          <div class="mini-list" id="recents-list"></div>
+        </div>
+
+<div class="mini-list" id="recents-list"></div>
+        </div>
+
+</div>
           </div>
         </div>
 
@@ -1187,6 +1174,23 @@
       if (!el) return;
       el.scrollIntoView({ behavior, block });
     }
+
+
+    // Haptics (mobile vibration feedback)
+    // kinds: tap | toggle | success | error
+    function haptic(kind="tap") {
+      try {
+        if (!navigator.vibrate) return;
+        const patterns = {
+          tap: 10,
+          toggle: [8],
+          success: [12, 28, 12],
+          error: [40, 30, 40]
+        };
+        navigator.vibrate(patterns[kind] ?? patterns.tap);
+      } catch {}
+    }
+
     function setFormDisabled(disabled) {
       const form = document.getElementById("left-panel");
       if (!form) return;
@@ -1251,7 +1255,7 @@
       };
 
       cards.forEach(c => {
-        c.addEventListener("click", () => select(c.dataset.style));
+        c.addEventListener("click", () => { select(c.dataset.style); haptic("tap"); });
       });
 
       select(hidden.value || "casual");
@@ -1401,7 +1405,7 @@
         el.setAttribute("aria-checked", on ? "true" : "false");
       };
       paint();
-      el.addEventListener("click", () => { on = !on; paint(); });
+      el.addEventListener("click", () => { on = !on; paint(); haptic("toggle"); });
       return () => on;
     }
 
@@ -1830,11 +1834,12 @@
       if (!img || !img.src) return;
       modalImg.src = img.src;
       modal.classList.add("on");
-      modal.setAttribute("aria-hidden", "false");
+      haptic("tap"); modal.setAttribute("aria-hidden", "false");
       document.body.style.overflow = "hidden";
     }
     function closeModal() {
       modal.classList.remove("on");
+      haptic("tap");
       modal.setAttribute("aria-hidden", "true");
       document.body.style.overflow = "";
     }
@@ -1864,7 +1869,6 @@
      * - image dataUrl: IndexedDB（避免 localStorage 爆掉）
      ***********************/
     const LS_RECENTS = "os_recents_v2";
-    const LS_FAVS = "os_favs_v2";
 
     function safeJsonParse(str, fallback){
       try{ return JSON.parse(str); }catch{ return fallback; }
@@ -2018,23 +2022,10 @@
       }catch{ return ""; }
     }
 
-    // UI: tabs
-    const tabRecents = document.getElementById("tab-recents");
-    const tabFavs = document.getElementById("tab-favs");
-    const paneRecents = document.getElementById("pane-recents");
-    const paneFavs = document.getElementById("pane-favs");
+    // UI: 最近 10 套（無收藏模式）
+    const recentsListEl = document.getElementById("recents-list");
 
-    function setTab(which){
-      const rec = which === "recents";
-      tabRecents.classList.toggle("active", rec);
-      tabFavs.classList.toggle("active", !rec);
-      paneRecents.classList.toggle("active", rec);
-      paneFavs.classList.toggle("active", !rec);
-    }
-    tabRecents.addEventListener("click", () => setTab("recents"));
-    tabFavs.addEventListener("click", () => setTab("favs"));
-
-    // Render lists
+// Render lists
     async function renderMiniList(targetId, listKey){
       const root = document.getElementById(targetId);
       if (!root) return;
@@ -2109,7 +2100,6 @@
 
     async function refreshCollectionsUI(){
       await renderMiniList("recents-list", LS_RECENTS);
-      await renderMiniList("favs-list", LS_FAVS);
     }
 
     // Save / Remove
@@ -2127,14 +2117,12 @@
     }
 
     function isFav(id){
-      const list = readList(LS_FAVS);
       return list.some(x => x.id === id);
     }
 
     async function setFav(outfit, on){
       // non-throw
       try{
-        const list = readList(LS_FAVS);
         const exists = list.some(x => x.id === outfit.id);
         let next = list;
         if (on) {
@@ -2142,7 +2130,6 @@
         } else {
           next = list.filter(x => x.id !== outfit.id);
         }
-        writeList(LS_FAVS, next);
       }catch(e){
         console.warn("setFav failed", e);
       }
@@ -2162,13 +2149,11 @@
         console.warn("removeSavedOutfit failed", e);
       } finally {
         await refreshCollectionsUI();
-        syncFavButtonUI();
       }
     }
 
     async function applySavedOutfit(id){
       // Load saved outfit into UI (preview + summary + products if present)
-      const all = [...readList(LS_RECENTS), ...readList(LS_FAVS)];
       const item = all.find(x => x.id === id);
       if (!item) return;
 
@@ -2220,75 +2205,10 @@
 
         // Update flowState for current
         flowState.currentOutfitId = item.id;
-        syncFavButtonUI();
-
         // scroll to preview
         scrollToEl("anchor-preview", "smooth", "start");
       }catch(e){
         console.warn("applySavedOutfit failed", e);
-      }
-    }
-
-    // Fav button UI
-    const favBtn = document.getElementById("btn-fav");
-    const favIcon = document.getElementById("fav-icon");
-    const favText = document.getElementById("fav-text");
-
-    function syncFavButtonUI(){
-      const id = flowState.currentOutfitId;
-      const enabled = !!id && !!flowState.imgResp && !!flowState.spec;
-      favBtn.disabled = !enabled;
-      if (!enabled){
-        favBtn.classList.remove("on");
-        favIcon.textContent = "♡";
-        favText.textContent = "收藏";
-        return;
-      }
-      const on = isFav(id);
-      favBtn.classList.toggle("on", on);
-      favIcon.textContent = on ? "♥" : "♡";
-      favText.textContent = on ? "已收藏" : "收藏";
-    }
-
-    favBtn.addEventListener("click", async () => {
-      const id = flowState.currentOutfitId;
-      if (!id) return;
-
-      // build current outfit payload for saving
-      const outfit = await buildCurrentOutfitSnapshotNoThrow();
-      if (!outfit) return;
-
-      const on = !isFav(id);
-      await setFav(outfit, on);
-      // Ensure UI always refreshes even if storage fails
-      syncFavButtonUI();
-      await refreshCollectionsUI();
-    });
-
-    async function buildCurrentOutfitSnapshotNoThrow(){
-      try{
-        const id = flowState.currentOutfitId;
-        if (!id) return null;
-
-        // persist image into idb (use current image dataURL)
-        const img = document.getElementById("outfit-image");
-        const dataUrl = img?.src || null;
-        if (dataUrl && dataUrl.startsWith("data:")) {
-          await idbPutImage(id, dataUrl);
-        }
-
-        return {
-          id,
-          ts: Date.now(),
-          payload: flowState.payload,
-          summary: flowState.spec?.summary || "",
-          spec: flowState.spec,
-          products: Array.isArray(flowState.products) ? flowState.products : [],
-          imageId: id
-        };
-      }catch(e){
-        console.warn("buildCurrentOutfitSnapshot failed", e);
-        return null;
       }
     }
 
@@ -2311,13 +2231,13 @@
       flowState.imgResp = null;
       flowState.spec = null;
       flowState.products = null;
-      syncFavButtonUI();
     }
 
     function finalizeDoneNoThrow(){
       setGenerateStep("done");
       setProgress(100);
       setStatus("完成 ✅", true, false);
+      haptic("success");
       showRetryUI(false);
     }
 
@@ -2379,12 +2299,8 @@
         // compute id early
         const outfitId = await computeOutfitId(payload, spec);
         flowState.currentOutfitId = outfitId;
-        syncFavButtonUI();
-
         // Step 2: Image
         const imgResp = await runStepImage(payload, spec);
-        syncFavButtonUI();
-
         // auto-scroll to preview once image exists (helps on mobile & desktop)
         scrollToEl("anchor-preview", "smooth", "start");
 
@@ -2406,7 +2322,6 @@
             outfit.ts = Date.now();
             await upsertRecent(outfit);
             await refreshCollectionsUI();
-            syncFavButtonUI();
           }catch(e){
             console.warn("persist recent failed (non-fatal)", e);
           }
@@ -2416,6 +2331,7 @@
         console.error(e);
         setGenerateStep("failed");
         setStatus("失敗 ❌", false, false);
+        haptic("error");
         setProgress(0);
 
         const msg = String(e?.message || e);
@@ -2471,6 +2387,7 @@
 
       // Retry buttons
       document.getElementById("retry-btn").addEventListener("click", async () => {
+        haptic("tap");
         const btn = document.getElementById("retry-btn");
         btn.disabled = true;
         try {
@@ -2486,6 +2403,7 @@
       });
 
       document.getElementById("restart-btn").addEventListener("click", async () => {
+        haptic("tap");
         const btn = document.getElementById("restart-btn");
         btn.disabled = true;
         try {
@@ -2502,6 +2420,7 @@
 
       // Shared click handler for both buttons
       async function onGenerateClick() {
+        haptic("tap");
         showRetryUI(false);
         try {
           await generateAll(false);
@@ -2554,7 +2473,6 @@
       setProgress(0);
       setStatus("等待操作", null, false);
       setLoadingUI(false);
-      syncFavButtonUI();
     })();
   </script>
 
