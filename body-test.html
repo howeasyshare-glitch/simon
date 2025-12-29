@@ -1323,24 +1323,36 @@
       setAuthUI({ loggedIn:true, email: me.user?.email, credits: me.credits_left, hint:"" });
     }
 
-    async function ensureTokenFromSession() {
+    
+    async function ensureToken() {
+      // 1) Prefer Supabase session (pkce + refresh token flow)
       const { data, error } = await osSupabase.auth.getSession();
       if (error) return { ok:false, error: error.message };
 
       const session = data?.session;
-      if (!session?.access_token) {
-        clearAccessToken();
-        return { ok:false, error:"no session" };
+      if (session?.access_token) {
+        saveAccessToken(session.access_token);
+
+        // Clean OAuth hash/query leftovers (avoid bad_oauth_callback loops)
+        if (location.hash || location.search) {
+          history.replaceState(null, "", location.pathname);
+        }
+        return { ok:true, session, from:"supabase" };
       }
 
-      saveAccessToken(session.access_token);
-
-      if (location.hash || location.search) {
-        history.replaceState(null, "", location.pathname);
+      // 2) Fallback: allow using a previously saved access token (e.g. Safari/ITP session quirks)
+      const token = getAccessToken();
+      if (token) {
+        // keep token; caller will verify via /api/me
+        if (location.hash || location.search) {
+          history.replaceState(null, "", location.pathname);
+        }
+        return { ok:true, session:null, from:"local" };
       }
 
-      return { ok:true, session };
+      return { ok:false, error:"no session" };
     }
+
 
     async function loginGoogle() {
       if (!SUPABASE_ANON_KEY || SUPABASE_ANON_KEY.startsWith("PASTE_")) {
@@ -1761,7 +1773,7 @@
       showRetryUI(false);
       clearError();
 
-      const ensured = await ensureTokenFromSession();
+      const ensured = await ensureToken();
       if (!ensured.ok) throw new Error("未登入或 session 不存在");
 
       const me = await apiMe();
@@ -2325,7 +2337,7 @@
         resetPerRunUI();
 
         // Auth checks
-        const ensured = await ensureTokenFromSession();
+        const ensured = await ensureToken();
         if (!ensured.ok) {
           setAuthUI({ loggedIn:false, hint:"未登入（請按 Google 登入）" });
           throw new Error("未登入或 session 不存在");
@@ -2525,7 +2537,7 @@
       document.getElementById("debug-box").classList.toggle("on", getDebug());
 
       // Ensure session
-      await ensureTokenFromSession();
+      await ensureToken();
       await refreshAuthUI();
 
       osSupabase.auth.onAuthStateChange(async (_event, session) => {
