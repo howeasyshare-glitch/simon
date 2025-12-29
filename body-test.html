@@ -1323,36 +1323,24 @@
       setAuthUI({ loggedIn:true, email: me.user?.email, credits: me.credits_left, hint:"" });
     }
 
-    
-    async function ensureToken() {
-      // 1) Prefer Supabase session (pkce + refresh token flow)
+    async function ensureTokenFromSession() {
       const { data, error } = await osSupabase.auth.getSession();
       if (error) return { ok:false, error: error.message };
 
       const session = data?.session;
-      if (session?.access_token) {
-        saveAccessToken(session.access_token);
-
-        // Clean OAuth hash/query leftovers (avoid bad_oauth_callback loops)
-        if (location.hash || location.search) {
-          history.replaceState(null, "", location.pathname);
-        }
-        return { ok:true, session, from:"supabase" };
+      if (!session?.access_token) {
+        clearAccessToken();
+        return { ok:false, error:"no session" };
       }
 
-      // 2) Fallback: allow using a previously saved access token (e.g. Safari/ITP session quirks)
-      const token = getAccessToken();
-      if (token) {
-        // keep token; caller will verify via /api/me
-        if (location.hash || location.search) {
-          history.replaceState(null, "", location.pathname);
-        }
-        return { ok:true, session:null, from:"local" };
+      saveAccessToken(session.access_token);
+
+      if (location.hash || location.search) {
+        history.replaceState(null, "", location.pathname);
       }
 
-      return { ok:false, error:"no session" };
+      return { ok:true, session };
     }
-
 
     async function loginGoogle() {
       if (!SUPABASE_ANON_KEY || SUPABASE_ANON_KEY.startsWith("PASTE_")) {
@@ -1773,7 +1761,7 @@
       showRetryUI(false);
       clearError();
 
-      const ensured = await ensureToken();
+      const ensured = await ensureTokenFromSession();
       if (!ensured.ok) throw new Error("未登入或 session 不存在");
 
       const me = await apiMe();
@@ -1960,30 +1948,10 @@
       };
       return JSON.stringify(obj, sorter);
     }
-    // ✅ Safe hash helper: prefer crypto.subtle SHA-256, but fall back gracefully.
-    // Some environments (older iOS Safari / certain WebViews / non-secure contexts)
-    // may not expose crypto.subtle, which would otherwise break the whole flow.
-    function fnv1a32Hex(str){
-      let h = 0x811c9dc5;
-      for (let i = 0; i < str.length; i++) {
-        h ^= str.charCodeAt(i);
-        // 32-bit FNV-1a prime
-        h = (h + ((h << 1) + (h << 4) + (h << 7) + (h << 8) + (h << 24))) >>> 0;
-      }
-      return h.toString(16).padStart(8, "0");
-    }
-
     async function sha256Hex(str){
-      try {
-        if (!(window.crypto && window.crypto.subtle)) {
-          return fnv1a32Hex(str);
-        }
-        const enc = new TextEncoder().encode(str);
-        const buf = await window.crypto.subtle.digest("SHA-256", enc);
-        return [...new Uint8Array(buf)].map(b=>b.toString(16).padStart(2,"0")).join("");
-      } catch {
-        return fnv1a32Hex(str);
-      }
+      const enc = new TextEncoder().encode(str);
+      const buf = await crypto.subtle.digest("SHA-256", enc);
+      return [...new Uint8Array(buf)].map(b=>b.toString(16).padStart(2,"0")).join("");
     }
     async function computeOutfitId(payload, spec){
       const core = {
@@ -2337,7 +2305,7 @@
         resetPerRunUI();
 
         // Auth checks
-        const ensured = await ensureToken();
+        const ensured = await ensureTokenFromSession();
         if (!ensured.ok) {
           setAuthUI({ loggedIn:false, hint:"未登入（請按 Google 登入）" });
           throw new Error("未登入或 session 不存在");
@@ -2537,7 +2505,7 @@
       document.getElementById("debug-box").classList.toggle("on", getDebug());
 
       // Ensure session
-      await ensureToken();
+      await ensureTokenFromSession();
       await refreshAuthUI();
 
       osSupabase.auth.onAuthStateChange(async (_event, session) => {
