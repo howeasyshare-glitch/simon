@@ -346,7 +346,12 @@
     }
     .tool-btn:disabled{opacity:.55; cursor:default}
     .tool-btn .icon{font-size:14px}
-    
+    .tool-btn.fav.on{
+      border-color:#fecaca;
+      background:rgba(255,245,245,.92);
+      color:#ef4444;
+    }
+
     .section-title{margin:14px 0 8px;display:flex;gap:8px;align-items:center}
     .section-title .pill{font-weight:800}
 
@@ -759,104 +764,77 @@
     }
     .modal-top .m-btn:active{ transform: translateY(1px); opacity:.95; }
   
-    /* ✅ UX: Toast + keyword chips + quick nav */
-    .toast{
-      position: fixed;
-      left: 50%;
-      transform: translateX(-50%);
-      bottom: calc(18px + var(--safe-b));
-      z-index: 2000;
-      background: rgba(17,24,39,.92);
-      color: #fff;
-      padding: 10px 12px;
-      border-radius: 999px;
-      font-size: 13px;
-      font-weight: 800;
-      display:none;
-      box-shadow: 0 18px 38px rgba(0,0,0,.22);
-      max-width: min(92vw, 560px);
-      text-align:center;
+    /* ---------- UX enhancements (A) ---------- */
+    .status-sub{
+      margin-top:6px;
+      font-size:12px;
+      color:var(--muted);
+      line-height:1.4;
     }
-    .toast.show{ display:block; animation: toastIn .18s ease-out; }
-    @keyframes toastIn{ from{ opacity:0; transform:translateX(-50%) translateY(6px);} to{ opacity:1; transform:translateX(-50%) translateY(0);} }
-
-    .quick-nav{
+    .result-meta{
       display:flex;
-      gap:8px;
+      align-items:center;
+      justify-content:space-between;
+      gap:10px;
+      padding:10px 12px;
+      border:1px solid #eef0f3;
+      background:linear-gradient(135deg,#fff,#fafafa);
+      border-radius:16px;
+      margin:10px 0 14px;
+    }
+    .rm-left{
+      display:flex;
       flex-wrap:wrap;
-      justify-content:flex-end;
+      gap:8px;
+      align-items:center;
+      font-size:12px;
+      color:var(--muted);
+      line-height:1.3;
     }
-    .qbtn{
-      border:1px solid var(--line);
-      background:#fff;
-      color:#111827;
-      padding:8px 10px;
+    .rm-left b{ color:#111827; }
+    .rm-dot{ opacity:.5; }
+    .rm-actions{ display:flex; gap:8px; flex:0 0 auto; }
+    .cta-row{
+      display:flex;
+      gap:10px;
+      align-items:center;
+      margin-top:10px;
+      flex-wrap:wrap;
+    }
+    .toast{
+      position:fixed;
+      left:50%;
+      transform:translateX(-50%);
+      bottom:calc(90px + var(--safe-b));
+      z-index:1200;
+      background:rgba(17,24,39,.92);
+      color:#fff;
+      padding:10px 12px;
       border-radius:999px;
-      cursor:pointer;
-      font-weight:900;
-      font-size:12px;
-      line-height:1;
+      font-size:13px;
+      font-weight:800;
+      box-shadow:0 18px 38px rgba(0,0,0,.22);
+      max-width:min(92vw,520px);
+      text-align:center;
+      opacity:0;
+      pointer-events:none;
+      transition:opacity .18s ease, transform .18s ease;
     }
-    .qbtn:active{ transform: translateY(1px); }
-
-    .keywords-panel{
-      margin: 10px 0 12px;
-      padding: 10px;
-      border-radius: 16px;
-      border: 1px solid #eef0f3;
-      background: #fafafa;
-      display:none;
+    .toast.on{
+      opacity:1;
+      transform:translateX(-50%) translateY(-2px);
     }
-    .keywords-head{
-      display:flex; align-items:center; justify-content:space-between;
-      gap:10px; margin-bottom:8px;
-    }
-    .keywords-title{
-      font-weight: 900;
-      font-size: 13px;
-      color:#111827;
-      display:flex; align-items:center; gap:8px;
-    }
-    .keywords-toggle{
-      font-size:12px;
-      color: var(--muted);
-      font-weight: 800;
-      cursor:pointer;
-      user-select:none;
-    }
-    .kw-list{ display:none; }
-    .kw-list.on{ display:block; }
-    .kw-row{
-      display:flex; flex-wrap:wrap; gap:8px;
-      padding: 8px 0;
-      border-top: 1px dashed #e5e7eb;
-    }
-    .kw-row:first-child{ border-top:none; padding-top:0; }
-    .kw-tag{
-      font-size:12px;
-      padding:6px 10px;
-      border-radius:999px;
+    .newbie-tip{
+      margin:10px 0 6px;
+      padding:10px 12px;
+      border-radius:14px;
       border:1px solid #eef0f3;
       background:#fff;
-      color:#111827;
-      font-weight: 800;
-      max-width: 100%;
-      overflow:hidden;
-      text-overflow: ellipsis;
-      white-space: nowrap;
+      color:var(--muted);
+      font-size:12px;
+      line-height:1.5;
     }
-    .kw-slot{
-      background:#111827;
-      color:#fff;
-      border-color:#111827;
-    }
-
-    /* Mobile: keep toast above fixed action bar */
-    @media (max-width: 640px){
-      .toast{
-        bottom: calc(76px + var(--safe-b)); /* above bottom button */
-      }
-    }
+    .newbie-tip b{ color:#111827; }
 
   </style>
 </head>
@@ -941,7 +919,12 @@
               </div>
               <input id="temp" type="range" min="0" max="35" step="1" value="22" aria-label="溫度" />
               <div class="range-sub"><span>0</span><span>35</span></div>
+            
+            <div class="cta-row">
+              <button class="mini-btn" id="cta-products" style="display:none;">看商品 ↓</button>
+              <div class="mini-hint" id="cta-hint" style="display:none;">商品在下方</div>
             </div>
+</div>
           </div>
         </div>
 
@@ -1034,6 +1017,8 @@
           </div>
         </div>
 
+        <div class="newbie-tip" id="newbie-tip" style="display:none;">首次使用：按下 <b>「產生穿搭圖」</b> 後會自動跳到右側結果（示意圖 → 商品）。</div>
+
         <!-- Desktop sticky generate area (hidden on mobile by CSS) -->
         <div class="sticky-generate">
           <button id="go-btn" class="primary-wide">產生穿搭圖</button>
@@ -1047,16 +1032,23 @@
       <section class="card">
         <div class="right-head">
           <h3>AI 穿搭示意圖 & 類似商品</h3>
-
-          <div class="quick-nav">
-            <button class="qbtn" type="button" id="nav-to-preview">看示意圖</button>
-            <button class="qbtn" type="button" id="nav-to-products">看商品</button>
-          </div>
           <div class="debug-toggle" id="debug-toggle">
             <div class="switch" id="sw-debug" aria-checked="false"></div>
             <div>Debug</div>
           </div>
         </div>
+
+        <div class="result-meta" id="result-meta" style="display:none;">
+          <div class="rm-left">
+            <span id="result-time">—</span><span class="rm-dot">•</span>
+            <span id="result-summaryline">—</span>
+          </div>
+          <div class="rm-actions">
+            <button class="mini-btn" id="copy-spec-btn" disabled>一鍵複製 Outfit Spec</button>
+            <button class="mini-btn" id="share-btn" disabled>分享</button>
+          </div>
+        </div>
+
 
         <div class="section-title">
           <span class="pill">AI 穿搭示意圖</span>
@@ -1068,7 +1060,11 @@
               <button class="tool-btn" id="btn-fullscreen" title="全螢幕預覽" type="button">
                 <span class="icon">⛶</span> 全螢幕
               </button>
-              </div>
+              <button class="tool-btn fav" id="btn-fav" title="收藏/取消收藏" type="button" disabled>
+                <span class="icon" id="fav-icon">♡</span>
+                <span id="fav-text">收藏</span>
+              </button>
+            </div>
 
             <div id="img-skeleton" style="display:none;width:100%;height:100%;">
               <div class="img-skel-wrap">
@@ -1084,6 +1080,7 @@
 
           <div class="statusbar" id="statusbar">
             狀態：<span id="status-text">等待操作</span>
+            <div class="status-sub" id="status-sub">按下左側按鈕開始。</div>
             <span id="status-dots" style="display:none">
               <span class="dots"><span class="dot"></span><span class="dot"></span><span class="dot"></span></span>
             </span>
@@ -1107,33 +1104,28 @@
           <div class="summary-text" id="summary-text"></div>
         </div>
 
-                <!-- 最近 10 套（本機儲存） -->
+        <!-- 收藏 / 最近 10 套 -->
         <div class="section-title" style="margin-top:12px;">
-          <span class="pill">最近 10 套</span>
+          <span class="pill">收藏 / 最近 10 套</span>
         </div>
         <div class="collection-wrap" id="collection-wrap">
-          <div class="mini-list" id="recents-list"></div>
-        </div>
-
-<div class="mini-list" id="recents-list"></div>
-        </div>
-
-</div>
+          <div class="tabs">
+            <button class="tab active" id="tab-recents" type="button">最近 10 套</button>
+            <button class="tab" id="tab-favs" type="button">已收藏</button>
+          </div>
+          <div class="tabpanes">
+            <div class="pane active" id="pane-recents">
+              <div class="mini-list" id="recents-list"></div>
+            </div>
+            <div class="pane" id="pane-favs">
+              <div class="mini-list" id="favs-list"></div>
+            </div>
           </div>
         </div>
 
         <div class="section-title anchor" id="anchor-products">
           <span class="pill">類似商品（Google Shopping）</span>
         </div>
-
-        <div class="keywords-panel" id="keywords-panel">
-          <div class="keywords-head">
-            <div class="keywords-title">🔎 本次搜尋關鍵字</div>
-            <div class="keywords-toggle" id="keywords-toggle">展開</div>
-          </div>
-          <div class="kw-list" id="kw-list"></div>
-        </div>
-
         <div class="products" id="products">
           <div class="placeholder" style="padding:16px;">尚未產生商品</div>
         </div>
@@ -1174,24 +1166,167 @@
       if (!el) return;
       el.scrollIntoView({ behavior, block });
     }
-
-
-    // Haptics (mobile vibration feedback)
-    // kinds: tap | toggle | success | error
-    function haptic(kind="tap") {
-      try {
-        if (!navigator.vibrate) return;
-        const patterns = {
-          tap: 10,
-          toggle: [8],
-          success: [12, 28, 12],
-          error: [40, 30, 40]
-        };
-        navigator.vibrate(patterns[kind] ?? patterns.tap);
-      } catch {}
+    
+    function haptic(ms = 12) {
+      try { if (navigator.vibrate) navigator.vibrate(ms); } catch {}
     }
 
-    function setFormDisabled(disabled) {
+    let toastTimer = null;
+    function showToast(text, ms = 2000) {
+      const t = document.getElementById("toast");
+      if (!t) return;
+      t.textContent = text || "";
+      t.style.display = "block";
+      // force reflow for transition
+      void t.offsetWidth;
+      t.classList.add("on");
+      clearTimeout(toastTimer);
+      toastTimer = setTimeout(() => {
+        t.classList.remove("on");
+        setTimeout(() => { t.style.display = "none"; }, 220);
+      }, ms);
+    }
+
+    function formatNowTS() {
+      const d = new Date();
+      const pad = (n) => String(n).padStart(2, "0");
+      return `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())} ${pad(d.getHours())}:${pad(d.getMinutes())}`;
+    }
+
+    function payloadSummaryLine(p) {
+      if (!p) return "—";
+      const style = (p.style || "").toUpperCase();
+      const g = p.gender === "female" ? "女" : p.gender === "male" ? "男" : "中性";
+      const extras = [
+        p.withBag ? "包" : "",
+        p.withHat ? "帽" : "",
+        (p.withCoat || (Number(p.temp) <= 20)) ? "外套" : ""
+      ].filter(Boolean).join("、");
+      return `${g} · ${p.age}歲 · ${p.height}cm/${p.weight}kg · ${p.temp}°C · ${style}${p.styleVariant ? " · " + p.styleVariant : ""}${extras ? " · " + extras : ""}`;
+    }
+
+    function setResultMeta(payload) {
+      const bar = document.getElementById("result-meta");
+      const timeEl = document.getElementById("result-time");
+      const sumEl = document.getElementById("result-summaryline");
+      if (!bar || !timeEl || !sumEl) return;
+      bar.style.display = "flex";
+      timeEl.innerHTML = `<b>${formatNowTS()}</b>`;
+      sumEl.textContent = payloadSummaryLine(payload);
+    }
+
+    function safeJson(obj) {
+      try { return JSON.stringify(obj, null, 2); } catch { return ""; }
+    }
+
+    function copyText(text) {
+      const s = String(text || "");
+      if (!s) return false;
+      if (navigator.clipboard && navigator.clipboard.writeText) {
+        navigator.clipboard.writeText(s).catch(()=>{});
+        return true;
+      }
+      // fallback
+      const ta = document.createElement("textarea");
+      ta.value = s;
+      ta.style.position = "fixed";
+      ta.style.left = "-9999px";
+      document.body.appendChild(ta);
+      ta.select();
+      try { document.execCommand("copy"); } catch {}
+      document.body.removeChild(ta);
+      return true;
+    }
+
+    function b64urlEncode(str) {
+      const b64 = btoa(unescape(encodeURIComponent(str)));
+      return b64.replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/g, "");
+    }
+    function b64urlDecode(str) {
+      const s = String(str || "").replace(/-/g, "+").replace(/_/g, "/");
+      const pad = s.length % 4 ? "=".repeat(4 - (s.length % 4)) : "";
+      return decodeURIComponent(escape(atob(s + pad)));
+    }
+
+    function makeShareHash({ payload, spec }) {
+      const data = { v: 1, payload: payload || null, spec: spec ? { summary: spec.summary || "", items: spec.items || [] } : null };
+      return "#share=" + b64urlEncode(JSON.stringify(data));
+    }
+
+    function parseShareFromLocation() {
+      const h = location.hash || "";
+      const m = h.match(/#share=([^&]+)/);
+      if (!m) return null;
+      try {
+        const obj = JSON.parse(b64urlDecode(m[1]));
+        if (!obj || !obj.payload) return null;
+        return obj;
+      } catch {
+        return null;
+      }
+    }
+
+    function applyPayloadToForm(payload) {
+      if (!payload) return;
+      const setSel = (id, v) => { const el = document.getElementById(id); if (el && v !== undefined && v !== null) el.value = String(v); };
+      setSel("gender", payload.gender);
+      const setRange = (id, valId, v) => {
+        const el = document.getElementById(id);
+        const lab = document.getElementById(valId);
+        if (!el || v === undefined || v === null) return;
+        el.value = String(v);
+        if (lab) lab.textContent = String(v);
+      };
+      setRange("age","age-val", payload.age);
+      setRange("height","height-val", payload.height);
+      setRange("weight","weight-val", payload.weight);
+      setRange("temp","temp-val", payload.temp);
+
+      const styleHidden = document.getElementById("style");
+      if (styleHidden && payload.style) styleHidden.value = payload.style;
+      // update cards selection
+      const cards = Array.from(document.querySelectorAll("#style-grid .style-card"));
+      cards.forEach(c => c.classList.toggle("selected", c.dataset.style === payload.style));
+
+      setSel("styleVariant", payload.styleVariant || "");
+      // switches
+      const setSwitch = (id, on) => {
+        const el = document.getElementById(id);
+        if (!el) return;
+        el.classList.toggle("on", !!on);
+        el.setAttribute("aria-checked", !!on ? "true" : "false");
+      };
+      setSwitch("sw-bag", !!payload.withBag);
+      setSwitch("sw-hat", !!payload.withHat);
+      setSwitch("sw-coat", !!payload.withCoat);
+    }
+
+    function userFriendlyError(e, step, hasImage) {
+      const raw = String(e?.message || e || "");
+      // auth
+      if (raw.includes("未登入") || raw.includes("no session") || raw.includes("Missing bearer token") || raw.includes("Invalid token")) {
+        return { title: "登入狀態已失效", desc: "請先登入後再試一次。", next: "按右上「Google 登入」→ 再點「再試一次」。" };
+      }
+      // products unstable
+      if (raw.includes("/api/search-products") || raw.includes("search-products")) {
+        return {
+          title: "商品搜尋暫時不穩",
+          desc: hasImage ? "示意圖已保留，你可以稍後再試搜尋商品。" : "請稍後再試一次。",
+          next: hasImage ? "按「重試目前步驟」即可重新找商品。" : "按「從頭重跑」再試。"
+        };
+      }
+      // image
+      if (raw.includes("/api/generate-image") || raw.includes("generate-image")) {
+        return { title: "示意圖生成暫時失敗", desc: "通常是模型或網路波動，稍後可再試。", next: "按「重試目前步驟」即可。" };
+      }
+      // spec
+      if (raw.includes("/api/generate-outfit-spec") || raw.includes("generate-outfit-spec")) {
+        return { title: "分析條件暫時失敗", desc: "請稍後再試，或先檢查登入與點數。", next: "按「從頭重跑」再試一次。" };
+      }
+      return { title: "暫時失敗", desc: "可能是網路或服務波動，稍後再試即可。", next: "按「再試一次」或稍後再試。" };
+    }
+
+function setFormDisabled(disabled) {
       const form = document.getElementById("left-panel");
       if (!form) return;
       form.classList.toggle("form-disabled", disabled);
@@ -1201,14 +1336,49 @@
     /***********************
      * Step text (3段按鈕文字 + 狀態文字同步)
      ***********************/
+    
+    /***********************
+     * Step text (更可理解：正在做什麼 + 為什麼要等)
+     ***********************/
     const GENERATE_STEPS = {
-      idle: { btn: "產生穿搭圖", text: "等待操作" },
-      spec: { btn: "分析中…", text: "分析你的身形與風格…" },
-      image: { btn: "設計中…", text: "設計整體穿搭組合…" },
-      products: { btn: "找商品中…", text: "搜尋可購買商品…" },
-      done: { btn: "再生成一套", text: "完成 ✅" },
-      failed: { btn: "再試一次", text: "失敗 ❌" },
+      idle: {
+        btn: "產生穿搭圖",
+        text: "準備就緒",
+        sub: "按下後會自動跳到示意圖與商品區。",
+        eta: ""
+      },
+      spec: {
+        btn: "分析身形…",
+        text: "分析身形與需求",
+        sub: "為了挑出更合身、符合風格的版型與配色。",
+        eta: "通常 10–20 秒"
+      },
+      image: {
+        btn: "組合穿搭…",
+        text: "組衣服與比例",
+        sub: "把單品組成完整穿搭，並生成示意圖。",
+        eta: "通常 10–20 秒"
+      },
+      products: {
+        btn: "找商品…",
+        text: "找可買商品",
+        sub: "用穿搭單品去搜尋相似商品，方便直接購買。",
+        eta: "通常 5–15 秒"
+      },
+      done: {
+        btn: "再生成一套",
+        text: "完成 ✅",
+        sub: "你可以收藏、分享，或再試一套不同風格。",
+        eta: ""
+      },
+      failed: {
+        btn: "再試一次",
+        text: "暫時失敗",
+        sub: "別擔心，結果已盡量保留，你可以重試。",
+        eta: ""
+      }
     };
+
     function setGenerateStep(step) {
       const cfg = GENERATE_STEPS[step] || GENERATE_STEPS.idle;
 
@@ -1219,7 +1389,14 @@
 
       const statusTextEl = document.getElementById("status-text");
       if (statusTextEl) statusTextEl.textContent = cfg.text;
+
+      const statusSubEl = document.getElementById("status-sub");
+      if (statusSubEl) {
+        const extra = cfg.eta ? `（${cfg.eta}）` : "";
+        statusSubEl.textContent = (cfg.sub || "") + (cfg.sub ? " " : "") + extra;
+      }
     }
+
 
     /***********************
      * 0) CONFIG
@@ -1227,7 +1404,7 @@
     const SUPABASE_PROJECT_REF = "auiwcsolpvufxxyhnvaf";
     const SUPABASE_URL = `https://${SUPABASE_PROJECT_REF}.supabase.co`;
 
-    const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImF1aXdjc29scHZ1Znh4eWhudmFmIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjQ5MzUwMDEsImV4cCI6MjA4MDUxMTAwMX0.KeD8JXdHs5Iu7-wf0F0GpUPp-_y5X5ha6mwBcR5eYDA";
+    const SUPABASE_ANON_KEY = "PASTE_YOUR_SUPABASE_ANON_KEY_HERE";
     const REDIRECT_TO = location.origin + "/body-test.html";
 
     /***********************
@@ -1255,7 +1432,7 @@
       };
 
       cards.forEach(c => {
-        c.addEventListener("click", () => { select(c.dataset.style); haptic("tap"); });
+        c.addEventListener("click", () => select(c.dataset.style));
       });
 
       select(hidden.value || "casual");
@@ -1327,36 +1504,24 @@
       setAuthUI({ loggedIn:true, email: me.user?.email, credits: me.credits_left, hint:"" });
     }
 
-    
-    async function ensureToken() {
-      // 1) Prefer Supabase session (pkce + refresh token flow)
+    async function ensureTokenFromSession() {
       const { data, error } = await osSupabase.auth.getSession();
       if (error) return { ok:false, error: error.message };
 
       const session = data?.session;
-      if (session?.access_token) {
-        saveAccessToken(session.access_token);
-
-        // Clean OAuth hash/query leftovers (avoid bad_oauth_callback loops)
-        if (location.hash || location.search) {
-          history.replaceState(null, "", location.pathname);
-        }
-        return { ok:true, session, from:"supabase" };
+      if (!session?.access_token) {
+        clearAccessToken();
+        return { ok:false, error:"no session" };
       }
 
-      // 2) Fallback: allow using a previously saved access token (e.g. Safari/ITP session quirks)
-      const token = getAccessToken();
-      if (token) {
-        // keep token; caller will verify via /api/me
-        if (location.hash || location.search) {
-          history.replaceState(null, "", location.pathname);
-        }
-        return { ok:true, session:null, from:"local" };
+      saveAccessToken(session.access_token);
+
+      if (location.hash || location.search) {
+        history.replaceState(null, "", location.pathname);
       }
 
-      return { ok:false, error:"no session" };
+      return { ok:true, session };
     }
-
 
     async function loginGoogle() {
       if (!SUPABASE_ANON_KEY || SUPABASE_ANON_KEY.startsWith("PASTE_")) {
@@ -1405,7 +1570,7 @@
         el.setAttribute("aria-checked", on ? "true" : "false");
       };
       paint();
-      el.addEventListener("click", () => { on = !on; paint(); haptic("toggle"); });
+      el.addEventListener("click", () => { on = !on; paint(); });
       return () => on;
     }
 
@@ -1515,69 +1680,6 @@
         .replaceAll(">","&gt;")
         .replaceAll('"',"&quot;")
         .replaceAll("'","&#039;");
-    }
-
-
-    /***********************
-     * UX helpers: Toast + keyword display
-     ***********************/
-    let toastTimer = null;
-    function showToast(msg, ms=1800){
-      const t = document.getElementById("toast");
-      if (!t) return;
-      t.textContent = msg;
-      t.classList.add("show");
-      clearTimeout(toastTimer);
-      toastTimer = setTimeout(()=> t.classList.remove("show"), ms);
-    }
-
-    function buildSearchQueriesFromSpec(items, { locale="tw", gender="neutral" } = {}) {
-      const priority = ["top","bottom","shoes","outer","bag","hat"];
-      const sorted = [...(items||[])].sort((a,b)=> priority.indexOf(a.slot)-priority.indexOf(b.slot)).slice(0,6);
-
-      const g = (gender === "male") ? (locale === "tw" ? "男款" : "men")
-            : (gender === "female") ? (locale === "tw" ? "女款" : "women")
-            : "";
-
-      return sorted.map(it=>{
-        const name = (it.display_name_zh || "").trim() || (it.generic_name || "").trim();
-        if (!name) return null;
-        const color = (it.color || "").trim();
-        const slot = (it.slot || "").trim();
-        const q = `${g ? g + " " : ""}${color ? color + " " : ""}${name}${slot ? " " + slot : ""}`.trim();
-        return { slot, q };
-      }).filter(Boolean);
-    }
-
-    function renderKeywordsPanel(specItems, payload){
-      const panel = document.getElementById("keywords-panel");
-      const list = document.getElementById("kw-list");
-      const toggle = document.getElementById("keywords-toggle");
-      if (!panel || !list || !toggle) return;
-
-      const qs = buildSearchQueriesFromSpec(specItems || [], { locale:"tw", gender: payload?.gender || "neutral" });
-      if (!qs.length) { panel.style.display="none"; return; }
-
-      list.innerHTML = qs.map(({slot,q})=>{
-        const label = SLOT_LABEL_ZH?.[slot] || slot;
-        return `
-          <div class="kw-row">
-            <span class="kw-tag kw-slot">${escapeHtml(label)}</span>
-            <span class="kw-tag" title="${escapeHtml(q)}">${escapeHtml(q)}</span>
-          </div>
-        `;
-      }).join("");
-
-      panel.style.display = "block";
-
-      // default collapsed
-      list.classList.remove("on");
-      toggle.textContent = "展開";
-
-      toggle.onclick = () => {
-        const on = list.classList.toggle("on");
-        toggle.textContent = on ? "收合" : "展開";
-      };
     }
 
     function setDebug(obj) {
@@ -1693,6 +1795,18 @@
       products: null,
       currentOutfitId: null
     };
+    function updateResultActions() {
+      const copyBtn = document.getElementById("copy-spec-btn");
+      const shareBtn = document.getElementById("share-btn");
+      const ctaBtn = document.getElementById("cta-products");
+      if (copyBtn) copyBtn.disabled = !flowState.spec;
+      if (shareBtn) shareBtn.disabled = !(flowState.payload && (flowState.spec || flowState.payload));
+      if (ctaBtn) ctaBtn.style.display = (Array.isArray(flowState.products) && flowState.products.length) ? "inline-flex" : "none";
+
+      const ctaHint = document.getElementById("cta-hint");
+      if (ctaHint) ctaHint.style.display = (ctaBtn && ctaBtn.style.display !== "none") ? "block" : "none";
+    }
+
 
     function showRetryUI(show, step="", hint="") {
       const row = document.getElementById("retry-row");
@@ -1715,11 +1829,11 @@
       const spec = await postJson("/api/generate-outfit-spec", payload, true);
       flowState.spec = spec;
       flowState.lastStep = "spec";
+      updateResultActions();
+      haptic(12);
       setDebug({ step:"spec", spec });
 
       renderOutfitSummary(spec.summary);
-      // UX: show keywords for product search
-      renderKeywordsPanel(spec.items || [], payload);
 
       if (typeof spec.credits_left !== "undefined") {
         setAuthUI({ loggedIn:true, email: me.user?.email, credits: spec.credits_left });
@@ -1744,6 +1858,7 @@
       if (!imgResp.image) throw new Error("Image API 沒回傳 image");
       flowState.imgResp = imgResp;
       flowState.lastStep = "image";
+      haptic(12);
       setDebug({ step:"image", imgResp, spec });
 
       setImageBase64(imgResp.image, imgResp.mime || "image/png");
@@ -1765,11 +1880,11 @@
       const list = prodResp.products || prodResp.items || prodResp.shopping_results || [];
       flowState.products = list;
       flowState.lastStep = "products";
+      updateResultActions();
+      haptic(14);
       setDebug({ step:"products", prodResp, spec });
 
       renderProductsGrouped(list);
-      // UX: after products done, toast
-      showToast("商品已更新 ✅");
       return list;
     }
 
@@ -1777,7 +1892,7 @@
       showRetryUI(false);
       clearError();
 
-      const ensured = await ensureToken();
+      const ensured = await ensureTokenFromSession();
       if (!ensured.ok) throw new Error("未登入或 session 不存在");
 
       const me = await apiMe();
@@ -1815,10 +1930,14 @@
     function autoScrollOnStart() {
       // 生成後：直接滑到示意圖（桌機/手機都要）
       scrollToEl("anchor-preview", "smooth", "start");
+      haptic(10);
     }
     function autoScrollOnDone() {
       // 完成後：滑到商品（桌機/手機都要）
       scrollToEl("anchor-products", "smooth", "start");
+      // 2 秒提示後自動消失（手機更有感）
+      showToast("往下看商品 ↓", 2000);
+      haptic(18);
     }
 
     /***********************
@@ -1834,12 +1953,11 @@
       if (!img || !img.src) return;
       modalImg.src = img.src;
       modal.classList.add("on");
-      haptic("tap"); modal.setAttribute("aria-hidden", "false");
+      modal.setAttribute("aria-hidden", "false");
       document.body.style.overflow = "hidden";
     }
     function closeModal() {
       modal.classList.remove("on");
-      haptic("tap");
       modal.setAttribute("aria-hidden", "true");
       document.body.style.overflow = "";
     }
@@ -1869,6 +1987,7 @@
      * - image dataUrl: IndexedDB（避免 localStorage 爆掉）
      ***********************/
     const LS_RECENTS = "os_recents_v2";
+    const LS_FAVS = "os_favs_v2";
 
     function safeJsonParse(str, fallback){
       try{ return JSON.parse(str); }catch{ return fallback; }
@@ -1964,30 +2083,10 @@
       };
       return JSON.stringify(obj, sorter);
     }
-    // ✅ Safe hash helper: prefer crypto.subtle SHA-256, but fall back gracefully.
-    // Some environments (older iOS Safari / certain WebViews / non-secure contexts)
-    // may not expose crypto.subtle, which would otherwise break the whole flow.
-    function fnv1a32Hex(str){
-      let h = 0x811c9dc5;
-      for (let i = 0; i < str.length; i++) {
-        h ^= str.charCodeAt(i);
-        // 32-bit FNV-1a prime
-        h = (h + ((h << 1) + (h << 4) + (h << 7) + (h << 8) + (h << 24))) >>> 0;
-      }
-      return h.toString(16).padStart(8, "0");
-    }
-
     async function sha256Hex(str){
-      try {
-        if (!(window.crypto && window.crypto.subtle)) {
-          return fnv1a32Hex(str);
-        }
-        const enc = new TextEncoder().encode(str);
-        const buf = await window.crypto.subtle.digest("SHA-256", enc);
-        return [...new Uint8Array(buf)].map(b=>b.toString(16).padStart(2,"0")).join("");
-      } catch {
-        return fnv1a32Hex(str);
-      }
+      const enc = new TextEncoder().encode(str);
+      const buf = await crypto.subtle.digest("SHA-256", enc);
+      return [...new Uint8Array(buf)].map(b=>b.toString(16).padStart(2,"0")).join("");
     }
     async function computeOutfitId(payload, spec){
       const core = {
@@ -2022,10 +2121,23 @@
       }catch{ return ""; }
     }
 
-    // UI: 最近 10 套（無收藏模式）
-    const recentsListEl = document.getElementById("recents-list");
+    // UI: tabs
+    const tabRecents = document.getElementById("tab-recents");
+    const tabFavs = document.getElementById("tab-favs");
+    const paneRecents = document.getElementById("pane-recents");
+    const paneFavs = document.getElementById("pane-favs");
 
-// Render lists
+    function setTab(which){
+      const rec = which === "recents";
+      tabRecents.classList.toggle("active", rec);
+      tabFavs.classList.toggle("active", !rec);
+      paneRecents.classList.toggle("active", rec);
+      paneFavs.classList.toggle("active", !rec);
+    }
+    tabRecents.addEventListener("click", () => setTab("recents"));
+    tabFavs.addEventListener("click", () => setTab("favs"));
+
+    // Render lists
     async function renderMiniList(targetId, listKey){
       const root = document.getElementById(targetId);
       if (!root) return;
@@ -2100,6 +2212,7 @@
 
     async function refreshCollectionsUI(){
       await renderMiniList("recents-list", LS_RECENTS);
+      await renderMiniList("favs-list", LS_FAVS);
     }
 
     // Save / Remove
@@ -2117,12 +2230,14 @@
     }
 
     function isFav(id){
+      const list = readList(LS_FAVS);
       return list.some(x => x.id === id);
     }
 
     async function setFav(outfit, on){
       // non-throw
       try{
+        const list = readList(LS_FAVS);
         const exists = list.some(x => x.id === outfit.id);
         let next = list;
         if (on) {
@@ -2130,6 +2245,7 @@
         } else {
           next = list.filter(x => x.id !== outfit.id);
         }
+        writeList(LS_FAVS, next);
       }catch(e){
         console.warn("setFav failed", e);
       }
@@ -2149,11 +2265,13 @@
         console.warn("removeSavedOutfit failed", e);
       } finally {
         await refreshCollectionsUI();
+        syncFavButtonUI();
       }
     }
 
     async function applySavedOutfit(id){
       // Load saved outfit into UI (preview + summary + products if present)
+      const all = [...readList(LS_RECENTS), ...readList(LS_FAVS)];
       const item = all.find(x => x.id === id);
       if (!item) return;
 
@@ -2205,10 +2323,75 @@
 
         // Update flowState for current
         flowState.currentOutfitId = item.id;
+        syncFavButtonUI();
+
         // scroll to preview
         scrollToEl("anchor-preview", "smooth", "start");
       }catch(e){
         console.warn("applySavedOutfit failed", e);
+      }
+    }
+
+    // Fav button UI
+    const favBtn = document.getElementById("btn-fav");
+    const favIcon = document.getElementById("fav-icon");
+    const favText = document.getElementById("fav-text");
+
+    function syncFavButtonUI(){
+      const id = flowState.currentOutfitId;
+      const enabled = !!id && !!flowState.imgResp && !!flowState.spec;
+      favBtn.disabled = !enabled;
+      if (!enabled){
+        favBtn.classList.remove("on");
+        favIcon.textContent = "♡";
+        favText.textContent = "收藏";
+        return;
+      }
+      const on = isFav(id);
+      favBtn.classList.toggle("on", on);
+      favIcon.textContent = on ? "♥" : "♡";
+      favText.textContent = on ? "已收藏" : "收藏";
+    }
+
+    favBtn.addEventListener("click", async () => {
+      const id = flowState.currentOutfitId;
+      if (!id) return;
+
+      // build current outfit payload for saving
+      const outfit = await buildCurrentOutfitSnapshotNoThrow();
+      if (!outfit) return;
+
+      const on = !isFav(id);
+      await setFav(outfit, on);
+      // Ensure UI always refreshes even if storage fails
+      syncFavButtonUI();
+      await refreshCollectionsUI();
+    });
+
+    async function buildCurrentOutfitSnapshotNoThrow(){
+      try{
+        const id = flowState.currentOutfitId;
+        if (!id) return null;
+
+        // persist image into idb (use current image dataURL)
+        const img = document.getElementById("outfit-image");
+        const dataUrl = img?.src || null;
+        if (dataUrl && dataUrl.startsWith("data:")) {
+          await idbPutImage(id, dataUrl);
+        }
+
+        return {
+          id,
+          ts: Date.now(),
+          payload: flowState.payload,
+          summary: flowState.spec?.summary || "",
+          spec: flowState.spec,
+          products: Array.isArray(flowState.products) ? flowState.products : [],
+          imageId: id
+        };
+      }catch(e){
+        console.warn("buildCurrentOutfitSnapshot failed", e);
+        return null;
       }
     }
 
@@ -2231,13 +2414,13 @@
       flowState.imgResp = null;
       flowState.spec = null;
       flowState.products = null;
+      syncFavButtonUI();
     }
 
     function finalizeDoneNoThrow(){
       setGenerateStep("done");
       setProgress(100);
       setStatus("完成 ✅", true, false);
-      haptic("success");
       showRetryUI(false);
     }
 
@@ -2257,7 +2440,7 @@
         resetPerRunUI();
 
         // Auth checks
-        const ensured = await ensureToken();
+        const ensured = await ensureTokenFromSession();
         if (!ensured.ok) {
           setAuthUI({ loggedIn:false, hint:"未登入（請按 Google 登入）" });
           throw new Error("未登入或 session 不存在");
@@ -2286,6 +2469,8 @@
 
         // Save for retry
         flowState.payload = payload;
+        setResultMeta(payload);
+        updateResultActions();
         if (forceRestart) {
           flowState.spec = null;
           flowState.imgResp = null;
@@ -2299,8 +2484,12 @@
         // compute id early
         const outfitId = await computeOutfitId(payload, spec);
         flowState.currentOutfitId = outfitId;
+        syncFavButtonUI();
+
         // Step 2: Image
         const imgResp = await runStepImage(payload, spec);
+        syncFavButtonUI();
+
         // auto-scroll to preview once image exists (helps on mobile & desktop)
         scrollToEl("anchor-preview", "smooth", "start");
 
@@ -2322,6 +2511,7 @@
             outfit.ts = Date.now();
             await upsertRecent(outfit);
             await refreshCollectionsUI();
+            syncFavButtonUI();
           }catch(e){
             console.warn("persist recent failed (non-fatal)", e);
           }
@@ -2331,24 +2521,16 @@
         console.error(e);
         setGenerateStep("failed");
         setStatus("失敗 ❌", false, false);
-        haptic("error");
         setProgress(0);
 
-        const msg = String(e?.message || e);
+        
+        const raw = String(e?.message || e || "");
+        // 把技術錯誤收進 Debug，外層只顯示「原因 + 下一步」
+        setDebug({ error: raw, step: flowState.lastStep, state: flowState });
 
-        // Show retry UI:
-        if (flowState.spec && !flowState.imgResp) {
-          showRetryUI(true, "Image", "Spec 已完成，可重試產生示意圖");
-          flowState.lastStep = "spec";
-        } else if (flowState.spec && flowState.imgResp) {
-          showRetryUI(true, "Products", "示意圖已完成，可重試搜尋商品");
-          flowState.lastStep = "image";
-        } else {
-          showRetryUI(true, "Restart", "可從頭重跑（重新扣點）");
-          flowState.lastStep = "idle";
-        }
+        const friendly = userFriendlyError(e, flowState.lastStep, !!flowState.imgResp);
+        showError(`${friendly.title}：${friendly.desc}（下一步：${friendly.next}）`);
 
-        showError(msg);
         throw e;
       } finally {
         setLoadingUI(false);
@@ -2379,15 +2561,41 @@
       });
 
 
-      // Quick nav (desktop + mobile)
-      const navPreview = document.getElementById("nav-to-preview");
-      const navProducts = document.getElementById("nav-to-products");
-      if (navPreview) navPreview.addEventListener("click", () => scrollToEl("anchor-preview","smooth","start"));
-      if (navProducts) navProducts.addEventListener("click", () => scrollToEl("anchor-products","smooth","start"));
+      // CTA: 看商品
+      const ctaBtn = document.getElementById("cta-products");
+      if (ctaBtn) ctaBtn.addEventListener("click", () => {
+        scrollToEl("anchor-products", "smooth", "start");
+        haptic(8);
+      });
 
+      // Copy spec
+      const copyBtn = document.getElementById("copy-spec-btn");
+      if (copyBtn) copyBtn.addEventListener("click", () => {
+        if (!flowState.spec) return;
+        copyText(safeJson(flowState.spec));
+        showToast("已複製 Outfit Spec", 1600);
+        haptic(10);
+      });
+
+      // Share
+      const shareBtn = document.getElementById("share-btn");
+      if (shareBtn) shareBtn.addEventListener("click", () => {
+        const hash = makeShareHash({ payload: flowState.payload, spec: flowState.spec });
+        const url = location.origin + location.pathname + hash;
+        copyText(url);
+        showToast("分享連結已複製", 1800);
+        haptic(12);
+      });
+
+      // Newbie tip (only once)
+      const tip = document.getElementById("newbie-tip");
+      const tipKey = "os_newbie_tip_v1";
+      if (tip) {
+        const seen = localStorage.getItem(tipKey);
+        tip.style.display = seen ? "none" : "block";
+      }
       // Retry buttons
       document.getElementById("retry-btn").addEventListener("click", async () => {
-        haptic("tap");
         const btn = document.getElementById("retry-btn");
         btn.disabled = true;
         try {
@@ -2403,7 +2611,6 @@
       });
 
       document.getElementById("restart-btn").addEventListener("click", async () => {
-        haptic("tap");
         const btn = document.getElementById("restart-btn");
         btn.disabled = true;
         try {
@@ -2420,9 +2627,12 @@
 
       // Shared click handler for both buttons
       async function onGenerateClick() {
-        haptic("tap");
         showRetryUI(false);
         try {
+          try { localStorage.setItem("os_newbie_tip_v1", "1"); } catch {}
+          const tip = document.getElementById("newbie-tip");
+          if (tip) tip.style.display = "none";
+
           await generateAll(false);
         } catch (e) {
           // errors already shown
@@ -2456,7 +2666,7 @@
       document.getElementById("debug-box").classList.toggle("on", getDebug());
 
       // Ensure session
-      await ensureToken();
+      await ensureTokenFromSession();
       await refreshAuthUI();
 
       osSupabase.auth.onAuthStateChange(async (_event, session) => {
@@ -2469,14 +2679,30 @@
       await refreshCollectionsUI();
 
       // initial status
+
+      // Load shared link (restore at least conditions; optionally reuse spec for copy/share)
+      const shared = parseShareFromLocation();
+      if (shared && shared.payload) {
+        applyPayloadToForm(shared.payload);
+        flowState.payload = shared.payload;
+        setResultMeta(shared.payload);
+
+        if (shared.spec) {
+          // keep spec so user can copy/share; image/products still need auth to call APIs
+          flowState.spec = { ...shared.spec, items: shared.spec.items || [], summary: shared.spec.summary || "" };
+          renderOutfitSummary(flowState.spec.summary);
+        }
+        updateResultActions();
+        showToast("已載入分享條件", 1600);
+      }
       setGenerateStep("idle");
       setProgress(0);
       setStatus("等待操作", null, false);
       setLoadingUI(false);
+      syncFavButtonUI();
     })();
   </script>
-
-  <div id="toast" class="toast" role="status" aria-live="polite"></div>
+  <div class="toast" id="toast" style="display:none;">往下看商品 ↓</div>
 
 </body>
 </html>
