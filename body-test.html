@@ -70,7 +70,7 @@
     .pill{ display:inline-flex;align-items:center;gap:6px; padding:6px 10px;border-radius:999px; font-size:12px;color:var(--muted); background:#f3f4f6;border:1px solid #eef0f3; }
     .row{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:10px}
 
-    .section-block{ padding:12px; border:1px solid var(--line); border-radius:16px; background:linear-gradient(135deg,#fff,#fafafa); margin-bottom:12px; }
+    .section-block{ padding:12px; border:1px solid var(--line); border-radius:16px; background:linear-gradient(135deg,#fff,#fafafa); margin-bottom:8px; }
     .section-head{ display:flex;align-items:center;justify-content:space-between; gap:10px;margin-bottom:10px; }
     .section-head .stitle{ font-weight:900; font-size:14px; color:#111827; display:flex; align-items:center; gap:8px; }
     .tag{ font-size:11px; padding:4px 8px; border-radius:999px; border:1px solid #eef0f3; background:#fff; color:var(--muted); white-space:nowrap; }
@@ -78,11 +78,11 @@
     .form-grid{ display:grid; grid-template-columns:1fr 1fr; gap:10px 12px; }
     @media (max-width: 560px){ .form-grid{grid-template-columns:1fr} }
     label{ display:block;font-size:12px;font-weight:900; margin:0 0 6px 0;color:#111827; }
-    input, select{ width:100%;padding:10px 10px;border-radius:12px; border:1px solid var(--line);background:#fafafa;outline:none;font-size:14px; }
+    input, select{ width:100%;padding:8px 10px;border-radius:12px; border:1px solid var(--line);background:#fafafa;outline:none;font-size:14px; }
     input:focus, select:focus{ background:#fff;border-color:#ff9a9a; box-shadow:0 0 0 3px rgba(255,107,107,.18); }
 
-    .slider-group{ padding:10px;border-radius:14px;border:1px solid var(--line);background:#fafafa; }
-    .slider-head{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:8px}
+    .slider-group{ padding:8px;border-radius:14px;border:1px solid var(--line);background:#fafafa; }
+    .slider-head{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:6px}
     .slider-head .label{font-size:12px;font-weight:900;color:#111827}
     .value-chip{ display:inline-flex;align-items:baseline;gap:6px; padding:6px 10px;border-radius:999px;background:#fff;border:1px solid #eef0f3; font-size:12px;color:var(--muted);white-space:nowrap; }
     .value-chip b{color:#111827;font-weight:900}
@@ -335,7 +335,13 @@
     /* Hide admin-only helper text under accessories */
     .toggle-item .desc{ display:none !important; }
 
-  </style>
+ 
+/* ✅ Force desktop/mobile behavior via JS class (prevents wrong breakpoint) */
+body.is-desktop .layout{ grid-template-columns: minmax(320px, 0.9fr) minmax(0, 1.6fr); }
+body.is-desktop #mobile-actionbar{ display:none !important; }
+body.is-mobile .layout{ grid-template-columns: 1fr; }
+body.is-mobile #mobile-actionbar{ display:block !important; }
+ </style>
 </head>
 
 <body>
@@ -665,6 +671,15 @@
 
 function isMobile(){ return window.matchMedia && window.matchMedia("(max-width: 640px)").matches; }
 
+function applyDeviceClass() {
+  const m = isMobile();
+  document.body.classList.toggle("is-mobile", m);
+  document.body.classList.toggle("is-desktop", !m);
+  const mobileBar = document.getElementById("mobile-actionbar");
+  if (mobileBar) mobileBar.style.display = m ? "block" : "none";
+}
+
+
     function scrollToElWithOffset(id, offsetPx = 0, behavior="smooth"){
       const el = document.getElementById(id);
       if (!el) return;
@@ -841,7 +856,25 @@ function isMobile(){ return window.matchMedia && window.matchMedia("(max-width: 
       paint();
     }
 
-    function bindStyleCards(){
+    
+function bindGenderSeg(){
+  const seg = document.getElementById("gender-seg");
+  const hidden = document.getElementById("gender");
+  if (!seg || !hidden) return;
+  const btns = Array.from(seg.querySelectorAll(".seg-btn"));
+  const select = (val) => {
+    hidden.value = val;
+    btns.forEach(b => {
+      const on = b.dataset.value === val;
+      b.classList.toggle("on", on);
+      b.setAttribute("aria-checked", on ? "true" : "false");
+    });
+  };
+  btns.forEach(b => b.addEventListener("click", () => select(b.dataset.value)));
+  select(hidden.value || "female");
+}
+
+function bindStyleCards(){
       const grid=document.getElementById("style-grid");
       const hidden=document.getElementById("style");
       const cards=Array.from(grid.querySelectorAll(".style-card"));
@@ -1280,14 +1313,15 @@ function isMobile(){ return window.matchMedia && window.matchMedia("(max-width: 
       bindRange("weight","weight-val");
       bindRange("temp","temp-val");
       bindStyleCards();
+    bindGenderSeg();
 
       document.getElementById("login-btn").addEventListener("click", loginGoogle);
       document.getElementById("logout-btn").addEventListener("click", logout);
 
-      const mobileBar=document.getElementById("mobile-actionbar");
-      if(mobileBar) mobileBar.style.display=isMobile()? "block":"none";
-      window.addEventListener("resize", ()=>{ if(mobileBar) mobileBar.style.display=isMobile()? "block":"none"; });
+      applyDeviceClass();
+      window.addEventListener("resize", applyDeviceClass);
 
+      /* mobile actionbar handled by applyDeviceClass() */
       const ctaBtn=document.getElementById("cta-products");
       if(ctaBtn) ctaBtn.addEventListener("click", ()=>{ scrollToElWithOffset("anchor-products",12,"smooth"); haptic(8); });
 
