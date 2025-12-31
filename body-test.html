@@ -8,6 +8,7 @@
   <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@300;400;500;700&display=swap" rel="stylesheet">
 
   <style>
+
     :root{
       --bg:#f5f5f7;
       --card:#fff;
@@ -64,9 +65,11 @@
     .btn.secondary{background:#fff;color:var(--text);border:1px solid var(--line);box-shadow:none;font-weight:900}
 
     .layout{ display:grid; grid-template-columns: minmax(320px, 0.9fr) minmax(0, 1.6fr); gap:16px; align-items:start; }
-    @media (max-width: 980px){ .layout{grid-template-columns:1fr} }
+    @media (max-width: 980px){
+    .layout{grid-template-columns:1fr}
+}
 
-    .card{ background:var(--card); border-radius:var(--r-lg); box-shadow:var(--shadow); border:1px solid rgba(0,0,0,.04); padding:16px; }
+.card{ background:var(--card); border-radius:var(--r-lg); box-shadow:var(--shadow); border:1px solid rgba(0,0,0,.04); padding:16px; }
     .pill{ display:inline-flex;align-items:center;gap:6px; padding:6px 10px;border-radius:999px; font-size:12px;color:var(--muted); background:#f3f4f6;border:1px solid #eef0f3; }
     .row{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:10px}
 
@@ -88,6 +91,62 @@
     .value-chip b{color:#111827;font-weight:900}
     input[type="range"]{ width:100%; padding:0; border:none; background:transparent; accent-color:#111827; height:26px; }
     .range-sub{display:flex;justify-content:space-between;font-size:11px;color:var(--muted);margin-top:4px}
+/* ✅ Segmented (Gender) */
+.visually-hidden{
+  position:absolute !important;
+  width:1px;height:1px;
+  padding:0;margin:-1px;
+  overflow:hidden;clip:rect(0,0,0,0);
+  white-space:nowrap;border:0;
+}
+.segmented{
+  display:flex;
+  gap:8px;
+  padding:6px;
+  border-radius:14px;
+  border:1px solid var(--line);
+  background:#fafafa;
+}
+.seg-btn{
+  flex:1;
+  border:none;
+  cursor:pointer;
+  border-radius:12px;
+  padding:9px 10px;
+  font-weight:900;
+  background:#fff;
+  color:#111827;
+  transition:transform .1s ease, opacity .1s ease, box-shadow .12s ease;
+  box-shadow:0 1px 0 rgba(0,0,0,.02);
+}
+.seg-btn:active{transform:translateY(1px);opacity:.94}
+.seg-btn.selected,.seg-btn.on{
+  background:#111827;
+  color:#fff;
+  box-shadow:0 10px 20px rgba(17,24,39,.12);
+}
+
+/* ✅ Range thumb bigger (drag easier) */
+input[type="range"]{ -webkit-appearance:none; appearance:none; }
+input[type="range"]::-webkit-slider-runnable-track{
+  height:6px;border-radius:999px;background:#e5e7eb;
+}
+input[type="range"]::-webkit-slider-thumb{
+  -webkit-appearance:none; appearance:none;
+  width:22px;height:22px;border-radius:999px;
+  background:#111827;border:3px solid #fff;
+  margin-top:-8px;
+  box-shadow:0 4px 10px rgba(0,0,0,.18);
+}
+input[type="range"]::-moz-range-track{
+  height:6px;border-radius:999px;background:#e5e7eb;
+}
+input[type="range"]::-moz-range-thumb{
+  width:22px;height:22px;border-radius:999px;
+  background:#111827;border:3px solid #fff;
+  box-shadow:0 4px 10px rgba(0,0,0,.18);
+}
+
 
     .style-grid{ display:grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap:10px; }
     @media (max-width:560px){ .style-grid{grid-template-columns:1fr 1fr} }
@@ -101,7 +160,7 @@
     .toggle-list{ margin-top:10px;border:1px solid var(--line);border-radius:14px;overflow:hidden; }
     .toggle-item{ display:flex;justify-content:space-between;align-items:center; padding:12px 12px;border-top:1px solid var(--line); }
     .toggle-item:first-child{border-top:none}
-    .toggle-item .left{display:flex;flex-direction:column;gap:2px}
+    .toggle-item .left{display:flex;flex-direction:column;gap:0px}
     .toggle-item .name{font-weight:900;font-size:14px}
     .toggle-item .desc{font-size:12px;color:var(--muted)}
     .switch{ width:44px;height:24px;border-radius:999px;background:#e5e7eb; position:relative;cursor:pointer;flex:0 0 auto; }
@@ -135,7 +194,7 @@
 
     .products{ border:1px solid var(--line); border-radius:18px; padding:12px;background:#fff; min-height:160px; }
 
-    .slot-group{ border:1px solid #f1f2f4; background:#fafafa; border-radius:16px; padding:10px; margin-bottom:12px; }
+    .slot-group{ border:1px solid #f1f2f4; background:#fafafa; border-radius:16px; padding:10px; margin-bottom:10px; }
     .slot-group:last-child{margin-bottom:0}
     .slot-head{ display:flex; align-items:center; justify-content:space-between; gap:10px; margin-bottom:8px; }
     .slot-title{ font-weight:900; color:#111827; font-size:14px; display:flex; align-items:center; gap:8px; }
@@ -230,10 +289,13 @@
       .style-card{ min-height:72px; padding:12px; }
       .products{ padding:10px; }
       .product-item{ padding:10px; }
-      .mobile-actionbar{ position: fixed; left: 12px; right: 12px; bottom: calc(14px + var(--safe-b)); z-index: 9999; pointer-events:none; }
+      .mobile-actionbar{ display:block;
+  position: fixed; left: 12px; right: 12px; bottom: calc(14px + var(--safe-b)); z-index: 9999; pointer-events:none; }
       .mobile-actionbar .primary-wide{ width:100%; height:54px; font-size:16px; border-radius:16px; box-shadow:0 18px 38px rgba(0,0,0,.18); pointer-events:auto; }
       .left-panel .sticky-generate{ display:none; }
       .anchor { scroll-margin-top: 12px; }
+.mobile-actionbar{display:none;}
+
     }
 
     .anchor { scroll-margin-top: 12px; }
@@ -273,7 +335,7 @@
       border:1px solid transparent;
       background:#fafafa;
       border-radius:14px;
-      padding:10px 10px;
+      padding:9px 10px;
       cursor:pointer;
       display:flex;
       flex-direction:column;
@@ -341,7 +403,8 @@ body.is-desktop .layout{ grid-template-columns: minmax(320px, 0.9fr) minmax(0, 1
 body.is-desktop #mobile-actionbar{ display:none !important; }
 body.is-mobile .layout{ grid-template-columns: 1fr; }
 body.is-mobile #mobile-actionbar{ display:block !important; }
- </style>
+ 
+</style>
 </head>
 
 <body>
@@ -373,72 +436,69 @@ body.is-mobile #mobile-actionbar{ display:block !important; }
         </div>
 
         <div class="section-block">
-          <div class="section-head">
-            <div class="stitle">① 基本資料 <span class="tag">拖拉更快</span></div>
-          </div>
+  <div class="section-head">
+    <div class="stitle">① 基本資料 <span class="tag">拖拉更快</span></div>
+  </div>
 
-          <div class="form-grid">
-            <div>
-              <label>性別</label>
-              <input type="hidden" id="gender" value="female" />
-              <div class="segmented" id="gender-seg" role="radiogroup" aria-label="性別">
-                <button type="button" class="seg-btn on" data-value="female" role="radio" aria-checked="true">
-                  <span class="seg-main">女性</span><span class="seg-sub">Female</span>
-                </button>
-                <button type="button" class="seg-btn" data-value="male" role="radio" aria-checked="false">
-                  <span class="seg-main">男性</span><span class="seg-sub">Male</span>
-                </button>
-                <button type="button" class="seg-btn" data-value="neutral" role="radio" aria-checked="false">
-                  <span class="seg-main">中性</span><span class="seg-sub">Neutral</span>
-                </button>
-              </div>
-            </div>
-</div>
+  <div class="form-grid">
+    <div>
+      <label>性別</label>
+      <div class="segmented" id="gender-seg" role="radiogroup" aria-label="性別">
+        <button type="button" class="seg-btn" data-value="female" role="radio" aria-checked="true">女性</button>
+        <button type="button" class="seg-btn" data-value="male" role="radio" aria-checked="false">男性</button>
+        <button type="button" class="seg-btn" data-value="neutral" role="radio" aria-checked="false">中性</button>
+      </div>
 
-            <div class="slider-group">
-              <div class="slider-head">
-                <div class="label">年齡</div>
-                <div class="value-chip"><b id="age-val">25</b> 歲</div>
-              </div>
-              <input id="age" type="range" min="13" max="70" step="1" value="25" aria-label="年齡" />
-              <div class="range-sub"><span>13</span><span>70</span></div>
-            </div>
+      <!-- keep underlying value for existing JS -->
+      <select id="gender" class="visually-hidden" aria-label="性別">
+        <option value="female">女性</option>
+        <option value="male">男性</option>
+        <option value="neutral">中性</option>
+      </select>
+    </div>
 
-            <div class="slider-group">
-              <div class="slider-head">
-                <div class="label">身高</div>
-                <div class="value-chip"><b id="height-val">165</b> cm</div>
-              </div>
-              <input id="height" type="range" min="140" max="200" step="1" value="165" aria-label="身高" />
-              <div class="range-sub"><span>140</span><span>200</span></div>
-            </div>
+    <div class="slider-group">
+      <div class="slider-head">
+        <div class="label">年齡</div>
+        <div class="value-chip"><b id="age-val">25</b> 歲</div>
+      </div>
+      <input id="age" type="range" min="13" max="70" step="1" value="25" aria-label="年齡" />
+      <div class="range-sub"><span>13</span><span>70</span></div>
+    </div>
 
-            <div class="slider-group">
-              <div class="slider-head">
-                <div class="label">體重</div>
-                <div class="value-chip"><b id="weight-val">55</b> kg</div>
-              </div>
-              <input id="weight" type="range" min="35" max="120" step="1" value="55" aria-label="體重" />
-              <div class="range-sub"><span>35</span><span>120</span></div>
-            </div>
+    <div class="slider-group">
+      <div class="slider-head">
+        <div class="label">身高</div>
+        <div class="value-chip"><b id="height-val">165</b> cm</div>
+      </div>
+      <input id="height" type="range" min="140" max="200" step="1" value="165" aria-label="身高" />
+      <div class="range-sub"><span>140</span><span>200</span></div>
+    </div>
 
-            <div class="slider-group" style="grid-column:1/-1">
-              <div class="slider-head">
-                <div class="label">溫度</div>
-                <div class="value-chip"><b id="temp-val">22</b> °C</div>
-              </div>
-              <input id="temp" type="range" min="0" max="35" step="1" value="22" aria-label="溫度" />
-              <div class="range-sub"><span>0</span><span>35</span></div>
-            </div>
+    <div class="slider-group">
+      <div class="slider-head">
+        <div class="label">體重</div>
+        <div class="value-chip"><b id="weight-val">55</b> kg</div>
+      </div>
+      <input id="weight" type="range" min="35" max="120" step="1" value="55" aria-label="體重" />
+      <div class="range-sub"><span>35</span><span>120</span></div>
+    </div>
 
-            <div class="cta-row" style="grid-column:1/-1">
-              <button class="mini-btn" id="cta-products" style="display:none;">看商品 ↓</button>
-              <div class="mini-hint" id="cta-hint" style="display:none;">商品在下方</div>
-            </div>
-          </div>
-        </div>
+    <div class="slider-group" style="grid-column:1/-1">
+      <div class="slider-head">
+        <div class="label">溫度</div>
+        <div class="value-chip"><b id="temp-val">22</b> °C</div>
+      </div>
+      <input id="temp" type="range" min="0" max="35" step="1" value="22" aria-label="溫度" />
+      <div class="range-sub"><span>0</span><span>35</span></div>
 
-        <div class="section-block">
+      <div class="cta-row">
+        <button class="mini-btn" id="cta-products" style="display:none;" type="button">看商品 ↓</button>
+        <div class="mini-hint" id="cta-hint" style="display:none;">商品在下方</div>
+      </div>
+    </div>
+  </div>
+</div><div class="section-block">
           <div class="section-head">
             <div class="stitle">② 風格選擇 <span class="tag">點一下就好</span></div>
           </div>
@@ -498,21 +558,21 @@ body.is-mobile #mobile-actionbar{ display:block !important; }
             <div class="toggle-item">
               <div class="left">
                 <div class="name">包包</div>
-                <div class="desc">需要 bag 才會出現在 Spec + 商品</div>
+                
               </div>
               <div class="switch" id="sw-bag" role="switch" aria-checked="false"></div>
             </div>
             <div class="toggle-item">
               <div class="left">
                 <div class="name">帽子</div>
-                <div class="desc">需要 hat 才會出現在 Spec + 商品</div>
+                
               </div>
               <div class="switch" id="sw-hat" role="switch" aria-checked="false"></div>
             </div>
             <div class="toggle-item">
               <div class="left">
                 <div class="name">外套</div>
-                <div class="desc">勾選或溫度 ≤ 20°C 時會生成 outer</div>
+                
               </div>
               <div class="switch" id="sw-coat" role="switch" aria-checked="false"></div>
             </div>
@@ -633,7 +693,7 @@ body.is-mobile #mobile-actionbar{ display:block !important; }
     </main>
   </div>
 
-  <div class="mobile-actionbar" id="mobile-actionbar" style="display:none;">
+  <div class="mobile-actionbar" id="mobile-actionbar">
     <button id="go-btn-mobile" class="primary-wide" type="button">產生穿搭圖</button>
   </div>
 
@@ -650,6 +710,7 @@ body.is-mobile #mobile-actionbar{ display:block !important; }
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 
   <script>
+
 
 // --- JS runtime guard: show error banner if script fails ---
 (function(){
@@ -675,8 +736,6 @@ function applyDeviceClass() {
   const m = isMobile();
   document.body.classList.toggle("is-mobile", m);
   document.body.classList.toggle("is-desktop", !m);
-  const mobileBar = document.getElementById("mobile-actionbar");
-  if (mobileBar) mobileBar.style.display = m ? "block" : "none";
 }
 
 
@@ -765,6 +824,7 @@ function applyDeviceClass() {
       if(!payload) return;
       const setSel=(id,v)=>{ const el=document.getElementById(id); if(el && v!==undefined && v!==null) el.value=String(v); };
       setSel("gender", payload.gender);
+  if (window.__setGenderSeg) window.__setGenderSeg(payload.gender);
       const setRange=(id,valId,v)=>{
         const el=document.getElementById(id);
         const lab=document.getElementById(valId);
@@ -863,6 +923,7 @@ function bindGenderSeg(){
   if (!seg || !hidden) return;
   const btns = Array.from(seg.querySelectorAll(".seg-btn"));
   const select = (val) => {
+    if (!val) return;
     hidden.value = val;
     btns.forEach(b => {
       const on = b.dataset.value === val;
@@ -871,6 +932,9 @@ function bindGenderSeg(){
     });
   };
   btns.forEach(b => b.addEventListener("click", () => select(b.dataset.value)));
+  hidden.addEventListener("change", () => select(hidden.value));
+  // expose for applyPayloadToForm / share restore
+  window.__setGenderSeg = select;
   select(hidden.value || "female");
 }
 
@@ -1385,6 +1449,7 @@ function bindStyleCards(){
       setStatus("", null, false);
       setLoadingUI(false);
     })();
+
 </script>
 
   <div class="toast" id="toast" style="display:none;">往下看商品 ↓</div>
