@@ -296,11 +296,16 @@
           <div class="form-grid">
             <div>
               <label>性別</label>
-              <select id="gender">
+              <select id="gender" class="visually-hidden" aria-hidden="true" tabindex="-1">
                 <option value="female">女性</option>
                 <option value="male">男性</option>
                 <option value="neutral">中性</option>
               </select>
+              <div class="segmented" id="gender-seg" role="radiogroup" aria-label="性別">
+                <button type="button" class="seg-btn on" data-value="female" role="radio" aria-checked="true">女性</button>
+                <button type="button" class="seg-btn" data-value="male" role="radio" aria-checked="false">男性</button>
+                <button type="button" class="seg-btn" data-value="neutral" role="radio" aria-checked="false">中性</button>
+              </div>
             </div>
 
             <div class="slider-group">
@@ -353,28 +358,23 @@
 
           <div class="style-grid" id="style-grid">
             <div class="style-card selected" data-style="casual">
-              <div class="chip">Casual</div>
-              <div class="name">休閒</div>
+<div class="name">休閒 <span class="en">Casual</span></div>
               <div class="desc">舒服、日常、好搭配</div>
             </div>
             <div class="style-card" data-style="minimal">
-              <div class="chip">Minimal</div>
-              <div class="name">極簡</div>
+<div class="name">極簡 <span class="en">Minimal</span></div>
               <div class="desc">乾淨俐落、低彩度</div>
             </div>
             <div class="style-card" data-style="street">
-              <div class="chip">Street</div>
-              <div class="name">街頭</div>
+<div class="name">街頭 <span class="en">Street</span></div>
               <div class="desc">層次、比例、個性</div>
             </div>
             <div class="style-card" data-style="sporty">
-              <div class="chip">Sporty</div>
-              <div class="name">運動</div>
+<div class="name">運動 <span class="en">Sporty</span></div>
               <div class="desc">機能、輕鬆、好活動</div>
             </div>
             <div class="style-card" data-style="smart" style="grid-column:1/-1">
-              <div class="chip">Smart</div>
-              <div class="name">Smart Casual</div>
+<div class="name">Smart Casual <span class="en">Smart</span></div>
               <div class="desc">正式一點但不拘謹</div>
             </div>
           </div>
@@ -463,7 +463,7 @@
         </div>
 
         <div class="section-title">
-          <span class="pill">AI 穿搭示意圖</span>
+          <span class="pill">示意圖（可全螢幕）</span>
         </div>
 
         <div class="preview-wrap anchor" id="anchor-preview">
@@ -649,7 +649,8 @@
     function applyPayloadToForm(payload){
       if(!payload) return;
       const setSel=(id,v)=>{ const el=document.getElementById(id); if(el && v!==undefined && v!==null) el.value=String(v); };
-      setSel("gender", payload.gender);
+            setSel("gender", payload.gender);
+      try{ const gsel=document.getElementById("gender"); if(gsel) gsel.dispatchEvent(new Event("change")); }catch{}
       const setRange=(id,valId,v)=>{
         const el=document.getElementById(id);
         const lab=document.getElementById(valId);
@@ -1180,6 +1181,7 @@
       bindRange("weight","weight-val");
       bindRange("temp","temp-val");
       bindStyleCards();
+      initGenderSegmented();
 
       document.getElementById("login-btn").addEventListener("click", loginGoogle);
       document.getElementById("logout-btn").addEventListener("click", logout);
