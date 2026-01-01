@@ -346,6 +346,9 @@ input[type="range"]::-moz-range-thumb{
     .seg-btn:active{ transform:translateY(1px); }
     .seg-btn .seg-main{ font-weight:900; font-size:14px; color:#111827; }
     .seg-btn .seg-sub{ font-weight:800; font-size:11px; color:var(--muted); letter-spacing:.02em; }
+.seg-btn.on .seg-main{ color:#fff; }
+.seg-btn.on .seg-sub{ color: rgba(255,255,255,.82); }
+
     .seg-btn.on{
       background:#fff;
       border-color:#111827;
@@ -824,6 +827,8 @@ function applyDeviceClass() {
       if(!payload) return;
       const setSel=(id,v)=>{ const el=document.getElementById(id); if(el && v!==undefined && v!==null) el.value=String(v); };
       setSel("gender", payload.gender);
+      try{ if (window.__setGenderSeg && payload.gender) window.__setGenderSeg(payload.gender); }catch{}
+      try{ const g=document.getElementById("gender"); g && g.dispatchEvent(new Event("change")); }catch{}
   if (window.__setGenderSeg) window.__setGenderSeg(payload.gender);
       const setRange=(id,valId,v)=>{
         const el=document.getElementById(id);
@@ -1199,7 +1204,9 @@ function bindStyleCards(){
       setDebug({ step:"spec", spec });
       renderOutfitSummary(spec.summary);
       if(typeof spec.credits_left!=="undefined"){ setAuthUI({ loggedIn:true, email: me.user?.email, credits: spec.credits_left }); }
-      else { await refreshAuthUI(); }
+      else { await refreshAuthUI();
+      try{ await refreshCollectionsUI(); }catch(e){ console.warn(e); }
+      syncFavButtonUI(); }
       return spec;
     }
 
@@ -1290,10 +1297,343 @@ function bindStyleCards(){
 
     document.getElementById("btn-fullscreen").addEventListener("click", openModalWithCurrentImage);
     document.getElementById("outfit-image").addEventListener("click", openModalWithCurrentImage);
+    /***********************
+     * 收藏 / 最近 10 套（本機儲存）
+     * - metadata: localStorage
+     * - image dataUrl: IndexedDB（避免 localStorage 爆掉）
+     ***********************/
+    const LS_RECENTS="os_recents_v2";
+    const LS_FAVS="os_favs_v2";
 
-    // Collections code omitted here for brevity in this export? (Kept in your original file.)
-    // NOTE: In your actual project, keep the full "收藏/最近10套" JS segment from your current body-test,
-    // or merge it back if you need it. This HTML focuses on 1236/1238 + downloadability.
+    function safeJsonParse(str,fallback){ try{ return JSON.parse(str); }catch{ return fallback; } }
+    function readList(key){ const raw=localStorage.getItem(key); const arr=safeJsonParse(raw,[]); return Array.isArray(arr)?arr:[]; }
+    function writeList(key,arr){ try{ localStorage.setItem(key,JSON.stringify(arr)); return true; }catch(e){ console.warn("localStorage write failed",e); return false; } }
+
+    // IndexedDB (store images by id)
+    const IDB_NAME="os_outfits_db_v1";
+    const IDB_STORE="images";
+
+    function openDb(){
+      return new Promise((resolve,reject)=>{
+        const req=indexedDB.open(IDB_NAME,1);
+        req.onupgradeneeded=()=>{
+          const db=req.result;
+          if(!db.objectStoreNames.contains(IDB_STORE)){
+            db.createObjectStore(IDB_STORE,{ keyPath:"id" });
+          }
+        };
+        req.onsuccess=()=>resolve(req.result);
+        req.onerror=()=>reject(req.error);
+      });
+    }
+
+    async function idbPutImage(id,dataUrl){
+      try{
+        const db=await openDb();
+        await new Promise((resolve,reject)=>{
+          const tx=db.transaction(IDB_STORE,"readwrite");
+          tx.objectStore(IDB_STORE).put({ id, dataUrl });
+          tx.oncomplete=()=>resolve(true);
+          tx.onerror=()=>reject(tx.error);
+        });
+        db.close();
+        return true;
+      }catch(e){ console.warn("idbPutImage failed",e); return false; }
+    }
+
+    async function idbGetImage(id){
+      try{
+        const db=await openDb();
+        const dataUrl=await new Promise((resolve,reject)=>{
+          const tx=db.transaction(IDB_STORE,"readonly");
+          const req=tx.objectStore(IDB_STORE).get(id);
+          req.onsuccess=()=>resolve(req.result?.dataUrl||null);
+          req.onerror=()=>reject(req.error);
+        });
+        db.close();
+        return dataUrl;
+      }catch(e){ console.warn("idbGetImage failed",e); return null; }
+    }
+
+    async function idbDelImage(id){
+      try{
+        const db=await openDb();
+        await new Promise((resolve,reject)=>{
+          const tx=db.transaction(IDB_STORE,"readwrite");
+          tx.objectStore(IDB_STORE).delete(id);
+          tx.oncomplete=()=>resolve(true);
+          tx.onerror=()=>reject(tx.error);
+        });
+        db.close();
+        return true;
+      }catch(e){ console.warn("idbDelImage failed",e); return false; }
+    }
+
+    // stable id (hash)
+    function stableStringify(obj){
+      const seen=new WeakSet();
+      const sorter=(k,v)=>{
+        if(v && typeof v==="object"){
+          if(seen.has(v)) return;
+          seen.add(v);
+          if(Array.isArray(v)) return v;
+          const out={};
+          Object.keys(v).sort().forEach(key=>out[key]=v[key]);
+          return out;
+        }
+        return v;
+      };
+      return JSON.stringify(obj,sorter);
+    }
+
+    async function sha256Hex(str){
+      if(!crypto?.subtle) throw new Error("crypto.subtle unavailable");
+      const enc=new TextEncoder().encode(str);
+      const buf=await crypto.subtle.digest("SHA-256",enc);
+      return [...new Uint8Array(buf)].map(b=>b.toString(16).padStart(2,"0")).join("");
+    }
+
+    async function computeOutfitId(payload,spec){
+      const core={
+        payload:{
+          gender:payload.gender, age:payload.age, height:payload.height, weight:payload.weight,
+          style:payload.style, styleVariant:payload.styleVariant||"", temp:payload.temp,
+          withBag:!!payload.withBag, withHat:!!payload.withHat, withCoat:!!payload.withCoat
+        },
+        items:(spec?.items||[]).map(i=>({
+          slot:i.slot, generic_name:i.generic_name, display_name_zh:i.display_name_zh,
+          color:i.color, style:i.style, gender:i.gender, warmth:i.warmth
+        })),
+        summary:spec?.summary||""
+      };
+      return await sha256Hex(stableStringify(core));
+    }
+
+    function fmtTime(ts){
+      try{
+        const d=new Date(ts);
+        const m=String(d.getMonth()+1).padStart(2,"0");
+        const day=String(d.getDate()).padStart(2,"0");
+        const hh=String(d.getHours()).padStart(2,"0");
+        const mm=String(d.getMinutes()).padStart(2,"0");
+        return `${m}/${day} ${hh}:${mm}`;
+      }catch{ return ""; }
+    }
+
+    // Tabs
+    const tabRecents=document.getElementById("tab-recents");
+    const tabFavs=document.getElementById("tab-favs");
+    const paneRecents=document.getElementById("pane-recents");
+    const paneFavs=document.getElementById("pane-favs");
+    function setTab(which){
+      const rec=(which==="recents");
+      tabRecents?.classList.toggle("active",rec);
+      tabFavs?.classList.toggle("active",!rec);
+      paneRecents?.classList.toggle("active",rec);
+      paneFavs?.classList.toggle("active",!rec);
+    }
+    tabRecents?.addEventListener("click",()=>setTab("recents"));
+    tabFavs?.addEventListener("click",()=>setTab("favs"));
+
+    async function renderMiniList(targetId,listKey){
+      const root=document.getElementById(targetId);
+      if(!root) return;
+      const list=readList(listKey);
+      root.innerHTML="";
+      if(!list.length){
+        root.innerHTML='<div class="mini-empty">目前沒有資料。</div>';
+        return;
+      }
+      for(const item of list){
+        const row=document.createElement("div");
+        row.className="mini-card";
+
+        const thumb=document.createElement("div");
+        thumb.className="mini-thumb";
+        thumb.textContent="載入中…";
+
+        const info=document.createElement("div");
+        info.className="mini-info";
+        const title=(item.summary||"一套穿搭").trim()||"一套穿搭";
+        const p=item.payload||{};
+        const meta=`${fmtTime(item.ts)} · ${(p.gender||"")} · ${(p.style||"")} · ${(p.temp ?? "")}°C`;
+        info.innerHTML=`<div class="t">${escapeHtml(title)}</div><div class="m">${escapeHtml(meta)}</div>`;
+
+        const actions=document.createElement("div");
+        actions.className="mini-actions";
+
+        const btnLoad=document.createElement("button");
+        btnLoad.className="chip-btn";
+        btnLoad.type="button";
+        btnLoad.textContent="套用";
+        btnLoad.addEventListener("click",async()=>{ await applySavedOutfit(item.id); });
+
+        const btnDel=document.createElement("button");
+        btnDel.className="chip-btn danger";
+        btnDel.type="button";
+        btnDel.textContent="刪除";
+        btnDel.addEventListener("click",async()=>{ await removeSavedOutfit(listKey,item.id); });
+
+        actions.appendChild(btnLoad);
+        actions.appendChild(btnDel);
+
+        row.appendChild(thumb);
+        row.appendChild(info);
+        row.appendChild(actions);
+        root.appendChild(row);
+
+        const dataUrl=await idbGetImage(item.imageId||item.id);
+        if(dataUrl) thumb.innerHTML=`<img src="${dataUrl}" alt="">`;
+        else thumb.textContent="無圖";
+
+        thumb.addEventListener("click",async()=>{
+          const d=await idbGetImage(item.imageId||item.id);
+          if(!d) return;
+          try{
+            modalImg.src=d;
+            modal.classList.add("on");
+            modal.setAttribute("aria-hidden","false");
+            document.body.style.overflow="hidden";
+          }catch{}
+        });
+      }
+    }
+
+    async function refreshCollectionsUI(){
+      await renderMiniList("recents-list",LS_RECENTS);
+      await renderMiniList("favs-list",LS_FAVS);
+    }
+
+    async function upsertRecent(outfit){
+      try{
+        const list=readList(LS_RECENTS);
+        const filtered=list.filter(x=>x.id!==outfit.id);
+        filtered.unshift(outfit);
+        writeList(LS_RECENTS, filtered.slice(0,10));
+      }catch(e){ console.warn("upsertRecent failed",e); }
+    }
+
+    function isFav(id){
+      const list=readList(LS_FAVS);
+      return list.some(x=>x.id===id);
+    }
+
+    async function setFav(outfit,on){
+      try{
+        const list=readList(LS_FAVS);
+        const exists=list.some(x=>x.id===outfit.id);
+        let next=list;
+        if(on){
+          if(!exists) next=[outfit, ...list].slice(0,200);
+        }else{
+          next=list.filter(x=>x.id!==outfit.id);
+        }
+        writeList(LS_FAVS,next);
+      }catch(e){ console.warn("setFav failed",e); }
+    }
+
+    async function removeSavedOutfit(listKey,id){
+      try{
+        const list=readList(listKey);
+        const item=list.find(x=>x.id===id);
+        const next=list.filter(x=>x.id!==id);
+        writeList(listKey,next);
+        const imageId=item?.imageId||id;
+        await idbDelImage(imageId);
+      }catch(e){ console.warn("removeSavedOutfit failed",e); }
+      await refreshCollectionsUI();
+      syncFavButtonUI();
+    }
+
+    async function applySavedOutfit(id){
+      const all=[...readList(LS_RECENTS), ...readList(LS_FAVS)];
+      const item=all.find(x=>x.id===id);
+      if(!item) return;
+
+      try{
+        applyPayloadToForm(item.payload||{});
+
+        flowState.payload=item.payload||null;
+        flowState.spec=item.spec||null;
+        flowState.products=Array.isArray(item.products)?item.products:[];
+        updateResultActions();
+
+        renderOutfitSummary(item.summary||flowState.spec?.summary||"");
+        if(flowState.products?.length) renderProductsGrouped(flowState.products);
+
+        const dataUrl=await idbGetImage(item.imageId||item.id);
+        if(dataUrl){
+          const img=document.getElementById("outfit-image");
+          const ph=document.getElementById("img-placeholder");
+          img.src=dataUrl;
+          img.style.display="block";
+          ph.style.display="none";
+          showImageSkeleton(false);
+        }
+
+        flowState.currentOutfitId=item.id;
+        syncFavButtonUI();
+
+        scrollToEl("anchor-preview","smooth","start");
+      }catch(e){ console.warn("applySavedOutfit failed",e); }
+    }
+
+    const favBtn=document.getElementById("btn-fav");
+    const favIcon=document.getElementById("fav-icon");
+    const favText=document.getElementById("fav-text");
+
+    function syncFavButtonUI(){
+      const id=flowState.currentOutfitId;
+      const hasImage=!!(document.getElementById("outfit-image")?.src);
+      const enabled=!!id && hasImage;
+      if(!favBtn) return;
+
+      favBtn.disabled=!enabled;
+
+      if(!enabled){
+        favBtn.classList.remove("on");
+        if(favIcon) favIcon.textContent="♡";
+        if(favText) favText.textContent="收藏";
+        return;
+      }
+
+      const on=isFav(id);
+      favBtn.classList.toggle("on",on);
+      if(favIcon) favIcon.textContent=on ? "♥" : "♡";
+      if(favText) favText.textContent=on ? "已收藏" : "收藏";
+    }
+
+    async function buildCurrentOutfitSnapshotNoThrow(){
+      try{
+        const id=flowState.currentOutfitId;
+        if(!id) return null;
+        const img=document.getElementById("outfit-image");
+        const dataUrl=img?.src||"";
+        if(dataUrl.startsWith("data:")) await idbPutImage(id,dataUrl);
+
+        return {
+          id,
+          ts: Date.now(),
+          payload: flowState.payload,
+          summary: flowState.spec?.summary || "",
+          spec: flowState.spec,
+          products: Array.isArray(flowState.products) ? flowState.products : [],
+          imageId: id
+        };
+      }catch(e){ console.warn("buildCurrentOutfitSnapshot failed",e); return null; }
+    }
+
+    favBtn?.addEventListener("click",async()=>{
+      const id=flowState.currentOutfitId;
+      if(!id) return;
+      const outfit=await buildCurrentOutfitSnapshotNoThrow();
+      if(!outfit) return;
+      const on=!isFav(id);
+      await setFav(outfit,on);
+      syncFavButtonUI();
+      await refreshCollectionsUI();
+    });
+
 
     function resetPerRunUI(){
       showRetryUI(false);
@@ -1306,6 +1646,7 @@ function bindStyleCards(){
       flowState.imgResp=null;
       flowState.spec=null;
       flowState.products=null;
+        syncFavButtonUI();
     }
 
     function finalizeDoneNoThrow(){
@@ -1346,15 +1687,21 @@ function bindStyleCards(){
         setResultMeta(payload);
         updateResultActions();
 
-        if(forceRestart){ flowState.spec=null; flowState.imgResp=null; flowState.products=null; flowState.lastStep="idle"; }
+        if(forceRestart){ flowState.spec=null; flowState.imgResp=null; flowState.products=null;
+        syncFavButtonUI(); flowState.lastStep="idle"; }
 
         const spec=await runStepSpec(payload, me);
+        try{ flowState.currentOutfitId = await computeOutfitId(payload, spec); }catch(e){ flowState.currentOutfitId = String(Date.now()); }
+        syncFavButtonUI();
         const imgResp=await runStepImage(payload, spec);
+        syncFavButtonUI();
         scrollToElWithOffset("anchor-preview", 12, "smooth");
         const products=await runStepProducts(payload, spec);
+        syncFavButtonUI();
 
         finalizeDoneNoThrow();
         autoScrollOnDone();
+        (async()=>{ try{ const outfit=await buildCurrentOutfitSnapshotNoThrow(); if(!outfit) return; await upsertRecent(outfit); await refreshCollectionsUI(); syncFavButtonUI(); }catch(e){ console.warn("persist recent failed (non-fatal)",e); }})();
       }catch(e){
         console.error(e);
         setGenerateStep("failed");
@@ -1428,8 +1775,12 @@ function bindStyleCards(){
 
       await ensureTokenFromSession();
       await refreshAuthUI();
+      try{ await refreshCollectionsUI(); }catch(e){ console.warn(e); }
+      syncFavButtonUI();
 
-      osSupabase.auth.onAuthStateChange(async (_event, session)=>{ if(session?.access_token) saveAccessToken(session.access_token); else clearAccessToken(); await refreshAuthUI(); });
+      osSupabase.auth.onAuthStateChange(async (_event, session)=>{ if(session?.access_token) saveAccessToken(session.access_token); else clearAccessToken(); await refreshAuthUI();
+      try{ await refreshCollectionsUI(); }catch(e){ console.warn(e); }
+      syncFavButtonUI(); });
 
       const shared=parseShareFromLocation();
       if(shared && shared.payload){
