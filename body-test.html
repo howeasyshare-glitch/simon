@@ -126,6 +126,16 @@
   box-shadow:0 10px 20px rgba(17,24,39,.12);
 }
 
+.seg-btn.on{
+  background:#111827 !important;
+  color:#fff !important;
+  border-color:#111827 !important;
+}
+.seg-btn.on *{
+  color:#fff !important;
+}
+
+
 /* ✅ Range thumb bigger (drag easier) */
 input[type="range"]{ -webkit-appearance:none; appearance:none; }
 input[type="range"]::-webkit-slider-runnable-track{
@@ -417,7 +427,7 @@ body.is-mobile #mobile-actionbar{ display:block !important; }
         <div class="brand-dot" aria-hidden="true"></div>
         <div class="brand-text">
           <div class="title">Outfit Studio · Body Test</div>
-          <div class="subtitle">AI 會依條件產生：示意圖 → 類似商品（右上可開 Debug）</div>
+          <div class="subtitle">Spec → Image → Products</div>
         </div>
       </div>
 
@@ -440,7 +450,7 @@ body.is-mobile #mobile-actionbar{ display:block !important; }
 
         <div class="section-block">
   <div class="section-head">
-    <div class="stitle">① 基本資料 <span class="tag">拖拉更快</span></div>
+    <div class="stitle">① 基本資料 </div>
   </div>
 
   <div class="form-grid">
@@ -497,7 +507,7 @@ body.is-mobile #mobile-actionbar{ display:block !important; }
 
       <div class="cta-row">
         <button class="mini-btn" id="cta-products" style="display:none;" type="button">看商品 ↓</button>
-        <div class="mini-hint" id="cta-hint" style="display:none;">商品在下方</div>
+        <div class="mini-hint" id="cta-hint" style="display:none;"></div>
       </div>
     </div>
   </div>
@@ -554,7 +564,7 @@ body.is-mobile #mobile-actionbar{ display:block !important; }
 
         <div class="section-block" style="margin-bottom:0">
           <div class="section-head">
-            <div class="stitle">③ 配件 <span class="tag">選填</span></div>
+            <div class="stitle">③ 配件 </div>
           </div>
 
           <div class="toggle-list" style="margin-top:0">
@@ -588,7 +598,7 @@ body.is-mobile #mobile-actionbar{ display:block !important; }
           <button id="go-btn" class="primary-wide">產生穿搭圖</button>
         </div>
 
-        <div class="hint" id="form-hint">提示：需先登入（Google）才能呼叫扣點的 Spec API。</div>
+        <div class="hint" id="form-hint"></div>
         <div class="hint error" id="error-hint" style="display:none;"></div>
       </section>
 
@@ -613,7 +623,7 @@ body.is-mobile #mobile-actionbar{ display:block !important; }
         </div>
 
         <div class="section-title">
-          <span class="pill">示意圖（可全螢幕）</span>
+          <span class="pill"></span>
         </div>
 
         <div class="preview-wrap anchor" id="anchor-preview">
@@ -685,7 +695,7 @@ body.is-mobile #mobile-actionbar{ display:block !important; }
         </div>
 
         <div class="section-title anchor" id="anchor-products">
-          <span class="pill">類似商品（Google Shopping）</span>
+          <span class="pill">推薦商品</span>
         </div>
         <div class="products" id="products">
           <div class="placeholder" style="padding:16px;">尚未產生商品</div>
