@@ -3,23 +3,23 @@
 <html lang="zh-Hant">
 <head>
   <meta charset="UTF-8" />
-  <title>Outfit Studio · Body Test</title>
+  <title>findoutfit</title>
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@300;400;500;700&display=swap" rel="stylesheet">
 
   <style>
 
     :root{
-      --bg:#f5f5f7;
-      --card:#fff;
-      --text:#1b1b1f;
-      --muted:#6b7280;
-      --line:#e5e7eb;
-      --brand:#111827;
-      --accent:#ff6b6b;
+      --bg:#FBF7F1;         /* warm cream */
+      --card:#FFFFFF;
+      --text:#221F1A;       /* cocoa ink */
+      --muted:#6B625B;
+      --line:#E6D9CC;
+      --brand:#2C241F;      /* espresso primary */
+      --accent:#C96A5A;     /* terracotta accent */
       --ok:#16a34a;
       --warn:#ef4444;
-      --shadow:0 12px 30px rgba(0,0,0,.08);
+      --shadow:0 12px 30px rgba(44,36,31,.10);
       --r-lg:18px;
       --r-md:14px;
       --r-sm:10px;
@@ -31,7 +31,7 @@
       margin:0;
       font-family:"Noto Sans TC",system-ui,-apple-system,Segoe UI,Roboto,Helvetica,Arial,sans-serif;
       color:var(--text);
-      background: radial-gradient(circle at top, #ffecec 0, var(--bg) 45%, var(--bg) 100%);
+      background: radial-gradient(circle at top, #FFF3E8 0, var(--bg) 45%, var(--bg) 100%);
     }
     a{ color:inherit }
     .skel { position: relative; overflow: hidden; background: #f3f4f6; border-radius: 14px; border: 1px solid #eef0f3; }
@@ -51,7 +51,7 @@
     /* Header re-layout (1236) */
     header{ display:grid; grid-template-columns: 1fr auto; gap:12px; align-items:center; padding:12px 10px 14px; }
     .brand{ display:flex; gap:10px; align-items:center; min-width:0; }
-    .brand-dot{ width:28px;height:28px;border-radius:999px; background: linear-gradient(135deg, #111827, #111827); box-shadow:0 10px 20px rgba(0,0,0,.2); flex:0 0 auto; }
+    .brand-dot{ width:28px;height:28px;border-radius:999px; background: linear-gradient(135deg, var(--brand), var(--brand)); box-shadow:0 10px 20px rgba(0,0,0,.2); flex:0 0 auto; }
     .brand-text{min-width:0}
     .title{font-size:20px;font-weight:900;letter-spacing:.02em; line-height:1.15}
     .subtitle{color:var(--muted);font-size:12px;margin-top:6px; line-height:1.35; max-width: 520px}
@@ -75,21 +75,21 @@
 
     .section-block{ padding:12px; border:1px solid var(--line); border-radius:16px; background:linear-gradient(135deg,#fff,#fafafa); margin-bottom:8px; }
     .section-head{ display:flex;align-items:center;justify-content:space-between; gap:10px;margin-bottom:10px; }
-    .section-head .stitle{ font-weight:900; font-size:14px; color:#111827; display:flex; align-items:center; gap:8px; }
+    .section-head .stitle{ font-weight:900; font-size:14px; color:var(--brand); display:flex; align-items:center; gap:8px; }
     .tag{ font-size:11px; padding:4px 8px; border-radius:999px; border:1px solid #eef0f3; background:#fff; color:var(--muted); white-space:nowrap; }
 
-    .form-grid{ display:grid; grid-template-columns:1fr 1fr; gap:10px 12px; }
+    .form-grid{ display:grid; grid-template-columns:1fr 1fr; gap:10px 12px; align-items:flex-start; }
     @media (max-width: 560px){ .form-grid{grid-template-columns:1fr} }
-    label{ display:block;font-size:12px;font-weight:900; margin:0 0 6px 0;color:#111827; }
+    label{ display:block;font-size:12px;font-weight:900; margin:0 0 6px 0;color:var(--brand); }
     input, select{ width:100%;padding:8px 10px;border-radius:12px; border:1px solid var(--line);background:#fafafa;outline:none;font-size:14px; }
-    input:focus, select:focus{ background:#fff;border-color:#ff9a9a; box-shadow:0 0 0 3px rgba(255,107,107,.18); }
+    input:focus, select:focus{ background:#fff;border-color:var(--accent); box-shadow:0 0 0 3px rgba(201,106,90,.18); }
 
     .slider-group{ padding:8px;border-radius:14px;border:1px solid var(--line);background:#fafafa; }
     .slider-head{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:6px}
-    .slider-head .label{font-size:12px;font-weight:900;color:#111827}
+    .slider-head .label{font-size:12px;font-weight:900;color:var(--brand)}
     .value-chip{ display:inline-flex;align-items:baseline;gap:6px; padding:6px 10px;border-radius:999px;background:#fff;border:1px solid #eef0f3; font-size:12px;color:var(--muted);white-space:nowrap; }
-    .value-chip b{color:#111827;font-weight:900}
-    input[type="range"]{ width:100%; padding:0; border:none; background:transparent; accent-color:#111827; height:26px; }
+    .value-chip b{color:var(--brand);font-weight:900}
+    input[type="range"]{ width:100%; padding:0; border:none; background:transparent; accent-color:var(--brand); height:26px; }
     .range-sub{display:flex;justify-content:space-between;font-size:11px;color:var(--muted);margin-top:4px}
 /* ✅ Segmented (Gender) */
 .visually-hidden{
@@ -115,15 +115,15 @@
   padding:9px 10px;
   font-weight:900;
   background:#fff;
-  color:#111827;
+  color:var(--brand);
   transition:transform .1s ease, opacity .1s ease, box-shadow .12s ease;
   box-shadow:0 1px 0 rgba(0,0,0,.02);
 }
 .seg-btn:active{transform:translateY(1px);opacity:.94}
 .seg-btn.selected,.seg-btn.on{
-  background:#111827;
+  background:var(--brand);
   color:#fff;
-  box-shadow:0 10px 20px rgba(17,24,39,.12);
+  box-shadow:0 10px 20px rgba(44,36,31,.12);
 }
 
 
@@ -131,9 +131,9 @@
 #agegroup-seg .seg-btn{padding:8px 10px}
 #agegroup-seg .seg-sub{font-size:11px}
 .seg-btn.on{
-  background:#111827 !important;
+  background:var(--brand) !important;
   color:#fff !important;
-  border-color:#111827 !important;
+  border-color:var(--brand) !important;
 }
 .seg-btn.on *{
   color:#fff !important;
@@ -148,7 +148,7 @@ input[type="range"]::-webkit-slider-runnable-track{
 input[type="range"]::-webkit-slider-thumb{
   -webkit-appearance:none; appearance:none;
   width:22px;height:22px;border-radius:999px;
-  background:#111827;border:3px solid #fff;
+  background:var(--brand);border:3px solid #fff;
   margin-top:-8px;
   box-shadow:0 4px 10px rgba(0,0,0,.18);
 }
@@ -157,7 +157,7 @@ input[type="range"]::-moz-range-track{
 }
 input[type="range"]::-moz-range-thumb{
   width:22px;height:22px;border-radius:999px;
-  background:#111827;border:3px solid #fff;
+  background:var(--brand);border:3px solid #fff;
   box-shadow:0 4px 10px rgba(0,0,0,.18);
 }
 
@@ -166,10 +166,10 @@ input[type="range"]::-moz-range-thumb{
     @media (max-width:560px){ .style-grid{grid-template-columns:1fr 1fr} }
     .style-card{ border:1px solid var(--line); background:#fff; border-radius:16px; padding:12px 12px; cursor:pointer; user-select:none; transition:transform .08s ease, border-color .08s ease, box-shadow .08s ease; display:flex; flex-direction:column; gap:6px; min-height:76px; }
     .style-card:active{transform:translateY(1px)}
-    .style-card .name{font-weight:900;font-size:14px;color:#111827}
+    .style-card .name{font-weight:900;font-size:14px;color:var(--brand)}
     .style-card .desc{font-size:12px;color:var(--muted);line-height:1.4}
-    .style-card.selected{ border-color:#111827; box-shadow:0 10px 20px rgba(17,24,39,.12); }
-    .style-card .chip{ align-self:flex-start; font-size:11px; padding:4px 8px; border-radius:999px; border:1px solid #eef0f3; background:#f9fafb; color:#111827; font-weight:900; }
+    .style-card.selected{ border-color:var(--brand); box-shadow:0 10px 20px rgba(44,36,31,.12); }
+    .style-card .chip{ align-self:flex-start; font-size:11px; padding:4px 8px; border-radius:999px; border:1px solid #eef0f3; background:#f9fafb; color:var(--brand); font-weight:900; }
 
     .toggle-list{ margin-top:10px;border:1px solid var(--line);border-radius:14px;overflow:hidden; }
     .toggle-item{ display:flex;justify-content:space-between;align-items:center; padding:12px 12px;border-top:1px solid var(--line); }
@@ -179,10 +179,10 @@ input[type="range"]::-moz-range-thumb{
     .toggle-item .desc{font-size:12px;color:var(--muted)}
     .switch{ width:44px;height:24px;border-radius:999px;background:#e5e7eb; position:relative;cursor:pointer;flex:0 0 auto; }
     .switch::after{ content:"";position:absolute;top:3px;left:3px;width:18px;height:18px;border-radius:999px; background:#fff;box-shadow:0 3px 8px rgba(0,0,0,.18);transition:transform .15s ease; }
-    .switch.on{background:#111827}
+    .switch.on{background:var(--brand)}
     .switch.on::after{transform:translateX(20px)}
 
-    .primary-wide{ width:100%; margin-top:12px; padding:14px 14px; border-radius:14px; font-size:15px; font-weight:900; background:#111827; color:#fff; border:none; cursor:pointer; }
+    .primary-wide{ width:100%; margin-top:12px; padding:14px 14px; border-radius:14px; font-size:15px; font-weight:900; background:var(--brand); color:#fff; border:none; cursor:pointer; }
     .primary-wide:disabled{opacity:.55;cursor:default}
 
     .hint{margin-top:10px;font-size:12px;color:var(--muted)}
@@ -192,13 +192,13 @@ input[type="range"]::-moz-range-thumb{
     .right-head h3{margin:0;font-size:18px;font-weight:900}
     .debug-toggle{display:flex;align-items:center;gap:8px;font-size:13px;color:var(--muted);user-select:none;cursor:pointer}
 
-    .preview-wrap{ border:1px solid var(--line); border-radius:18px; background:linear-gradient(125deg,#fff7f7,#f9fbff); padding:12px; }
+    .preview-wrap{ border:1px solid var(--line); border-radius:18px; background:linear-gradient(125deg,#FFF3EC,#f9fbff); padding:12px; }
     .preview-inner{ width:100%; max-width:450px; aspect-ratio: 9 / 16; height:auto; margin:0 auto; border-radius:16px; background:#fff; border:1px solid #f0f0f5; display:flex;align-items:center;justify-content:center; overflow:hidden;position:relative; }
     img#outfit-image{ width:100%; height:100%; object-fit:contain; display:none; cursor: zoom-in; }
     .placeholder{text-align:center;color:var(--muted);font-size:14px;padding:20px}
 
     .preview-tools{ position:absolute; top:10px; right:10px; display:flex; gap:8px; z-index:5; }
-    .tool-btn{ display:inline-flex; align-items:center; gap:6px; border:1px solid rgba(229,231,235,.95); background:rgba(255,255,255,.92); padding:8px 10px; border-radius:999px; cursor:pointer; font-weight:900; font-size:12px; color:#111827; backdrop-filter: blur(6px); }
+    .tool-btn{ display:inline-flex; align-items:center; gap:6px; border:1px solid rgba(229,231,235,.95); background:rgba(255,255,255,.92); padding:8px 10px; border-radius:999px; cursor:pointer; font-weight:900; font-size:12px; color:var(--brand); backdrop-filter: blur(6px); }
     .tool-btn:disabled{opacity:.55; cursor:default}
     .tool-btn .icon{font-size:14px}
     .tool-btn.fav.on{ border-color:#fecaca; background:rgba(255,245,245,.92); color:#ef4444; }
@@ -211,7 +211,7 @@ input[type="range"]::-moz-range-thumb{
     .slot-group{ border:1px solid #f1f2f4; background:#fafafa; border-radius:16px; padding:10px; margin-bottom:10px; }
     .slot-group:last-child{margin-bottom:0}
     .slot-head{ display:flex; align-items:center; justify-content:space-between; gap:10px; margin-bottom:8px; }
-    .slot-title{ font-weight:900; color:#111827; font-size:14px; display:flex; align-items:center; gap:8px; }
+    .slot-title{ font-weight:900; color:var(--brand); font-size:14px; display:flex; align-items:center; gap:8px; }
     .slot-count{ font-size:12px; color:var(--muted); border:1px solid #eef0f3; background:#fff; padding:4px 8px; border-radius:999px; white-space:nowrap; }
 
     .product-item{ display:grid;grid-template-columns:60px 1fr;gap:10px;padding:10px;border-radius:14px; background:#fff;border:1px solid #f1f2f4;margin-bottom:10px; }
@@ -220,14 +220,14 @@ input[type="range"]::-moz-range-thumb{
     .thumb img{width:100%;height:100%;object-fit:cover}
     .pname{font-weight:900;font-size:14px;margin:0 0 4px}
     .pmeta{font-size:12px;color:var(--muted);display:flex;gap:8px;flex-wrap:wrap;margin-bottom:6px}
-    .plink{font-size:12px;color:#ff6b6b;text-decoration:none;font-weight:900}
+    .plink{font-size:12px;color:var(--accent);text-decoration:none;font-weight:900}
     .plink:hover{text-decoration:underline}
 
     .statusbar{margin-top:10px;font-size:12px;color:var(--muted)}
     .statusbar .ok{color:var(--ok);font-weight:900}
     .statusbar .bad{color:var(--warn);font-weight:900}
     .progress{ margin-top:8px; height:8px; border-radius:999px; background:#eef0f3; overflow:hidden; border:1px solid #e9ecf1; }
-    .progress > div{ height:100%; width:0%; background:#111827; transition:width .25s ease; }
+    .progress > div{ height:100%; width:0%; background:var(--brand); transition:width .25s ease; }
 
     .dots{ display:inline-flex; gap:3px; vertical-align:middle; margin-left:6px; }
     .ldot{ width:5px;height:5px;border-radius:999px;background:var(--muted); opacity:.3; animation:blink 1s infinite; }
@@ -239,26 +239,26 @@ input[type="range"]::-moz-range-thumb{
     .shimmer::after{ content:""; position:absolute;inset:0; background:linear-gradient(90deg, rgba(255,255,255,0) 0%, rgba(255,255,255,.7) 50%, rgba(255,255,255,0) 100%); transform:translateX(-120%); animation:shimmer 1.2s infinite; }
     @keyframes shimmer{ 0%{transform:translateX(-120%)} 100%{transform:translateX(120%)} }
 
-    .debug{ margin-top:12px;display:none; border:1px dashed #d1d5db;background:#fff;border-radius:14px; padding:10px;font-size:12px;color:#111827; max-height:280px;overflow:auto;white-space:pre-wrap; }
+    .debug{ margin-top:12px;display:none; border:1px dashed #d1d5db;background:#fff;border-radius:14px; padding:10px;font-size:12px;color:var(--brand); max-height:280px;overflow:auto;white-space:pre-wrap; }
     .debug.on{display:block}
 
     .outfit-summary { margin-top: 14px; background: #fafafa; border: 1px solid #e5e7eb; }
     .summary-head { display: flex; align-items: center; gap: 8px; font-weight: 900; font-size: 14px; margin-bottom: 6px; }
     .summary-icon { font-size: 18px; }
-    .summary-title { color: #111827; }
+    .summary-title { color: var(--brand); }
     .summary-text { font-size: 14px; line-height: 1.6; color: #374151; }
 
     .action-row{ display:flex; gap:10px; align-items:center; margin-top:10px; flex-wrap:wrap; }
-    .mini-btn{ border:1px solid var(--line); background:#fff; color:#111827; padding:9px 12px; border-radius:999px; cursor:pointer; font-weight:900; font-size:13px; }
+    .mini-btn{ border:1px solid var(--line); background:#fff; color:var(--brand); padding:9px 12px; border-radius:999px; cursor:pointer; font-weight:900; font-size:13px; }
     .mini-btn:disabled{opacity:.55; cursor:default}
-    .mini-btn.primary{ background:#111827; color:#fff; border-color:#111827; }
+    .mini-btn.primary{ background:var(--brand); color:#fff; border-color:var(--brand); }
     .mini-btn.danger{ background:#fff; color:#ef4444; border-color:#fecaca; }
     .mini-hint{ font-size:12px; color:var(--muted); }
 
     .collection-wrap{ margin-top:12px; border:1px solid var(--line); border-radius:18px; overflow:hidden; background:#fff; }
     .tabs{ display:flex; gap:0; border-bottom:1px solid var(--line); background:#fafafa; }
     .tab{ flex:1; padding:10px 12px; font-weight:900; font-size:13px; cursor:pointer; border:none; background:transparent; color:#6b7280; }
-    .tab.active{ color:#111827; background:#fff; }
+    .tab.active{ color:var(--brand); background:#fff; }
     .tabpanes{ padding:10px; }
     .pane{ display:none; }
     .pane.active{ display:block; }
@@ -267,10 +267,10 @@ input[type="range"]::-moz-range-thumb{
     .mini-card{ display:grid; grid-template-columns:68px 1fr auto; gap:10px; align-items:center; padding:10px; border:1px solid #eef0f3; border-radius:14px; background:#fafafa; }
     .mini-thumb{ width:68px; aspect-ratio: 9/16; border-radius:12px; overflow:hidden; border:1px solid #eee; background:#fff; display:flex; align-items:center; justify-content:center; color:#9ca3af; font-size:12px; }
     .mini-thumb img{ width:100%; height:100%; object-fit:cover; display:block; }
-    .mini-info .t{ font-weight:900; font-size:13px; margin:0 0 4px; color:#111827; }
+    .mini-info .t{ font-weight:900; font-size:13px; margin:0 0 4px; color:var(--brand); }
     .mini-info .m{ font-size:12px; color:#6b7280; line-height:1.35; overflow:hidden; display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical; }
     .mini-actions{ display:flex; flex-direction:column; gap:6px; align-items:flex-end; }
-    .chip-btn{ border:1px solid #e5e7eb; background:#fff; padding:7px 10px; border-radius:999px; cursor:pointer; font-weight:900; font-size:12px; color:#111827; white-space:nowrap; }
+    .chip-btn{ border:1px solid #e5e7eb; background:#fff; padding:7px 10px; border-radius:999px; cursor:pointer; font-weight:900; font-size:12px; color:var(--brand); white-space:nowrap; }
     .chip-btn.danger{ color:#ef4444; border-color:#fecaca; }
     .mini-empty{ padding:14px; color:#6b7280; font-size:12px; background:#fff; border:1px dashed #e5e7eb; border-radius:14px; }
 
@@ -316,7 +316,7 @@ input[type="range"]::-moz-range-thumb{
 
     .modal{ position:fixed; inset:0; z-index: 10000; background: rgba(0,0,0,.72); display:none; align-items:center; justify-content:center; padding: 14px; }
     .modal.on{ display:flex; }
-    .modal-card{ width: min(520px, 100%); aspect-ratio: 9/16; background:#111827; border-radius: 18px; overflow:hidden; position:relative; box-shadow: 0 30px 70px rgba(0,0,0,.35); }
+    .modal-card{ width: min(520px, 100%); aspect-ratio: 9/16; background:var(--brand); border-radius: 18px; overflow:hidden; position:relative; box-shadow: 0 30px 70px rgba(0,0,0,.35); }
     .modal-card img{ width:100%; height:100%; object-fit:contain; display:block; background:#0b1020; }
     .modal-top{ position:absolute; top:10px; left:10px; right:10px; display:flex; justify-content:space-between; gap:10px; pointer-events:none; }
     .modal-top .m-btn{ pointer-events:auto; border:none; cursor:pointer; background: rgba(255,255,255,.12); color:#fff; padding:9px 12px; border-radius: 999px; font-weight:900; font-size:12px; backdrop-filter: blur(8px); }
@@ -325,14 +325,14 @@ input[type="range"]::-moz-range-thumb{
     .status-sub{ margin-top:6px; font-size:12px; color:var(--muted); line-height:1.4; }
     .result-meta{ display:flex; align-items:center; justify-content:space-between; gap:10px; padding:10px 12px; border:1px solid #eef0f3; background:linear-gradient(135deg,#fff,#fafafa); border-radius:16px; margin:10px 0 14px; }
     .rm-left{ display:flex; flex-wrap:wrap; gap:8px; align-items:center; font-size:12px; color:var(--muted); line-height:1.3; }
-    .rm-left b{ color:#111827; }
+    .rm-left b{ color:var(--brand); }
     .rm-dot{ opacity:.5; }
     .rm-actions{ display:flex; gap:8px; flex:0 0 auto; }
     .cta-row{ display:flex; gap:10px; align-items:center; margin-top:10px; flex-wrap:wrap; }
-    .toast{ position:fixed; left:50%; transform:translateX(-50%); bottom:calc(90px + var(--safe-b)); z-index:1200; background:rgba(17,24,39,.92); color:#fff; padding:10px 12px; border-radius:999px; font-size:13px; font-weight:900; box-shadow:0 18px 38px rgba(0,0,0,.22); max-width:min(92vw,520px); text-align:center; opacity:0; pointer-events:none; transition:opacity .18s ease, transform .18s ease; }
+    .toast{ position:fixed; left:50%; transform:translateX(-50%); bottom:calc(90px + var(--safe-b)); z-index:1200; background:rgba(44,36,31,.92); color:#fff; padding:10px 12px; border-radius:999px; font-size:13px; font-weight:900; box-shadow:0 18px 38px rgba(0,0,0,.22); max-width:min(92vw,520px); text-align:center; opacity:0; pointer-events:none; transition:opacity .18s ease, transform .18s ease; }
     .toast.on{ opacity:1; transform:translateX(-50%) translateY(-2px); }
     .newbie-tip{ margin:10px 0 6px; padding:10px 12px; border-radius:14px; border:1px solid #eef0f3; background:#fff; color:var(--muted); font-size:12px; line-height:1.5; }
-    .newbie-tip b{ color:#111827; }
+    .newbie-tip b{ color:var(--brand); }
   
     /* === UI fixes (2026-01) === */
     /* Gender segmented: match style-card logic (bold, clean, consistent) */
@@ -358,15 +358,15 @@ input[type="range"]::-moz-range-thumb{
       transition:transform .08s ease, border-color .08s ease, box-shadow .08s ease, background .08s ease;
     }
     .seg-btn:active{ transform:translateY(1px); }
-    .seg-btn .seg-main{ font-weight:900; font-size:14px; color:#111827; }
+    .seg-btn .seg-main{ font-weight:900; font-size:14px; color:var(--brand); }
     .seg-btn .seg-sub{ font-weight:800; font-size:11px; color:var(--muted); letter-spacing:.02em; }
 .seg-btn.on .seg-main{ color:#fff; }
 .seg-btn.on .seg-sub{ color: rgba(255,255,255,.82); }
 
     .seg-btn.on{
       background:#fff;
-      border-color:#111827;
-      box-shadow:0 10px 20px rgba(17,24,39,.12);
+      border-color:var(--brand);
+      box-shadow:0 10px 20px rgba(44,36,31,.12);
     }
 
     /* Compact sliders (reduce height) */
@@ -397,7 +397,7 @@ input[type="range"]::-moz-range-thumb{
       appearance:none;
       width:28px;height:28px;
       border-radius:999px;
-      background:#111827;
+      background:var(--brand);
       border:4px solid #fff;
       box-shadow:0 10px 18px rgba(0,0,0,.18);
       margin-top:-11px;
@@ -407,7 +407,7 @@ input[type="range"]::-moz-range-thumb{
     }
     input[type="range"]::-moz-range-thumb{
       width:28px;height:28px;border-radius:999px;
-      background:#111827;border:4px solid #fff;
+      background:var(--brand);border:4px solid #fff;
       box-shadow:0 10px 18px rgba(0,0,0,.18);
     }
 
@@ -430,8 +430,8 @@ body.is-mobile #mobile-actionbar{ display:block !important; }
       <div class="brand">
         <div class="brand-dot" aria-hidden="true"></div>
         <div class="brand-text">
-          <div class="title">Outfit Studio · Body Test</div>
-          <div class="subtitle">Spec → Image → Products</div>
+          <div class="title">findoutfit</div>
+          <div class="subtitle">輸入條件→ outfit生成 → 商品推薦</div>
         </div>
       </div>
 
@@ -458,44 +458,40 @@ body.is-mobile #mobile-actionbar{ display:block !important; }
   </div>
 
   <div class="form-grid">
-    <div>
+    <div class="seg-group">
       <label>性別</label>
       <div class="segmented" id="gender-seg" role="radiogroup" aria-label="性別">
-        <button type="button" class="seg-btn" data-value="female" role="radio" aria-checked="true">女性</button>
-        <button type="button" class="seg-btn" data-value="male" role="radio" aria-checked="false">男性</button>
+        <button type="button" class="seg-btn" data-value="female" role="radio" aria-checked="true">女</button>
+        <button type="button" class="seg-btn" data-value="male" role="radio" aria-checked="false">男</button>
         <button type="button" class="seg-btn" data-value="neutral" role="radio" aria-checked="false">中性</button>
       </div>
-
-      <!-- keep underlying value for existing JS -->
-      <select id="gender" class="visually-hidden" aria-label="性別">
-        <option value="female">女性</option>
-        <option value="male">男性</option>
-        <option value="neutral">中性</option>
-      </select>
+      <input type="hidden" id="gender" value="female" />
     </div>
 
-    <div class="slider-group">
+    <div class="seg-group">
+      <label>類別</label>
+      <div class="segmented agegroup-seg" id="agegroup-seg" role="radiogroup" aria-label="類別">
+        <button type="button" class="seg-btn" data-value="adult" role="radio" aria-checked="true">
+          <div class="seg-title">成人</div>
+          <div class="seg-sub">13–70</div>
+        </button>
+        <button type="button" class="seg-btn" data-value="kids" role="radio" aria-checked="false">
+          <div class="seg-title">童裝</div>
+          <div class="seg-sub">4–12</div>
+        </button>
+      </div>
+      <input type="hidden" id="ageGroup" value="adult" />
+    </div>
+
+    <div class="slider-group" style="grid-column:1/-1">
       <div class="slider-head">
         <div class="label">年齡</div>
         <div class="value-chip"><b id="age-val">25</b> 歲</div>
       </div>
-      
-      <div class="segmented" id="agegroup-seg" role="radiogroup" aria-label="年齡分類" style="margin:8px 0 8px;">
-        <button type="button" class="seg-btn on" data-value="adult" role="radio" aria-checked="true">
-          <span class="seg-main">成人</span>
-          <span class="seg-sub">13–70</span>
-        </button>
-        <button type="button" class="seg-btn" data-value="kids" role="radio" aria-checked="false">
-          <span class="seg-main">童裝</span>
-          <span class="seg-sub">4–12</span>
-        </button>
-      </div>
-      <input type="hidden" id="ageGroup" value="adult" />
-<input id="age" type="range" min="13" max="70" step="1" value="25" aria-label="年齡" />
+      <input id="age" type="range" min="13" max="70" step="1" value="25" aria-label="年齡" />
       <div class="range-sub"><span id="age-min">13</span><span id="age-max">70</span></div>
     </div>
-
-    <div class="slider-group">
+<div class="slider-group">
       <div class="slider-head">
         <div class="label">身高</div>
         <div class="value-chip"><b id="height-val">165</b> cm</div>
@@ -529,7 +525,8 @@ body.is-mobile #mobile-actionbar{ display:block !important; }
   </div>
 </div><div class="section-block">
           <div class="section-head">
-            <div class="stitle">② 風格選擇 <span class="tag">點一下就好</span></div>
+            <div class="stitle">② 風格選擇 </div>
+        <button class="mini-btn" id="random-style-btn" type="button">隨機推薦</button>
           </div>
 
           <div class="style-grid" id="style-grid">
@@ -983,6 +980,8 @@ function bindGenderSeg(){
       b.classList.toggle("on", on);
       b.setAttribute("aria-checked", on ? "true" : "false");
     });
+    // update style/variant labels per audience
+    try { if (typeof updateStyleUIForAudience === "function") updateStyleUIForAudience(); } catch {}
   };
   btns.forEach(b => b.addEventListener("click", () => select(b.dataset.value)));
   hidden.addEventListener("change", () => select(hidden.value));
@@ -991,16 +990,21 @@ function bindGenderSeg(){
   select(hidden.value || "female");
 }
 
-function bindStyleCards(){
-      const grid=document.getElementById("style-grid");
-      const hidden=document.getElementById("style");
-      const cards=Array.from(grid.querySelectorAll(".style-card"));
-      const select=(style)=>{
-        hidden.value=style;
-        cards.forEach(c=>c.classList.toggle("selected", c.dataset.style===style));
+function bindStyleCards() {
+      const grid = document.getElementById("style-grid");
+      const hidden = document.getElementById("style");
+      const cards = Array.from(grid.querySelectorAll(".style-card"));
+      const select = (style, opts = {}) => {
+        hidden.value = style;
+        cards.forEach((c) => c.classList.toggle("selected", c.dataset.style === style));
+        if (!opts.silent) haptic(6);
       };
-      cards.forEach(c=>c.addEventListener("click", ()=>select(c.dataset.style)));
-      select(hidden.value||"casual");
+      cards.forEach((c) => {
+        c.addEventListener("click", () => select(c.dataset.style));
+      });
+      window.__setStyleCard = (val) => select(val, { silent: true });
+      select(hidden.value || "casual", { silent: true });
+      return select;
     }
 
     const AUTH_KEY="os_supabase_access_token_v1";
@@ -1285,21 +1289,29 @@ function bindStyleCards(){
     async function runStepProducts(payload, spec){
       setGenerateStep("products"); setStatus("", null, true); setProgress(80);
       const itemsForSearch = (spec.items || []).map(it => {
-    if (payload.ageGroup !== "kids") return it;
+    const prefixZh = getProductKeywordPrefix(payload);
+    const prefixEn = getProductKeywordPrefixEn(payload);
+
+    if (!prefixZh && !prefixEn) return it;
 
     const zh0 = String(it.display_name_zh || it.generic_name || it.display_name_en || "").trim();
-    const zh = zh0 ? (zh0.startsWith("童裝") ? zh0 : ("童裝" + zh0)) : "童裝";
+    const zh = prefixZh && zh0
+      ? (zh0.startsWith(prefixZh) ? zh0 : (prefixZh + zh0))
+      : (prefixZh ? (prefixZh + (zh0 || "")) : zh0);
 
     const en0 = String(it.generic_name || it.display_name_en || "").trim();
-    const en = en0 ? (/^kids/i.test(en0) ? en0 : ("kids " + en0)) : en0;
+    const en = prefixEn && en0
+      ? (en0.toLowerCase().startsWith(prefixEn.toLowerCase()) ? en0 : (prefixEn + " " + en0))
+      : en0;
 
     return {
       ...it,
-      display_name_zh: zh,
+      display_name_zh: zh || it.display_name_zh,
       generic_name: en || it.generic_name,
-      audience: "kids",
+      audienceKey: payload.audienceKey,
+      ageGroup: payload.ageGroup,
       age: payload.age,
-      query_hint: "kids clothing"
+      query_hint: prefixZh ? `${prefixZh} clothing` : undefined
     };
   });
 
@@ -1759,7 +1771,7 @@ function bindStyleCards(){
         if(!me.ok){ setAuthUI({ loggedIn:false, hint:"登入狀態異常（/api/me 失敗）" }); throw new Error("登入狀態異常（/api/me 失敗）"); }
         flowState.me=me;
 
-        const payload={
+        const basePayload={
           gender: document.getElementById("gender").value,
           age: Number(document.getElementById("age").value),
       ageGroup: (document.getElementById("ageGroup")?.value || "adult"),
@@ -1772,6 +1784,7 @@ function bindStyleCards(){
           withHat: !!getHat(),
           withCoat: !!getCoat()
         };
+        const payload=enrichPayload(basePayload);
         flowState.payload=payload;
         setResultMeta(payload);
         updateResultActions();
@@ -1888,6 +1901,8 @@ function bindAgeGroupSeg(){
       b.setAttribute("aria-checked", on ? "true" : "false");
     });
     applyAgeGroup(v, opts);
+    // update style/variant labels per audience
+    try { if (typeof updateStyleUIForAudience === "function") updateStyleUIForAudience(); } catch {}
   };
 
   btns.forEach(b => b.addEventListener("click", () => select(b.dataset.value)));
@@ -1901,16 +1916,366 @@ function bindAgeGroupSeg(){
 }
 
 
+    /***********************
+     * Audience / presets / metadata (non-breaking)
+     * Q1:B 追加新欄位（styleId / paletteId / celebId / audienceKey）
+     * - 不影響既有：style / styleVariant
+     * Q2:A 商品搜尋：依 audienceKey 前置 keyword（男裝/女裝/男童/女童/童裝）
+     ***********************/
+    let uiPaletteId = null; // set by 隨機推薦（之後可擴展成可視化選單）
+
+    function getAgeGroupValue() {
+      return document.getElementById("ageGroup")?.value || "adult";
+    }
+
+    function getAudienceKey(p) {
+      const ag = p?.ageGroup || getAgeGroupValue();
+      const g = p?.gender || (document.getElementById("gender")?.value || "neutral");
+      return `${ag}-${g}`; // e.g. adult-female, kids-neutral
+    }
+
+    const DEFAULT_PALETTE_BY_AUDIENCE = {
+      "adult-female": "cream-warm",
+      "adult-male": "mono-dark",
+      "adult-neutral": "mono-dark",
+      "kids-female": "bright",
+      "kids-male": "bright",
+      "kids-neutral": "bright",
+    };
+
+    function deriveCelebId(styleVariant) {
+      const v = String(styleVariant || "");
+      return v.startsWith("celeb-") ? v : "";
+    }
+
+    function enrichPayload(base) {
+      const audienceKey = getAudienceKey(base);
+      const paletteId = uiPaletteId || DEFAULT_PALETTE_BY_AUDIENCE[audienceKey] || "cream-warm";
+      const celebId = deriveCelebId(base.styleVariant);
+      const styleId = base.style; // keep original style; add alias field
+      return { ...base, audienceKey, styleId, paletteId, celebId };
+    }
+
+    function getProductKeywordPrefix(payload) {
+      const ak = payload?.audienceKey || getAudienceKey(payload);
+      const g = payload?.gender || "neutral";
+      if (ak.startsWith("kids")) {
+        if (g === "female") return "女童";
+        if (g === "male") return "男童";
+        return "童裝";
+      }
+      if (ak.startsWith("adult")) {
+        if (g === "female") return "女裝";
+        if (g === "male") return "男裝";
+        return ""; // 中性：不前置，避免縮小結果
+      }
+      return "";
+
+    function getProductKeywordPrefixEn(payload) {
+      const ak = payload?.audienceKey || getAudienceKey(payload);
+      const g = payload?.gender || "neutral";
+      if (ak.startsWith("kids")) {
+        if (g === "female") return "girls";
+        if (g === "male") return "boys";
+        return "kids";
+      }
+      if (ak.startsWith("adult")) {
+        if (g === "female") return "women";
+        if (g === "male") return "men";
+        return "";
+      }
+      return "";
+    }
+
+    }
+
+    // 隨機推薦（中文名，依：男/女/中性 + 成人/童裝）
+    const RANDOM_PRESETS = {
+      "adult-female": [
+        { label: "韓系日常", style: "casual", styleVariant: "celeb-iu-casual", paletteId: "cream-warm" },
+        { label: "奶油極簡", style: "minimal", styleVariant: "brand-muji", paletteId: "cream-warm" },
+        { label: "微正式", style: "smart", styleVariant: "brand-cos", paletteId: "cream-warm" },
+      ],
+      "adult-male": [
+        { label: "乾淨日常", style: "minimal", styleVariant: "brand-uniqlo", paletteId: "mono-dark" },
+        { label: "機能運動", style: "sporty", styleVariant: "brand-nike-tech", paletteId: "mono-dark" },
+        { label: "街頭層次", style: "street", styleVariant: "celeb-gd-street", paletteId: "mono-dark" },
+      ],
+      "adult-neutral": [
+        { label: "中性極簡", style: "minimal", styleVariant: "brand-cos", paletteId: "mono-dark" },
+        { label: "中性街頭", style: "street", styleVariant: "brand-ader-error", paletteId: "mono-dark" },
+        { label: "中性日常", style: "casual", styleVariant: "", paletteId: "mono-dark" },
+      ],
+      "kids-female": [
+        { label: "校園日常", style: "casual", styleVariant: "", paletteId: "bright" },
+        { label: "活力運動", style: "sporty", styleVariant: "", paletteId: "bright" },
+        { label: "可愛簡約", style: "minimal", styleVariant: "brand-uniqlo", paletteId: "bright" },
+      ],
+      "kids-male": [
+        { label: "校園日常", style: "casual", styleVariant: "", paletteId: "bright" },
+        { label: "運動機能", style: "sporty", styleVariant: "brand-nike-tech", paletteId: "bright" },
+        { label: "酷感街頭", style: "street", styleVariant: "", paletteId: "bright" },
+      ],
+      "kids-neutral": [
+        { label: "校園日常", style: "casual", styleVariant: "", paletteId: "bright" },
+        { label: "活力運動", style: "sporty", styleVariant: "", paletteId: "bright" },
+        { label: "清爽簡約", style: "minimal", styleVariant: "", paletteId: "bright" },
+      ],
+    };
+
+    
+    /***********************
+     * Style UI per audience (gender + age group)
+     * - Q1:B: 不同族群 → 不同「顯示名稱/描述/變體選項」
+     *   （保留原本 style / styleVariant 的 value，避免後端相容性問題）
+     ***********************/
+    const STYLE_UI_BY_AUDIENCE = {
+      "adult-female": {
+        styles: [
+          { style: "casual", chip: "Daily", name: "韓系日常", desc: "柔和、好搭、帶點甜感" },
+          { style: "minimal", chip: "Minimal", name: "奶油極簡", desc: "乾淨比例、低飽和" },
+          { style: "street",  chip: "Street",  name: "韓系街頭", desc: "層次、寬鬆、個性" },
+          { style: "sporty",  chip: "Sporty",  name: "輕運動機能", desc: "輕便、好活動" },
+          { style: "smart",   chip: "Smart",   name: "輕熟通勤", desc: "正式一點但不拘謹", wide: true },
+        ],
+        variants: {
+          brands: [
+            { v: "brand-uniqlo",      t: "UNIQLO（基本百搭）" },
+            { v: "brand-muji",        t: "MUJI（生活極簡）" },
+            { v: "brand-cos",         t: "COS（結構極簡）" },
+            { v: "brand-nike-tech",   t: "Nike Tech（機能運動）" },
+            { v: "brand-ader-error",  t: "Ader Error（韓系街頭）" },
+          ],
+          celebs: [
+            { v: "celeb-iu-casual",       t: "IU（清新日常）" },
+            { v: "celeb-jennie-minimal",  t: "Jennie（極簡辣）" },
+            { v: "celeb-gd-street",       t: "G-Dragon（層次街頭）" },
+            { v: "celeb-lisa-sporty",     t: "Lisa（舞者運動）" },
+          ],
+        },
+      },
+      "adult-male": {
+        styles: [
+          { style: "casual", chip: "Clean",  name: "乾淨日常", desc: "俐落、耐看、好上手" },
+          { style: "minimal", chip: "Mono",  name: "黑白灰極簡", desc: "線條乾淨、低彩度" },
+          { style: "street",  chip: "Layer", name: "街頭層次", desc: "寬鬆比例、機能感" },
+          { style: "sporty",  chip: "Tech",  name: "機能運動", desc: "輕量、耐用、好活動" },
+          { style: "smart",   chip: "Smart", name: "通勤俐落", desc: "成熟但不老氣", wide: true },
+        ],
+        variants: {
+          brands: [
+            { v: "brand-uniqlo",      t: "UNIQLO（乾淨通勤）" },
+            { v: "brand-muji",        t: "MUJI（簡約舒適）" },
+            { v: "brand-cos",         t: "COS（俐落剪裁）" },
+            { v: "brand-nike-tech",   t: "Nike Tech（機能運動）" },
+            { v: "brand-ader-error",  t: "Ader Error（韓系街頭）" },
+          ],
+          celebs: [
+            { v: "celeb-gd-street",       t: "G-Dragon（層次街頭）" },
+            { v: "celeb-lisa-sporty",     t: "Lisa（舞者運動）" },
+            { v: "celeb-iu-casual",       t: "IU（清新配色）" },
+            { v: "celeb-jennie-minimal",  t: "Jennie（極簡辣）" },
+          ],
+        },
+      },
+      "adult-neutral": {
+        styles: [
+          { style: "casual", chip: "Daily",  name: "中性日常", desc: "舒服、好搭、留白感" },
+          { style: "minimal", chip: "Mono",  name: "極簡中性", desc: "黑白灰、線條乾淨" },
+          { style: "street",  chip: "Street", name: "中性街頭", desc: "寬鬆比例、層次" },
+          { style: "sporty",  chip: "Sporty", name: "中性運動", desc: "機能、輕鬆、好活動" },
+          { style: "smart",   chip: "Smart",  name: "中性俐落", desc: "正式感＋休閒平衡", wide: true },
+        ],
+        variants: {
+          brands: [
+            { v: "brand-uniqlo",      t: "UNIQLO（中性基本）" },
+            { v: "brand-muji",        t: "MUJI（中性極簡）" },
+            { v: "brand-cos",         t: "COS（中性結構）" },
+            { v: "brand-nike-tech",   t: "Nike Tech（中性機能）" },
+            { v: "brand-ader-error",  t: "Ader Error（中性街頭）" },
+          ],
+          celebs: [
+            { v: "celeb-jennie-minimal",  t: "Jennie（極簡辣）" },
+            { v: "celeb-gd-street",       t: "G-Dragon（層次街頭）" },
+            { v: "celeb-iu-casual",       t: "IU（清新日常）" },
+            { v: "celeb-lisa-sporty",     t: "Lisa（舞者運動）" },
+          ],
+        },
+      },
+      "kids-female": {
+        styles: [
+          { style: "casual", chip: "School", name: "校園日常", desc: "可愛乾淨、耐看好搭" },
+          { style: "minimal", chip: "Soft",  name: "柔和簡約", desc: "低飽和、舒服親膚" },
+          { style: "street",  chip: "Cute",  name: "童趣潮流", desc: "亮點單品、俏皮層次" },
+          { style: "sporty",  chip: "Active", name: "活力運動", desc: "好活動、耐髒耐磨" },
+          { style: "smart",   chip: "Neat",  name: "小小正式", desc: "聚會/生日也合適", wide: true },
+        ],
+        variants: {
+          brands: [
+            { v: "brand-uniqlo",      t: "UNIQLO Kids（基本百搭）" },
+            { v: "brand-muji",        t: "MUJI（童裝簡約）" },
+            { v: "brand-nike-tech",   t: "Nike（童裝運動）" },
+          ],
+          celebs: [],
+        },
+      },
+      "kids-male": {
+        styles: [
+          { style: "casual", chip: "School", name: "校園日常", desc: "乾淨俐落、耐看" },
+          { style: "minimal", chip: "Soft",  name: "簡約舒服", desc: "好穿好洗、親膚" },
+          { style: "street",  chip: "Cool",  name: "童裝街頭", desc: "寬鬆比例、潮流感" },
+          { style: "sporty",  chip: "Active", name: "活力運動", desc: "機能、好活動" },
+          { style: "smart",   chip: "Neat",  name: "小小紳士", desc: "聚會/節日更合適", wide: true },
+        ],
+        variants: {
+          brands: [
+            { v: "brand-uniqlo",      t: "UNIQLO Kids（基本百搭）" },
+            { v: "brand-muji",        t: "MUJI（童裝簡約）" },
+            { v: "brand-nike-tech",   t: "Nike（童裝運動）" },
+          ],
+          celebs: [],
+        },
+      },
+      "kids-neutral": {
+        styles: [
+          { style: "casual", chip: "School", name: "中性校園", desc: "乾淨好搭、耐看" },
+          { style: "minimal", chip: "Soft",  name: "中性簡約", desc: "低飽和、舒服" },
+          { style: "street",  chip: "Play",  name: "童趣層次", desc: "俏皮、亮點單品" },
+          { style: "sporty",  chip: "Active", name: "中性運動", desc: "好活動、耐用" },
+          { style: "smart",   chip: "Neat",  name: "整齊可愛", desc: "拍照也好看", wide: true },
+        ],
+        variants: {
+          brands: [
+            { v: "brand-uniqlo",      t: "UNIQLO Kids（中性基本）" },
+            { v: "brand-muji",        t: "MUJI（中性簡約）" },
+            { v: "brand-nike-tech",   t: "Nike（中性運動）" },
+          ],
+          celebs: [],
+        },
+      },
+    };
+
+    function getAudienceKey() {
+      const g = document.getElementById("gender")?.value || "neutral";
+      const ag = (typeof getAgeGroupValue === "function") ? (getAgeGroupValue() || "adult") : "adult";
+      return `${ag}-${g}`;
+    }
+
+    function getStyleUIForAudience() {
+      const key = getAudienceKey();
+      return STYLE_UI_BY_AUDIENCE[key] || STYLE_UI_BY_AUDIENCE["adult-neutral"];
+    }
+
+    function rebuildStyleCardsForAudience() {
+      const grid = document.getElementById("style-grid");
+      const hidden = document.getElementById("style");
+      if (!grid || !hidden) return;
+
+      const ui = getStyleUIForAudience();
+      const current = hidden.value || "casual";
+
+      grid.innerHTML = (ui.styles || []).map(s => {
+        const wide = s.wide ? ' style="grid-column:1/-1"' : "";
+        const selected = (s.style === current) ? " selected" : "";
+        return `
+          <div class="style-card${selected}" data-style="${s.style}"${wide}>
+            <div class="chip">${s.chip || s.style}</div>
+            <div class="name">${s.name || s.style}</div>
+            <div class="desc">${s.desc || ""}</div>
+          </div>
+        `.trim();
+      }).join("");
+
+      // Re-bind click handlers (and keep compatibility with existing code)
+      try { bindStyleCards(); } catch {}
+
+      // Ensure selected style exists; otherwise fallback to first card
+      const exists = (ui.styles || []).some(s => s.style === current);
+      if (!exists && ui.styles && ui.styles.length) {
+        hidden.value = ui.styles[0].style;
+        try { if (window.__setStyleCard) window.__setStyleCard(hidden.value); } catch {}
+      } else {
+        try { if (window.__setStyleCard) window.__setStyleCard(current); } catch {}
+      }
+    }
+
+    function rebuildStyleVariantOptionsForAudience() {
+      const sel = document.getElementById("styleVariant");
+      if (!sel) return;
+
+      const ui = getStyleUIForAudience();
+      const prev = sel.value || "";
+
+      const option = (v, t) => `<option value="${v}">${t}</option>`;
+      const group = (label, arr) => {
+        if (!arr || !arr.length) return "";
+        return `<optgroup label="${label}">${arr.map(x => option(x.v, x.t)).join("")}</optgroup>`;
+      };
+
+      sel.innerHTML =
+        option("", "（不使用變體）") +
+        group("品牌", ui.variants?.brands || []) +
+        group("名人（風格靈感，不模仿臉）", ui.variants?.celebs || []);
+
+      // restore previous if still exists
+      const hasPrev = Array.from(sel.options).some(o => o.value === prev);
+      sel.value = hasPrev ? prev : "";
+    }
+
+    function updateStyleUIForAudience() {
+      rebuildStyleCardsForAudience();
+      rebuildStyleVariantOptionsForAudience();
+    }
+
+
+function safeSetSelectValue(id, value) {
+      const el = document.getElementById(id);
+      if (!el) return false;
+      const v = String(value || "");
+      const has = Array.from(el.options || []).some((o) => o.value === v);
+      el.value = has ? v : "";
+      el.dispatchEvent(new Event("change"));
+      return true;
+    }
+
+    function applyRandomPreset() {
+      const gender = document.getElementById("gender")?.value || "neutral";
+      const ageGroup = getAgeGroupValue();
+      const key = `${ageGroup}-${gender}`;
+      const pool = RANDOM_PRESETS[key] || RANDOM_PRESETS[`adult-${gender}`] || RANDOM_PRESETS["adult-neutral"];
+      if (!pool || !pool.length) return;
+
+      const p = pool[Math.floor(Math.random() * pool.length)];
+      if (window.__setStyleCard) window.__setStyleCard(p.style);
+      else {
+        const hidden = document.getElementById("style");
+        if (hidden) hidden.value = p.style;
+      }
+      safeSetSelectValue("styleVariant", p.styleVariant || "");
+      uiPaletteId = p.paletteId || null;
+
+      showToast(`已幫你選：${p.label}`, 1600);
+      haptic(10);
+    }
+
+
 (async function init(){
       bindRange("age","age-val");
       bindRange("height","height-val");
       bindRange("weight","weight-val");
       bindRange("temp","temp-val");
       bindStyleCards();
-    bindGenderSeg();
-      bindAgeGroupSeg();
-
-      document.getElementById("login-btn").addEventListener("click", loginGoogle);
+    // initial style/variant labels per audience
+    try { updateStyleUIForAudience(); } catch {}
+      const rnd=document.getElementById("random-style-btn");
+      if(rnd) rnd.addEventListener("click", () => applyRandomPreset());
+bindGenderSeg();
+      const genderSel=document.getElementById("gender");
+      if(genderSel) genderSel.addEventListener("change", () => { uiPaletteId=null; });
+bindAgeGroupSeg();
+      const ageGroupSel=document.getElementById("ageGroup");
+      if(ageGroupSel) ageGroupSel.addEventListener("change", () => { uiPaletteId=null; });
+document.getElementById("login-btn").addEventListener("click", loginGoogle);
       document.getElementById("logout-btn").addEventListener("click", logout);
 
       applyDeviceClass();
