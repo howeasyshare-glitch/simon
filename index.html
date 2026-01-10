@@ -525,11 +525,36 @@ body.is-mobile #mobile-actionbar{ display:block !important; }
   </div>
 </div><div class="section-block">
           <div class="section-head">
-            <div class="stitle">② 風格選擇 </div>
-        <button class="mini-btn" id="random-style-btn" type="button">隨機推薦</button>
+            <div class="stitle">② 風格</div>
           </div>
 
-          <div class="style-grid" id="style-grid">
+          <!-- 風格類型（互斥） -->
+          <div class="segmented" id="style-source-seg" role="tablist" aria-label="風格">
+            <button type="button" class="seg-btn on" data-source="scene" role="tab" aria-selected="true">
+              <div class="seg-main">穿搭情境</div>
+              <div class="seg-sub">休閒 / 上班 / 約會...</div>
+            </button>
+            <button type="button" class="seg-btn" data-source="celebrity" role="tab" aria-selected="false">
+              <div class="seg-main">名人靈感</div>
+              <div class="seg-sub">GD / Jennie / Lisa...</div>
+            </button>
+          </div>
+
+          <!-- 第二層選項（依上方切換） -->
+          <div class="style-grid" id="style-source-options" style="margin-top:10px;"></div>
+
+          <!-- 隨機一下（獨立主行為） -->
+          <div style="margin-top:10px;">
+            <button class="primary-wide" id="style-random-btn" type="button">隨機一下</button>
+          </div>
+
+          <!-- UI 狀態（未來可映射到 payload） -->
+          <input type="hidden" id="uiStyleSource" value="scene" />
+          <input type="hidden" id="uiStyleValue" value="" />
+
+          <!-- 保留既有風格/變體欄位（隱藏），避免破壞既有流程 -->
+          <div style="display:none;">
+            <div class="style-grid" id="style-grid">
             <div class="style-card selected" data-style="casual">
 <div class="name">休閒 <span class="en">Casual</span></div>
               <div class="desc">舒服、日常、好搭配</div>
@@ -573,9 +598,9 @@ body.is-mobile #mobile-actionbar{ display:block !important; }
           </div>
 
           <input type="hidden" id="style" value="casual" />
+          </div>
         </div>
-
-        <div class="section-block" style="margin-bottom:0">
+<div class="section-block" style="margin-bottom:0">
           <div class="section-head">
             <div class="stitle">③ 配件 </div>
           </div>
@@ -972,7 +997,7 @@ function bindGenderSeg(){
   const hidden = document.getElementById("gender");
   if (!seg || !hidden) return;
   const btns = Array.from(seg.querySelectorAll(".seg-btn"));
-  const select = (val) => {
+  const select = (val, opts={emit:true}) => {
     if (!val) return;
     hidden.value = val;
     btns.forEach(b => {
@@ -982,12 +1007,16 @@ function bindGenderSeg(){
     });
     // update style/variant labels per audience
     try { if (typeof updateStyleUIForAudience === "function") updateStyleUIForAudience(); } catch {}
+    if(opts.emit){
+      try{ hidden.dispatchEvent(new Event("input",{bubbles:true})); }catch{}
+      try{ hidden.dispatchEvent(new Event("change",{bubbles:true})); }catch{}
+    }
   };
-  btns.forEach(b => b.addEventListener("click", () => select(b.dataset.value)));
-  hidden.addEventListener("change", () => select(hidden.value));
+  btns.forEach(b => b.addEventListener("click", () => select(b.dataset.value,{emit:true})));
+  hidden.addEventListener("change", () => select(hidden.value,{emit:false}));
   // expose for applyPayloadToForm / share restore
-  window.__setGenderSeg = select;
-  select(hidden.value || "female");
+  window.__setGenderSeg = (val)=>select(val,{emit:true});
+  select(hidden.value || "female",{emit:false});
 }
 
 function bindStyleCards() {
@@ -1892,7 +1921,7 @@ function bindAgeGroupSeg(){
   if (!seg || !hidden) return;
 
   const btns = Array.from(seg.querySelectorAll(".seg-btn"));
-  const select = (val, opts={}) => {
+  const select = (val, opts={emit:true}) => {
     const v = (val === "kids" || val === "adult") ? val : "adult";
     hidden.value = v;
     btns.forEach(b => {
@@ -1903,16 +1932,20 @@ function bindAgeGroupSeg(){
     applyAgeGroup(v, opts);
     // update style/variant labels per audience
     try { if (typeof updateStyleUIForAudience === "function") updateStyleUIForAudience(); } catch {}
+    if(opts.emit){
+      try{ hidden.dispatchEvent(new Event("input",{bubbles:true})); }catch{}
+      try{ hidden.dispatchEvent(new Event("change",{bubbles:true})); }catch{}
+    }
   };
 
-  btns.forEach(b => b.addEventListener("click", () => select(b.dataset.value)));
+  btns.forEach(b => b.addEventListener("click", () => select(b.dataset.value,{emit:true})));
   // allow share/restore to set this before sliders
-  window.__setAgeGroup = (val) => select(val, { silent: true });
+  window.__setAgeGroup = (val) => select(val, { silent: true, emit: true });
 
   // init: if current age < 13, default to kids, otherwise adult
   const curAge = Number(document.getElementById("age")?.value ?? 25);
   const initial = hidden.value || (Number.isFinite(curAge) && curAge < 13 ? "kids" : "adult");
-  select(initial, { silent: true });
+  select(initial, { silent: true, emit: false });
 }
 
 
@@ -2259,6 +2292,281 @@ function safeSetSelectValue(id, value) {
     }
 
 
+
+/***********************
+ * 風格（穿搭情境 / 名人靈感）UI（穩定版：不改既有 payload 結構）
+ * - UI 顯示：情境 6 個；名人依性別顯示（男 / 女 / 中性）
+ * - 點選後：映射到既有 #style / #styleVariant（不破壞後端相容性）
+ * - 隨機一下：隨機來源 + 該來源底下項目
+ ***********************/
+const STYLE_SOURCES = {
+  scene: {
+    label: "穿搭情境",
+    optionsByAgeGroup: {
+      adult: ["休閒", "上班 / 通勤", "約會", "運動", "旅行", "正式場合"],
+      kids:  ["日常 / 上學", "戶外玩樂", "運動 / 體育課", "聚會 / 生日", "旅行", "正式場合"]
+    },
+    mapToPayload: (val) => {
+      // scene → existing 5 styles (casual/minimal/street/sporty/smart)
+      const m = {
+        "休閒": { style: "casual", styleVariant: "" },
+        "上班 / 通勤": { style: "smart", styleVariant: "" },
+        "約會": { style: "minimal", styleVariant: "" },
+        "運動": { style: "sporty", styleVariant: "" },
+        "旅行": { style: "casual", styleVariant: "" },
+        "正式場合": { style: "smart", styleVariant: "" }
+      };
+      return m[val] || { style: "casual", styleVariant: "" };
+    }
+  },
+  celebrity: {
+    label: "名人靈感",
+    // options are derived by gender at runtime
+    optionsByGender: {
+      male: ["GD", "BTS"],
+      female: ["Lisa", "IU", "Jennie"],
+      neutralPool: ["GD", "BTS", "Lisa", "IU", "Jennie"]
+    },
+    mapToPayload: (val) => {
+      const m = {
+        "GD": { style: "street", styleVariant: "celeb-gd-street" },
+        "BTS": { style: "street", styleVariant: "celeb-bts-street" },
+        "Lisa": { style: "sporty", styleVariant: "celeb-lisa-sporty" },
+        "IU": { style: "casual", styleVariant: "celeb-iu-casual" },
+        "Jennie": { style: "minimal", styleVariant: "celeb-jennie-minimal" }
+      };
+      return m[val] || { style: "casual", styleVariant: "" };
+    }
+  }
+};
+
+function __shuffle(arr){
+  const a = arr.slice();
+  for(let i=a.length-1;i>0;i--){
+    const j = Math.floor(Math.random()*(i+1));
+    [a[i],a[j]] = [a[j],a[i]];
+  }
+  return a;
+}
+
+// --- Gender reader (robust): supports select#gender, radios name="gender", and common Chinese labels ---
+function __normalizeGender(v){
+  if(v==null) return "neutral";
+  const s = String(v).trim().toLowerCase();
+  if(["male","m","man","boy","男","男性"].includes(s)) return "male";
+  if(["female","f","woman","girl","女","女性"].includes(s)) return "female";
+  if(["neutral","x","other","none","不指定","中性","皆可"].includes(s)) return "neutral";
+  // fallback: accept already-normalized
+  if(s === "male" || s === "female") return s;
+  return "neutral";
+}
+
+function getCurrentGender(){
+  // 1) select / hidden input #gender
+  try{
+    const el = document.getElementById("gender");
+    if(el && ("value" in el) && String(el.value||"").trim()!=="") return __normalizeGender(el.value);
+  }catch{}
+
+  // 2) radios name="gender"
+  try{
+    const checked = document.querySelector('input[name="gender"]:checked');
+    if(checked && String(checked.value||"").trim()!=="") return __normalizeGender(checked.value);
+  }catch{}
+
+  // 3) any element with data-field="gender"
+  try{
+    const el = document.querySelector('[data-field="gender"]');
+    if(el && ("value" in el) && String(el.value||"").trim()!=="") return __normalizeGender(el.value);
+  }catch{}
+
+  return "neutral";
+}
+
+
+function getSceneOptions(){
+  // ageGroup is managed by existing UI (adult / kids)
+  let ag = "adult";
+  try {
+    const el = document.getElementById("ageGroup");
+    if (el && el.value) ag = String(el.value);
+  } catch {}
+  const by = STYLE_SOURCES.scene.optionsByAgeGroup || {};
+  return (ag === "kids" ? (by.kids || []) : (by.adult || []));
+}
+
+function getCelebOptionsByGender(gender){
+  if(gender==="male") return STYLE_SOURCES.celebrity.optionsByGender.male.slice();
+  if(gender==="female") return STYLE_SOURCES.celebrity.optionsByGender.female.slice();
+  // neutral: show 4 random
+  const pool = STYLE_SOURCES.celebrity.optionsByGender.neutralPool.slice();
+  return __shuffle(pool).slice(0, Math.min(4, pool.length));
+}
+
+function ensureBtsVariantOption(){
+  // keep existing variant UX working even if BTS isn't pre-defined
+  const sel = document.getElementById("styleVariant");
+  if(!sel) return;
+  const exists = Array.from(sel.options).some(o => o.value === "celeb-bts-street");
+  if(exists) return;
+
+  // Find celeb optgroup; if none, append at end
+  let celebGroup = Array.from(sel.querySelectorAll("optgroup")).find(g => (g.label||"").includes("名人"));
+  const opt = document.createElement("option");
+  opt.value = "celeb-bts-street";
+  opt.textContent = "BTS（團體街頭）";
+
+  if(celebGroup) celebGroup.appendChild(opt);
+  else sel.appendChild(opt);
+}
+
+function bindStyleSourceUI(){
+  const seg = document.getElementById("style-source-seg");
+  const optionsRoot = document.getElementById("style-source-options");
+  const btnRandom = document.getElementById("style-random-btn");
+  const hSource = document.getElementById("uiStyleSource");
+  const hValue = document.getElementById("uiStyleValue");
+  if(!seg || !optionsRoot || !btnRandom || !hSource || !hValue) return;
+
+  let curSource = hSource.value || "scene";
+  let curValue = hValue.value || "";
+
+  function setSeg(source){
+    curSource = (source==="celebrity") ? "celebrity" : "scene";
+    hSource.value = curSource;
+
+    const btns = Array.from(seg.querySelectorAll(".seg-btn"));
+    btns.forEach(b=>{
+      const on = b.dataset.source === curSource;
+      b.classList.toggle("on", on);
+      b.setAttribute("aria-selected", on ? "true" : "false");
+    });
+
+    render();
+  }
+
+  function applySelection(source, value, {silent=false}={}){
+    curSource = source;
+    curValue = value;
+    hSource.value = source;
+    hValue.value = value;
+
+    // Visual selected state
+    Array.from(optionsRoot.querySelectorAll(".style-card")).forEach(c=>{
+      c.classList.toggle("selected", c.dataset.value === value);
+    });
+
+    // Map to existing payload fields (safe)
+    const mapper = STYLE_SOURCES[source]?.mapToPayload;
+    if(typeof mapper === "function"){
+      const out = mapper(value) || {};
+      if(out.style){
+        try{ if(window.__setStyleCard) window.__setStyleCard(out.style); }catch{}; try{ const st=document.getElementById("style"); if(st){ st.dispatchEvent(new Event("change",{bubbles:true})); st.dispatchEvent(new Event("input",{bubbles:true})); }}catch{}
+      }
+      if(typeof safeSetSelectValue === "function"){
+        safeSetSelectValue("styleVariant", out.styleVariant || "");
+      }else{
+        // fallback
+        const sv = document.getElementById("styleVariant");
+        if(sv){ sv.value = out.styleVariant || ""; try{ sv.dispatchEvent(new Event("change",{bubbles:true})); }catch{} }
+      }
+    }
+
+    if(!silent) haptic(8);
+  }
+
+  function render(){
+    const gender = getCurrentGender();
+    let list = [];
+
+    if(curSource === "scene"){
+      list = getSceneOptions().slice();
+    }else{
+      list = getCelebOptionsByGender(gender);
+      ensureBtsVariantOption();
+    }
+
+      // If previously selected value is not in new list (e.g., gender changed), clear it
+    if(curValue && !list.includes(curValue)){
+      applySelection(curSource, "", {silent:true});
+    }
+
+optionsRoot.innerHTML = list.map(v=>{
+      const sel = (v === curValue) ? " selected" : "";
+      return `
+        <div class="style-card${sel}" data-value="${escapeHtml(v)}" role="button" tabindex="0">
+          <div class="name">${escapeHtml(v)}</div>
+          <div class="desc"></div>
+        </div>
+      `.trim();
+    }).join("");
+
+    Array.from(optionsRoot.querySelectorAll(".style-card")).forEach(card=>{
+      const v = card.dataset.value;
+      const activate = ()=>applySelection(curSource, v);
+      card.addEventListener("click", activate);
+      card.addEventListener("keydown", (e)=>{
+        if(e.key==="Enter" || e.key===" "){ e.preventDefault(); activate(); }
+      });
+    });
+
+    // If current selection is no longer in list, clear it
+    if(curValue && !list.includes(curValue)){
+      curValue = "";
+      hValue.value = "";
+    }
+  }
+
+  function randomPick(){
+    const source = Math.random() < 0.5 ? "scene" : "celebrity";
+    setSeg(source);
+
+    const gender = getCurrentGender();
+    const list = (source==="scene") ? getSceneOptions() : getCelebOptionsByGender(gender);
+    const pick = list[Math.floor(Math.random()*list.length)];
+    applySelection(source, pick);
+    showToast("已幫你隨機選一個風格", 1200);
+  }
+
+  // events
+  seg.addEventListener("click", (e)=>{
+    const btn = e.target.closest(".seg-btn");
+    if(!btn) return;
+    setSeg(btn.dataset.source);
+  });
+
+  btnRandom.addEventListener("click", randomPick);
+
+  // when gender changes, celebrity options should follow
+  function bindGenderWatch(){
+    const els = [];
+    try{ const el = document.getElementById("gender"); if(el) els.push(el); }catch{}
+    try{ document.querySelectorAll('input[name="gender"]').forEach(el=>els.push(el)); }catch{}
+    try{ const el = document.querySelector('[data-field="gender"]'); if(el) els.push(el); }catch{}
+    Array.from(new Set(els)).forEach(el=>{
+      el.addEventListener("change", ()=>{
+        // If currently on celebrity tab, update immediately
+        if(curSource === "celebrity") render();
+      });
+    });
+  }
+  bindGenderWatch();
+
+  // when ageGroup changes (adult/kids), re-render options if needed
+  const ageGroupEl = document.getElementById("ageGroup");
+  if(ageGroupEl){
+    ageGroupEl.addEventListener("change", ()=>{
+      // scene list differs between adult/kids; keep current tab stable
+      if(curSource === "scene") render();
+      // (future-proof) if celeb list should differ by age, rerender too
+      if(curSource === "celebrity") render();
+    });
+  }
+
+  // init
+  setSeg(curSource);
+}
+
 (async function init(){
       bindRange("age","age-val");
       bindRange("height","height-val");
@@ -2267,12 +2575,11 @@ function safeSetSelectValue(id, value) {
       bindStyleCards();
     // initial style/variant labels per audience
     try { updateStyleUIForAudience(); } catch {}
-      const rnd=document.getElementById("random-style-btn");
-      if(rnd) rnd.addEventListener("click", () => applyRandomPreset());
 bindGenderSeg();
       const genderSel=document.getElementById("gender");
       if(genderSel) genderSel.addEventListener("change", () => { uiPaletteId=null; });
 bindAgeGroupSeg();
+      try{ bindStyleSourceUI(); }catch(e){ console.warn(e); }
       const ageGroupSel=document.getElementById("ageGroup");
       if(ageGroupSel) ageGroupSel.addEventListener("change", () => { uiPaletteId=null; });
 document.getElementById("login-btn").addEventListener("click", loginGoogle);
