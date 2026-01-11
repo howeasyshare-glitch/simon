@@ -421,6 +421,9 @@ body.is-desktop #mobile-actionbar{ display:none !important; }
 body.is-mobile .layout{ grid-template-columns: 1fr; }
 body.is-mobile #mobile-actionbar{ display:block !important; }
  
+
+  .ghost-btn{border:1px solid rgba(0,0,0,.12); background:transparent; border-radius:12px; padding:10px 12px; font-weight:600;}
+  .ghost-btn:disabled{opacity:.5;}
 </style>
 </head>
 
@@ -541,12 +544,17 @@ body.is-mobile #mobile-actionbar{ display:block !important; }
           </div>
 
           <!-- 第二層選項（依上方切換） -->
-          <div class="style-grid" id="style-source-options" style="margin-top:10px;"></div>
+          <div class="style-grid" id="style-source-options" style="margin-top:10px; max-height:140px; overflow:auto; min-height:110px;"></div>
 
           <!-- 隨機一下（獨立主行為） -->
-          <div style="margin-top:10px;">
-            <button class="primary-wide" id="style-random-btn" type="button">隨機一下</button>
+          <div style="margin-top:10px; display:flex; gap:10px;">
+            <button class="primary-wide" id="style-random-btn" type="button" style="flex:1;">隨機一下</button>
+            <button class="ghost-btn" id="style-undo-btn" type="button" style="min-width:96px;" disabled>上一步</button>
           </div>
+
+          <!-- 已選預覽（UI-only） -->
+          <div id="style-preview" class="muted" style="margin-top:8px; font-size:12px; opacity:.85;"></div>
+
 
           <!-- UI 狀態（未來可映射到 payload） -->
           <input type="hidden" id="uiStyleSource" value="scene" />
@@ -2351,6 +2359,14 @@ const STYLE_SOURCES = {
         "運動": { style: "sporty", styleVariant: "" },
         "旅行": { style: "casual", styleVariant: "" },
         "正式場合": { style: "smart", styleVariant: "" }
+        ,
+        "V": { style: "street", styleVariant: "" },
+        "Jungkook": { style: "sporty", styleVariant: "" },
+        "Jimin": { style: "minimal", styleVariant: "" },
+        "RM": { style: "smart", styleVariant: "" },
+        "Rosé": { style: "minimal", styleVariant: "" },
+        "Jisoo": { style: "smart", styleVariant: "" },
+        "Karina": { style: "street", styleVariant: "" }
       };
       return m[val] || { style: "casual", styleVariant: "" };
     }
@@ -2359,9 +2375,9 @@ const STYLE_SOURCES = {
     label: "名人靈感",
     // options are derived by gender at runtime
     optionsByGender: {
-      male: ["GD", "BTS"],
-      female: ["Lisa", "IU", "Jennie"],
-      neutralPool: ["GD", "BTS", "Lisa", "IU", "Jennie"]
+      male: ["GD", "BTS", "V", "Jungkook", "Jimin", "RM"],
+      female: ["Lisa", "IU", "Jennie", "Rosé", "Jisoo", "Karina"],
+      neutralPool: ["GD", "BTS", "V", "Jungkook", "Jimin", "RM", "Lisa", "IU", "Jennie", "Rosé", "Jisoo", "Karina"]
     },
     mapToPayload: (val) => {
       const m = {
@@ -2460,9 +2476,22 @@ function bindStyleSourceUI(){
   const seg = document.getElementById("style-source-seg");
   const optionsRoot = document.getElementById("style-source-options");
   const btnRandom = document.getElementById("style-random-btn");
+  const btnUndo = document.getElementById("style-undo-btn");
+  const previewEl = document.getElementById("style-preview");
   const hSource = document.getElementById("uiStyleSource");
   const hValue = document.getElementById("uiStyleValue");
   if(!seg || !optionsRoot || !btnRandom || !hSource || !hValue) return;
+  let lastPick = null;
+
+  function showToast(msg){
+    const t = document.getElementById("mini-toast");
+    if(!t) return;
+    t.textContent = msg;
+    t.style.opacity = "1";
+    clearTimeout(showToast._tm);
+    showToast._tm = setTimeout(()=>{ t.style.opacity = "0"; }, 1400);
+  }
+
 
   let curSource = hSource.value || "scene";
   let curValue = hValue.value || "";
@@ -2506,6 +2535,17 @@ function bindStyleSourceUI(){
         const sv = document.getElementById("styleVariant");
         if(sv){ sv.value = out.styleVariant || ""; try{ sv.dispatchEvent(new Event("change",{bubbles:true})); }catch{} }
       }
+    }
+
+    // Update preview (UI-only)
+    if(previewEl){
+      const label = (curSource === "scene") ? "穿搭情境" : "名人靈感";
+      previewEl.textContent = curValue ? `已選：${label} / ${curValue}` : `已選：${label} / （未選）`;
+    }
+
+    // Undo availability
+    if(btnUndo){
+      btnUndo.disabled = !(lastPick && lastPick.value);
     }
 
     if(!silent) haptic(8);
@@ -2592,6 +2632,7 @@ optionsRoot.innerHTML = list.map(v=>{
   const ageGroupEl = document.getElementById("ageGroup");
   if(ageGroupEl){
     ageGroupEl.addEventListener("change", ()=>{
+      showToast(String(ageGroupEl.value)==="kids" ? "童裝模式：情境已切換" : "成人模式：情境已切換");
       // scene list differs between adult/kids; keep current tab stable
       if(curSource === "scene") render();
       // (future-proof) if celeb list should differ by age, rerender too
@@ -2695,5 +2736,16 @@ document.getElementById("login-btn").addEventListener("click", loginGoogle);
 </script>
 
   <div class="toast" id="toast" style="display:none;">往下看商品 ↓</div>
+
+  <!-- mini toast (UI-only) -->
+  <div id="mini-toast" style="
+    position:fixed; left:50%; transform:translateX(-50%);
+    bottom:18px; z-index:9999;
+    background:rgba(0,0,0,.72); color:#fff;
+    padding:10px 12px; border-radius:14px;
+    font-size:13px; line-height:1; letter-spacing:.2px;
+    opacity:0; pointer-events:none; transition:opacity .18s ease;
+    max-width:min(92vw,520px); text-align:center;
+  "></div>
 </body>
 </html>
