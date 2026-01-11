@@ -1315,7 +1315,43 @@ function bindStyleCards() {
       return imgResp;
     }
 
-    async function runStepProducts(payload, spec){
+    
+    // --- Global keyword prefix helpers (stability shim) ---
+    // Some parts of the page expect these helpers to exist at the top scope.
+    // Define them defensively here to avoid breaking product recommendation.
+    window.getProductKeywordPrefix = window.getProductKeywordPrefix || function(payload) {
+      const ak = payload?.audienceKey || (typeof getAudienceKey === "function" ? getAudienceKey(payload) : "adult-neutral");
+      const g = payload?.gender || "neutral";
+      if (String(ak).startsWith("kids")) {
+        if (g === "female") return "女童";
+        if (g === "male") return "男童";
+        return "童裝";
+      }
+      if (String(ak).startsWith("adult")) {
+        if (g === "female") return "女裝";
+        if (g === "male") return "男裝";
+        return "";
+      }
+      return "";
+    };
+
+    window.getProductKeywordPrefixEn = window.getProductKeywordPrefixEn || function(payload) {
+      const ak = payload?.audienceKey || (typeof getAudienceKey === "function" ? getAudienceKey(payload) : "adult-neutral");
+      const g = payload?.gender || "neutral";
+      if (String(ak).startsWith("kids")) {
+        if (g === "female") return "girls";
+        if (g === "male") return "boys";
+        return "kids";
+      }
+      if (String(ak).startsWith("adult")) {
+        if (g === "female") return "women";
+        if (g === "male") return "men";
+        return "";
+      }
+      return "";
+    };
+
+async function runStepProducts(payload, spec){
       setGenerateStep("products"); setStatus("", null, true); setProgress(80);
       const itemsForSearch = (spec.items || []).map(it => {
     const prefixZh = getProductKeywordPrefix(payload);
