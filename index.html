@@ -549,8 +549,7 @@ body.is-mobile #mobile-actionbar{ display:block !important; }
           <!-- 隨機一下（獨立主行為） -->
           <div style="margin-top:10px; display:flex; gap:10px;">
             <button class="primary-wide" id="style-random-btn" type="button" style="flex:1;">隨機一下</button>
-            <button class="ghost-btn" id="style-undo-btn" type="button" style="min-width:96px;" disabled>上一步</button>
-          </div>
+</div>
 
           <!-- 已選預覽（UI-only） -->
           <div id="style-preview" class="muted" style="margin-top:8px; font-size:12px; opacity:.85;"></div>
@@ -667,11 +666,6 @@ body.is-mobile #mobile-actionbar{ display:block !important; }
             <button class="mini-btn" id="share-btn" disabled>分享</button>
           </div>
         </div>
-
-        <div class="section-title">
-          <span class="pill"></span>
-        </div>
-
         <div class="preview-wrap anchor" id="anchor-preview">
           <div class="preview-inner" id="preview-box">
             <div class="preview-tools">
@@ -829,16 +823,27 @@ function applyDeviceClass() {
 
     function payloadSummaryLine(p) {
   if (!p) return "—";
-  const style = (p.style || "").toUpperCase();
+
   const g = p.gender === "female" ? "女" : p.gender === "male" ? "男" : "中性";
-  const group = p.ageGroup === "kids" ? "童裝" : "";
+  const group = p.ageGroup === "kids" ? "童裝" : "成人";
+
+  // Base style (keep for debugging/consistency)
+  const style = (p.style || "").toUpperCase();
+
+  // UI layer: show the user's chosen 2nd-level value (旅行 / GD ...)
+  const uiValue = (p.uiStyleValue || p.ui_style_value || "").trim(); // backward-compatible
+
   const extras = [
     p.withBag ? "包" : "",
     p.withHat ? "帽" : "",
     (p.withCoat || (Number(p.temp) <= 20)) ? "外套" : ""
   ].filter(Boolean).join("、");
-  return `${group ? group + " · " : ""}${g} · ${p.age}歲 · ${p.height}cm/${p.weight}kg · ${p.temp}°C · ${style}${p.styleVariant ? " · " + p.styleVariant : ""}${extras ? " · " + extras : ""}`;
+
+  const stylePart = uiValue ? `${style} · ${uiValue}` : style;
+
+  return `${group} · ${g} · ${p.age}歲 · ${p.height}cm/${p.weight}kg · ${p.temp}°C · ${stylePart}${extras ? " · " + extras : ""}`;
 }
+
 
     function setResultMeta(payload){
       const bar=document.getElementById("result-meta");
@@ -2030,7 +2035,9 @@ function bindAgeGroupSeg(){
       const paletteId = uiPaletteId || DEFAULT_PALETTE_BY_AUDIENCE[audienceKey] || "cream-warm";
       const celebId = deriveCelebId(base.styleVariant);
       const styleId = base.style; // keep original style; add alias field
-      return { ...base, audienceKey, styleId, paletteId, celebId };
+      const uiStyleSource = document.getElementById("uiStyleSource")?.value || "";
+      const uiStyleValue = document.getElementById("uiStyleValue")?.value || "";
+      return { ...base, audienceKey, styleId, paletteId, celebId, uiStyleSource, uiStyleValue };
     }
 
     function getProductKeywordPrefix(payload) {
