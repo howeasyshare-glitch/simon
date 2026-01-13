@@ -31,20 +31,15 @@ export default async function handler(req, res) {
     }
 
     const ITEM_TAG = "item_outerwear";
+const containsJson = JSON.stringify([ITEM_TAG]); // '["item_outerwear"]'
 
-    const { data, error } = await supabaseServer
-      .from("custom_products")
-      .select("*")
-      .eq("is_active", true)
-      .contains("tags", [ITEM_TAG])
-      .limit(2);
+const { data, error } = await supabaseServer
+  .from("custom_products")
+  .select("*")
+  .eq("is_active", true)
+  .filter("tags", "cs", containsJson) // 用 cs + 明確 JSON 字串，最穩
+  .limit(2);
 
-    if (error) {
-      return res.status(500).json({
-        error: "Supabase query failed",
-        detail: error.message,
-      });
-    }
 
     return res.status(200).json({ items: data || [] });
   } catch (e) {
