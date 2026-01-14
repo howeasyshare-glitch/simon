@@ -1,4 +1,5 @@
 // pages/api/search-products.js
+import { supabaseServer } from "../lib/supabaseServer";
 export const config = { runtime: "nodejs" };
 
 // 更像人會搜的「類別詞」
@@ -97,6 +98,83 @@ async function serpapiShoppingSearch({ apiKey, q, gl = "tw", hl = "zh-tw" }) {
   const results = j.shopping_results || [];
   return { ok: true, results };
 }
+const SLOT_TO_ITEMTAG = {
+  outerwear: "item_outerwear",
+  outer: "item_outerwear",
+  top: "item_top",
+  bottom: "item_bottom",
+  shoes: "item_shoes",
+  bag: "item_bag",
+};
+
+function buildTrackedUrl(productUrl, trackingParams = {}, productId = "") {
+  try {
+    if (!productUrl) return "";
+    const url = new URL(productUrl);
+    for (const [k, v] of Object.entries(trackingParams || {})) {
+      if (v === undefined || v === null || v === "") continue;
+      url.searchParams.set(k, String(v));
+    }
+    if (productId) url.searchParams.set("utm_content", String(productId));
+    return url.toString();
+  } catch {
+    return productUrl || "";
+  }
+}
+
+async function fetchCustomForSlot({ slot, gender, ageGroup, styleTag }) {
+  const itemTag = SLOT_TO_ITEMTAG[slot] || null;
+  if (!itemTag) return [];
+
+  const baseContains = [itemTag];
+  if (ageGroup === "adult" || ageGroup === "kids") baseContains.push(ageGroup);
+
+  const containsJson = JSON.stringify(baseContains);
+
+  const { data, error } = await supabaseServer
+    .from("custom_products")
+    .select("id,title,image_url,product_url,merchant,tags,priority_boost,badge_text,discount_type,discount_code,tracking_params")
+    .eq("is_active", true)
+    .filter("tags", "cs", containsJson);
+
+  if (error) return [];
+
+  // 很保守的排序：priority_boost 高的優先；若有 styleTag 命中也加分
+  const scored = (data || []).map((row) => {
+    const tags = Array.isArray(row.tags) ? row.tags : [];
+    let score = Number(row.priority_boost || 0);
+    if (styleTag && tags.includes(styleTag)) score += 3;
+
+    // 若商品有設 gender tag 才檢查命中（避免把商品卡死）
+    if (tags.includes("male") || tags.includes("female") || tags.includes("neutral")) {
+      if (gender && tags.includes(gender)) score += 2;
+    }
+    return { row, score };
+  });
+
+  scored.sort((a, b) => b.score - a.score);
+
+  // 轉成跟你現有 products 同樣的 shape
+  const cleaned = scored
+    .map(({ row, score }) => ({
+      slot,
+      title: row.title || "",
+      price: null,
+      extracted_price: null,
+      source: "custom",
+      link: buildTrackedUrl(row.product_url, row.tracking_params, row.id),
+      thumbnail: row.image_url || "",
+      badge_text: row.badge_text || "本站推薦",
+      discount_type: row.discount_type || "none",
+      discount_code: row.discount_code || null,
+      _custom_score: score,
+    }))
+    // 避免前端卡片壞：必要欄位不足就不顯示
+    .filter((p) => p.title && p.link && p.thumbnail)
+    .slice(0, 2);
+
+  return cleaned;
+}
 
 export default async function handler(req, res) {
   console.log("[search-products] called", new Date().toISOString());
@@ -109,7 +187,8 @@ export default async function handler(req, res) {
     // ✅ 不要 500 炸整個流程：沒 key 就回空清單
     if (!apiKey) return res.status(200).json({ ok: true, products: [], warning: "SERPAPI_API_KEY not set" });
 
-    const { items = [], locale = "tw", gender = "neutral" } = req.body || {};
+    const { items = [], locale = "tw", gender = "neutral", ageGroup = null, styleTag = null } = req.body || {};
+
     const queries = buildQueriesFromItems(items, { locale, gender });
 
     if (!queries.length) return res.status(200).json({ ok: true, products: [] });
@@ -121,28 +200,38 @@ export default async function handler(req, res) {
     const debug = [];
 
     for (const { slot, q } of queries) {
-      const s = await serpapiShoppingSearch({ apiKey, q, gl, hl });
+      // ✅ 先撈自訂（最多2）
+const custom = await fetchCustomForSlot({ slot, gender, ageGroup, styleTag });
+debug.push({ slot, stage: "custom", count: custom.length });
 
-      debug.push({ slot, q, ok: s.ok, count: s.ok ? s.results.length : 0, status: s.status });
+// ✅ 再用 SerpApi 補到最多2
+const needGoogle = Math.max(0, 2 - custom.length);
 
-      if (!s.ok) continue;
+let google = [];
+if (needGoogle > 0) {
+  const s = await serpapiShoppingSearch({ apiKey, q, gl, hl });
+  debug.push({ slot, q, ok: s.ok, count: s.ok ? s.results.length : 0, status: s.status });
 
-      const filtered = (s.results || [])
-        .filter(p => !isOppositeGenderTitle(p.title, gender))
-        .slice(0, 4)
-        .map((p) => ({
-          slot,
-          title: p.title,
-          price: p.price,
-          extracted_price: p.extracted_price,
-          source: p.source,
+  if (s.ok) {
+    google = (s.results || [])
+      .filter(p => !isOppositeGenderTitle(p.title, gender))
+      .map((p) => ({
+        slot,
+        title: p.title,
+        price: p.price,
+        extracted_price: p.extracted_price,
+        source: p.source,
+        link: p.product_link || p.link || "",
+        thumbnail: p.thumbnail,
+      }))
+      .filter((p) => p.title && p.link && p.thumbnail)
+      .slice(0, needGoogle);
+  }
+}
 
-          // ✅ 前端「前往查看」請優先用 product_link（通常是商家頁）
-          link: p.product_link || p.link || "",
-          thumbnail: p.thumbnail,
-        }));
+// 合併：自訂在前、google 在後
+all.push(...custom, ...google);
 
-      all.push(...filtered);
     }
 
     return res.status(200).json({ ok: true, products: all, debug });
