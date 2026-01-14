@@ -128,6 +128,10 @@ async function deductOneCreditAtomic({ supabaseUrl, serviceKey, userId }) {
 
   return { ok: true, credits_left: updatedRows[0].credits_left };
 }
+// TEMP hotfix: prevent crash when deduct is missing
+async function deduct() {
+  return { ok: true, skipped: true };
+}
 
 export default async function handler(req, res) {
   if (req.method !== "POST") return res.status(405).json({ error: "Method not allowed" });
