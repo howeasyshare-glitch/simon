@@ -99,6 +99,8 @@ async function serpapiShoppingSearch({ apiKey, q, gl = "tw", hl = "zh-tw" }) {
 }
 
 export default async function handler(req, res) {
+  console.log("[search-products] called", new Date().toISOString());
+
   if (req.method !== "POST") return res.status(405).json({ error: "Method not allowed" });
 
   try {
