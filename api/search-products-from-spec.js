@@ -2,6 +2,8 @@
 // 用 SerpAPI（Google Shopping）依 outfit spec items 搜尋商品
 
 export default async function handler(req, res) {
+  console.log("[search-products-from-spec] called", new Date().toISOString());
+
   if (req.method !== "POST") return res.status(405).json({ error: "Method not allowed" });
 
   try {
