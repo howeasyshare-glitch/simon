@@ -69,7 +69,6 @@ function buildQueriesFromItems(items = [], { locale = "tw", gender = "neutral" }
       const slot = (it.slot || "").trim();
       const cat = slotToKeywords(slot, locale);
 
-      // ✅ query：性別 + 類別詞 + 顏色 + 名稱
       const q = `${g ? g + " " : ""}${cat ? cat + " " : ""}${color ? color + " " : ""}${name}`.trim();
       return { slot: it.slot, q };
     })
@@ -99,7 +98,6 @@ async function serpapiShoppingSearch({ apiKey, q, gl = "tw", hl = "zh-tw" }) {
 
 // ---------- Custom products (Supabase) ----------
 const SLOT_TO_ITEMTAG = {
-  outerwear: "item_outerwear",
   outer: "item_outerwear",
   top: "item_top",
   bottom: "item_bottom",
@@ -133,9 +131,7 @@ async function fetchCustomForSlot({ slot, gender, ageGroup, styleTag }) {
 
   const { data, error } = await supabaseServer
     .from("custom_products")
-    .select(
-      "id,title,image_url,product_url,merchant,tags,priority_boost,badge_text,discount_type,discount_code,tracking_params"
-    )
+    .select("id,title,image_url,product_url,merchant,tags,priority_boost,badge_text,discount_type,discount_code,tracking_params")
     .eq("is_active", true)
     .filter("tags", "cs", containsJson);
 
@@ -156,13 +152,10 @@ async function fetchCustomForSlot({ slot, gender, ageGroup, styleTag }) {
 
   scored.sort((a, b) => b.score - a.score);
 
-  const cleaned = scored
+  return scored
     .map(({ row, score }) => {
-      const badge =
-        row.badge_text && row.badge_text !== "nullable" ? row.badge_text : "本站推薦";
-
-      const discountCode =
-        row.discount_code && row.discount_code !== "nullable" ? row.discount_code : null;
+      const badge = (row.badge_text && row.badge_text !== "nullable") ? row.badge_text : "本站推薦";
+      const discountCode = (row.discount_code && row.discount_code !== "nullable") ? row.discount_code : null;
 
       const title = row.title || "";
       const thumbnail = row.image_url || "";
@@ -183,9 +176,7 @@ async function fetchCustomForSlot({ slot, gender, ageGroup, styleTag }) {
       };
     })
     .filter((p) => p.title && p.link && p.thumbnail)
-    .slice(0, 2); // ✅ 自訂最多2
-
-  return cleaned;
+    .slice(0, 2);
 }
 
 function uniqBy(arr, keyFn) {
@@ -209,12 +200,9 @@ export default async function handler(req, res) {
 
   try {
     const apiKey = process.env.SERPAPI_API_KEY;
-
-    // ✅ 不要 500 炸整個流程：沒 key 就回空清單
     if (!apiKey) return res.status(200).json({ ok: true, products: [], warning: "SERPAPI_API_KEY not set" });
 
     const { items = [], locale = "tw", gender = "neutral", ageGroup = null, styleTag = null } = req.body || {};
-
     const queries = buildQueriesFromItems(items, { locale, gender });
     if (!queries.length) return res.status(200).json({ ok: true, products: [] });
 
@@ -225,13 +213,12 @@ export default async function handler(req, res) {
     const debug = [];
 
     for (const { slot, q } of queries) {
-      // ✅ 先撈自訂（最多2）
       const custom = await fetchCustomForSlot({ slot, gender, ageGroup, styleTag });
       const customCapped = custom.slice(0, 2);
 
-      debug.push({ slot, stage: "custom", count: customCapped.length });
+      debug.push({ slot, stage: "custom", count: customCapped.length, ageGroup, styleTag });
 
-      // ✅ 你的規則：每類最多4，自訂1→google3，自訂0→google4，自訂2→google2
+      // ✅ 你的規則：補到 4（自訂0→4、自訂1→3、自訂2→2）
       const needGoogle = Math.max(0, 4 - customCapped.length);
 
       let google = [];
@@ -253,14 +240,12 @@ export default async function handler(req, res) {
             }))
             .filter((p) => p.title && p.link && p.thumbnail);
 
-          // 去重：避免重複 link（以及避免跟自訂重複）
           const customLinks = new Set(customCapped.map((x) => x.link));
           google = google.filter((p) => !customLinks.has(p.link));
           google = uniqBy(google, (p) => p.link).slice(0, needGoogle);
         }
       }
 
-      // 合併：自訂在前、google 在後（總數最多 4）
       all.push(...customCapped, ...google);
     }
 
