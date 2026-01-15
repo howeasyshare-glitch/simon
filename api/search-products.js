@@ -164,9 +164,9 @@ async function fetchCustomForSlot({ slot, gender, ageGroup, styleTag }) {
       source: "custom",
       link: buildTrackedUrl(row.product_url, row.tracking_params, row.id),
       thumbnail: row.image_url || "",
-      badge_text: row.badge_text || "本站推薦",
+      const badge = (row.badge_text && row.badge_text !== "nullable") ? row.badge_text : "本站推薦";
       discount_type: row.discount_type || "none",
-      discount_code: row.discount_code || null,
+      const discountCode = (row.discount_code && row.discount_code !== "nullable") ? row.discount_code : null;
       _custom_score: score,
     }))
     // 避免前端卡片壞：必要欄位不足就不顯示
