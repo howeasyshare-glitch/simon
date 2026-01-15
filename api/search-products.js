@@ -69,9 +69,7 @@ function buildQueriesFromItems(items = [], { locale = "tw", gender = "neutral" }
       const slot = (it.slot || "").trim();
       const cat = slotToKeywords(slot, locale);
 
-      // ✅ query：性別 + 類別詞 + 顏色 + 名稱（不要塞 top/bottom 英文）
-      // TW例：男 上衣 白色 寬版棉質圓領上衣
-      // US例：men jacket black coach jacket
+      // ✅ query：性別 + 類別詞 + 顏色 + 名稱
       const q = `${g ? g + " " : ""}${cat ? cat + " " : ""}${color ? color + " " : ""}${name}`.trim();
       return { slot: it.slot, q };
     })
@@ -98,6 +96,8 @@ async function serpapiShoppingSearch({ apiKey, q, gl = "tw", hl = "zh-tw" }) {
   const results = j.shopping_results || [];
   return { ok: true, results };
 }
+
+// ---------- Custom products (Supabase) ----------
 const SLOT_TO_ITEMTAG = {
   outerwear: "item_outerwear",
   outer: "item_outerwear",
@@ -141,7 +141,6 @@ async function fetchCustomForSlot({ slot, gender, ageGroup, styleTag }) {
 
   if (error) return [];
 
-  // 保守排序：priority_boost 高的優先；styleTag 命中加分；若有性別 tag 且命中也加分
   const scored = (data || []).map((row) => {
     const tags = Array.isArray(row.tags) ? row.tags : [];
     let score = Number(row.priority_boost || 0);
@@ -183,14 +182,26 @@ async function fetchCustomForSlot({ slot, gender, ageGroup, styleTag }) {
         _custom_score: score,
       };
     })
-    // 避免前端卡片壞：必要欄位不足就不顯示
     .filter((p) => p.title && p.link && p.thumbnail)
-    .slice(0, 2);
+    .slice(0, 2); // ✅ 自訂最多2
 
   return cleaned;
 }
 
+function uniqBy(arr, keyFn) {
+  const seen = new Set();
+  const out = [];
+  for (const x of arr) {
+    const k = keyFn(x);
+    if (!k) continue;
+    if (seen.has(k)) continue;
+    seen.add(k);
+    out.push(x);
+  }
+  return out;
+}
 
+// ---------- Handler ----------
 export default async function handler(req, res) {
   console.log("[search-products] called", new Date().toISOString());
 
@@ -205,7 +216,6 @@ export default async function handler(req, res) {
     const { items = [], locale = "tw", gender = "neutral", ageGroup = null, styleTag = null } = req.body || {};
 
     const queries = buildQueriesFromItems(items, { locale, gender });
-
     if (!queries.length) return res.status(200).json({ ok: true, products: [] });
 
     const gl = locale === "tw" ? "tw" : "us";
@@ -216,37 +226,42 @@ export default async function handler(req, res) {
 
     for (const { slot, q } of queries) {
       // ✅ 先撈自訂（最多2）
-const custom = await fetchCustomForSlot({ slot, gender, ageGroup, styleTag });
-debug.push({ slot, stage: "custom", count: custom.length });
+      const custom = await fetchCustomForSlot({ slot, gender, ageGroup, styleTag });
+      const customCapped = custom.slice(0, 2);
 
-// ✅ 再用 SerpApi 補到最多2
-const needGoogle = Math.max(0, 2 - custom.length);
+      debug.push({ slot, stage: "custom", count: customCapped.length });
 
-let google = [];
-if (needGoogle > 0) {
-  const s = await serpapiShoppingSearch({ apiKey, q, gl, hl });
-  debug.push({ slot, q, ok: s.ok, count: s.ok ? s.results.length : 0, status: s.status });
+      // ✅ 你的規則：每類最多4，自訂1→google3，自訂0→google4，自訂2→google2
+      const needGoogle = Math.max(0, 4 - customCapped.length);
 
-  if (s.ok) {
-    google = (s.results || [])
-      .filter(p => !isOppositeGenderTitle(p.title, gender))
-      .map((p) => ({
-        slot,
-        title: p.title,
-        price: p.price,
-        extracted_price: p.extracted_price,
-        source: p.source,
-        link: p.product_link || p.link || "",
-        thumbnail: p.thumbnail,
-      }))
-      .filter((p) => p.title && p.link && p.thumbnail)
-      .slice(0, needGoogle);
-  }
-}
+      let google = [];
+      if (needGoogle > 0) {
+        const s = await serpapiShoppingSearch({ apiKey, q, gl, hl });
+        debug.push({ slot, stage: "serpapi", q, ok: s.ok, count: s.ok ? s.results.length : 0, status: s.status });
 
-// 合併：自訂在前、google 在後
-all.push(...custom, ...google);
+        if (s.ok) {
+          google = (s.results || [])
+            .filter((p) => !isOppositeGenderTitle(p.title, gender))
+            .map((p) => ({
+              slot,
+              title: p.title,
+              price: p.price,
+              extracted_price: p.extracted_price,
+              source: p.source || "google",
+              link: p.product_link || p.link || "",
+              thumbnail: p.thumbnail,
+            }))
+            .filter((p) => p.title && p.link && p.thumbnail);
 
+          // 去重：避免重複 link（以及避免跟自訂重複）
+          const customLinks = new Set(customCapped.map((x) => x.link));
+          google = google.filter((p) => !customLinks.has(p.link));
+          google = uniqBy(google, (p) => p.link).slice(0, needGoogle);
+        }
+      }
+
+      // 合併：自訂在前、google 在後（總數最多 4）
+      all.push(...customCapped, ...google);
     }
 
     return res.status(200).json({ ok: true, products: all, debug });
