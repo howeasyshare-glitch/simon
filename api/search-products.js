@@ -133,48 +133,63 @@ async function fetchCustomForSlot({ slot, gender, ageGroup, styleTag }) {
 
   const { data, error } = await supabaseServer
     .from("custom_products")
-    .select("id,title,image_url,product_url,merchant,tags,priority_boost,badge_text,discount_type,discount_code,tracking_params")
+    .select(
+      "id,title,image_url,product_url,merchant,tags,priority_boost,badge_text,discount_type,discount_code,tracking_params"
+    )
     .eq("is_active", true)
     .filter("tags", "cs", containsJson);
 
   if (error) return [];
 
-  // 很保守的排序：priority_boost 高的優先；若有 styleTag 命中也加分
+  // 保守排序：priority_boost 高的優先；styleTag 命中加分；若有性別 tag 且命中也加分
   const scored = (data || []).map((row) => {
     const tags = Array.isArray(row.tags) ? row.tags : [];
     let score = Number(row.priority_boost || 0);
+
     if (styleTag && tags.includes(styleTag)) score += 3;
 
-    // 若商品有設 gender tag 才檢查命中（避免把商品卡死）
     if (tags.includes("male") || tags.includes("female") || tags.includes("neutral")) {
       if (gender && tags.includes(gender)) score += 2;
     }
+
     return { row, score };
   });
 
   scored.sort((a, b) => b.score - a.score);
 
-  // 轉成跟你現有 products 同樣的 shape
   const cleaned = scored
-    .map(({ row, score }) => ({
-      slot,
-      title: row.title || "",
-      price: null,
-      extracted_price: null,
-      source: "custom",
-      link: buildTrackedUrl(row.product_url, row.tracking_params, row.id),
-      thumbnail: row.image_url || "",
-      const badge = (row.badge_text && row.badge_text !== "nullable") ? row.badge_text : "本站推薦";
-      discount_type: row.discount_type || "none",
-      const discountCode = (row.discount_code && row.discount_code !== "nullable") ? row.discount_code : null;
-      _custom_score: score,
-    }))
+    .map(({ row, score }) => {
+      const badge =
+        row.badge_text && row.badge_text !== "nullable" ? row.badge_text : "本站推薦";
+
+      const discountCode =
+        row.discount_code && row.discount_code !== "nullable" ? row.discount_code : null;
+
+      const title = row.title || "";
+      const thumbnail = row.image_url || "";
+      const link = buildTrackedUrl(row.product_url, row.tracking_params, row.id);
+
+      return {
+        slot,
+        title,
+        price: null,
+        extracted_price: null,
+        source: "custom",
+        link,
+        thumbnail,
+        badge_text: badge,
+        discount_type: row.discount_type || "none",
+        discount_code: discountCode,
+        _custom_score: score,
+      };
+    })
     // 避免前端卡片壞：必要欄位不足就不顯示
     .filter((p) => p.title && p.link && p.thumbnail)
     .slice(0, 2);
 
   return cleaned;
 }
+
 
 export default async function handler(req, res) {
   console.log("[search-products] called", new Date().toISOString());
