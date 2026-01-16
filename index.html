@@ -1252,53 +1252,6 @@ function bindStyleCards() {
     }
 
     async function postJson(url, body, withAuth=true){
-  // ✅ 內建 helper：避免 scope 問題（不會再出現 is not defined）
-  function getSelectedStyleTagForApi() {
-    const source =
-      window.__STYLE_SOURCE ||
-      window.appState?.styleSource ||
-      document.querySelector('[data-style-source].is-active')?.getAttribute("data-style-source") ||
-      document.querySelector('[data-style-source][aria-pressed="true"]')?.getAttribute("data-style-source") ||
-      document.querySelector('input[name="styleSource"]:checked')?.value ||
-      "";
-
-    const choice =
-      window.__STYLE_CHOICE ||
-      window.appState?.styleChoice ||
-      document.querySelector('[data-style-choice].is-active')?.getAttribute("data-style-choice") ||
-      document.querySelector('[data-style-choice][aria-pressed="true"]')?.getAttribute("data-style-choice") ||
-      document.querySelector('input[name="styleChoice"]:checked')?.value ||
-      "";
-
-    const s = String(source).trim().toLowerCase();
-    const c = String(choice).trim().toLowerCase();
-
-    if (!s || !c) return null;
-
-    if (s.includes("scene") || s.includes("情境") || s.includes("穿搭")) return `scene_${c}`;
-    if (s.includes("celeb") || s.includes("名人")) return `celeb_${c}`;
-    if (s.includes("穿搭情境")) return `scene_${c}`;
-    if (s.includes("名人靈感")) return `celeb_${c}`;
-
-    return null;
-  }
-
-  function getAgeGroupForApi(b) {
-    const v =
-      b?.ageGroup ||
-      b?.items?.[0]?.ageGroup ||
-      window.__AGE_GROUP ||
-      window.appState?.ageGroup ||
-      document.querySelector('input[name="ageGroup"]:checked')?.value ||
-      document.querySelector('select[name="ageGroup"]')?.value ||
-      "";
-
-    const s = String(v).toLowerCase();
-    if (s.includes("kid") || s.includes("child") || s.includes("童")) return "kids";
-    if (s.includes("adult") || s.includes("成人")) return "adult";
-    return null;
-  }
-
   const headers={ "Content-Type":"application/json" };
   if(withAuth){
     const token=getAccessToken();
@@ -1306,11 +1259,15 @@ function bindStyleCards() {
     headers["Authorization"]="Bearer "+token;
   }
 
-  // ✅ 只針對 /api/search-products：自動補齊 ageGroup / styleTag
+  // ✅ only patch search-products (safe)
   if (typeof url === "string" && url.includes("/api/search-products")) {
     const b = body && typeof body === "object" ? { ...body } : {};
-    if (!b.ageGroup) b.ageGroup = getAgeGroupForApi(b);
+
+    if (!b.ageGroup) b.ageGroup = document.getElementById("ageGroup")?.value || "adult";
+
+    // 如果呼叫端沒帶 styleTag，就用 UI 的選擇補上
     if (!b.styleTag) b.styleTag = getSelectedStyleTagForApi();
+
     body = b;
   }
 
@@ -1324,6 +1281,7 @@ function bindStyleCards() {
   }
   return j;
 }
+
 
 
 
@@ -2087,16 +2045,87 @@ function bindAgeGroupSeg(){
       const v = String(styleVariant || "");
       return v.startsWith("celeb-") ? v : "";
     }
+// ---- styleTag helpers (UI -> API) ----
+function normalizeStyleChoiceToSlug(source, valueRaw){
+  const v = String(valueRaw || "").trim();
+  if(!v) return "";
+
+  // Scene (情境) mapping
+  if(source === "scene"){
+    const map = {
+      "休閒": "casual",
+      "上班 / 通勤": "commute",
+      "約會": "date",
+      "運動": "sport",
+      "旅行": "travel",
+      "正式場合": "formal",
+
+      "日常 / 上學": "school",
+      "戶外玩樂": "outdoor",
+      "運動 / 體育課": "sport_class",
+      "聚會 / 生日": "party_birthday",
+    };
+    return map[v] || v
+      .toLowerCase()
+      .replace(/\s+/g, "_")
+      .replace(/[^\w\u4e00-\u9fff]/g, "_")
+      .replace(/_+/g, "_")
+      .replace(/^_+|_+$/g, "");
+  }
+
+  // Celebrity mapping
+  if(source === "celebrity"){
+    const map = {
+      "GD": "gd",
+      "BTS": "bts",
+      "V": "v",
+      "Jungkook": "jungkook",
+      "Jimin": "jimin",
+      "RM": "rm",
+      "Lisa": "lisa",
+      "IU": "iu",
+      "Jennie": "jennie",
+      "Rosé": "rose",
+      "Jisoo": "jisoo",
+      "Karina": "karina",
+    };
+    return map[v] || v
+      .toLowerCase()
+      .replace(/\s+/g, "_")
+      .replace(/[^\w]/g, "_")
+      .replace(/_+/g, "_")
+      .replace(/^_+|_+$/g, "");
+  }
+
+  return "";
+}
+
+function getSelectedStyleTagForApi(){
+  const source = (document.getElementById("uiStyleSource")?.value || "").trim();
+  const value  = (document.getElementById("uiStyleValue")?.value  || "").trim();
+  if(!source || !value) return null;
+
+  const src = source === "celebrity" ? "celeb" : "scene"; // API 想要 celeb_/scene_
+  const slug = normalizeStyleChoiceToSlug(source, value);
+  if(!slug) return null;
+
+  return `${src}_${slug}`;
+}
 
     function enrichPayload(base) {
-      const audienceKey = getAudienceKey(base);
-      const paletteId = uiPaletteId || DEFAULT_PALETTE_BY_AUDIENCE[audienceKey] || "cream-warm";
-      const celebId = deriveCelebId(base.styleVariant);
-      const styleId = base.style; // keep original style; add alias field
-      const uiStyleSource = document.getElementById("uiStyleSource")?.value || "";
-      const uiStyleValue = document.getElementById("uiStyleValue")?.value || "";
-      return { ...base, audienceKey, styleId, paletteId, celebId, uiStyleSource, uiStyleValue };
-    }
+  const audienceKey = getAudienceKey(base);
+  const paletteId = uiPaletteId || DEFAULT_PALETTE_BY_AUDIENCE[audienceKey] || "cream-warm";
+  const celebId = deriveCelebId(base.styleVariant);
+  const styleId = base.style;
+
+  const uiStyleSource = document.getElementById("uiStyleSource")?.value || "";
+  const uiStyleValue  = document.getElementById("uiStyleValue")?.value || "";
+
+  const styleTag = getSelectedStyleTagForApi(); // ✅ 這裡會變成 scene_travel / celeb_gd ...
+
+  return { ...base, audienceKey, styleId, paletteId, celebId, uiStyleSource, uiStyleValue, styleTag };
+}
+
 
     function getProductKeywordPrefix(payload) {
       const ak = payload?.audienceKey || getAudienceKey(payload);
