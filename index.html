@@ -1252,22 +1252,37 @@ function bindStyleCards() {
     }
 
     async function postJson(url, body, withAuth=true){
-      const headers={ "Content-Type":"application/json" };
-      if(withAuth){
-        const token=getAccessToken();
-        if(!token) throw new Error("未登入（沒有 Bearer token）");
-        headers["Authorization"]="Bearer "+token;
-      }
-      const r=await fetch(url, { method:"POST", headers, body: JSON.stringify(body) });
-      const text=await r.text();
-      let j=null;
-      try{ j=JSON.parse(text); }catch{ j={ raw:text }; }
-      if(!r.ok){
-        const msg=j?.error ? `${j.error}${j.detail? " / "+(typeof j.detail==="string"? j.detail: JSON.stringify(j.detail)):""}` : `HTTP ${r.status} / ${text.slice(0,500)}`;
-        throw new Error(`${url} 失敗：${msg}`);
-      }
-      return j;
-    }
+  const headers={ "Content-Type":"application/json" };
+  if(withAuth){
+    const token=getAccessToken();
+    if(!token) throw new Error("未登入（沒有 Bearer token）");
+    headers["Authorization"]="Bearer "+token;
+  }
+
+  // ✅ 只針對 /api/search-products：自動補齊 ageGroup / styleTag
+  if (typeof url === "string" && url.includes("/api/search-products")) {
+    const b = body && typeof body === "object" ? { ...body } : {};
+
+    // 保險：確保 ageGroup 有值（你現在其實已經有了）
+    if (!b.ageGroup) b.ageGroup = getAgeGroupForApi(b);
+
+    // 核心：把 UI 選的「旅行 / GD」轉成 styleTag
+    if (!b.styleTag) b.styleTag = getSelectedStyleTagForApi();
+
+    body = b;
+  }
+
+  const r=await fetch(url, { method:"POST", headers, body: JSON.stringify(body) });
+  const text=await r.text();
+  let j=null;
+  try{ j=JSON.parse(text); }catch{ j={ raw:text }; }
+  if(!r.ok){
+    const msg=j?.error ? `${j.error}${j.detail? " / "+(typeof j.detail==="string"? j.detail: JSON.stringify(j.detail)):""}` : `HTTP ${r.status} / ${text.slice(0,500)}`;
+    throw new Error(`${url} 失敗：${msg}`);
+  }
+  return j;
+}
+
 
     const flowState={ lastStep:"idle", payload:null, me:null, spec:null, imgResp:null, products:null, currentOutfitId:null };
 
