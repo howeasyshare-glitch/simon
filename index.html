@@ -1252,6 +1252,53 @@ function bindStyleCards() {
     }
 
     async function postJson(url, body, withAuth=true){
+  // ✅ 內建 helper：避免 scope 問題（不會再出現 is not defined）
+  function getSelectedStyleTagForApi() {
+    const source =
+      window.__STYLE_SOURCE ||
+      window.appState?.styleSource ||
+      document.querySelector('[data-style-source].is-active')?.getAttribute("data-style-source") ||
+      document.querySelector('[data-style-source][aria-pressed="true"]')?.getAttribute("data-style-source") ||
+      document.querySelector('input[name="styleSource"]:checked')?.value ||
+      "";
+
+    const choice =
+      window.__STYLE_CHOICE ||
+      window.appState?.styleChoice ||
+      document.querySelector('[data-style-choice].is-active')?.getAttribute("data-style-choice") ||
+      document.querySelector('[data-style-choice][aria-pressed="true"]')?.getAttribute("data-style-choice") ||
+      document.querySelector('input[name="styleChoice"]:checked')?.value ||
+      "";
+
+    const s = String(source).trim().toLowerCase();
+    const c = String(choice).trim().toLowerCase();
+
+    if (!s || !c) return null;
+
+    if (s.includes("scene") || s.includes("情境") || s.includes("穿搭")) return `scene_${c}`;
+    if (s.includes("celeb") || s.includes("名人")) return `celeb_${c}`;
+    if (s.includes("穿搭情境")) return `scene_${c}`;
+    if (s.includes("名人靈感")) return `celeb_${c}`;
+
+    return null;
+  }
+
+  function getAgeGroupForApi(b) {
+    const v =
+      b?.ageGroup ||
+      b?.items?.[0]?.ageGroup ||
+      window.__AGE_GROUP ||
+      window.appState?.ageGroup ||
+      document.querySelector('input[name="ageGroup"]:checked')?.value ||
+      document.querySelector('select[name="ageGroup"]')?.value ||
+      "";
+
+    const s = String(v).toLowerCase();
+    if (s.includes("kid") || s.includes("child") || s.includes("童")) return "kids";
+    if (s.includes("adult") || s.includes("成人")) return "adult";
+    return null;
+  }
+
   const headers={ "Content-Type":"application/json" };
   if(withAuth){
     const token=getAccessToken();
@@ -1262,13 +1309,8 @@ function bindStyleCards() {
   // ✅ 只針對 /api/search-products：自動補齊 ageGroup / styleTag
   if (typeof url === "string" && url.includes("/api/search-products")) {
     const b = body && typeof body === "object" ? { ...body } : {};
-
-    // 保險：確保 ageGroup 有值（你現在其實已經有了）
     if (!b.ageGroup) b.ageGroup = getAgeGroupForApi(b);
-
-    // 核心：把 UI 選的「旅行 / GD」轉成 styleTag
     if (!b.styleTag) b.styleTag = getSelectedStyleTagForApi();
-
     body = b;
   }
 
@@ -1282,6 +1324,7 @@ function bindStyleCards() {
   }
   return j;
 }
+
 
 
     const flowState={ lastStep:"idle", payload:null, me:null, spec:null, imgResp:null, products:null, currentOutfitId:null };
