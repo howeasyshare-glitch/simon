@@ -52,6 +52,24 @@ function isOppositeGenderTitle(title, gender) {
   if (gender === "female") return maleKw.some(k => t.includes(k));
   return false;
 }
+function isWrongAgeGroupTitle(title, ageGroup) {
+  if (!ageGroup) return false;
+  const t = String(title || "").toLowerCase();
+
+  const kidsKw = ["童", "女童", "男童", "兒童", "kids", "kid", "girls", "boys", "toddler", "youth", "junior"];
+  const adultKw = ["女裝", "男裝", "women", "womens", "men", "mens"];
+
+  if (ageGroup === "adult") {
+    // 成人：排除「很像童裝」的
+    return kidsKw.some(k => t.includes(k));
+  }
+  if (ageGroup === "kids") {
+    // 童裝：排除「很像成人裝」的（但保守一點，避免誤殺）
+    return adultKw.some(k => t.includes(k));
+  }
+  return false;
+}
+
 
 function buildQueriesFromItems(items = [], { locale = "tw", gender = "neutral" } = {}) {
   const priority = ["top", "bottom", "shoes", "outer", "bag", "hat"];
@@ -154,8 +172,14 @@ async function fetchCustomForSlot({ slot, gender, ageGroup, styleTag }) {
 
   return scored
     .map(({ row, score }) => {
-      const badge = (row.badge_text && row.badge_text !== "nullable") ? row.badge_text : "本站推薦";
-      const discountCode = (row.discount_code && row.discount_code !== "nullable") ? row.discount_code : null;
+      const badgeRaw = row.badge_text;
+const badge =
+  badgeRaw && badgeRaw !== "nullable" && badgeRaw !== "NULL" ? badgeRaw : "本站推薦";
+
+const codeRaw = row.discount_code;
+const discountCode =
+  codeRaw && codeRaw !== "nullable" && codeRaw !== "NULL" ? codeRaw : null;
+
 
       const title = row.title || "";
       const thumbnail = row.image_url || "";
@@ -228,7 +252,9 @@ export default async function handler(req, res) {
 
         if (s.ok) {
           google = (s.results || [])
-            .filter((p) => !isOppositeGenderTitle(p.title, gender))
+  .filter((p) => !isOppositeGenderTitle(p.title, gender))
+  .filter((p) => !isWrongAgeGroupTitle(p.title, ageGroup))
+
             .map((p) => ({
               slot,
               title: p.title,
