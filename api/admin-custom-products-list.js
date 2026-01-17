@@ -24,7 +24,7 @@ export default async function handler(req, res) {
       .range(offset, offset + limit - 1);
 
     // 有 created_at 就用 created_at，沒有就不要 order（避免因欄位不存在直接報錯）
-    query = query.order("created_at", { ascending: false });
+    //query = query.order("created_at", { ascending: false });
 
     if (isActiveStr === "true") query = query.eq("is_active", true);
     if (isActiveStr === "false") query = query.eq("is_active", false);
