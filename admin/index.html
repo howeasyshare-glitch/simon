@@ -206,7 +206,25 @@
 <script>
   // 你現有登入流程把 token 存在 localStorage 這個 key
   const AUTH_KEY="os_supabase_access_token_v1";
+function saveAccessToken(t){ localStorage.setItem(AUTH_KEY,t); }
+function getAccessToken(){ return localStorage.getItem(AUTH_KEY); }
+function clearAccessToken(){ localStorage.removeItem(AUTH_KEY); }
 
+async function ensureTokenFromSession(osSupabase){
+  const { data, error } = await osSupabase.auth.getSession();
+  if(error) return { ok:false, error:error.message };
+
+  const session = data?.session;
+  if(!session?.access_token){
+    clearAccessToken();
+    return { ok:false, error:"no session" };
+  }
+  saveAccessToken(session.access_token);
+  return { ok:true, session };
+}
+
+// ✅ admin page init 一開始就跑
+await ensureTokenFromSession(osSupabase);
   // ====== basic helpers
   const el = (id)=>document.getElementById(id);
   const setStatus = (t)=> el("status").textContent = t;
