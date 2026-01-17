@@ -57,7 +57,13 @@ input, textarea, select { box-sizing: border-box; min-width: 0; }
   overflow: auto;
   padding-right: 6px;
 }
-
+.formPanel{
+  position: sticky;
+  top: 16px;
+  max-height: calc(100vh - 60px);
+  overflow: auto;
+  padding-right: 6px;
+}
 /* tracking JSON 不要一開始太高 */
 #f_tracking_params{ min-height: 120px; }
 
@@ -165,7 +171,7 @@ input, textarea, select { box-sizing: border-box; min-width: 0; }
           <div class="muted" id="debugList"></div>
         </div>
 
-        <div>
+        <div class="formPanel">
           <h1 style="font-size:14px;margin-top:0;">編輯 / 新增</h1>
 
           <div class="muted">tags 用逗號分隔，例如：<br/>item_top, male, adult, style_minimal</div>
