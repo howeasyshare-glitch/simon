@@ -1,47 +1,50 @@
-import { supabaseServer } from "../lib/supabaseServer";
+import { supabaseServer } from "./lib/supabaseServer";
 import { requireAdmin } from "./lib/adminAuth";
+
 export const config = { runtime: "nodejs" };
 
 export default async function handler(req, res) {
-  const auth = await requireAdmin(req, res);
-  if (!auth) return;
-
-  if (req.method !== "GET") return res.status(405).json({ error: "Method not allowed" });
-
   try {
-    const {
-      q = "",
-      is_active = "",
-      tag = "",
-      limit = "50",
-      offset = "0",
-    } = req.query || {};
-
-    let query = supabaseServer
-      .from("custom_products")
-      .select("*", { count: "exact" })
-      .order("priority_boost", { ascending: false }) // ✅ 你表裡應該有
-      .order("id", { ascending: false });            // ✅ 保底一定有
-
-    if (is_active === "true") query = query.eq("is_active", true);
-    if (is_active === "false") query = query.eq("is_active", false);
-
-    if (q) query = query.ilike("title", `%${q}%`);
-
-    // tags contains
-    if (tag) query = query.contains("tags", [tag]);
-
-    const lim = Math.max(1, Math.min(200, parseInt(limit, 10) || 50));
-    const off = Math.max(0, parseInt(offset, 10) || 0);
-    query = query.range(off, off + lim - 1);
-
-    const { data, error, count } = await query;
-    if (error) {
-      return res.status(500).json({ error: "DB error", detail: error.message });
+    if (req.method !== "GET") {
+      return res.status(405).json({ error: "Method not allowed" });
     }
 
-    return res.status(200).json({ ok: true, items: data || [], count: count || 0, limit: lim, offset: off });
+    const admin = await requireAdmin(req, res);
+    if (!admin) return; // ✅ 超重要：避免 null 繼續跑造成 500
+
+    const limit = Math.min(200, Math.max(1, Number(req.query.limit || 50)));
+    const offset = Math.max(0, Number(req.query.offset || 0));
+
+    // ✅ 建議先不要亂 order 不存在的欄位；用 created_at 最安全（你表若沒有 created_at 再改）
+    const q = supabaseServer
+      .from("custom_products")
+      .select("*", { count: "exact" })
+      .range(offset, offset + limit - 1)
+      .order("created_at", { ascending: false });
+
+    const { data, error, count } = await q;
+
+    if (error) {
+      return res.status(500).json({
+        error: "Supabase query failed",
+        detail: error,
+        hint: "Check table columns / RLS / env SUPABASE_SERVICE_ROLE_KEY",
+      });
+    }
+
+    return res.status(200).json({
+      ok: true,
+      rows: data || [],
+      count: count ?? null,
+      limit,
+      offset,
+      adminEmail: admin.email,
+      warning: admin.warning || null,
+    });
   } catch (e) {
-    return res.status(500).json({ error: e?.message || "Unknown error" });
+    return res.status(500).json({
+      error: e?.message || "Unknown error",
+      stack: process.env.NODE_ENV === "development" ? String(e?.stack || "") : undefined,
+    });
   }
 }
