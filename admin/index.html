@@ -512,28 +512,25 @@ input, textarea, select { box-sizing: border-box; min-width: 0; }
   }
 
   async function deactivate(){
-    const id = el("edit_id").value;
-    if(!id){
-      el("debugForm").textContent = "尚未選擇商品";
-      return;
-    }
-    try{
-      setStatus("下架中…");
-      // 你的 delete API 若是「軟刪除=下架」，這樣 OK
-      await api("/api/admin-custom-products-delete", {
-        method:"POST",
-        headers:{"Content-Type":"application/json"},
-        body: JSON.stringify({ id })
-      });
-      setStatus("已下架 ✅");
-      await listReload();
-      el("f_is_active").checked = false;
-      el("debugForm").textContent = `已下架：${id}`;
-    }catch(e){
-      setStatus("下架失敗：" + e.message);
-      el("debugForm").textContent = JSON.stringify(e.payload||{}, null, 2);
-    }
+  const id = el("edit_id").value;
+  if(!id){ el("debugForm").textContent = "尚未選擇商品"; return; }
+
+  try{
+    setStatus("下架中…");
+    await api("/api/admin-custom-products-update", {
+      method:"POST",
+      headers:{"Content-Type":"application/json"},
+      body: JSON.stringify({ id, patch: { is_active:false } })
+    });
+    setStatus("已下架 ✅");
+    await listReload();
+    el("f_is_active").checked = false;
+    el("debugForm").textContent = `已下架：${id}`;
+  }catch(e){
+    setStatus("下架失敗：" + e.message);
+    el("debugForm").textContent = JSON.stringify(e.payload||{}, null, 2);
   }
+}
 
   // Buttons
   el("btnSearch").addEventListener("click", ()=>{ PAGE.offset=0; listReload(); });
