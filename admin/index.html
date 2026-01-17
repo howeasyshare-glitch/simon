@@ -3,74 +3,242 @@
 <head>
   <meta charset="utf-8"/>
   <meta name="viewport" content="width=device-width,initial-scale=1"/>
-  <title>Admin - Display Rules</title>
+  <title>Admin</title>
   <style>
     body{font-family:system-ui,-apple-system,Segoe UI,Roboto,"Noto Sans TC",sans-serif;background:#f6f7fb;margin:0;padding:18px;color:#111}
-    .card{max-width:820px;margin:0 auto;background:#fff;border:1px solid #e5e7eb;border-radius:16px;padding:16px;box-shadow:0 14px 34px rgba(0,0,0,.06)}
+    .card{max-width:1100px;margin:0 auto;background:#fff;border:1px solid #e5e7eb;border-radius:16px;padding:16px;box-shadow:0 14px 34px rgba(0,0,0,.06)}
     h1{margin:0 0 10px;font-size:18px}
-    .row{display:grid;grid-template-columns:1fr 1fr;gap:12px}
-    label{display:block;font-weight:700;font-size:12px;margin:10px 0 6px}
-    input{width:100%;padding:10px 12px;border:1px solid #e5e7eb;border-radius:12px;font-size:14px}
-    .btns{display:flex;gap:10px;flex-wrap:wrap;margin-top:14px}
-    button{border:none;border-radius:999px;padding:10px 14px;font-weight:800;cursor:pointer}
+    .tabs{display:flex;gap:8px;margin:10px 0 16px;flex-wrap:wrap}
+    .tab{border:1px solid #e5e7eb;background:#fff;border-radius:999px;padding:8px 12px;font-weight:800;cursor:pointer}
+    .tab.active{background:#111;color:#fff;border-color:#111}
+    .muted{color:#6b7280;font-size:12px;margin-top:8px;white-space:pre-wrap}
+    .line{height:1px;background:#eef2f7;margin:14px 0}
+    label{display:block;font-weight:800;font-size:12px;margin:10px 0 6px}
+    input, textarea, select{width:100%;padding:10px 12px;border:1px solid #e5e7eb;border-radius:12px;font-size:14px}
+    textarea{min-height:78px}
+    button{border:none;border-radius:999px;padding:10px 14px;font-weight:900;cursor:pointer}
     .primary{background:#111;color:#fff}
     .ghost{background:#fff;border:1px solid #e5e7eb}
-    .muted{color:#6b7280;font-size:12px;margin-top:10px;white-space:pre-wrap}
-    .line{height:1px;background:#eef2f7;margin:14px 0}
-    .toggle{display:flex;align-items:center;gap:8px;margin-top:6px}
+    .danger{background:#b91c1c;color:#fff}
+    .row{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+    .row3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px}
+    .actions{display:flex;gap:10px;flex-wrap:wrap;margin-top:12px}
+    table{width:100%;border-collapse:separate;border-spacing:0;overflow:hidden;border:1px solid #e5e7eb;border-radius:14px}
+    th,td{font-size:12px;padding:10px;border-bottom:1px solid #eef2f7;vertical-align:top}
+    th{background:#fafafa;text-align:left}
+    tr:last-child td{border-bottom:none}
+    .pill{display:inline-block;padding:3px 8px;border:1px solid #e5e7eb;border-radius:999px;font-size:12px}
+    .img{width:56px;height:56px;object-fit:cover;border-radius:10px;border:1px solid #e5e7eb}
+    .split{display:grid;grid-template-columns: 1.1fr .9fr; gap:14px}
+    @media (max-width: 960px){ .split{grid-template-columns:1fr} }
   </style>
 </head>
 <body>
   <div class="card">
-    <h1>管理後台：每個種類顯示數量</h1>
-    <div class="muted" id="status">讀取中…（需使用同一個登入 token）</div>
+    <h1>管理後台</h1>
+    <div class="muted" id="status">初始化中…</div>
 
-    <div class="line"></div>
-
-    <h1 style="font-size:14px;margin-top:0;">每個 Slot 顯示數量（Google + Custom 合計）</h1>
-    <div class="row">
-      <div><label>上衣 top</label><input id="top" type="number" min="0" max="12" value="4"/></div>
-      <div><label>下身 bottom</label><input id="bottom" type="number" min="0" max="12" value="4"/></div>
-      <div><label>鞋 shoes</label><input id="shoes" type="number" min="0" max="12" value="4"/></div>
-      <div><label>外套 outer</label><input id="outer" type="number" min="0" max="12" value="4"/></div>
-      <div><label>包 bag</label><input id="bag" type="number" min="0" max="12" value="2"/></div>
-      <div><label>帽 hat</label><input id="hat" type="number" min="0" max="12" value="2"/></div>
+    <div class="tabs">
+      <button class="tab active" id="tabRules">Display Rules</button>
+      <button class="tab" id="tabCustom">Custom Products</button>
     </div>
 
-    <div class="line"></div>
-
-    <div class="row">
-      <div>
-        <label>每個 slot 最多顯示幾個 Custom</label>
-        <input id="customMax" type="number" min="0" max="6" value="2"/>
-        <div class="muted">其餘會用 Google Shopping 補滿。</div>
+    <!-- ===== Rules ===== -->
+    <section id="panelRules">
+      <h1 style="font-size:14px;margin-top:0;">每個 Slot 顯示數量（Google + Custom 合計）</h1>
+      <div class="row">
+        <div><label>上衣 top</label><input id="top" type="number" min="0" max="12" value="4"/></div>
+        <div><label>下身 bottom</label><input id="bottom" type="number" min="0" max="12" value="4"/></div>
+        <div><label>鞋 shoes</label><input id="shoes" type="number" min="0" max="12" value="4"/></div>
+        <div><label>外套 outer</label><input id="outer" type="number" min="0" max="12" value="4"/></div>
+        <div><label>包 bag</label><input id="bag" type="number" min="0" max="12" value="2"/></div>
+        <div><label>帽 hat</label><input id="hat" type="number" min="0" max="12" value="2"/></div>
       </div>
-      <div>
-        <label>Fallback（補不滿再用較寬 query 搜一次）</label>
-        <div class="toggle">
-          <input id="fallback" type="checkbox" checked />
-          <span class="muted">建議開啟，避免某些 slot 掉到 2～3。</span>
+
+      <div class="line"></div>
+
+      <div class="row">
+        <div>
+          <label>每個 slot 最多顯示幾個 Custom</label>
+          <input id="customMax" type="number" min="0" max="6" value="2"/>
+          <div class="muted">其餘用 Google Shopping 補滿。</div>
+        </div>
+        <div>
+          <label>Fallback（補不滿再用較寬 query 搜一次）</label>
+          <div style="display:flex;align-items:center;gap:8px;margin-top:6px">
+            <input id="fallback" type="checkbox" checked />
+            <span class="muted">建議開啟，避免某些 slot 掉到 2～3。</span>
+          </div>
         </div>
       </div>
-    </div>
 
-    <div class="btns">
-      <button class="ghost" id="btnReload">重新讀取</button>
-      <button class="primary" id="btnSave">儲存</button>
-    </div>
+      <div class="actions">
+        <button class="ghost" id="btnReloadRules">重新讀取</button>
+        <button class="primary" id="btnSaveRules">儲存規則</button>
+      </div>
 
-    <div class="muted" id="debug"></div>
+      <div class="muted" id="debugRules"></div>
+    </section>
+
+    <!-- ===== Custom Products ===== -->
+    <section id="panelCustom" style="display:none;">
+      <div class="split">
+        <div>
+          <h1 style="font-size:14px;margin-top:0;">商品列表</h1>
+
+          <div class="row3">
+            <div>
+              <label>搜尋（title）</label>
+              <input id="q" placeholder="例如：羽絨 外套 / hoodie" />
+            </div>
+            <div>
+              <label>狀態</label>
+              <select id="is_active">
+                <option value="">全部</option>
+                <option value="true">上架</option>
+                <option value="false">下架</option>
+              </select>
+            </div>
+            <div>
+              <label>tag（包含）</label>
+              <input id="tag" placeholder="例如：item_top / male / kids" />
+            </div>
+          </div>
+
+          <div class="actions">
+            <button class="ghost" id="btnSearch">搜尋</button>
+            <button class="ghost" id="btnNew">新增商品</button>
+          </div>
+
+          <div class="line"></div>
+
+          <div style="overflow:auto">
+            <table>
+              <thead>
+                <tr>
+                  <th style="width:70px;">圖</th>
+                  <th>標題 / tags</th>
+                  <th style="width:110px;">priority</th>
+                  <th style="width:90px;">狀態</th>
+                  <th style="width:140px;">操作</th>
+                </tr>
+              </thead>
+              <tbody id="list"></tbody>
+            </table>
+          </div>
+
+          <div class="actions">
+            <button class="ghost" id="btnPrev">上一頁</button>
+            <button class="ghost" id="btnNext">下一頁</button>
+          </div>
+
+          <div class="muted" id="debugList"></div>
+        </div>
+
+        <div>
+          <h1 style="font-size:14px;margin-top:0;">編輯 / 新增</h1>
+
+          <div class="muted">tags 用逗號分隔，例如：<br/>item_top, male, adult, style_minimal</div>
+
+          <input type="hidden" id="edit_id"/>
+
+          <label>title *</label>
+          <input id="f_title"/>
+
+          <label>image_url *</label>
+          <input id="f_image_url" placeholder="https://...jpg"/>
+
+          <label>product_url *</label>
+          <input id="f_product_url" placeholder="https://..."/>
+
+          <div class="row">
+            <div>
+              <label>merchant</label>
+              <input id="f_merchant" placeholder="momo / shopee / yourbrand"/>
+            </div>
+            <div>
+              <label>priority_boost</label>
+              <input id="f_priority_boost" type="number" value="0"/>
+            </div>
+          </div>
+
+          <label>tags</label>
+          <input id="f_tags" placeholder="item_top, adult, female"/>
+
+          <div class="row">
+            <div>
+              <label>badge_text</label>
+              <input id="f_badge_text" placeholder="本站推薦 / 熱銷"/>
+            </div>
+            <div>
+              <label>discount_type</label>
+              <select id="f_discount_type">
+                <option value="none">none</option>
+                <option value="code">code</option>
+                <option value="sale">sale</option>
+              </select>
+            </div>
+          </div>
+
+          <label>discount_code</label>
+          <input id="f_discount_code" placeholder="例：NEW88"/>
+
+          <label>tracking_params（JSON）</label>
+          <textarea id="f_tracking_params" placeholder='{"utm_source":"site","utm_medium":"ref"}'></textarea>
+
+          <div style="display:flex;align-items:center;gap:8px;margin-top:10px">
+            <input id="f_is_active" type="checkbox" checked />
+            <span class="muted">is_active（上架）</span>
+          </div>
+
+          <div class="actions">
+            <button class="primary" id="btnSaveItem">儲存</button>
+            <button class="ghost" id="btnClear">清空</button>
+            <button class="danger" id="btnDeactivate">下架（is_active=false）</button>
+          </div>
+
+          <div class="muted" id="debugForm"></div>
+        </div>
+      </div>
+    </section>
   </div>
 
 <script>
+  // 你現有登入流程把 token 存在 localStorage 這個 key
   const AUTH_KEY="os_supabase_access_token_v1";
-  function getToken(){ return localStorage.getItem(AUTH_KEY); }
 
-  function el(id){ return document.getElementById(id); }
-  function setStatus(t){ el("status").textContent = t; }
-  function setDebug(t){ el("debug").textContent = t || ""; }
+  // ====== basic helpers
+  const el = (id)=>document.getElementById(id);
+  const setStatus = (t)=> el("status").textContent = t;
+  const token = ()=> localStorage.getItem(AUTH_KEY);
 
-  function readForm(){
+  async function api(path, opts={}){
+    const t = token();
+    if(!t) throw new Error("找不到 token：請先到 /body-test.html 登入後，再回來 /admin");
+    const headers = Object.assign({}, opts.headers||{}, { "Authorization": "Bearer " + t });
+    const res = await fetch(path, Object.assign({}, opts, { headers }));
+    const json = await res.json().catch(()=>({}));
+    if(!res.ok) {
+      const msg = (json && (json.error || json.detail)) ? (json.error + (json.detail ? " / " + json.detail : "")) : ("HTTP " + res.status);
+      const e = new Error(msg);
+      e.payload = json;
+      throw e;
+    }
+    return json;
+  }
+
+  function showTab(which){
+    el("tabRules").classList.toggle("active", which==="rules");
+    el("tabCustom").classList.toggle("active", which==="custom");
+    el("panelRules").style.display = which==="rules" ? "" : "none";
+    el("panelCustom").style.display = which==="custom" ? "" : "none";
+  }
+
+  el("tabRules").addEventListener("click", ()=>showTab("rules"));
+  el("tabCustom").addEventListener("click", ()=>{ showTab("custom"); listReload(); });
+
+  // ====== Rules section (reuse your existing APIs)
+  function readRulesForm(){
     return {
       perSlot: {
         top: Number(el("top").value||0),
@@ -84,7 +252,6 @@
       fallback: !!el("fallback").checked
     };
   }
-
   function applyRules(r){
     const per = (r && r.perSlot) || {};
     if (per.top!=null) el("top").value = per.top;
@@ -97,63 +264,240 @@
     if (r && typeof r.fallback==="boolean") el("fallback").checked = r.fallback;
   }
 
-  async function apiGet(){
-    const token = getToken();
-    if(!token){
-      setStatus("找不到 token：請先到 /body-test.html 登入後，再回來 /admin");
-      return;
+  async function rulesReload(){
+    try{
+      setStatus("讀取規則中…");
+      el("debugRules").textContent = "";
+      const j = await api("/api/admin-get-rules");
+      applyRules(j.rules || null);
+      setStatus("規則已載入（updated_at: " + (j.updated_at||"—") + "）");
+    }catch(e){
+      setStatus("規則讀取失敗：" + e.message);
+      el("debugRules").textContent = JSON.stringify(e.payload||{}, null, 2);
     }
-    setStatus("讀取中…");
-    setDebug("");
-
-    const r = await fetch("/api/admin-get-rules", {
-      headers: { "Authorization": "Bearer " + token }
-    });
-
-    const j = await r.json().catch(()=>({}));
-    if(!r.ok){
-      setStatus("讀取失敗：" + (j.error || r.status));
-      setDebug(JSON.stringify(j, null, 2));
-      return;
-    }
-    applyRules(j.rules || null);
-    setStatus("已載入（updated_at: " + (j.updated_at || "—") + "）");
   }
 
-  async function apiSave(){
-    const token = getToken();
-    if(!token){
-      setStatus("找不到 token：請先到 /body-test.html 登入後，再回來 /admin");
-      return;
+  async function rulesSave(){
+    try{
+      setStatus("儲存規則中…");
+      el("debugRules").textContent = "";
+      const j = await api("/api/admin-save-rules", {
+        method:"POST",
+        headers:{"Content-Type":"application/json"},
+        body: JSON.stringify({ rules: readRulesForm() })
+      });
+      setStatus("規則已儲存 ✅（updated_at: " + (j.saved?.updated_at||"—") + "）");
+      el("debugRules").textContent = JSON.stringify(j.saved?.rules||{}, null, 2);
+    }catch(e){
+      setStatus("規則儲存失敗：" + e.message);
+      el("debugRules").textContent = JSON.stringify(e.payload||{}, null, 2);
     }
-    setStatus("儲存中…");
-    setDebug("");
-
-    const payload = { rules: readForm() };
-
-    const r = await fetch("/api/admin-save-rules", {
-      method: "POST",
-      headers: {
-        "Content-Type":"application/json",
-        "Authorization":"Bearer " + token
-      },
-      body: JSON.stringify(payload)
-    });
-
-    const j = await r.json().catch(()=>({}));
-    if(!r.ok){
-      setStatus("儲存失敗：" + (j.error || r.status));
-      setDebug(JSON.stringify(j, null, 2));
-      return;
-    }
-    setStatus("已儲存 ✅（updated_at: " + (j.saved?.updated_at || "—") + "）");
-    setDebug(JSON.stringify(j.saved?.rules || {}, null, 2));
   }
 
-  el("btnReload").addEventListener("click", apiGet);
-  el("btnSave").addEventListener("click", apiSave);
+  el("btnReloadRules").addEventListener("click", rulesReload);
+  el("btnSaveRules").addEventListener("click", rulesSave);
 
-  apiGet();
+  // ====== Custom products section
+  let PAGE = { limit: 50, offset: 0, count: 0 };
+
+  function tagsToArray(s){
+    return String(s||"").split(",").map(x=>x.trim()).filter(Boolean);
+  }
+  function jsonParseSafe(s){
+    const t = String(s||"").trim();
+    if(!t) return {};
+    try { return JSON.parse(t); } catch { return {}; }
+  }
+
+  function fillForm(item){
+    el("edit_id").value = item?.id || "";
+    el("f_title").value = item?.title || "";
+    el("f_image_url").value = item?.image_url || "";
+    el("f_product_url").value = item?.product_url || "";
+    el("f_merchant").value = item?.merchant || "";
+    el("f_priority_boost").value = item?.priority_boost ?? 0;
+    el("f_tags").value = Array.isArray(item?.tags) ? item.tags.join(", ") : "";
+    el("f_badge_text").value = item?.badge_text || "";
+    el("f_discount_type").value = item?.discount_type || "none";
+    el("f_discount_code").value = item?.discount_code || "";
+    el("f_tracking_params").value = JSON.stringify(item?.tracking_params || {}, null, 2);
+    el("f_is_active").checked = !!item?.is_active;
+    el("debugForm").textContent = "";
+  }
+
+  function clearForm(){
+    fillForm({ is_active:true, priority_boost:0, discount_type:"none", tracking_params:{} });
+  }
+
+  function readForm(){
+    return {
+      title: el("f_title").value,
+      image_url: el("f_image_url").value,
+      product_url: el("f_product_url").value,
+      merchant: el("f_merchant").value,
+      priority_boost: Number(el("f_priority_boost").value||0),
+      tags: tagsToArray(el("f_tags").value),
+      badge_text: el("f_badge_text").value || null,
+      discount_type: el("f_discount_type").value,
+      discount_code: el("f_discount_code").value || null,
+      tracking_params: jsonParseSafe(el("f_tracking_params").value),
+      is_active: !!el("f_is_active").checked
+    };
+  }
+
+  async function listReload(){
+    try{
+      setStatus("載入商品列表中…");
+      el("debugList").textContent = "";
+
+      const params = new URLSearchParams();
+      params.set("limit", String(PAGE.limit));
+      params.set("offset", String(PAGE.offset));
+      const q = el("q").value.trim();
+      const is_active = el("is_active").value;
+      const tag = el("tag").value.trim();
+      if(q) params.set("q", q);
+      if(is_active) params.set("is_active", is_active);
+      if(tag) params.set("tag", tag);
+
+      const j = await api("/api/admin-custom-products-list?" + params.toString());
+
+      PAGE.count = j.count || 0;
+
+      const tbody = el("list");
+      tbody.innerHTML = "";
+      (j.items || []).forEach(it=>{
+        const tr = document.createElement("tr");
+        tr.innerHTML = `
+          <td><img class="img" src="${it.image_url||""}" alt=""/></td>
+          <td>
+            <div style="font-weight:900">${escapeHtml(it.title||"")}</div>
+            <div class="muted">${(it.tags||[]).map(t=>`<span class="pill">${escapeHtml(t)}</span>`).join(" ")}</div>
+            <div class="muted">
+              <a href="${it.product_url||"#"}" target="_blank" rel="noreferrer">商品連結</a>
+            </div>
+          </td>
+          <td>${Number(it.priority_boost||0)}</td>
+          <td>${it.is_active ? "<span class='pill'>上架</span>" : "<span class='pill'>下架</span>"}</td>
+          <td>
+            <button class="ghost" data-edit="${it.id}">編輯</button>
+            <button class="${it.is_active ? "ghost" : "primary"}" data-toggle="${it.id}">
+              ${it.is_active ? "下架" : "上架"}
+            </button>
+          </td>
+        `;
+        tbody.appendChild(tr);
+
+        tr.querySelector("[data-edit]").addEventListener("click", ()=> fillForm(it));
+        tr.querySelector("[data-toggle]").addEventListener("click", ()=> toggleActive(it));
+      });
+
+      setStatus(`列表已載入：${j.items?.length||0} 筆（總數 ${PAGE.count}） offset=${PAGE.offset}`);
+      el("debugList").textContent = JSON.stringify({limit:PAGE.limit, offset:PAGE.offset, count:PAGE.count}, null, 2);
+    }catch(e){
+      setStatus("列表載入失敗：" + e.message);
+      el("debugList").textContent = JSON.stringify(e.payload||{}, null, 2);
+    }
+  }
+
+  async function toggleActive(it){
+    try{
+      setStatus("更新狀態中…");
+      const j = await api("/api/admin-custom-products-update", {
+        method:"POST",
+        headers:{"Content-Type":"application/json"},
+        body: JSON.stringify({ id: it.id, patch: { is_active: !it.is_active } })
+      });
+      setStatus("已更新 ✅");
+      if(el("edit_id").value === String(it.id)) fillForm(j.item);
+      await listReload();
+    }catch(e){
+      setStatus("更新失敗：" + e.message);
+      el("debugForm").textContent = JSON.stringify(e.payload||{}, null, 2);
+    }
+  }
+
+  async function saveItem(){
+    try{
+      setStatus("儲存中…");
+      el("debugForm").textContent = "";
+      const id = el("edit_id").value;
+      const payload = readForm();
+
+      let j;
+      if(id){
+        j = await api("/api/admin-custom-products-update", {
+          method:"POST",
+          headers:{"Content-Type":"application/json"},
+          body: JSON.stringify({ id, patch: payload })
+        });
+      }else{
+        j = await api("/api/admin-custom-products-create", {
+          method:"POST",
+          headers:{"Content-Type":"application/json"},
+          body: JSON.stringify({ item: payload })
+        });
+        el("edit_id").value = j.item?.id || "";
+      }
+
+      setStatus("儲存成功 ✅");
+      fillForm(j.item);
+      await listReload();
+    }catch(e){
+      setStatus("儲存失敗：" + e.message);
+      el("debugForm").textContent = JSON.stringify(e.payload||{}, null, 2);
+    }
+  }
+
+  async function deactivate(){
+    const id = el("edit_id").value;
+    if(!id){
+      el("debugForm").textContent = "尚未選擇商品";
+      return;
+    }
+    try{
+      setStatus("下架中…");
+      const j = await api("/api/admin-custom-products-delete", {
+        method:"POST",
+        headers:{"Content-Type":"application/json"},
+        body: JSON.stringify({ id })
+      });
+      setStatus("已下架 ✅");
+      // 重新讀取列表，並把表單同步
+      await listReload();
+      fillForm(Object.assign({}, readForm(), { id, is_active: false }));
+    }catch(e){
+      setStatus("下架失敗：" + e.message);
+      el("debugForm").textContent = JSON.stringify(e.payload||{}, null, 2);
+    }
+  }
+
+  function escapeHtml(s){
+    return String(s||"").replace(/[&<>"']/g, (c)=>({
+      "&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"
+    }[c]));
+  }
+
+  el("btnSearch").addEventListener("click", ()=>{ PAGE.offset=0; listReload(); });
+  el("btnNew").addEventListener("click", clearForm);
+  el("btnPrev").addEventListener("click", ()=>{ PAGE.offset = Math.max(0, PAGE.offset - PAGE.limit); listReload(); });
+  el("btnNext").addEventListener("click", ()=>{ if(PAGE.offset + PAGE.limit < PAGE.count) { PAGE.offset += PAGE.limit; listReload(); } });
+
+  el("btnSaveItem").addEventListener("click", saveItem);
+  el("btnClear").addEventListener("click", clearForm);
+  el("btnDeactivate").addEventListener("click", deactivate);
+
+  // ===== boot
+  (async ()=>{
+    try{
+      // 先載入 rules（也會順便驗證 token + admin）
+      await rulesReload();
+      clearForm();
+      setStatus("初始化完成 ✅（切換到 Custom Products 開始管理）");
+    }catch(e){
+      setStatus(e.message);
+    }
+  })();
 </script>
 </body>
 </html>
