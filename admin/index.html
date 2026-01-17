@@ -417,7 +417,7 @@ input, textarea, select { box-sizing: border-box; min-width: 0; }
       setStatus("載入商品列表中…");
       el("debugList").textContent = "";
 
-      const j = await api("/api/admin-custom-products-list?" + buildListParams().toString());
+      const j = await api("/api/admin?action=custom_products.list&" + buildListParams().toString());
 
       // ✅ 兼容不同回傳格式：rows / items
       const items = j.items || j.rows || [];
@@ -465,7 +465,7 @@ input, textarea, select { box-sizing: border-box; min-width: 0; }
   async function toggleActive(it){
     try{
       setStatus("更新狀態中…");
-      const j = await api("/api/admin-custom-products-update", {
+      const j = await api("/api/admin?action=custom_products.update", {
         method:"POST",
         headers:{"Content-Type":"application/json"},
         body: JSON.stringify({ id: it.id, patch: { is_active: !it.is_active } })
@@ -494,13 +494,13 @@ input, textarea, select { box-sizing: border-box; min-width: 0; }
 
       let j;
       if(id){
-        j = await api("/api/admin-custom-products-update", {
+        j = await api("/api/admin?action=custom_products.update", {
           method:"POST",
           headers:{"Content-Type":"application/json"},
           body: JSON.stringify({ id, patch: payload })
         });
       }else{
-        j = await api("/api/admin-custom-products-create", {
+        j = await api("/api/admin?action=custom_products.create", {
           method:"POST",
           headers:{"Content-Type":"application/json"},
           body: JSON.stringify({ item: payload })
@@ -523,7 +523,7 @@ input, textarea, select { box-sizing: border-box; min-width: 0; }
 
   try{
     setStatus("下架中…");
-    await api("/api/admin-custom-products-update", {
+    await api("/api/admin?action=custom_products.update", {
       method:"POST",
       headers:{"Content-Type":"application/json"},
       body: JSON.stringify({ id, patch: { is_active:false } })
