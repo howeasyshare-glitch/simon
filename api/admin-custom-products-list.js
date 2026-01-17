@@ -34,7 +34,7 @@ export default async function handler(req, res) {
     if (tag) query = query.filter("tags", "cs", JSON.stringify([tag]));
 
     const { data, error, count } = await query
-      .order("created_at", { ascending: false })
+
       .range(offset, offset + limit - 1);
 
     if (error) return res.status(500).json({ error: "Supabase query failed", detail: error });
