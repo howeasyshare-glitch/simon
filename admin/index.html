@@ -30,7 +30,9 @@
     .pill{display:inline-block;padding:3px 8px;border:1px solid #e5e7eb;border-radius:999px;font-size:12px}
     .img{width:56px;height:56px;object-fit:cover;border-radius:10px;border:1px solid #e5e7eb}
     .split{display:grid;grid-template-columns: 1.1fr .9fr; gap:14px}
-    @media (max-width: 960px){ .split{grid-template-columns:1fr} }
+    @media (max-width: 960px){
+  .row3{ grid-template-columns:1fr; }
+}
   </style>
 </head>
 <body>
@@ -204,58 +206,49 @@
   </div>
 
 <script>
-  // 你現有登入流程把 token 存在 localStorage 這個 key
+  // token 儲存在 localStorage
   const AUTH_KEY="os_supabase_access_token_v1";
-function saveAccessToken(t){ localStorage.setItem(AUTH_KEY,t); }
-function getAccessToken(){ return localStorage.getItem(AUTH_KEY); }
-function clearAccessToken(){ localStorage.removeItem(AUTH_KEY); }
-
-async function ensureTokenFromSession(osSupabase){
-  const { data, error } = await osSupabase.auth.getSession();
-  if(error) return { ok:false, error:error.message };
-
-  const session = data?.session;
-  if(!session?.access_token){
-    clearAccessToken();
-    return { ok:false, error:"no session" };
-  }
-  saveAccessToken(session.access_token);
-  return { ok:true, session };
-}
-
-// ✅ admin page init 一開始就跑
-await ensureTokenFromSession(osSupabase);
-  // ====== basic helpers
   const el = (id)=>document.getElementById(id);
   const setStatus = (t)=> el("status").textContent = t;
-  const token = ()=> localStorage.getItem(AUTH_KEY);
 
+  function token(){ return localStorage.getItem(AUTH_KEY); }
+  function clearAccessToken(){ localStorage.removeItem(AUTH_KEY); }
+
+  // ====== API helper（強化錯誤顯示）
   async function api(path, opts={}){
     const t = token();
     if(!t) throw new Error("找不到 token：請先到 /body-test.html 登入後，再回來 /admin");
-    const headers = Object.assign({}, opts.headers||{}, { "Authorization": "Bearer " + t });
+
+    const headers = Object.assign({}, opts.headers||{}, {
+      "Authorization": "Bearer " + t
+    });
+
     const res = await fetch(path, Object.assign({}, opts, { headers }));
-    const json = await res.json().catch(()=>({}));
-    if(!res.ok) {
-      const msg = (json && (json.error || json.detail)) ? (json.error + (json.detail ? " / " + json.detail : "")) : ("HTTP " + res.status);
-      const e = new Error(msg);
+    const text = await res.text();
+    let json = {};
+    try { json = text ? JSON.parse(text) : {}; } catch { json = { raw: text }; }
+
+    if(!res.ok){
+      const detail = json?.detail ? (typeof json.detail === "string" ? json.detail : JSON.stringify(json.detail, null, 2)) : "";
+      const msg = json?.error ? (json.error + (detail ? "\n" + detail : "")) : ("HTTP " + res.status);
+      const e = new Error(`HTTP ${res.status}\n${msg}`);
       e.payload = json;
       throw e;
     }
     return json;
   }
 
+  // ====== Tabs
   function showTab(which){
     el("tabRules").classList.toggle("active", which==="rules");
     el("tabCustom").classList.toggle("active", which==="custom");
     el("panelRules").style.display = which==="rules" ? "" : "none";
     el("panelCustom").style.display = which==="custom" ? "" : "none";
   }
-
   el("tabRules").addEventListener("click", ()=>showTab("rules"));
-  el("tabCustom").addEventListener("click", ()=>{ showTab("custom"); listReload(); });
+  el("tabCustom").addEventListener("click", async ()=>{ showTab("custom"); PAGE.offset=0; await listReload(); });
 
-  // ====== Rules section (reuse your existing APIs)
+  // ====== Rules
   function readRulesForm(){
     return {
       perSlot: {
@@ -281,7 +274,6 @@ await ensureTokenFromSession(osSupabase);
     if (r && r.customMax!=null) el("customMax").value = r.customMax;
     if (r && typeof r.fallback==="boolean") el("fallback").checked = r.fallback;
   }
-
   async function rulesReload(){
     try{
       setStatus("讀取規則中…");
@@ -294,7 +286,6 @@ await ensureTokenFromSession(osSupabase);
       el("debugRules").textContent = JSON.stringify(e.payload||{}, null, 2);
     }
   }
-
   async function rulesSave(){
     try{
       setStatus("儲存規則中…");
@@ -305,17 +296,16 @@ await ensureTokenFromSession(osSupabase);
         body: JSON.stringify({ rules: readRulesForm() })
       });
       setStatus("規則已儲存 ✅（updated_at: " + (j.saved?.updated_at||"—") + "）");
-      el("debugRules").textContent = JSON.stringify(j.saved?.rules||{}, null, 2);
+      el("debugRules").textContent = ""; // 不要印整段 JSON
     }catch(e){
       setStatus("規則儲存失敗：" + e.message);
       el("debugRules").textContent = JSON.stringify(e.payload||{}, null, 2);
     }
   }
-
   el("btnReloadRules").addEventListener("click", rulesReload);
   el("btnSaveRules").addEventListener("click", rulesSave);
 
-  // ====== Custom products section
+  // ====== Custom products
   let PAGE = { limit: 50, offset: 0, count: 0 };
 
   function tagsToArray(s){
@@ -325,6 +315,11 @@ await ensureTokenFromSession(osSupabase);
     const t = String(s||"").trim();
     if(!t) return {};
     try { return JSON.parse(t); } catch { return {}; }
+  }
+  function escapeHtml(s){
+    return String(s||"").replace(/[&<>"']/g, (c)=>({
+      "&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"
+    }[c]));
   }
 
   function fillForm(item){
@@ -340,27 +335,47 @@ await ensureTokenFromSession(osSupabase);
     el("f_discount_code").value = item?.discount_code || "";
     el("f_tracking_params").value = JSON.stringify(item?.tracking_params || {}, null, 2);
     el("f_is_active").checked = !!item?.is_active;
-    el("debugForm").textContent = "";
+
+    // 顯示目前狀態
+    el("debugForm").textContent = item?.id ? `編輯中：${item.id}` : "新增中";
   }
 
   function clearForm(){
     fillForm({ is_active:true, priority_boost:0, discount_type:"none", tracking_params:{} });
+    // 讓使用者感覺「有反應」
+    setTimeout(()=> el("f_title")?.focus(), 0);
   }
 
   function readForm(){
     return {
-      title: el("f_title").value,
-      image_url: el("f_image_url").value,
-      product_url: el("f_product_url").value,
-      merchant: el("f_merchant").value,
+      title: el("f_title").value?.trim(),
+      image_url: el("f_image_url").value?.trim(),
+      product_url: el("f_product_url").value?.trim(),
+      merchant: el("f_merchant").value?.trim() || null,
       priority_boost: Number(el("f_priority_boost").value||0),
       tags: tagsToArray(el("f_tags").value),
-      badge_text: el("f_badge_text").value || null,
+      badge_text: (el("f_badge_text").value || "").trim() || null,
       discount_type: el("f_discount_type").value,
-      discount_code: el("f_discount_code").value || null,
+      discount_code: (el("f_discount_code").value || "").trim() || null,
       tracking_params: jsonParseSafe(el("f_tracking_params").value),
       is_active: !!el("f_is_active").checked
     };
+  }
+
+  function buildListParams(){
+    const params = new URLSearchParams();
+    params.set("limit", String(PAGE.limit));
+    params.set("offset", String(PAGE.offset));
+
+    const q = el("q").value.trim();
+    const is_active = el("is_active").value; // "true"/"false"/""
+    const tag = el("tag").value.trim();
+
+    if(q) params.set("q", q);
+    if(is_active) params.set("status", (is_active === "true") ? "active" : "inactive"); // ✅ 統一轉成後端最好用的 status
+    if(tag) params.set("tag", tag);
+
+    return params;
   }
 
   async function listReload(){
@@ -368,23 +383,16 @@ await ensureTokenFromSession(osSupabase);
       setStatus("載入商品列表中…");
       el("debugList").textContent = "";
 
-      const params = new URLSearchParams();
-      params.set("limit", String(PAGE.limit));
-      params.set("offset", String(PAGE.offset));
-      const q = el("q").value.trim();
-      const is_active = el("is_active").value;
-      const tag = el("tag").value.trim();
-      if(q) params.set("q", q);
-      if(is_active) params.set("is_active", is_active);
-      if(tag) params.set("tag", tag);
+      const j = await api("/api/admin-custom-products-list?" + buildListParams().toString());
 
-      const j = await api("/api/admin-custom-products-list?" + params.toString());
-
-      PAGE.count = j.count || 0;
+      // ✅ 兼容不同回傳格式：rows / items
+      const items = j.items || j.rows || [];
+      PAGE.count = j.count ?? 0;
 
       const tbody = el("list");
       tbody.innerHTML = "";
-      (j.items || []).forEach(it=>{
+
+      items.forEach(it=>{
         const tr = document.createElement("tr");
         tr.innerHTML = `
           <td><img class="img" src="${it.image_url||""}" alt=""/></td>
@@ -410,8 +418,10 @@ await ensureTokenFromSession(osSupabase);
         tr.querySelector("[data-toggle]").addEventListener("click", ()=> toggleActive(it));
       });
 
-      setStatus(`列表已載入：${j.items?.length||0} 筆（總數 ${PAGE.count}） offset=${PAGE.offset}`);
-      el("debugList").textContent = JSON.stringify({limit:PAGE.limit, offset:PAGE.offset, count:PAGE.count}, null, 2);
+      const pageNo = Math.floor(PAGE.offset / PAGE.limit) + 1;
+      const pageMax = Math.max(1, Math.ceil((PAGE.count||0) / PAGE.limit));
+      setStatus(`列表已載入：本頁 ${items.length} 筆｜共 ${PAGE.count} 筆｜第 ${pageNo}/${pageMax} 頁`);
+      el("debugList").textContent = ""; // ✅ 不要顯示 JSON
     }catch(e){
       setStatus("列表載入失敗：" + e.message);
       el("debugList").textContent = JSON.stringify(e.payload||{}, null, 2);
@@ -427,7 +437,7 @@ await ensureTokenFromSession(osSupabase);
         body: JSON.stringify({ id: it.id, patch: { is_active: !it.is_active } })
       });
       setStatus("已更新 ✅");
-      if(el("edit_id").value === String(it.id)) fillForm(j.item);
+      if(el("edit_id").value === String(it.id)) fillForm(j.item || j.row || it);
       await listReload();
     }catch(e){
       setStatus("更新失敗：" + e.message);
@@ -439,8 +449,14 @@ await ensureTokenFromSession(osSupabase);
     try{
       setStatus("儲存中…");
       el("debugForm").textContent = "";
+
       const id = el("edit_id").value;
       const payload = readForm();
+
+      // ✅ 前端先擋掉必填（避免後端 500）
+      if(!payload.title) throw new Error("請填 title");
+      if(!payload.image_url) throw new Error("請填 image_url");
+      if(!payload.product_url) throw new Error("請填 product_url");
 
       let j;
       if(id){
@@ -455,11 +471,11 @@ await ensureTokenFromSession(osSupabase);
           headers:{"Content-Type":"application/json"},
           body: JSON.stringify({ item: payload })
         });
-        el("edit_id").value = j.item?.id || "";
+        el("edit_id").value = (j.item?.id || j.row?.id || "");
       }
 
       setStatus("儲存成功 ✅");
-      fillForm(j.item);
+      fillForm(j.item || j.row || payload);
       await listReload();
     }catch(e){
       setStatus("儲存失敗：" + e.message);
@@ -475,31 +491,29 @@ await ensureTokenFromSession(osSupabase);
     }
     try{
       setStatus("下架中…");
-      const j = await api("/api/admin-custom-products-delete", {
+      // 你的 delete API 若是「軟刪除=下架」，這樣 OK
+      await api("/api/admin-custom-products-delete", {
         method:"POST",
         headers:{"Content-Type":"application/json"},
         body: JSON.stringify({ id })
       });
       setStatus("已下架 ✅");
-      // 重新讀取列表，並把表單同步
       await listReload();
-      fillForm(Object.assign({}, readForm(), { id, is_active: false }));
+      el("f_is_active").checked = false;
+      el("debugForm").textContent = `已下架：${id}`;
     }catch(e){
       setStatus("下架失敗：" + e.message);
       el("debugForm").textContent = JSON.stringify(e.payload||{}, null, 2);
     }
   }
 
-  function escapeHtml(s){
-    return String(s||"").replace(/[&<>"']/g, (c)=>({
-      "&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"
-    }[c]));
-  }
-
+  // Buttons
   el("btnSearch").addEventListener("click", ()=>{ PAGE.offset=0; listReload(); });
   el("btnNew").addEventListener("click", clearForm);
   el("btnPrev").addEventListener("click", ()=>{ PAGE.offset = Math.max(0, PAGE.offset - PAGE.limit); listReload(); });
-  el("btnNext").addEventListener("click", ()=>{ if(PAGE.offset + PAGE.limit < PAGE.count) { PAGE.offset += PAGE.limit; listReload(); } });
+  el("btnNext").addEventListener("click", ()=>{
+    if(PAGE.offset + PAGE.limit < PAGE.count) { PAGE.offset += PAGE.limit; listReload(); }
+  });
 
   el("btnSaveItem").addEventListener("click", saveItem);
   el("btnClear").addEventListener("click", clearForm);
@@ -508,14 +522,14 @@ await ensureTokenFromSession(osSupabase);
   // ===== boot
   (async ()=>{
     try{
-      // 先載入 rules（也會順便驗證 token + admin）
       await rulesReload();
       clearForm();
       setStatus("初始化完成 ✅（切換到 Custom Products 開始管理）");
     }catch(e){
-      setStatus(e.message);
+      setStatus(String(e.message || e));
     }
   })();
 </script>
+
 </body>
 </html>
