@@ -1,50 +1,53 @@
-import { supabaseServer } from "../lib/supabaseServer";
-import { requireAdmin } from "../lib/adminAuth";
+// pages/api/admin-custom-products-list.js
+import { supabaseServer } from "./lib/supabaseServer";
+import { requireAdmin } from "./lib/adminAuth";
 
 export const config = { runtime: "nodejs" };
 
 export default async function handler(req, res) {
   try {
-    if (req.method !== "GET") {
-      return res.status(405).json({ error: "Method not allowed" });
-    }
+    if (req.method !== "GET") return res.status(405).json({ error: "Method not allowed" });
 
     const admin = await requireAdmin(req, res);
-    if (!admin) return; // ✅ 超重要：避免 null 繼續跑造成 500
+    if (!admin) return;
 
     const limit = Math.min(200, Math.max(1, Number(req.query.limit || 50)));
-    const offset = Math.max(0, Number(req.query.offset || 0));
+    const offset = Math.max(0, Number(req.query.offset || 0)));
 
-    // ✅ 建議先不要亂 order 不存在的欄位；用 created_at 最安全（你表若沒有 created_at 再改）
-    const q = supabaseServer
+    const q = String(req.query.q || "").trim();
+    const tag = String(req.query.tag || "").trim();
+    const status = String(req.query.status || "").trim(); // active / inactive / ""
+
+    let query = supabaseServer
       .from("custom_products")
-      .select("*", { count: "exact" })
-      .range(offset, offset + limit - 1)
-    
+      .select("*", { count: "exact" });
 
-    const { data, error, count } = await q;
+    // 搜尋 title（不分大小寫）
+    if (q) query = query.ilike("title", `%${q}%`);
 
-    if (error) {
-      return res.status(500).json({
-        error: "Supabase query failed",
-        detail: error,
-        hint: "Check table columns / RLS / env SUPABASE_SERVICE_ROLE_KEY",
-      });
-    }
+    // 狀態
+    if (status === "active") query = query.eq("is_active", true);
+    if (status === "inactive") query = query.eq("is_active", false);
 
+    // tags 包含（cs = contains）
+    // 你的 tags 是 text[] 的話，這樣可用：tags cs ["xxx"]
+    if (tag) query = query.filter("tags", "cs", JSON.stringify([tag]));
+
+    const { data, error, count } = await query
+      .order("created_at", { ascending: false })
+      .range(offset, offset + limit - 1);
+
+    if (error) return res.status(500).json({ error: "Supabase query failed", detail: error });
+
+    // ✅ 回傳 items，前端才會刷新列表
     return res.status(200).json({
       ok: true,
-      rows: data || [],
-      count: count ?? null,
+      items: data || [],
+      count: count ?? 0,
       limit,
       offset,
-      adminEmail: admin.email,
-      warning: admin.warning || null,
     });
   } catch (e) {
-    return res.status(500).json({
-      error: e?.message || "Unknown error",
-      stack: process.env.NODE_ENV === "development" ? String(e?.stack || "") : undefined,
-    });
+    return res.status(500).json({ error: e?.message || "Unknown error" });
   }
 }
