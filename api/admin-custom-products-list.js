@@ -32,8 +32,9 @@ export default async function handler(req, res) {
     // title 搜尋（用 ilike）
     if (q) query = query.ilike("title", `%${q}%`);
 
-    // tags 包含（tags 是 text[] 的情況可用 cs）
-    if (tag) query = query.contains("tags", [tag]);
+    // tag（包含）tags 是 jsonb array：用 cs + JSON
+if (tag) query = query.filter("tags", "cs", JSON.stringify([tag]));
+
 
     const { data, error, count } = await query;
 
