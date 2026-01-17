@@ -15,7 +15,13 @@ export default async function handler(req, res) {
     const offset = Math.max(0, Number(req.query.offset || 0));
 
     const q = String(req.query.q || "").trim();
-    const isActiveStr = String(req.query.is_active || "").trim(); // "true" / "false"
+    const isActiveStr = String(req.query.is_active || "").trim().toLowerCase();
+
+if (["true", "1", "yes", "y"].includes(isActiveStr)) {
+  query = query.eq("is_active", true);
+} else if (["false", "0", "no", "n"].includes(isActiveStr)) {
+  query = query.eq("is_active", false);
+}
     const tag = String(req.query.tag || "").trim();
 
     let query = supabaseServer
@@ -26,8 +32,7 @@ export default async function handler(req, res) {
     // 有 created_at 就用 created_at，沒有就不要 order（避免因欄位不存在直接報錯）
     //query = query.order("created_at", { ascending: false });
 
-    if (isActiveStr === "true") query = query.eq("is_active", true);
-    if (isActiveStr === "false") query = query.eq("is_active", false);
+    
 
     // title 搜尋（用 ilike）
     if (q) query = query.ilike("title", `%${q}%`);
