@@ -1,5 +1,5 @@
-import { supabaseServer } from "./lib/supabaseServer";
-import { requireAdmin } from "./lib/adminAuth";
+import { supabaseServer } from "../lib/supabaseServer";
+import { requireAdmin } from "../lib/adminAuth";
 
 export const config = { runtime: "nodejs" };
 
