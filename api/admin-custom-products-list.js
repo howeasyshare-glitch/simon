@@ -1,5 +1,5 @@
-import { supabaseServer } from "./lib/supabaseServer";
-import { requireAdmin } from "./lib/adminAuth";
+import { supabaseServer } from "../lib/supabaseServer";
+import { requireAdmin } from "../lib/adminAuth";
 
 export const config = { runtime: "nodejs" };
 
@@ -20,7 +20,7 @@ export default async function handler(req, res) {
       .from("custom_products")
       .select("*", { count: "exact" })
       .range(offset, offset + limit - 1)
-      .order("created_at", { ascending: false });
+    
 
     const { data, error, count } = await q;
 
