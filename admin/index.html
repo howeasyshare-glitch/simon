@@ -312,7 +312,7 @@ input, textarea, select { box-sizing: border-box; min-width: 0; }
     try{
       setStatus("讀取規則中…");
       el("debugRules").textContent = "";
-      const j = await api("/api/admin-get-rules");
+      const j = await api("/api/admin?op=get_rules");
       applyRules(j.rules || null);
       setStatus("規則已載入（updated_at: " + (j.updated_at||"—") + "）");
     }catch(e){
@@ -324,7 +324,7 @@ input, textarea, select { box-sizing: border-box; min-width: 0; }
     try{
       setStatus("儲存規則中…");
       el("debugRules").textContent = "";
-      const j = await api("/api/admin-save-rules", {
+      const j = await api("/api/admin?op=save_rules", {
         method:"POST",
         headers:{"Content-Type":"application/json"},
         body: JSON.stringify({ rules: readRulesForm() })
