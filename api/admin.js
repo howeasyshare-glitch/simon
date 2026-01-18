@@ -59,7 +59,7 @@ export default async function handler(req, res) {
         .from("custom_products")
         .select("*", { count: "exact" })
         .range(offset, offset + limit - 1)
-        .order("created_at", { ascending: false });
+        //.order("created_at", { ascending: false });
 
       if (q) query = query.ilike("title", `%${q}%`);
       if (tag) query = query.filter("tags", "cs", JSON.stringify([tag]));
