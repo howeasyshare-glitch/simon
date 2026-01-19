@@ -139,6 +139,53 @@ export default async function handler(req, res) {
     }
 
     // ---------- custom_products.import ----------
+        // ---------- rules.get ----------
+    if (action === "get_rules") {
+      if (req.method !== "GET") return res.status(405).json({ error: "Method not allowed" });
+
+      const { data, error } = await supabaseServer
+        .from("admin_kv")
+        .select("value,updated_at")
+        .eq("key", "display_rules")
+        .maybeSingle();
+
+      if (error) return res.status(500).json({ error: "Supabase query failed", detail: error });
+
+      const value = data?.value || null;
+      return res.status(200).json({
+        ok: true,
+        rules: value,
+        updated_at: data?.updated_at || null,
+      });
+    }
+
+    // ---------- rules.save ----------
+    if (action === "save_rules") {
+      if (req.method !== "POST") return res.status(405).json({ error: "Method not allowed" });
+
+      const rules = req.body?.rules || null;
+      if (!rules || typeof rules !== "object") {
+        return res.status(400).json({ error: "Missing rules (object)" });
+      }
+
+      const { data, error } = await supabaseServer
+        .from("admin_kv")
+        .upsert(
+          { key: "display_rules", value: rules, updated_at: new Date().toISOString() },
+          { onConflict: "key" }
+        )
+        .select("value,updated_at")
+        .single();
+
+      if (error) return res.status(500).json({ error: "Supabase upsert failed", detail: error });
+
+      return res.status(200).json({
+        ok: true,
+        saved: { rules: data?.value || null, updated_at: data?.updated_at || null },
+      });
+    }
+
+    
     if (action === "custom_products.import") {
       if (req.method !== "POST") return res.status(405).json({ error: "Method not allowed" });
 
