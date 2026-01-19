@@ -43,7 +43,8 @@ export default async function handler(req, res) {
     const admin = await requireAdmin(req, res);
     if (!admin) return;
 
-    const action = String(req.query.action || "").trim();
+    const action = String(req.query.action || req.query.op || "").trim();
+
 
     // ---------- custom_products.list ----------
     if (action === "custom_products.list") {
