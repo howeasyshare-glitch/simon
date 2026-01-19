@@ -374,36 +374,16 @@
     if (r && r.customMax!=null) el("customMax").value = r.customMax;
     if (r && typeof r.fallback==="boolean") el("fallback").checked = r.fallback;
   }
-  async function rulesReload(){
-    el("debugRules").textContent = "";
-    try{
-      setStatus("讀取規則中…");
-      // 你目前 /api/admin 還沒實作 get_rules/save_rules 的話，這裡會被 catch
-      const j = await apiAdmin("get_rules", {}, {}, "op");
-      applyRules(j.rules || null);
-      setStatus("規則已載入 ✅");
-    }catch(e){
-      setStatus("規則：尚未啟用（不影響商品管理）");
-      el("debugRules").textContent =
-        "提示：若要啟用 Display Rules，請在 /api/admin 補上 op=get_rules / op=save_rules 的分支。\n\n" +
-        (e.payload ? JSON.stringify(e.payload, null, 2) : e.message);
-    }
-  }
-  async function rulesSave(){
-    el("debugRules").textContent = "";
-    try{
-      setStatus("儲存規則中…");
-      const j = await apiAdmin("save_rules", {
-        method:"POST",
-        headers:{"Content-Type":"application/json"},
-        body: JSON.stringify({ rules: readRulesForm() })
-      }, {}, "op");
-      setStatus("規則已儲存 ✅");
-    }catch(e){
-      setStatus("規則儲存失敗：" + e.message);
-      el("debugRules").textContent = JSON.stringify(e.payload||{}, null, 2);
-    }
-  }
+  // rulesReload
+const j = await apiAdmin("get_rules", {}, {}, "action");
+
+// rulesSave
+const j = await apiAdmin("save_rules", {
+  method:"POST",
+  headers:{"Content-Type":"application/json"},
+  body: JSON.stringify({ rules: readRulesForm() })
+}, {}, "action");
+
   el("btnReloadRules").addEventListener("click", rulesReload);
   el("btnSaveRules").addEventListener("click", rulesSave);
 
