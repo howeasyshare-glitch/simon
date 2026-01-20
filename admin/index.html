@@ -1,286 +1,634 @@
 <!doctype html>
 <html lang="zh-Hant">
 <head>
-<meta charset="utf-8"/>
-<meta name="viewport" content="width=device-width,initial-scale=1"/>
-<title>Admin – Custom Products</title>
+  <meta charset="utf-8"/>
+  <meta name="viewport" content="width=device-width,initial-scale=1"/>
+  <title>Admin</title>
+  <style>
+    :root{
+      --bg:#f6f7fb; --card:#fff; --border:#e5e7eb; --muted:#6b7280;
+      --text:#111; --soft:#eef2f7; --head:#fafafa;
+      --danger:#b91c1c;
+    }
+    *{box-sizing:border-box}
+    body{font-family:system-ui,-apple-system,Segoe UI,Roboto,"Noto Sans TC",sans-serif;background:var(--bg);margin:0;padding:18px;color:var(--text)}
+    .card{max-width:1180px;margin:0 auto;background:var(--card);border:1px solid var(--border);border-radius:16px;padding:16px;box-shadow:0 14px 34px rgba(0,0,0,.06)}
+    h1{margin:0 0 10px;font-size:18px}
+    .tabs{display:flex;gap:8px;margin:10px 0 16px;flex-wrap:wrap}
+    .tab{border:1px solid var(--border);background:#fff;border-radius:999px;padding:8px 12px;font-weight:800;cursor:pointer}
+    .tab.active{background:#111;color:#fff;border-color:#111}
+    .muted{color:var(--muted);font-size:12px;margin-top:8px;white-space:pre-wrap}
+    .line{height:1px;background:var(--soft);margin:14px 0}
+    label{display:block;font-weight:800;font-size:12px;margin:10px 0 6px}
+    input, textarea, select{width:100%;padding:10px 12px;border:1px solid var(--border);border-radius:12px;font-size:14px;min-width:0}
+    textarea{min-height:92px;resize:vertical}
+    button{border:none;border-radius:999px;padding:9px 12px;font-weight:900;cursor:pointer}
+    .primary{background:#111;color:#fff}
+    .ghost{background:#fff;border:1px solid var(--border)}
+    .danger{background:var(--danger);color:#fff}
+    .row{display:grid;grid-template-columns:1fr 1fr;gap:12px;align-items:start}
+    .row3{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px;align-items:start}
+    .actions{display:flex;gap:10px;flex-wrap:wrap;margin-top:12px}
+    .pill{display:inline-block;padding:3px 8px;border:1px solid var(--border);border-radius:999px;font-size:12px;background:#fff}
+    .img{width:56px;height:56px;object-fit:cover;border-radius:10px;border:1px solid var(--border);background:#fff}
 
-<style>
-body{
-  font-family:system-ui,-apple-system,Segoe UI,Roboto,"Noto Sans TC",sans-serif;
-  background:#f6f7fb;margin:0;padding:18px;color:#111
-}
-.card{
-  max-width:1200px;margin:0 auto;background:#fff;
-  border:1px solid #e5e7eb;border-radius:16px;
-  padding:16px;box-shadow:0 14px 34px rgba(0,0,0,.06)
-}
-h1{margin:0 0 10px;font-size:18px}
-.tabs{display:flex;gap:8px;margin:10px 0 16px}
-.tab{
-  border:1px solid #e5e7eb;background:#fff;
-  border-radius:999px;padding:8px 14px;
-  font-weight:800;cursor:pointer
-}
-.tab.active{background:#111;color:#fff;border-color:#111}
-.muted{color:#6b7280;font-size:12px;margin-top:6px}
-.line{height:1px;background:#eef2f7;margin:14px 0}
-label{display:block;font-weight:800;font-size:12px;margin:10px 0 6px}
-input,textarea,select{
-  width:100%;padding:10px 12px;
-  border:1px solid #e5e7eb;border-radius:10px;
-  font-size:14px;box-sizing:border-box
-}
-textarea{min-height:100px}
-button{
-  border:none;border-radius:999px;
-  padding:10px 14px;font-weight:900;cursor:pointer
-}
-.primary{background:#111;color:#fff}
-.ghost{background:#fff;border:1px solid #e5e7eb}
-.danger{background:#b91c1c;color:#fff}
+    /* layout */
+    .split{display:grid;grid-template-columns: 1.15fr .85fr; gap:14px; align-items:start}
+    @media (max-width: 980px){ .split{grid-template-columns:1fr} }
 
-.split{
-  display:grid;
-  grid-template-columns:1.3fr .9fr;
-  gap:16px
-}
-@media(max-width:960px){ .split{grid-template-columns:1fr} }
+    /* list panel: independent scroll */
+    .listPanel{
+      border:1px solid var(--border);
+      border-radius:14px;
+      overflow:hidden;
+      background:#fff;
+    }
+    .listToolbar{padding:12px;border-bottom:1px solid var(--soft);background:#fff}
+    .listBody{max-height: calc(100vh - 280px); overflow:auto}
+    @media (max-width: 980px){
+      .listBody{max-height: 52vh;}
+    }
 
-.tableWrap{max-height:65vh;overflow:auto}
-table{
-  width:100%;border-collapse:separate;border-spacing:0;
-  border:1px solid #e5e7eb;border-radius:14px
-}
-th,td{
-  font-size:12px;padding:10px;
-  border-bottom:1px solid #eef2f7;
-  vertical-align:top
-}
-th{background:#fafafa}
-tr:last-child td{border-bottom:none}
-.img{
-  width:56px;height:56px;object-fit:cover;
-  border-radius:10px;border:1px solid #e5e7eb
-}
-.pill{
-  display:inline-block;padding:3px 8px;
-  border:1px solid #e5e7eb;border-radius:999px;
-  font-size:12px;margin-right:4px
-}
+    /* table */
+    table{width:100%;border-collapse:separate;border-spacing:0;table-layout:fixed}
+    thead th{position:sticky;top:0;z-index:2;background:var(--head);border-bottom:1px solid var(--soft)}
+    th,td{font-size:12px;padding:10px;border-bottom:1px solid var(--soft);vertical-align:top}
+    tr:last-child td{border-bottom:none}
+    th:nth-child(1){width:74px}
+    th:nth-child(3){width:90px}
+    th:nth-child(4){width:110px}
+    th:nth-child(5){width:160px}
+    td{background:#fff}
 
-.formPanel{
-  position:sticky;top:16px;
-  max-height:calc(100vh - 60px);
-  overflow:auto;padding-right:6px
-}
-</style>
+    .titleCell{
+      display:flex;flex-direction:column;gap:6px;min-width:0
+    }
+    .titleMain{
+      font-weight:900;line-height:1.35;
+      overflow:hidden;text-overflow:ellipsis;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;
+    }
+    .tagWrap{display:flex;flex-wrap:wrap;gap:6px}
+    .opWrap{display:flex;gap:8px;flex-wrap:wrap}
+    .btnSmall{padding:7px 10px;font-weight:900}
+
+    /* form panel */
+    .formPanel{
+      border:1px solid var(--border);
+      border-radius:14px;
+      background:#fff;
+      padding:12px;
+      position: sticky;
+      top: 14px;
+      max-height: calc(100vh - 56px);
+      overflow:auto;
+    }
+    @media (max-width: 980px){
+      .formPanel{position:relative;top:auto;max-height:none}
+    }
+    #f_tracking_params{min-height:120px}
+    .helpBox{
+      background:#f9fafb;border:1px solid var(--border);
+      border-radius:12px;padding:10px;font-size:12px;color:var(--muted);
+      line-height:1.45
+    }
+    .hintRow{display:flex;align-items:center;gap:8px;margin-top:10px}
+    .statusBtn{width:100%;text-align:center}
+  </style>
 </head>
-
 <body>
-<div class="card">
-  <h1>管理後台</h1>
-  <div class="muted" id="status">初始化中…</div>
+  <div class="card">
+    <h1>管理後台</h1>
+    <div class="muted" id="status">初始化中…</div>
 
-  <div class="tabs">
-    <button class="tab active" id="tabCustom">Custom Products</button>
-    <button class="tab" id="tabRules">Display Rules（尚未啟用）</button>
+    <div class="tabs">
+      <button class="tab active" id="tabRules">Display Rules</button>
+      <button class="tab" id="tabCustom">Custom Products</button>
+    </div>
+
+    <!-- ===== Rules (暫時不擋你使用，但若後端未實作會顯示提示) ===== -->
+    <section id="panelRules">
+      <div class="helpBox" id="rulesInfo">
+        Display Rules 需要後端 /api/admin 實作 action=get_rules / save_rules。
+        你現在後端回 Unknown action 是正常的（尚未併入）。不影響 Custom Products 使用。
+      </div>
+
+      <div class="line"></div>
+
+      <h1 style="font-size:14px;margin-top:0;">每個 Slot 顯示數量（Google + Custom 合計）</h1>
+      <div class="row">
+        <div><label>上衣 top</label><input id="top" type="number" min="0" max="12" value="4"/></div>
+        <div><label>下身 bottom</label><input id="bottom" type="number" min="0" max="12" value="4"/></div>
+        <div><label>鞋 shoes</label><input id="shoes" type="number" min="0" max="12" value="4"/></div>
+        <div><label>外套 outer</label><input id="outer" type="number" min="0" max="12" value="4"/></div>
+        <div><label>包 bag</label><input id="bag" type="number" min="0" max="12" value="2"/></div>
+        <div><label>帽 hat</label><input id="hat" type="number" min="0" max="12" value="2"/></div>
+      </div>
+
+      <div class="line"></div>
+
+      <div class="row">
+        <div>
+          <label>每個 slot 最多顯示幾個 Custom</label>
+          <input id="customMax" type="number" min="0" max="6" value="2"/>
+          <div class="muted">其餘用 Google Shopping 補滿。</div>
+        </div>
+        <div>
+          <label>Fallback（補不滿再用較寬 query 搜一次）</label>
+          <div class="hintRow">
+            <input id="fallback" type="checkbox" checked />
+            <span class="muted">建議開啟，避免某些 slot 掉到 2～3。</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="actions">
+        <button class="ghost" id="btnReloadRules">重新讀取</button>
+        <button class="primary" id="btnSaveRules">儲存規則</button>
+      </div>
+
+      <div class="muted" id="debugRules"></div>
+    </section>
+
+    <!-- ===== Custom Products ===== -->
+    <section id="panelCustom" style="display:none;">
+      <div class="split">
+        <!-- LEFT: List -->
+        <div class="listPanel">
+          <div class="listToolbar">
+            <h1 style="font-size:14px;margin:0 0 10px;">商品列表</h1>
+
+            <div class="row3">
+              <div>
+                <label>搜尋（title）</label>
+                <input id="q" placeholder="例如：羽絨 外套 / hoodie" />
+              </div>
+              <div>
+                <label>狀態</label>
+                <select id="is_active">
+                  <option value="">全部</option>
+                  <option value="true">上架</option>
+                  <option value="false">下架</option>
+                </select>
+              </div>
+              <div>
+                <label>tag（包含）</label>
+                <input id="tag" placeholder="例如：item_top / male / kids" />
+              </div>
+            </div>
+
+            <div class="actions">
+              <button class="ghost" id="btnSearch">搜尋</button>
+              <button class="ghost" id="btnNew">新增商品</button>
+              <button class="ghost" id="btnRefresh">重新整理</button>
+            </div>
+
+            <div class="muted" id="listMeta"></div>
+          </div>
+
+          <div class="listBody">
+            <table>
+              <thead>
+                <tr>
+                  <th>圖</th>
+                  <th>標題 / tags / 連結</th>
+                  <th>priority</th>
+                  <th>狀態</th>
+                  <th>操作</th>
+                </tr>
+              </thead>
+              <tbody id="list"></tbody>
+            </table>
+          </div>
+
+          <div class="listToolbar" style="border-top:1px solid var(--soft);border-bottom:none;">
+            <div class="actions" style="margin-top:0;">
+              <button class="ghost" id="btnPrev">上一頁</button>
+              <button class="ghost" id="btnNext">下一頁</button>
+            </div>
+            <div class="muted" id="debugList"></div>
+          </div>
+        </div>
+
+        <!-- RIGHT: Form -->
+        <div class="formPanel">
+          <h1 style="font-size:14px;margin:0 0 10px;">編輯 / 新增</h1>
+
+          <div class="helpBox">
+            tags 用逗號分隔，例如：<br/>
+            <b>item_top</b>, <b>female</b>, <b>adult</b>, <b>style_minimal</b><br/><br/>
+            <b>tracking_params</b> 可以留空（會自動用 {}），用來加 UTM 或聯盟追蹤參數。
+          </div>
+
+          <input type="hidden" id="edit_id"/>
+
+          <label>title *</label>
+          <input id="f_title"/>
+
+          <label>image_url *</label>
+          <input id="f_image_url" placeholder="https://...jpg"/>
+
+          <label>product_url *</label>
+          <input id="f_product_url" placeholder="https://..."/>
+
+          <div class="row">
+            <div>
+              <label>merchant（可空）</label>
+              <input id="f_merchant" placeholder="momo / shopee / yourbrand"/>
+            </div>
+            <div>
+              <label>priority_boost（預設 0）</label>
+              <input id="f_priority_boost" type="number" value="0"/>
+            </div>
+          </div>
+
+          <label>tags（建議必填）</label>
+          <input id="f_tags" placeholder="item_top, adult, female"/>
+
+          <div class="row">
+            <div>
+              <label>badge_text（可空）</label>
+              <input id="f_badge_text" placeholder="本站推薦 / 熱銷"/>
+            </div>
+            <div>
+              <label>discount_type</label>
+              <select id="f_discount_type">
+                <option value="none">none</option>
+                <option value="code">code</option>
+                <option value="sale">sale</option>
+              </select>
+            </div>
+          </div>
+
+          <label>discount_code（可空）</label>
+          <input id="f_discount_code" placeholder="例：NEW88"/>
+
+          <label>tracking_params（JSON，可空）</label>
+          <textarea id="f_tracking_params" placeholder='{"utm_source":"site","utm_medium":"ref"}'></textarea>
+
+          <div class="hintRow">
+            <input id="f_is_active" type="checkbox" checked />
+            <span class="muted">
+              <b>is_active（上架）</b>：勾選＝儲存後上架；不勾＝儲存後維持下架
+            </span>
+          </div>
+
+          <div class="actions">
+            <button class="primary" id="btnSaveItem">儲存</button>
+            <button class="ghost" id="btnClear">清空（新增）</button>
+            <button class="danger" id="btnDeactivate">下架</button>
+          </div>
+
+          <div class="muted" id="debugForm"></div>
+        </div>
+      </div>
+    </section>
   </div>
 
-  <!-- ================= Custom Products ================= -->
-  <section id="panelCustom">
-    <div class="split">
-
-      <!-- 左：列表 -->
-      <div>
-        <h1 style="font-size:14px">商品列表</h1>
-
-        <div style="display:grid;grid-template-columns:2fr 1fr 1fr;gap:10px">
-          <div>
-            <label>搜尋（title）</label>
-            <input id="q" placeholder="例如：外套 / hoodie"/>
-          </div>
-          <div>
-            <label>狀態</label>
-            <select id="is_active">
-              <option value="">全部</option>
-              <option value="true">上架</option>
-              <option value="false">下架</option>
-            </select>
-          </div>
-          <div>
-            <label>tag</label>
-            <input id="tag" placeholder="item_top / adult"/>
-          </div>
-        </div>
-
-        <div style="margin-top:10px;display:flex;gap:8px">
-          <button class="ghost" id="btnSearch">搜尋</button>
-          <button class="ghost" id="btnNew">新增商品</button>
-        </div>
-
-        <div class="line"></div>
-
-        <div class="tableWrap">
-          <table>
-            <thead>
-              <tr>
-                <th style="width:70px">圖</th>
-                <th>商品</th>
-                <th style="width:80px">priority</th>
-                <th style="width:70px">狀態</th>
-                <th style="width:140px">操作</th>
-              </tr>
-            </thead>
-            <tbody id="list"></tbody>
-          </table>
-        </div>
-
-        <div style="margin-top:10px;display:flex;gap:8px">
-          <button class="ghost" id="btnPrev">上一頁</button>
-          <button class="ghost" id="btnNext">下一頁</button>
-        </div>
-      </div>
-
-      <!-- 右：表單 -->
-      <div class="formPanel">
-        <h1 style="font-size:14px">編輯 / 新增</h1>
-
-        <input type="hidden" id="edit_id"/>
-
-        <label>title *</label>
-        <input id="f_title"/>
-
-        <label>image_url *</label>
-        <input id="f_image_url"/>
-
-        <label>product_url *</label>
-        <input id="f_product_url"/>
-
-        <label>tags（逗號分隔）</label>
-        <input id="f_tags" placeholder="item_top, adult, female"/>
-
-        <label>priority_boost</label>
-        <input id="f_priority_boost" type="number" value="0"/>
-
-        <label>badge_text（可空）</label>
-        <input id="f_badge_text" placeholder="本站推薦"/>
-
-        <label>tracking_params（JSON，可空）</label>
-        <textarea id="f_tracking_params" placeholder='{"utm_source":"reco"}'></textarea>
-
-        <div style="margin-top:8px">
-          <label><input type="checkbox" id="f_is_active" checked/> 上架</label>
-        </div>
-
-        <div style="margin-top:12px;display:flex;gap:8px;flex-wrap:wrap">
-          <button class="primary" id="btnSave">儲存</button>
-          <button class="ghost" id="btnClear">清空</button>
-          <button class="danger" id="btnDeactivate">下架</button>
-        </div>
-      </div>
-    </div>
-  </section>
-
-  <!-- ================= Rules ================= -->
-  <section id="panelRules" style="display:none">
-    <div class="muted">
-      Display Rules 尚未接後端。<br/>
-      下一步會把「每個 slot 顯示幾個」接到 search-products。
-    </div>
-  </section>
-</div>
-
 <script>
-const AUTH_KEY="os_supabase_access_token_v1";
-const el=id=>document.getElementById(id);
-const status=t=>el("status").textContent=t;
-const token=()=>localStorage.getItem(AUTH_KEY);
+  // ===== token
+  const AUTH_KEY="os_supabase_access_token_v1";
+  const el = (id)=>document.getElementById(id);
+  const setStatus = (t)=> el("status").textContent = t;
 
-async function api(url, opts={}){
-  const t=token();
-  if(!t) throw new Error("請先登入");
-  const res=await fetch(url,{
-    ...opts,
-    headers:{...(opts.headers||{}),"Authorization":"Bearer "+t}
+  function token(){ return localStorage.getItem(AUTH_KEY); }
+
+  // ===== API helper (顯示 server raw)
+  async function api(path, opts={}){
+    const t = token();
+    if(!t) throw new Error("找不到 token：請先到 /body-test.html 登入後，再回來 /admin");
+
+    const headers = Object.assign({}, opts.headers||{}, { "Authorization": "Bearer " + t });
+    const res = await fetch(path, Object.assign({}, opts, { headers }));
+    const text = await res.text();
+    let json = {};
+    try { json = text ? JSON.parse(text) : {}; } catch { json = { raw: text }; }
+
+    if(!res.ok){
+      const detail = json?.detail ? (typeof json.detail === "string" ? json.detail : JSON.stringify(json.detail, null, 2)) : "";
+      const msg = json?.error ? (json.error + (detail ? "\n" + detail : "")) : ("HTTP " + res.status);
+      const e = new Error(`HTTP ${res.status}\n${msg}`);
+      e.payload = json;
+      throw e;
+    }
+    return json;
+  }
+
+  // ===== Tabs
+  function showTab(which){
+    el("tabRules").classList.toggle("active", which==="rules");
+    el("tabCustom").classList.toggle("active", which==="custom");
+    el("panelRules").style.display = which==="rules" ? "" : "none";
+    el("panelCustom").style.display = which==="custom" ? "" : "none";
+  }
+  el("tabRules").addEventListener("click", ()=>showTab("rules"));
+  el("tabCustom").addEventListener("click", async ()=>{ showTab("custom"); PAGE.offset=0; await listReload(); });
+
+  // ===== Utils
+  function tagsToArray(s){ return String(s||"").split(",").map(x=>x.trim()).filter(Boolean); }
+  function jsonParseSafe(s){
+    const t = String(s||"").trim();
+    if(!t) return {};
+    try { return JSON.parse(t); } catch { return {}; }
+  }
+  function escapeHtml(s){
+    return String(s||"").replace(/[&<>"']/g, (c)=>({
+      "&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"
+    }[c]));
+  }
+
+  // ===== Rules (目前後端未必有)
+  function readRulesForm(){
+    return {
+      perSlot: {
+        top: Number(el("top").value||0),
+        bottom: Number(el("bottom").value||0),
+        shoes: Number(el("shoes").value||0),
+        outer: Number(el("outer").value||0),
+        bag: Number(el("bag").value||0),
+        hat: Number(el("hat").value||0),
+      },
+      customMax: Number(el("customMax").value||0),
+      fallback: !!el("fallback").checked
+    };
+  }
+  function applyRules(r){
+    const per = (r && r.perSlot) || {};
+    if (per.top!=null) el("top").value = per.top;
+    if (per.bottom!=null) el("bottom").value = per.bottom;
+    if (per.shoes!=null) el("shoes").value = per.shoes;
+    if (per.outer!=null) el("outer").value = per.outer;
+    if (per.bag!=null) el("bag").value = per.bag;
+    if (per.hat!=null) el("hat").value = per.hat;
+    if (r && r.customMax!=null) el("customMax").value = r.customMax;
+    if (r && typeof r.fallback==="boolean") el("fallback").checked = r.fallback;
+  }
+  async function rulesReload(){
+    try{
+      setStatus("讀取規則中…");
+      el("debugRules").textContent = "";
+      // 你後端如果還沒實作 get_rules，會回 Unknown action（這裡不讓它影響其它功能）
+      const j = await api("/api/admin?op=get_rules");
+      applyRules(j.rules || null);
+      setStatus("規則已載入 ✅");
+      el("rulesInfo").textContent = "Rules 已啟用 ✅（後端已支援 get_rules / save_rules）";
+    }catch(e){
+      // 不要一直炸畫面：只提示
+      setStatus("Rules 尚未啟用（不影響 Custom Products）");
+      el("debugRules").textContent = (e.payload ? JSON.stringify(e.payload, null, 2) : e.message);
+    }
+  }
+  async function rulesSave(){
+    try{
+      setStatus("儲存規則中…");
+      el("debugRules").textContent = "";
+      await api("/api/admin?op=save_rules", {
+        method:"POST",
+        headers:{"Content-Type":"application/json"},
+        body: JSON.stringify({ rules: readRulesForm() })
+      });
+      setStatus("規則已儲存 ✅");
+    }catch(e){
+      setStatus("規則儲存失敗（可能後端尚未實作）");
+      el("debugRules").textContent = (e.payload ? JSON.stringify(e.payload, null, 2) : e.message);
+    }
+  }
+  el("btnReloadRules").addEventListener("click", rulesReload);
+  el("btnSaveRules").addEventListener("click", rulesSave);
+
+  // ===== Custom products
+  let PAGE = { limit: 50, offset: 0, count: 0 };
+
+  function fillForm(item){
+    el("edit_id").value = item?.id || "";
+    el("f_title").value = item?.title || "";
+    el("f_image_url").value = item?.image_url || "";
+    el("f_product_url").value = item?.product_url || "";
+    el("f_merchant").value = item?.merchant || "";
+    el("f_priority_boost").value = item?.priority_boost ?? 0;
+    el("f_tags").value = Array.isArray(item?.tags) ? item.tags.join(", ") : "";
+    el("f_badge_text").value = item?.badge_text || "";
+    el("f_discount_type").value = item?.discount_type || "none";
+    el("f_discount_code").value = item?.discount_code || "";
+    el("f_tracking_params").value = JSON.stringify(item?.tracking_params || {}, null, 2);
+    el("f_is_active").checked = !!item?.is_active;
+    el("debugForm").textContent = item?.id ? `編輯中：${item.id}` : "新增中";
+  }
+
+  function clearForm(){
+    fillForm({ is_active:true, priority_boost:0, discount_type:"none", tracking_params:{} });
+    setTimeout(()=> el("f_title")?.focus(), 0);
+  }
+
+  function readForm(){
+    return {
+      title: (el("f_title").value||"").trim(),
+      image_url: (el("f_image_url").value||"").trim(),
+      product_url: (el("f_product_url").value||"").trim(),
+      merchant: (el("f_merchant").value||"").trim() || null,
+      priority_boost: Number(el("f_priority_boost").value||0),
+      tags: tagsToArray(el("f_tags").value),
+      badge_text: (el("f_badge_text").value||"").trim() || null,
+      discount_type: el("f_discount_type").value,
+      discount_code: (el("f_discount_code").value||"").trim() || null,
+      tracking_params: jsonParseSafe(el("f_tracking_params").value),
+      is_active: !!el("f_is_active").checked
+    };
+  }
+
+  function buildListParams(){
+    const params = new URLSearchParams();
+    params.set("limit", String(PAGE.limit));
+    params.set("offset", String(PAGE.offset));
+    const q = el("q").value.trim();
+    const is_active = el("is_active").value;
+    const tag = el("tag").value.trim();
+    if(q) params.set("q", q);
+    if(is_active) params.set("is_active", is_active);
+    if(tag) params.set("tag", tag);
+    return params;
+  }
+
+  async function listReload(){
+    try{
+      setStatus("載入商品列表中…");
+      el("debugList").textContent = "";
+
+      // 注意：你後端 admin.js 使用 action=custom_products.list
+      const j = await api("/api/admin?action=custom_products.list&" + buildListParams().toString());
+      const items = j.items || j.rows || [];
+      PAGE.count = j.count ?? 0;
+
+      const tbody = el("list");
+      tbody.innerHTML = "";
+
+      items.forEach(it=>{
+        const tr = document.createElement("tr");
+        tr.innerHTML = `
+          <td><img class="img" src="${escapeHtml(it.image_url||"")}" alt=""/></td>
+
+          <td>
+            <div class="titleCell">
+              <div class="titleMain">${escapeHtml(it.title||"")}</div>
+              <div class="tagWrap">${(it.tags||[]).map(t=>`<span class="pill">${escapeHtml(t)}</span>`).join("")}</div>
+              <div class="muted"><a href="${escapeHtml(it.product_url||"#")}" target="_blank" rel="noreferrer">商品連結</a></div>
+            </div>
+          </td>
+
+          <td style="text-align:right;font-weight:900;">${Number(it.priority_boost||0)}</td>
+
+          <td>
+            <button class="btnSmall ${it.is_active ? "ghost" : "primary"} statusBtn" data-status="${it.id}">
+              ${it.is_active ? "上架中" : "已下架"}
+            </button>
+          </td>
+
+          <td>
+            <div class="opWrap">
+              <button class="ghost btnSmall" data-edit="${it.id}">編輯</button>
+              <button class="ghost btnSmall" data-toggle="${it.id}">
+                ${it.is_active ? "下架" : "上架"}
+              </button>
+            </div>
+          </td>
+        `;
+
+        // row click (更快)
+        tr.addEventListener("dblclick", ()=> fillForm(it));
+
+        tbody.appendChild(tr);
+
+        tr.querySelector("[data-edit]").addEventListener("click", ()=> fillForm(it));
+
+        tr.querySelector("[data-toggle]").addEventListener("click", async ()=>{
+          await toggleActive(it.id, it.is_active);
+        });
+
+        tr.querySelector("[data-status]").addEventListener("click", async ()=>{
+          await toggleActive(it.id, it.is_active);
+        });
+      });
+
+      const pageNo = Math.floor(PAGE.offset / PAGE.limit) + 1;
+      const pageMax = Math.max(1, Math.ceil((PAGE.count||0) / PAGE.limit));
+      el("listMeta").textContent = `本頁 ${items.length} 筆｜共 ${PAGE.count} 筆｜第 ${pageNo}/${pageMax} 頁`;
+
+      setStatus("列表已載入 ✅");
+    }catch(e){
+      setStatus("列表載入失敗：" + e.message);
+      el("debugList").textContent = JSON.stringify(e.payload||{}, null, 2);
+    }
+  }
+
+  async function toggleActive(id, current){
+    try{
+      setStatus("更新狀態中…");
+      await api("/api/admin?action=custom_products.update", {
+        method:"POST",
+        headers:{ "Content-Type":"application/json" },
+        body: JSON.stringify({ id, patch: { is_active: !current } })
+      });
+      await listReload();
+      // 如果右邊正在編輯同一筆，順便同步勾選
+      if(el("edit_id").value === String(id)){
+        el("f_is_active").checked = !current;
+        el("debugForm").textContent = `已更新狀態：${id}`;
+      }
+      setStatus("已更新 ✅");
+    }catch(e){
+      setStatus("更新失敗：" + e.message);
+      el("debugForm").textContent = JSON.stringify(e.payload||{}, null, 2);
+    }
+  }
+
+  async function saveItem(){
+    try{
+      setStatus("儲存中…");
+      el("debugForm").textContent = "";
+
+      const id = el("edit_id").value;
+      const payload = readForm();
+
+      // 前端先擋必填
+      if(!payload.title) throw new Error("請填 title");
+      if(!payload.image_url) throw new Error("請填 image_url");
+      if(!payload.product_url) throw new Error("請填 product_url");
+
+      let j;
+      if(id){
+        j = await api("/api/admin?action=custom_products.update", {
+          method:"POST",
+          headers:{"Content-Type":"application/json"},
+          body: JSON.stringify({ id, patch: payload })
+        });
+      }else{
+        j = await api("/api/admin?action=custom_products.create", {
+          method:"POST",
+          headers:{"Content-Type":"application/json"},
+          body: JSON.stringify({ item: payload })
+        });
+        el("edit_id").value = (j.item?.id || "");
+      }
+
+      fillForm(j.item || payload);
+      await listReload();
+      setStatus("儲存成功 ✅");
+    }catch(e){
+      setStatus("儲存失敗：" + e.message);
+      el("debugForm").textContent = JSON.stringify(e.payload||{}, null, 2);
+    }
+  }
+
+  async function deactivate(){
+    const id = el("edit_id").value;
+    if(!id){
+      el("debugForm").textContent = "請先從列表選一筆商品再下架";
+      return;
+    }
+    try{
+      setStatus("下架中…");
+      await api("/api/admin?action=custom_products.update", {
+        method:"POST",
+        headers:{ "Content-Type":"application/json" },
+        body: JSON.stringify({ id, patch: { is_active:false } })
+      });
+      el("f_is_active").checked = false;
+      el("debugForm").textContent = `已下架：${id}`;
+      await listReload();
+      setStatus("已下架 ✅");
+    }catch(e){
+      setStatus("下架失敗：" + e.message);
+      el("debugForm").textContent = JSON.stringify(e.payload||{}, null, 2);
+    }
+  }
+
+  // ===== Buttons
+  el("btnSearch").addEventListener("click", ()=>{ PAGE.offset=0; listReload(); });
+  el("btnRefresh").addEventListener("click", ()=> listReload());
+  el("btnNew").addEventListener("click", clearForm);
+
+  el("btnPrev").addEventListener("click", ()=>{
+    PAGE.offset = Math.max(0, PAGE.offset - PAGE.limit);
+    listReload();
   });
-  const j=await res.json().catch(()=>({}));
-  if(!res.ok) throw new Error(j.error||("HTTP "+res.status));
-  return j;
-}
-
-let PAGE={limit:20,offset:0,count:0};
-
-async function listReload(){
-  status("載入中…");
-  const p=new URLSearchParams({
-    action:"custom_products.list",
-    limit:PAGE.limit,
-    offset:PAGE.offset,
-    q:el("q").value||"",
-    tag:el("tag").value||"",
-    is_active:el("is_active").value||""
+  el("btnNext").addEventListener("click", ()=>{
+    if(PAGE.offset + PAGE.limit < PAGE.count) {
+      PAGE.offset += PAGE.limit;
+      listReload();
+    }
   });
-  const j=await api("/api/admin?"+p);
-  PAGE.count=j.count||0;
-  el("list").innerHTML="";
-  j.items.forEach(it=>{
-    const tr=document.createElement("tr");
-    tr.innerHTML=`
-      <td><img class="img" src="${it.image_url}"/></td>
-      <td>
-        <b>${it.title}</b><br/>
-        ${(it.tags||[]).map(t=>`<span class="pill">${t}</span>`).join("")}
-      </td>
-      <td>${it.priority_boost||0}</td>
-      <td>${it.is_active?"上架":"下架"}</td>
-      <td>
-        <button class="ghost" onclick='edit(${JSON.stringify(it)})'>編輯</button>
-      </td>`;
-    el("list").appendChild(tr);
-  });
-  status(`共 ${PAGE.count} 筆`);
-}
 
-function edit(it){
-  el("edit_id").value=it.id;
-  el("f_title").value=it.title;
-  el("f_image_url").value=it.image_url;
-  el("f_product_url").value=it.product_url;
-  el("f_tags").value=(it.tags||[]).join(", ");
-  el("f_priority_boost").value=it.priority_boost||0;
-  el("f_badge_text").value=it.badge_text||"";
-  el("f_tracking_params").value=JSON.stringify(it.tracking_params||{},null,2);
-  el("f_is_active").checked=!!it.is_active;
-}
+  el("btnSaveItem").addEventListener("click", saveItem);
+  el("btnClear").addEventListener("click", clearForm);
+  el("btnDeactivate").addEventListener("click", deactivate);
 
-async function save(){
-  const id=el("edit_id").value;
-  const payload={
-    title:el("f_title").value,
-    image_url:el("f_image_url").value,
-    product_url:el("f_product_url").value,
-    tags:el("f_tags").value.split(",").map(x=>x.trim()).filter(Boolean),
-    priority_boost:+el("f_priority_boost").value||0,
-    badge_text:el("f_badge_text").value||null,
-    tracking_params:JSON.parse(el("f_tracking_params").value||"{}"),
-    is_active:el("f_is_active").checked
-  };
-  await api("/api/admin?action="+(id?"custom_products.update":"custom_products.create"),{
-    method:"POST",
-    headers:{"Content-Type":"application/json"},
-    body:JSON.stringify(id?{id,patch:payload}:{item:payload})
-  });
-  await listReload();
-}
-
-el("btnSearch").onclick=()=>{PAGE.offset=0;listReload()};
-el("btnSave").onclick=save;
-el("btnNew").onclick=()=>{el("edit_id").value="";el("f_title").value=""};
-el("btnPrev").onclick=()=>{PAGE.offset=Math.max(0,PAGE.offset-PAGE.limit);listReload()};
-el("btnNext").onclick=()=>{if(PAGE.offset+PAGE.limit<PAGE.count){PAGE.offset+=PAGE.limit;listReload()}};
-
-listReload();
+  // ===== boot
+  (async ()=>{
+    // 先跑 rules（不成功也不影響）
+    await rulesReload();
+    clearForm();
+    setStatus("初始化完成 ✅（切換到 Custom Products 開始管理）");
+  })();
 </script>
+
 </body>
 </html>
