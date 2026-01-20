@@ -1,809 +1,286 @@
 <!doctype html>
 <html lang="zh-Hant">
 <head>
-  <meta charset="utf-8"/>
-  <meta name="viewport" content="width=device-width,initial-scale=1"/>
-  <title>Admin</title>
-  <style>
-    :root{
-      --bg:#f6f7fb; --card:#fff; --line:#e5e7eb; --line2:#eef2f7;
-      --text:#111; --muted:#6b7280; --primary:#111; --danger:#b91c1c;
-      --radius:16px;
-    }
-    body{font-family:system-ui,-apple-system,Segoe UI,Roboto,"Noto Sans TC",sans-serif;background:var(--bg);margin:0;padding:18px;color:var(--text)}
-    .card{max-width:1180px;margin:0 auto;background:var(--card);border:1px solid var(--line);border-radius:var(--radius);padding:16px;box-shadow:0 14px 34px rgba(0,0,0,.06)}
-    h1{margin:0 0 10px;font-size:18px}
-    .tabs{display:flex;gap:8px;margin:10px 0 16px;flex-wrap:wrap}
-    .tab{border:1px solid var(--line);background:#fff;border-radius:999px;padding:8px 12px;font-weight:800;cursor:pointer}
-    .tab.active{background:var(--primary);color:#fff;border-color:var(--primary)}
-    .muted{color:var(--muted);font-size:12px;margin-top:8px;white-space:pre-wrap}
-    .line{height:1px;background:var(--line2);margin:14px 0}
-    label{display:block;font-weight:800;font-size:12px;margin:10px 0 6px}
-    input, textarea, select{width:100%;padding:10px 12px;border:1px solid var(--line);border-radius:12px;font-size:14px;box-sizing:border-box}
-    textarea{min-height:96px}
-    button{border:none;border-radius:999px;padding:10px 14px;font-weight:900;cursor:pointer}
-    button:disabled{opacity:.55; cursor:not-allowed;}
-    .primary{background:var(--primary);color:#fff}
-    .ghost{background:#fff;border:1px solid var(--line)}
-    .danger{background:var(--danger);color:#fff}
-    .row{display:grid;grid-template-columns:1fr 1fr;gap:12px;align-items:start}
-    .row3{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px;align-items:start}
-    @media (max-width: 1100px){ .row3{grid-template-columns:repeat(2,minmax(0,1fr));} }
-    @media (max-width: 720px){ .row{grid-template-columns:1fr;} .row3{grid-template-columns:1fr;} }
-    .actions{display:flex;gap:10px;flex-wrap:wrap;margin-top:12px}
-    .pill{display:inline-block;padding:3px 8px;border:1px solid var(--line);border-radius:999px;font-size:12px;background:#fff}
-    table{width:100%;border-collapse:separate;border-spacing:0;overflow:hidden;border:1px solid var(--line);border-radius:14px}
-    th,td{font-size:12px;padding:10px;border-bottom:1px solid var(--line2);vertical-align:top}
-    th{background:#fafafa;text-align:left;position:sticky;top:0;z-index:1}
-    tr:last-child td{border-bottom:none}
-    .img{width:56px;height:56px;object-fit:cover;border-radius:10px;border:1px solid var(--line)}
-    .split{display:grid;grid-template-columns: 1.12fr .88fr; gap:14px; align-items:start}
-    @media (max-width: 960px){ .split{grid-template-columns:1fr} }
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1"/>
+<title>Admin – Custom Products</title>
 
-    /* 右側固定可捲動（比較好編輯） */
-    .formPanel{
-      position: sticky;
-      top: 14px;
-      max-height: calc(100vh - 40px);
-      overflow: auto;
-      padding-right: 6px;
-      border-left: 1px solid var(--line2);
-      padding-left: 14px;
-    }
-    @media (max-width: 960px){
-      .formPanel{ position: relative; top:auto; max-height:none; overflow:visible; border-left:none; padding-left:0; }
-    }
+<style>
+body{
+  font-family:system-ui,-apple-system,Segoe UI,Roboto,"Noto Sans TC",sans-serif;
+  background:#f6f7fb;margin:0;padding:18px;color:#111
+}
+.card{
+  max-width:1200px;margin:0 auto;background:#fff;
+  border:1px solid #e5e7eb;border-radius:16px;
+  padding:16px;box-shadow:0 14px 34px rgba(0,0,0,.06)
+}
+h1{margin:0 0 10px;font-size:18px}
+.tabs{display:flex;gap:8px;margin:10px 0 16px}
+.tab{
+  border:1px solid #e5e7eb;background:#fff;
+  border-radius:999px;padding:8px 14px;
+  font-weight:800;cursor:pointer
+}
+.tab.active{background:#111;color:#fff;border-color:#111}
+.muted{color:#6b7280;font-size:12px;margin-top:6px}
+.line{height:1px;background:#eef2f7;margin:14px 0}
+label{display:block;font-weight:800;font-size:12px;margin:10px 0 6px}
+input,textarea,select{
+  width:100%;padding:10px 12px;
+  border:1px solid #e5e7eb;border-radius:10px;
+  font-size:14px;box-sizing:border-box
+}
+textarea{min-height:100px}
+button{
+  border:none;border-radius:999px;
+  padding:10px 14px;font-weight:900;cursor:pointer
+}
+.primary{background:#111;color:#fff}
+.ghost{background:#fff;border:1px solid #e5e7eb}
+.danger{background:#b91c1c;color:#fff}
 
-    .bar{
-      display:flex; gap:10px; flex-wrap:wrap; align-items:center; justify-content:space-between;
-      background:#fafafa; border:1px solid var(--line); border-radius:14px; padding:10px 12px;
-      margin: 10px 0 12px;
-    }
-    .bar .left{display:flex;gap:10px;flex-wrap:wrap;align-items:center}
-    .bar .right{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
-    .kbd{font-family:ui-monospace,SFMono-Regular,Menlo,Monaco,Consolas,monospace;font-size:12px;background:#fff;border:1px solid var(--line);padding:2px 6px;border-radius:8px;color:#111}
-    details{border:1px solid var(--line); border-radius:14px; padding:10px 12px; background:#fff;}
-    details summary{cursor:pointer; font-weight:900;}
-    .help{font-size:12px;color:var(--muted);line-height:1.45;margin-top:6px}
-    .dangerText{color:var(--danger); font-weight:800;}
-    .okText{color:#047857; font-weight:800;}
-    /* 讓 split 變成「雙欄各自捲動」而不是整頁亂捲 */
-#panelCustom .split{
-  height: calc(100vh - 190px); /* 依你的上方 header 高度可微調 */
-  overflow: hidden;
+.split{
+  display:grid;
+  grid-template-columns:1.3fr .9fr;
+  gap:16px
+}
+@media(max-width:960px){ .split{grid-template-columns:1fr} }
+
+.tableWrap{max-height:65vh;overflow:auto}
+table{
+  width:100%;border-collapse:separate;border-spacing:0;
+  border:1px solid #e5e7eb;border-radius:14px
+}
+th,td{
+  font-size:12px;padding:10px;
+  border-bottom:1px solid #eef2f7;
+  vertical-align:top
+}
+th{background:#fafafa}
+tr:last-child td{border-bottom:none}
+.img{
+  width:56px;height:56px;object-fit:cover;
+  border-radius:10px;border:1px solid #e5e7eb
+}
+.pill{
+  display:inline-block;padding:3px 8px;
+  border:1px solid #e5e7eb;border-radius:999px;
+  font-size:12px;margin-right:4px
 }
 
-.listPanel{
-  display:flex;
-  flex-direction:column;
-  min-width:0;
-  border-right:1px solid #eef2f7;
-  padding-right:14px;
-}
-
-/* 左欄頂部工具區固定 */
-.listTop{
-  position: sticky;
-  top: 0;
-  z-index: 3;
-  background:#fff;
-  padding-bottom:10px;
-}
-
-/* 左欄列表只在這裡捲動 */
-.listScroll{
-  flex: 1;
-  overflow:auto;
-  border:1px solid #e5e7eb;
-  border-radius:14px;
-}
-
-/* 表格更穩定，避免被撐爆 */
-table{ table-layout: fixed; }
-th:nth-child(2), td:nth-child(2){ width: 55%; }
-td{ word-break: break-word; }
-
-/* 標題做一點截斷，避免超長把 UI 撐開 */
-.titleClamp{
-  font-weight:900;
-  display:-webkit-box;
-  -webkit-line-clamp:2;
-  -webkit-box-orient:vertical;
-  overflow:hidden;
-}
-
-/* 右欄同樣固定高度捲動 */
 .formPanel{
-  height: calc(100vh - 190px);
-  overflow:auto;
-  position: relative; /* 取消 sticky，改用固定高度捲動更穩 */
+  position:sticky;top:16px;
+  max-height:calc(100vh - 60px);
+  overflow:auto;padding-right:6px
 }
-
-/* 手機就改成上下排列，避免高度公式出錯 */
-@media (max-width: 960px){
-  #panelCustom .split{ height:auto; overflow:visible; }
-  .listPanel{ border-right:none; padding-right:0; }
-  .listTop{ position:relative; }
-  .listScroll{ max-height: 60vh; }
-  .formPanel{ height:auto; overflow:visible; }
-}
-
-  </style>
+</style>
 </head>
+
 <body>
-  <div class="card">
-    <h1>管理後台</h1>
-    <div class="muted" id="status">初始化中…</div>
+<div class="card">
+  <h1>管理後台</h1>
+  <div class="muted" id="status">初始化中…</div>
 
-    <div class="tabs">
-      <button class="tab active" id="tabRules">Display Rules</button>
-      <button class="tab" id="tabCustom">Custom Products</button>
-    </div>
-
-    <!-- ===== Rules ===== -->
-    <section id="panelRules">
-      <div class="bar">
-        <div class="left">
-          <div style="font-weight:900;">每個 Slot 顯示數量（Google + Custom 合計）</div>
-          <div class="muted">如果你還沒在 /api/admin 實作 get_rules / save_rules，這頁會顯示提示但不影響商品管理。</div>
-        </div>
-        <div class="right">
-          <button class="ghost" id="btnReloadRules">重新讀取</button>
-          <button class="primary" id="btnSaveRules">儲存規則</button>
-        </div>
-      </div>
-
-      <div class="row">
-        <div><label>上衣 top</label><input id="top" type="number" min="0" max="12" value="4"/></div>
-        <div><label>下身 bottom</label><input id="bottom" type="number" min="0" max="12" value="4"/></div>
-        <div><label>鞋 shoes</label><input id="shoes" type="number" min="0" max="12" value="4"/></div>
-        <div><label>外套 outer</label><input id="outer" type="number" min="0" max="12" value="4"/></div>
-        <div><label>包 bag</label><input id="bag" type="number" min="0" max="12" value="2"/></div>
-        <div><label>帽 hat</label><input id="hat" type="number" min="0" max="12" value="2"/></div>
-      </div>
-
-      <div class="line"></div>
-
-      <div class="row">
-        <div>
-          <label>每個 slot 最多顯示幾個 Custom</label>
-          <input id="customMax" type="number" min="0" max="6" value="2"/>
-          <div class="help">其餘用 Google Shopping 補滿。</div>
-        </div>
-        <div>
-          <label>Fallback（補不滿再用較寬 query 搜一次）</label>
-          <div style="display:flex;align-items:center;gap:8px;margin-top:6px">
-            <input id="fallback" type="checkbox" checked />
-            <span class="help">建議開啟，避免某些 slot 掉到 2～3。</span>
-          </div>
-        </div>
-      </div>
-
-      <div class="muted" id="debugRules"></div>
-    </section>
-
-    <!-- ===== Custom Products ===== -->
-    <section id="panelCustom" style="display:none;">
-      <div class="split">
-        <!-- LEFT: list -->
-        <div>
-          <div class="bar">
-            <div class="left">
-              <div style="font-weight:900;">商品列表</div>
-              <div class="muted">篩選：title / is_active / tag（包含）</div>
-            </div>
-            <div class="right">
-              <button class="ghost" id="btnSearch">搜尋</button>
-              <button class="ghost" id="btnReset">清除篩選</button>
-              <button class="ghost" id="btnNew">新增商品</button>
-            </div>
-          </div>
-
-          <div class="row3">
-            <div>
-              <label>搜尋（title）</label>
-              <input id="q" placeholder="例如：羽絨 外套 / hoodie" />
-            </div>
-            <div>
-              <label>狀態</label>
-              <select id="is_active">
-                <option value="">全部</option>
-                <option value="true">上架</option>
-                <option value="false">下架</option>
-              </select>
-            </div>
-            <div>
-              <label>tag（包含）</label>
-              <input id="tag" placeholder="例如：item_top / male / kids" />
-            </div>
-          </div>
-
-          <div class="line"></div>
-
-          <div style="overflow:auto; max-height: 62vh;">
-            <table>
-              <thead>
-                <tr>
-                  <th style="width:70px;">圖</th>
-                  <th>標題 / tags</th>
-                  <th style="width:110px;">priority</th>
-                  <th style="width:90px;">狀態</th>
-                  <th style="width:160px;">操作</th>
-                </tr>
-              </thead>
-              <tbody id="list"></tbody>
-            </table>
-          </div>
-
-          <div class="actions">
-            <button class="ghost" id="btnPrev">上一頁</button>
-            <button class="ghost" id="btnNext">下一頁</button>
-            <span class="muted" id="pageHint"></span>
-          </div>
-
-          <div class="muted" id="debugList"></div>
-        </div>
-
-        <!-- RIGHT: form -->
-        <div class="formPanel">
-          <h1 style="font-size:14px;margin-top:0;">編輯 / 新增</h1>
-
-          <div class="help">
-            <div><span class="kbd">tags</span> 用逗號分隔，例如：<span class="kbd">item_top, female, adult, style_minimal</span></div>
-            <div>前台實際會用到的：<span class="kbd">title</span>、<span class="kbd">image_url</span>、<span class="kbd">product_url</span>、<span class="kbd">tags</span>、<span class="kbd">priority_boost</span>、<span class="kbd">is_active</span></div>
-          </div>
-
-          <input type="hidden" id="edit_id"/>
-
-          <label>title <span class="dangerText">*</span></label>
-          <input id="f_title"/>
-
-          <label>image_url <span class="dangerText">*</span></label>
-          <input id="f_image_url" placeholder="https://...jpg"/>
-
-          <label>product_url <span class="dangerText">*</span></label>
-          <input id="f_product_url" placeholder="https://..."/>
-
-          <div class="row">
-            <div>
-              <label>priority_boost（越大越優先）</label>
-              <input id="f_priority_boost" type="number" value="0"/>
-            </div>
-            <div>
-              <label>is_active（是否上架）</label>
-              <div style="display:flex;align-items:center;gap:8px;margin-top:6px">
-                <input id="f_is_active" type="checkbox" checked />
-                <span class="help">勾選＝上架；不勾＝下架（前台不顯示）</span>
-              </div>
-            </div>
-          </div>
-
-          <label>tags</label>
-          <input id="f_tags" placeholder="item_top, adult, female"/>
-
-          <details style="margin-top:12px">
-            <summary>進階欄位（可留空）</summary>
-
-            <div class="row">
-              <div>
-                <label>merchant（店家/來源）</label>
-                <input id="f_merchant" placeholder="momo / shopee / yourbrand"/>
-                <div class="help">目前主要是「後台辨識與未來統計用」，前台可不顯示。</div>
-              </div>
-              <div>
-                <label>badge_text（角標）</label>
-                <input id="f_badge_text" placeholder="本站推薦 / 熱銷"/>
-                <div class="help">不填就不顯示或由前台給預設字。</div>
-              </div>
-            </div>
-
-            <div class="row">
-              <div>
-                <label>discount_type</label>
-                <select id="f_discount_type">
-                  <option value="none">none</option>
-                  <option value="code">code</option>
-                  <option value="sale">sale</option>
-                </select>
-              </div>
-              <div>
-                <label>discount_code</label>
-                <input id="f_discount_code" placeholder="例：NEW88"/>
-              </div>
-            </div>
-
-            <label>tracking_params（JSON）</label>
-            <textarea id="f_tracking_params" placeholder='{"utm_source":"site","utm_medium":"ref"}'></textarea>
-            <div class="help">
-              可以空白。用途：自動在 product_url 後面加上 utm 參數，方便你看來源/轉換。  
-              例：<span class="kbd">{"utm_source":"simon","utm_medium":"recommend"}</span>
-            </div>
-          </details>
-
-          <div class="actions">
-            <button class="primary" id="btnSaveItem">儲存</button>
-            <button class="ghost" id="btnClear">清空表單</button>
-            <button class="danger" id="btnDeactivate">一鍵下架</button>
-          </div>
-
-          <details style="margin-top:10px">
-            <summary>匯入（JSON / CSV）</summary>
-
-            <div class="help" style="margin-top:10px">
-              JSON 格式：<span class="kbd">[ {title,image_url,product_url,tags,priority_boost,is_active,...}, ... ]</span><br/>
-              CSV 欄位建議：<span class="kbd">title,image_url,product_url,tags,priority_boost,is_active</span><br/>
-              tags 用「逗號」或「|」都可以（我會幫你轉）。
-            </div>
-
-            <label>貼上 JSON 或 CSV</label>
-            <textarea id="importText" placeholder='[{"title":"...","image_url":"...","product_url":"...","tags":"item_top,female","priority_boost":0,"is_active":true}]'></textarea>
-
-            <div class="actions">
-              <button class="ghost" id="btnImportDry">預覽解析</button>
-              <button class="primary" id="btnImportGo">執行匯入</button>
-            </div>
-
-            <div class="muted" id="debugImport"></div>
-          </details>
-
-          <div class="muted" id="debugForm"></div>
-        </div>
-      </div>
-    </section>
+  <div class="tabs">
+    <button class="tab active" id="tabCustom">Custom Products</button>
+    <button class="tab" id="tabRules">Display Rules（尚未啟用）</button>
   </div>
 
+  <!-- ================= Custom Products ================= -->
+  <section id="panelCustom">
+    <div class="split">
+
+      <!-- 左：列表 -->
+      <div>
+        <h1 style="font-size:14px">商品列表</h1>
+
+        <div style="display:grid;grid-template-columns:2fr 1fr 1fr;gap:10px">
+          <div>
+            <label>搜尋（title）</label>
+            <input id="q" placeholder="例如：外套 / hoodie"/>
+          </div>
+          <div>
+            <label>狀態</label>
+            <select id="is_active">
+              <option value="">全部</option>
+              <option value="true">上架</option>
+              <option value="false">下架</option>
+            </select>
+          </div>
+          <div>
+            <label>tag</label>
+            <input id="tag" placeholder="item_top / adult"/>
+          </div>
+        </div>
+
+        <div style="margin-top:10px;display:flex;gap:8px">
+          <button class="ghost" id="btnSearch">搜尋</button>
+          <button class="ghost" id="btnNew">新增商品</button>
+        </div>
+
+        <div class="line"></div>
+
+        <div class="tableWrap">
+          <table>
+            <thead>
+              <tr>
+                <th style="width:70px">圖</th>
+                <th>商品</th>
+                <th style="width:80px">priority</th>
+                <th style="width:70px">狀態</th>
+                <th style="width:140px">操作</th>
+              </tr>
+            </thead>
+            <tbody id="list"></tbody>
+          </table>
+        </div>
+
+        <div style="margin-top:10px;display:flex;gap:8px">
+          <button class="ghost" id="btnPrev">上一頁</button>
+          <button class="ghost" id="btnNext">下一頁</button>
+        </div>
+      </div>
+
+      <!-- 右：表單 -->
+      <div class="formPanel">
+        <h1 style="font-size:14px">編輯 / 新增</h1>
+
+        <input type="hidden" id="edit_id"/>
+
+        <label>title *</label>
+        <input id="f_title"/>
+
+        <label>image_url *</label>
+        <input id="f_image_url"/>
+
+        <label>product_url *</label>
+        <input id="f_product_url"/>
+
+        <label>tags（逗號分隔）</label>
+        <input id="f_tags" placeholder="item_top, adult, female"/>
+
+        <label>priority_boost</label>
+        <input id="f_priority_boost" type="number" value="0"/>
+
+        <label>badge_text（可空）</label>
+        <input id="f_badge_text" placeholder="本站推薦"/>
+
+        <label>tracking_params（JSON，可空）</label>
+        <textarea id="f_tracking_params" placeholder='{"utm_source":"reco"}'></textarea>
+
+        <div style="margin-top:8px">
+          <label><input type="checkbox" id="f_is_active" checked/> 上架</label>
+        </div>
+
+        <div style="margin-top:12px;display:flex;gap:8px;flex-wrap:wrap">
+          <button class="primary" id="btnSave">儲存</button>
+          <button class="ghost" id="btnClear">清空</button>
+          <button class="danger" id="btnDeactivate">下架</button>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ================= Rules ================= -->
+  <section id="panelRules" style="display:none">
+    <div class="muted">
+      Display Rules 尚未接後端。<br/>
+      下一步會把「每個 slot 顯示幾個」接到 search-products。
+    </div>
+  </section>
+</div>
+
 <script>
-  // token 儲存在 localStorage
-  const AUTH_KEY="os_supabase_access_token_v1";
-  const el = (id)=>document.getElementById(id);
-  const setStatus = (t)=> el("status").textContent = t;
+const AUTH_KEY="os_supabase_access_token_v1";
+const el=id=>document.getElementById(id);
+const status=t=>el("status").textContent=t;
+const token=()=>localStorage.getItem(AUTH_KEY);
 
-  function token(){ return localStorage.getItem(AUTH_KEY); }
-  function clearAccessToken(){ localStorage.removeItem(AUTH_KEY); }
-
-  // ====== API helper（統一走 /api/admin）
-  async function apiAdmin(actionOrOp, opts={}, params={}, mode="action"){
-    const t = token();
-    if(!t) throw new Error("找不到 token：請先到 /body-test.html 登入後，再回來 /admin");
-
-    const qs = new URLSearchParams(params || {});
-    if(mode === "op") qs.set("op", actionOrOp);
-    else qs.set("action", actionOrOp);
-
-    const url = "/api/admin?" + qs.toString();
-
-    const headers = Object.assign({}, opts.headers||{}, {
-      "Authorization": "Bearer " + t
-    });
-
-    const res = await fetch(url, Object.assign({}, opts, { headers }));
-    const text = await res.text();
-    let json = {};
-    try { json = text ? JSON.parse(text) : {}; } catch { json = { raw: text }; }
-
-    if(!res.ok){
-      const detailMsg =
-        (typeof json?.detail === "string") ? json.detail :
-        (json?.detail?.message) ? json.detail.message :
-        (json?.raw) ? json.raw :
-        "";
-      const msg = json?.error ? (json.error + (detailMsg ? ("\n" + detailMsg) : "")) : ("HTTP " + res.status);
-      const e = new Error(`HTTP ${res.status}\n${msg}`);
-      e.payload = json;
-      throw e;
-    }
-    return json;
-  }
-
-  // ====== Tabs
-  function showTab(which){
-    el("tabRules").classList.toggle("active", which==="rules");
-    el("tabCustom").classList.toggle("active", which==="custom");
-    el("panelRules").style.display = which==="rules" ? "" : "none";
-    el("panelCustom").style.display = which==="custom" ? "" : "none";
-  }
-  el("tabRules").addEventListener("click", ()=>showTab("rules"));
-  el("tabCustom").addEventListener("click", async ()=>{
-    showTab("custom");
-    PAGE.offset=0;
-    await listReload();
+async function api(url, opts={}){
+  const t=token();
+  if(!t) throw new Error("請先登入");
+  const res=await fetch(url,{
+    ...opts,
+    headers:{...(opts.headers||{}),"Authorization":"Bearer "+t}
   });
+  const j=await res.json().catch(()=>({}));
+  if(!res.ok) throw new Error(j.error||("HTTP "+res.status));
+  return j;
+}
 
-  // ====== Rules (可用就用；沒有就顯示提示)
-  function readRulesForm(){
-    return {
-      perSlot: {
-        top: Number(el("top").value||0),
-        bottom: Number(el("bottom").value||0),
-        shoes: Number(el("shoes").value||0),
-        outer: Number(el("outer").value||0),
-        bag: Number(el("bag").value||0),
-        hat: Number(el("hat").value||0),
-      },
-      customMax: Number(el("customMax").value||0),
-      fallback: !!el("fallback").checked
-    };
-  }
-  function applyRules(r){
-    const per = (r && r.perSlot) || {};
-    if (per.top!=null) el("top").value = per.top;
-    if (per.bottom!=null) el("bottom").value = per.bottom;
-    if (per.shoes!=null) el("shoes").value = per.shoes;
-    if (per.outer!=null) el("outer").value = per.outer;
-    if (per.bag!=null) el("bag").value = per.bag;
-    if (per.hat!=null) el("hat").value = per.hat;
-    if (r && r.customMax!=null) el("customMax").value = r.customMax;
-    if (r && typeof r.fallback==="boolean") el("fallback").checked = r.fallback;
-  }
-  // rulesReload
-const j = await apiAdmin("get_rules", {}, {}, "action");
+let PAGE={limit:20,offset:0,count:0};
 
-// rulesSave
-const j = await apiAdmin("save_rules", {
-  method:"POST",
-  headers:{"Content-Type":"application/json"},
-  body: JSON.stringify({ rules: readRulesForm() })
-}, {}, "action");
-
-  el("btnReloadRules").addEventListener("click", rulesReload);
-  el("btnSaveRules").addEventListener("click", rulesSave);
-
-  // ====== Custom products
-  let PAGE = { limit: 50, offset: 0, count: 0 };
-
-  function tagsToArray(s){
-    return String(s||"").split(",").map(x=>x.trim()).filter(Boolean);
-  }
-  function jsonParseSafe(s){
-    const t = String(s||"").trim();
-    if(!t) return {};          // ✅ 空白 = {}
-    try { return JSON.parse(t); } catch { return {}; }
-  }
-  function escapeHtml(s){
-    return String(s||"").replace(/[&<>"']/g, (c)=>({
-      "&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"
-    }[c]));
-  }
-
-  function fillForm(item){
-    el("edit_id").value = item?.id || "";
-    el("f_title").value = item?.title || "";
-    el("f_image_url").value = item?.image_url || "";
-    el("f_product_url").value = item?.product_url || "";
-    el("f_merchant").value = item?.merchant || "";
-    el("f_priority_boost").value = item?.priority_boost ?? 0;
-    el("f_tags").value = Array.isArray(item?.tags) ? item.tags.join(", ") : (item?.tags || "");
-    el("f_badge_text").value = item?.badge_text || "";
-    el("f_discount_type").value = item?.discount_type || "none";
-    el("f_discount_code").value = item?.discount_code || "";
-    el("f_tracking_params").value = JSON.stringify(item?.tracking_params || {}, null, 2);
-    el("f_is_active").checked = ("is_active" in (item||{})) ? !!item.is_active : true;
-
-    el("debugForm").textContent = item?.id ? `編輯中：${item.id}` : "新增中";
-  }
-
-  function clearForm(){
-    fillForm({ is_active:true, priority_boost:0, discount_type:"none", tracking_params:{} });
-    setTimeout(()=> el("f_title")?.focus(), 0);
-  }
-
-  function readForm(){
-    return {
-      title: el("f_title").value?.trim(),
-      image_url: el("f_image_url").value?.trim(),
-      product_url: el("f_product_url").value?.trim(),
-      merchant: el("f_merchant").value?.trim() || null,
-      priority_boost: Number(el("f_priority_boost").value||0),
-      tags: tagsToArray(el("f_tags").value),
-      badge_text: (el("f_badge_text").value || "").trim() || null,
-      discount_type: el("f_discount_type").value || "none",
-      discount_code: (el("f_discount_code").value || "").trim() || null,
-      tracking_params: jsonParseSafe(el("f_tracking_params").value),
-      is_active: !!el("f_is_active").checked
-    };
-  }
-
-  function buildListParams(){
-    const params = new URLSearchParams();
-    params.set("limit", String(PAGE.limit));
-    params.set("offset", String(PAGE.offset));
-
-    const q = el("q").value.trim();
-    const is_active = el("is_active").value; // ✅ "true"/"false"/""
-    const tag = el("tag").value.trim();
-
-    if(q) params.set("q", q);
-    if(is_active) params.set("is_active", is_active); // ✅ 後端吃 is_active
-    if(tag) params.set("tag", tag);
-
-    return params;
-  }
-
-  async function listReload(){
-    try{
-      setStatus("載入商品列表中…");
-      el("debugList").textContent = "";
-
-      const j = await apiAdmin("custom_products.list", {}, Object.fromEntries(buildListParams().entries()), "action");
-
-      const items = j.items || j.rows || [];
-      PAGE.count = j.count ?? 0;
-
-      const tbody = el("list");
-      tbody.innerHTML = "";
-
-      items.forEach(it=>{
-        const tr = document.createElement("tr");
-        tr.innerHTML = `
-          <td><img class="img" src="${it.image_url||""}" alt=""/></td>
-          <td>
-            <div style="font-weight:900">${escapeHtml(it.title||"")}</div>
-            <div class="muted" style="margin-top:6px">
-              ${(it.tags||[]).map(t=>`<span class="pill">${escapeHtml(t)}</span>`).join(" ")}
-            </div>
-            <div class="muted" style="margin-top:6px">
-              <a href="${it.product_url||"#"}" target="_blank" rel="noreferrer">商品連結</a>
-            </div>
-          </td>
-          <td>${Number(it.priority_boost||0)}</td>
-          <td>${it.is_active ? "<span class='pill okText'>上架</span>" : "<span class='pill'>下架</span>"}</td>
-          <td>
-            <button class="ghost" data-edit="${it.id}">編輯</button>
-            <button class="${it.is_active ? "ghost" : "primary"}" data-toggle="${it.id}">
-              ${it.is_active ? "下架" : "上架"}
-            </button>
-          </td>
-        `;
-        tbody.appendChild(tr);
-
-        tr.querySelector("[data-edit]").addEventListener("click", ()=> fillForm(it));
-        tr.querySelector("[data-toggle]").addEventListener("click", ()=> toggleActive(it));
-      });
-
-      const pageNo = Math.floor(PAGE.offset / PAGE.limit) + 1;
-      const pageMax = Math.max(1, Math.ceil((PAGE.count||0) / PAGE.limit));
-      el("pageHint").textContent = `第 ${pageNo}/${pageMax} 頁（共 ${PAGE.count} 筆）`;
-      setStatus(`列表已載入 ✅ 本頁 ${items.length} 筆`);
-      el("debugList").textContent = "";
-    }catch(e){
-      setStatus("列表載入失敗：" + e.message);
-      el("debugList").textContent = JSON.stringify(e.payload||{}, null, 2);
-    }
-  }
-
-  async function toggleActive(it){
-    try{
-      setStatus("更新狀態中…");
-      await apiAdmin("custom_products.update", {
-        method:"POST",
-        headers:{"Content-Type":"application/json"},
-        body: JSON.stringify({ id: it.id, patch: { is_active: !it.is_active } })
-      }, {}, "action");
-
-      setStatus("已更新 ✅");
-      if(el("edit_id").value === String(it.id)) {
-        el("f_is_active").checked = !it.is_active;
-        el("debugForm").textContent = `已更新狀態：${it.id}`;
-      }
-      await listReload();
-    }catch(e){
-      setStatus("更新失敗：" + e.message);
-      el("debugForm").textContent = JSON.stringify(e.payload||{}, null, 2);
-    }
-  }
-
-  async function saveItem(){
-    try{
-      setStatus("儲存中…");
-      el("debugForm").textContent = "";
-
-      const id = el("edit_id").value;
-      const payload = readForm();
-
-      // ✅ 前端先擋必填
-      if(!payload.title) throw new Error("請填 title");
-      if(!payload.image_url) throw new Error("請填 image_url");
-      if(!payload.product_url) throw new Error("請填 product_url");
-      if(!payload.tags || payload.tags.length === 0) throw new Error("請至少填 1 個 tag（例如 item_top）");
-
-      if(id){
-        await apiAdmin("custom_products.update", {
-          method:"POST",
-          headers:{"Content-Type":"application/json"},
-          body: JSON.stringify({ id, patch: payload })
-        }, {}, "action");
-        setStatus("儲存成功 ✅（已更新）");
-      }else{
-        const j = await apiAdmin("custom_products.create", {
-          method:"POST",
-          headers:{"Content-Type":"application/json"},
-          body: JSON.stringify({ item: payload })
-        }, {}, "action");
-        const newId = j?.item?.id || "";
-        if(newId) el("edit_id").value = newId;
-        setStatus("儲存成功 ✅（已新增）");
-      }
-
-      await listReload();
-    }catch(e){
-      setStatus("儲存失敗：" + e.message);
-      el("debugForm").textContent = JSON.stringify(e.payload||{}, null, 2);
-    }
-  }
-
-  async function deactivate(){
-    const id = el("edit_id").value;
-    if(!id){ el("debugForm").textContent = "尚未選擇商品"; return; }
-
-    try{
-      setStatus("下架中…");
-      await apiAdmin("custom_products.delete", {
-        method:"POST",
-        headers:{"Content-Type":"application/json"},
-        body: JSON.stringify({ id })
-      }, {}, "action");
-
-      setStatus("已下架 ✅");
-      el("f_is_active").checked = false;
-      el("debugForm").textContent = `已下架：${id}`;
-      await listReload();
-    }catch(e){
-      setStatus("下架失敗：" + e.message);
-      el("debugForm").textContent = JSON.stringify(e.payload||{}, null, 2);
-    }
-  }
-
-  // ====== Import (JSON/CSV -> action custom_products.import)
-  function parseCSV(text){
-    const lines = String(text||"").trim().split(/\r?\n/).filter(Boolean);
-    if(lines.length < 2) return [];
-    const header = lines[0].split(",").map(s=>s.trim());
-    const out = [];
-    for(let i=1;i<lines.length;i++){
-      const row = lines[i].split(",").map(s=>s.trim());
-      const obj = {};
-      header.forEach((k, idx)=> obj[k] = row[idx] ?? "");
-      out.push(obj);
-    }
-    return out;
-  }
-
-  function normalizeImportItem(x){
-    const obj = (x && typeof x === "object") ? x : {};
-    const tagsRaw = obj.tags ?? "";
-    let tags = [];
-    if(Array.isArray(tagsRaw)) tags = tagsRaw;
-    else {
-      // 支援 "a,b,c" 或 "a|b|c"
-      tags = String(tagsRaw).includes("|")
-        ? String(tagsRaw).split("|")
-        : String(tagsRaw).split(",");
-    }
-    tags = tags.map(s=>String(s).trim()).filter(Boolean);
-
-    const isActiveRaw = String(obj.is_active ?? obj.active ?? "").trim().toLowerCase();
-    const is_active =
-      (isActiveRaw === "") ? true :
-      (["true","1","y","yes"].includes(isActiveRaw)) ? true :
-      (["false","0","n","no"].includes(isActiveRaw)) ? false :
-      !!obj.is_active;
-
-    const pb = (obj.priority_boost === "" || obj.priority_boost == null) ? 0 : Number(obj.priority_boost || 0);
-
-    return {
-      title: String(obj.title || "").trim(),
-      image_url: String(obj.image_url || "").trim(),
-      product_url: String(obj.product_url || "").trim(),
-      tags,
-      priority_boost: isFinite(pb) ? pb : 0,
-      is_active
-    };
-  }
-
-  function parseImportText(){
-    const t = String(el("importText").value||"").trim();
-    if(!t) return { items: [], error: "請貼上 JSON 或 CSV" };
-
-    // JSON
-    if(t.startsWith("[") || t.startsWith("{")){
-      try{
-        const j = JSON.parse(t);
-        const arr = Array.isArray(j) ? j : (Array.isArray(j.items) ? j.items : []);
-        const items = arr.map(normalizeImportItem);
-        return { items };
-      }catch(e){
-        return { items: [], error: "JSON 解析失敗：" + e.message };
-      }
-    }
-
-    // CSV
-    const rows = parseCSV(t);
-    const items = rows.map(normalizeImportItem);
-    return { items };
-  }
-
-  async function importDry(){
-    el("debugImport").textContent = "";
-    const { items, error } = parseImportText();
-    if(error){
-      el("debugImport").textContent = error;
-      return;
-    }
-    const badIdx = items.findIndex(it => !it.title || !it.image_url || !it.product_url || !it.tags?.length);
-    if(badIdx >= 0){
-      el("debugImport").textContent = "第 " + (badIdx+1) + " 筆缺必填：title / image_url / product_url / tags";
-      return;
-    }
-    el("debugImport").textContent = "預覽解析 ✅\n" + JSON.stringify(items.slice(0, 5), null, 2) + (items.length>5 ? "\n…（只顯示前 5 筆）" : "");
-  }
-
-  async function importGo(){
-    el("debugImport").textContent = "";
-    const { items, error } = parseImportText();
-    if(error){
-      el("debugImport").textContent = error;
-      return;
-    }
-    const badIdx = items.findIndex(it => !it.title || !it.image_url || !it.product_url || !it.tags?.length);
-    if(badIdx >= 0){
-      el("debugImport").textContent = "第 " + (badIdx+1) + " 筆缺必填：title / image_url / product_url / tags";
-      return;
-    }
-
-    try{
-      setStatus("匯入中…");
-      const j = await apiAdmin("custom_products.import", {
-        method:"POST",
-        headers:{"Content-Type":"application/json"},
-        body: JSON.stringify({ items })
-      }, {}, "action");
-
-      setStatus("匯入完成 ✅ 共新增 " + (j.count ?? 0) + " 筆");
-      el("debugImport").textContent = JSON.stringify(j, null, 2);
-      await listReload();
-    }catch(e){
-      setStatus("匯入失敗：" + e.message);
-      el("debugImport").textContent = JSON.stringify(e.payload||{}, null, 2);
-    }
-  }
-
-  // Buttons
-  el("btnSearch").addEventListener("click", ()=>{ PAGE.offset=0; listReload(); });
-  el("btnReset").addEventListener("click", ()=>{
-    el("q").value=""; el("tag").value=""; el("is_active").value="";
-    PAGE.offset=0; listReload();
+async function listReload(){
+  status("載入中…");
+  const p=new URLSearchParams({
+    action:"custom_products.list",
+    limit:PAGE.limit,
+    offset:PAGE.offset,
+    q:el("q").value||"",
+    tag:el("tag").value||"",
+    is_active:el("is_active").value||""
   });
-  el("btnNew").addEventListener("click", clearForm);
-  el("btnPrev").addEventListener("click", ()=>{ PAGE.offset = Math.max(0, PAGE.offset - PAGE.limit); listReload(); });
-  el("btnNext").addEventListener("click", ()=>{
-    if(PAGE.offset + PAGE.limit < PAGE.count) { PAGE.offset += PAGE.limit; listReload(); }
+  const j=await api("/api/admin?"+p);
+  PAGE.count=j.count||0;
+  el("list").innerHTML="";
+  j.items.forEach(it=>{
+    const tr=document.createElement("tr");
+    tr.innerHTML=`
+      <td><img class="img" src="${it.image_url}"/></td>
+      <td>
+        <b>${it.title}</b><br/>
+        ${(it.tags||[]).map(t=>`<span class="pill">${t}</span>`).join("")}
+      </td>
+      <td>${it.priority_boost||0}</td>
+      <td>${it.is_active?"上架":"下架"}</td>
+      <td>
+        <button class="ghost" onclick='edit(${JSON.stringify(it)})'>編輯</button>
+      </td>`;
+    el("list").appendChild(tr);
   });
+  status(`共 ${PAGE.count} 筆`);
+}
 
-  el("btnSaveItem").addEventListener("click", saveItem);
-  el("btnClear").addEventListener("click", clearForm);
-  el("btnDeactivate").addEventListener("click", deactivate);
+function edit(it){
+  el("edit_id").value=it.id;
+  el("f_title").value=it.title;
+  el("f_image_url").value=it.image_url;
+  el("f_product_url").value=it.product_url;
+  el("f_tags").value=(it.tags||[]).join(", ");
+  el("f_priority_boost").value=it.priority_boost||0;
+  el("f_badge_text").value=it.badge_text||"";
+  el("f_tracking_params").value=JSON.stringify(it.tracking_params||{},null,2);
+  el("f_is_active").checked=!!it.is_active;
+}
 
-  el("btnImportDry").addEventListener("click", importDry);
-  el("btnImportGo").addEventListener("click", importGo);
-
-  // Enter 快捷搜尋
-  ["q","tag"].forEach(id=>{
-    el(id).addEventListener("keydown", (ev)=>{
-      if(ev.key === "Enter"){ PAGE.offset=0; listReload(); }
-    });
+async function save(){
+  const id=el("edit_id").value;
+  const payload={
+    title:el("f_title").value,
+    image_url:el("f_image_url").value,
+    product_url:el("f_product_url").value,
+    tags:el("f_tags").value.split(",").map(x=>x.trim()).filter(Boolean),
+    priority_boost:+el("f_priority_boost").value||0,
+    badge_text:el("f_badge_text").value||null,
+    tracking_params:JSON.parse(el("f_tracking_params").value||"{}"),
+    is_active:el("f_is_active").checked
+  };
+  await api("/api/admin?action="+(id?"custom_products.update":"custom_products.create"),{
+    method:"POST",
+    headers:{"Content-Type":"application/json"},
+    body:JSON.stringify(id?{id,patch:payload}:{item:payload})
   });
+  await listReload();
+}
 
-  // ===== boot
-  (async ()=>{
-    try{
-      await rulesReload();
-      clearForm();
-      setStatus("初始化完成 ✅（切換到 Custom Products 開始管理）");
-    }catch(e){
-      setStatus(String(e.message || e));
-    }
-  })();
+el("btnSearch").onclick=()=>{PAGE.offset=0;listReload()};
+el("btnSave").onclick=save;
+el("btnNew").onclick=()=>{el("edit_id").value="";el("f_title").value=""};
+el("btnPrev").onclick=()=>{PAGE.offset=Math.max(0,PAGE.offset-PAGE.limit);listReload()};
+el("btnNext").onclick=()=>{if(PAGE.offset+PAGE.limit<PAGE.count){PAGE.offset+=PAGE.limit;listReload()}};
+
+listReload();
 </script>
-
 </body>
 </html>
