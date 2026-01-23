@@ -1,0 +1,151 @@
+
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="utf-8"/>
+  <meta name="viewport" content="width=device-width,initial-scale=1"/>
+  <title>Outfit Share</title>
+  <style>
+    :root{--bg:#0b0c10;--card:#111318;--muted:#9aa3b2;--text:#f3f4f6;--btn:#ffffff;--btnText:#0b0c10;--line:rgba(255,255,255,.08);}
+    body{margin:0;font-family:system-ui,-apple-system,Segoe UI,Roboto,"Noto Sans TC",sans-serif;background:radial-gradient(1200px 800px at 30% 10%, #1b1f2a 0%, var(--bg) 60%);color:var(--text);}
+    .wrap{max-width:980px;margin:0 auto;padding:18px;}
+    .hero{display:grid;grid-template-columns:1.2fr .8fr;gap:16px;align-items:start}
+    @media (max-width: 920px){.hero{grid-template-columns:1fr}}
+    .card{background:linear-gradient(180deg, rgba(255,255,255,.06), rgba(255,255,255,.03));border:1px solid var(--line);border-radius:18px;overflow:hidden;box-shadow:0 18px 60px rgba(0,0,0,.45)}
+    .imgbox{position:relative;background:#0f1117}
+    .imgbox img{width:100%;height:auto;display:block}
+    .badge{position:absolute;left:12px;top:12px;background:rgba(0,0,0,.55);border:1px solid rgba(255,255,255,.12);backdrop-filter: blur(10px);padding:6px 10px;border-radius:999px;font-weight:800;font-size:12px}
+    .side{padding:16px}
+    h1{margin:0 0 6px;font-size:18px;letter-spacing:.2px}
+    .meta{color:var(--muted);font-size:12px;line-height:1.5;white-space:pre-wrap}
+    .cta{display:flex;gap:10px;flex-wrap:wrap;margin:14px 0 4px}
+    .btn{border:none;border-radius:999px;padding:12px 14px;font-weight:900;cursor:pointer}
+    .primary{background:var(--btn);color:var(--btnText)}
+    .ghost{background:transparent;color:var(--text);border:1px solid rgba(255,255,255,.18)}
+    .mini{margin-top:12px;border-top:1px solid var(--line);padding-top:12px}
+    .small{color:var(--muted);font-size:12px}
+    .row{display:flex;gap:10px;flex-wrap:wrap;margin-top:10px}
+    .pill{border:1px solid rgba(255,255,255,.16);border-radius:999px;padding:6px 10px;font-size:12px;color:var(--text);background:rgba(255,255,255,.04)}
+    .err{background:#2b0b0b;border:1px solid rgba(255,64,64,.35);padding:10px;border-radius:14px;color:#ffd2d2;font-size:12px;white-space:pre-wrap}
+    a{color:#cfe3ff}
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <div class="hero">
+      <div class="card">
+        <div class="imgbox">
+          <div class="badge" id="badge">AI 生成穿搭</div>
+          <img id="img" alt="AI Outfit"/>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="side">
+          <h1 id="title">這套穿搭怎麼樣？</h1>
+          <div class="meta" id="meta">載入中…</div>
+
+          <div class="cta">
+            <button class="btn primary" id="btnMake">製作屬於自己的穿搭</button>
+            <button class="btn ghost" id="btnSame">用同款條件生成</button>
+            <button class="btn ghost" id="btnCopy">複製本次設定</button>
+          </div>
+
+          <div class="mini">
+            <div class="small">提示：分享頁會以「圖片」為主角；你可以把同款條件帶回首頁預填，降低開始門檻。</div>
+            <div class="row" id="pills"></div>
+            <div id="err" style="display:none" class="err"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+<script>
+  const el = (id)=>document.getElementById(id);
+  function b64DecodeUnicode(str){
+    try{
+      str = String(str||"").replace(/-/g,'+').replace(/_/g,'/');
+      const pad = str.length % 4; if(pad) str += "=".repeat(4-pad);
+      const bin = atob(str);
+      const bytes = Uint8Array.from(bin, c => c.charCodeAt(0));
+      return new TextDecoder().decode(bytes);
+    }catch(e){ return ""; }
+  }
+  function safeJsonParse(s){ try{ return JSON.parse(s); }catch(e){ return null; } }
+  function fmtDate(d){
+    try{
+      const dt = new Date(d);
+      if(Number.isNaN(dt.getTime())) return "";
+      return dt.toLocaleString("zh-TW", { hour12:false });
+    }catch{ return ""; }
+  }
+
+  // URL: /share/?p=<base64url(JSON)>
+  const params = new URLSearchParams(location.search);
+  const payload = safeJsonParse(b64DecodeUnicode(params.get("p")||"")) || null;
+
+  const imgUrl = payload?.image_url || params.get("img") || "";
+  if(imgUrl){ el("img").src = imgUrl; } else { el("img").alt = "找不到圖片"; }
+
+  const created = payload?.created_at ? fmtDate(payload.created_at) : "";
+  const s = payload?.style || {};
+  const styleLine = (s.source_label || s.value_label)
+    ? `風格：${[s.source_label, s.value_label, s.detail_label].filter(Boolean).join(" / ")}`
+    : "";
+
+  el("meta").textContent = [
+    created ? `生成時間：${created}` : "",
+    styleLine,
+  ].filter(Boolean).join("\n") || "（沒有更多資訊）";
+
+  const pills = [];
+  if(s.source_label) pills.push(s.source_label);
+  if(s.value_label) pills.push(s.value_label);
+  if(s.detail_label) pills.push(s.detail_label);
+
+  const spec = payload?.spec || null;
+  if(spec?.gender) pills.push(spec.gender === "male" ? "男" : spec.gender === "female" ? "女" : "中性");
+  if(spec?.ageGroup) pills.push(spec.ageGroup === "adult" ? "成人" : spec.ageGroup === "kids" ? "童裝" : spec.ageGroup);
+  if(spec?.paletteId) pills.push(`色系：${spec.paletteId}`);
+
+  el("pills").innerHTML = pills.slice(0, 8).map(x=>`<span class="pill">${String(x)}</span>`).join("");
+
+  function toBase64Url(obj){
+    const json = JSON.stringify(obj||{});
+    const bytes = new TextEncoder().encode(json);
+    let bin = ""; bytes.forEach(b=>bin += String.fromCharCode(b));
+    return btoa(bin).replace(/\+/g,'-').replace(/\//g,'_').replace(/=+$/,'');
+  }
+
+  el("btnMake").addEventListener("click", ()=>{ location.href = "/"; });
+
+  el("btnSame").addEventListener("click", ()=>{
+    if(!spec){
+      el("err").style.display="block";
+      el("err").textContent="沒有 spec，無法預填回首頁。你可以改用 /share/?p= 內帶 spec。";
+      return;
+    }
+    const q = new URLSearchParams();
+    q.set("prefill", toBase64Url(spec));
+    location.href = "/?" + q.toString();
+  });
+
+  el("btnCopy").addEventListener("click", async ()=>{
+    if(!spec){
+      el("err").style.display="block";
+      el("err").textContent="沒有 spec 可以複製。";
+      return;
+    }
+    try{
+      await navigator.clipboard.writeText(JSON.stringify(spec, null, 2));
+      el("err").style.display="block";
+      el("err").textContent="已複製本次設定（Outfit Spec）✅";
+    }catch(e){
+      el("err").style.display="block";
+      el("err").textContent="複製失敗（瀏覽器限制）。";
+    }
+  });
+</script>
+</body>
+</html>
