@@ -1,0 +1,168 @@
+
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="utf-8"/>
+  <meta name="viewport" content="width=device-width,initial-scale=1"/>
+  <title>設定｜首頁文案</title>
+  <style>
+    body{font-family:system-ui,-apple-system,Segoe UI,Roboto,"Noto Sans TC",sans-serif;background:#f6f7fb;margin:0;padding:18px;color:#111}
+    .card{max-width:980px;margin:0 auto;background:#fff;border:1px solid #e5e7eb;border-radius:16px;padding:16px;box-shadow:0 14px 34px rgba(0,0,0,.06)}
+    h1{margin:0 0 8px;font-size:18px}
+    .muted{color:#6b7280;font-size:12px;white-space:pre-wrap}
+    .grid{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+    @media (max-width: 900px){.grid{grid-template-columns:1fr}}
+    label{display:block;font-weight:900;font-size:12px;margin:10px 0 6px}
+    input, textarea{width:100%;padding:10px 12px;border:1px solid #e5e7eb;border-radius:12px;font-size:14px;box-sizing:border-box}
+    textarea{min-height:74px}
+    .actions{display:flex;gap:10px;flex-wrap:wrap;margin-top:12px}
+    button{border:none;border-radius:999px;padding:10px 14px;font-weight:900;cursor:pointer}
+    .primary{background:#111;color:#fff}
+    .ghost{background:#fff;border:1px solid #e5e7eb}
+    .line{height:1px;background:#eef2f7;margin:14px 0}
+    .err{background:#fff1f2;border:1px solid #fecdd3;padding:10px;border-radius:12px;font-size:12px;white-space:pre-wrap}
+    code{font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:12px}
+  </style>
+</head>
+<body>
+  <div class="card">
+    <h1>設定：首頁文案</h1>
+    <div class="muted" id="status">初始化中…</div>
+
+    <div class="line"></div>
+
+    <div class="grid">
+      <div>
+        <label>findoutfit（標題）</label>
+        <input id="findoutfit_title" placeholder="例如：FindOutfit"/>
+        <label>findoutfit（說明）</label>
+        <textarea id="findoutfit_desc" placeholder="例如：輸入條件 → outfit 生成 → 商品推薦"></textarea>
+      </div>
+
+      <div>
+        <label>輸入條件（標題）</label>
+        <input id="input_title" placeholder="例如：輸入條件"/>
+        <label>輸入條件（說明）</label>
+        <textarea id="input_desc" placeholder="例如：選擇風格、身形與場合"></textarea>
+      </div>
+
+      <div>
+        <label>outfit 生成（標題）</label>
+        <input id="gen_title" placeholder="例如：Outfit 生成"/>
+        <label>outfit 生成（說明）</label>
+        <textarea id="gen_desc" placeholder="例如：AI 生成穿搭示意與搭配說明"></textarea>
+      </div>
+
+      <div>
+        <label>商品推薦（標題）</label>
+        <input id="prod_title" placeholder="例如：商品推薦"/>
+        <label>商品推薦（說明）</label>
+        <textarea id="prod_desc" placeholder="例如：從類似商品快速挑到可買的"></textarea>
+      </div>
+
+      <div>
+        <label>右欄標題</label>
+        <input id="right_title" placeholder="例如：AI 穿搭示意圖 & 類似商品"/>
+        <label>右欄說明</label>
+        <textarea id="right_desc" placeholder="例如：包含生成資訊與同款條件重跑"></textarea>
+      </div>
+
+      <div>
+        <label>Landing 主標</label>
+        <input id="landing_title" placeholder="例如：一鍵生成你的穿搭靈感"/>
+        <label>Landing 說明</label>
+        <textarea id="landing_desc" placeholder="例如：挑風格、輸入身形，10 秒內看到穿搭示意與可買商品"></textarea>
+      </div>
+    </div>
+
+    <div class="actions">
+      <button class="ghost" id="btnReload">重新讀取</button>
+      <button class="primary" id="btnSave">儲存</button>
+    </div>
+
+    <div id="err" style="display:none" class="err"></div>
+
+    <div class="muted" style="margin-top:10px;">
+      API：<code>/api/admin?action=homepage_copy.get</code>、<code>/api/admin?action=homepage_copy.save</code><br/>
+      token：沿用 <code>os_supabase_access_token_v1</code>
+    </div>
+  </div>
+
+<script>
+  const AUTH_KEY="os_supabase_access_token_v1";
+  const el = (id)=>document.getElementById(id);
+  const setStatus = (t)=> el("status").textContent = t;
+
+  function token(){ return localStorage.getItem(AUTH_KEY); }
+
+  async function api(path, opts={}){
+    const t = token();
+    if(!t) throw new Error("找不到 token：請先登入後再來設定頁");
+    const headers = Object.assign({}, opts.headers||{}, { "Authorization":"Bearer "+t });
+    const res = await fetch(path, Object.assign({}, opts, { headers }));
+    const text = await res.text();
+    let json={}; try{ json = text ? JSON.parse(text) : {}; }catch{ json={ raw:text }; }
+    if(!res.ok){
+      const e = new Error((json?.error||("HTTP "+res.status)));
+      e.payload=json; throw e;
+    }
+    return json;
+  }
+
+  const fields = [
+    "findoutfit_title","findoutfit_desc",
+    "input_title","input_desc",
+    "gen_title","gen_desc",
+    "prod_title","prod_desc",
+    "right_title","right_desc",
+    "landing_title","landing_desc"
+  ];
+
+  function readForm(){
+    const out={};
+    fields.forEach(k=> out[k]=(el(k).value||"").trim());
+    return out;
+  }
+  function applyForm(v){
+    const o=v||{};
+    fields.forEach(k=> el(k).value = (o[k] ?? ""));
+  }
+
+  async function reload(){
+    try{
+      el("err").style.display="none";
+      setStatus("讀取中…");
+      const j = await api("/api/admin?action=homepage_copy.get");
+      applyForm(j.value || {});
+      setStatus("已載入 ✅ updated_at: " + (j.updated_at||"—"));
+    }catch(e){
+      setStatus("讀取失敗：" + e.message);
+      el("err").style.display="block";
+      el("err").textContent = JSON.stringify(e.payload||{}, null, 2);
+    }
+  }
+
+  async function save(){
+    try{
+      el("err").style.display="none";
+      setStatus("儲存中…");
+      const j = await api("/api/admin?action=homepage_copy.save", {
+        method:"POST",
+        headers:{ "Content-Type":"application/json" },
+        body: JSON.stringify({ value: readForm() })
+      });
+      setStatus("已儲存 ✅ updated_at: " + (j.updated_at||"—"));
+    }catch(e){
+      setStatus("儲存失敗：" + e.message);
+      el("err").style.display="block";
+      el("err").textContent = JSON.stringify(e.payload||{}, null, 2);
+    }
+  }
+
+  el("btnReload").addEventListener("click", reload);
+  el("btnSave").addEventListener("click", save);
+
+  reload();
+</script>
+</body>
+</html>
