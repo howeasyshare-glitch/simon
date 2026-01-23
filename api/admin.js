@@ -105,6 +105,60 @@ export default async function handler(req, res) {
       });
     }
 
+    /**
+ * Add these actions into your existing /api/admin.js
+ * (same token + whitelist flow):
+ *   - homepage_copy.get
+ *   - homepage_copy.save
+ *
+ * Storage: admin_kv table
+ *   key: "homepage_copy"
+ *   value: JSON object
+ */
+
+// ---------- homepage_copy.get ----------
+if (action === "homepage_copy.get") {
+  if (req.method !== "GET") return res.status(405).json({ error: "Method not allowed" });
+
+  const { data, error } = await supabaseServer
+    .from("admin_kv")
+    .select("value,updated_at")
+    .eq("key", "homepage_copy")
+    .maybeSingle();
+
+  if (error) return res.status(500).json({ error: "Supabase query failed", detail: error });
+
+  return res.status(200).json({
+    ok: true,
+    value: data?.value || {},
+    updated_at: data?.updated_at || null,
+  });
+}
+
+// ---------- homepage_copy.save ----------
+if (action === "homepage_copy.save") {
+  if (req.method !== "POST") return res.status(405).json({ error: "Method not allowed" });
+
+  const value = req.body?.value;
+  if (!value || typeof value !== "object") {
+    return res.status(400).json({ error: "Missing value (object)" });
+  }
+
+  const { data, error } = await supabaseServer
+    .from("admin_kv")
+    .upsert(
+      { key: "homepage_copy", value, updated_at: new Date().toISOString() },
+      { onConflict: "key" }
+    )
+    .select("updated_at")
+    .single();
+
+  if (error) return res.status(500).json({ error: "Supabase upsert failed", detail: error });
+
+  return res.status(200).json({ ok: true, updated_at: data?.updated_at || null });
+}
+
+
     // =====================================================================
     // CUSTOM PRODUCTS
     // =====================================================================
