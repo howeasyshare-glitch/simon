@@ -8,20 +8,22 @@
   <style>
     body{font-family:system-ui,-apple-system,Segoe UI,Roboto,"Noto Sans TC",sans-serif;background:#f6f7fb;margin:0;padding:18px;color:#111}
     .card{max-width:980px;margin:0 auto;background:#fff;border:1px solid #e5e7eb;border-radius:16px;padding:16px;box-shadow:0 14px 34px rgba(0,0,0,.06)}
-    h1{margin:0 0 8px;font-size:18px}
+    h1{margin:0 0 10px;font-size:18px}
     .muted{color:#6b7280;font-size:12px;white-space:pre-wrap}
-    .grid{display:grid;grid-template-columns:1fr 1fr;gap:12px}
-    @media (max-width: 900px){.grid{grid-template-columns:1fr}}
-    label{display:block;font-weight:900;font-size:12px;margin:10px 0 6px}
+    .line{height:1px;background:#eef2f7;margin:14px 0}
+    label{display:block;font-weight:800;font-size:12px;margin:10px 0 6px}
     input, textarea{width:100%;padding:10px 12px;border:1px solid #e5e7eb;border-radius:12px;font-size:14px;box-sizing:border-box}
     textarea{min-height:74px}
-    .actions{display:flex;gap:10px;flex-wrap:wrap;margin-top:12px}
     button{border:none;border-radius:999px;padding:10px 14px;font-weight:900;cursor:pointer}
     .primary{background:#111;color:#fff}
     .ghost{background:#fff;border:1px solid #e5e7eb}
-    .line{height:1px;background:#eef2f7;margin:14px 0}
-    .err{background:#fff1f2;border:1px solid #fecdd3;padding:10px;border-radius:12px;font-size:12px;white-space:pre-wrap}
-    code{font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:12px}
+    .row{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+    @media (max-width: 840px){ .row{grid-template-columns:1fr} }
+    .actions{display:flex;gap:10px;flex-wrap:wrap;margin-top:12px}
+    .preview{border:1px solid #e5e7eb;border-radius:14px;padding:12px;background:#fafafa}
+    .preview h2{margin:0 0 6px;font-size:14px}
+    .preview p{margin:0 0 6px;font-size:13px;color:#111}
+    .kbd{font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:12px;background:#f3f4f6;border:1px solid #e5e7eb;border-radius:8px;padding:2px 6px}
   </style>
 </head>
 <body>
@@ -31,138 +33,185 @@
 
     <div class="line"></div>
 
-    <div class="grid">
+    <div class="row">
       <div>
-        <label>findoutfit（標題）</label>
-        <input id="findoutfit_title" placeholder="例如：FindOutfit"/>
-        <label>findoutfit（說明）</label>
-        <textarea id="findoutfit_desc" placeholder="例如：輸入條件 → outfit 生成 → 商品推薦"></textarea>
+        <label>品牌/產品名稱（頁面主標）</label>
+        <input id="c_brand" placeholder="例如：FindOutfit" />
       </div>
-
       <div>
-        <label>輸入條件（標題）</label>
-        <input id="input_title" placeholder="例如：輸入條件"/>
-        <label>輸入條件（說明）</label>
-        <textarea id="input_desc" placeholder="例如：選擇風格、身形與場合"></textarea>
-      </div>
-
-      <div>
-        <label>outfit 生成（標題）</label>
-        <input id="gen_title" placeholder="例如：Outfit 生成"/>
-        <label>outfit 生成（說明）</label>
-        <textarea id="gen_desc" placeholder="例如：AI 生成穿搭示意與搭配說明"></textarea>
-      </div>
-
-      <div>
-        <label>商品推薦（標題）</label>
-        <input id="prod_title" placeholder="例如：商品推薦"/>
-        <label>商品推薦（說明）</label>
-        <textarea id="prod_desc" placeholder="例如：從類似商品快速挑到可買的"></textarea>
-      </div>
-
-      <div>
-        <label>右欄標題</label>
-        <input id="right_title" placeholder="例如：AI 穿搭示意圖 & 類似商品"/>
-        <label>右欄說明</label>
-        <textarea id="right_desc" placeholder="例如：包含生成資訊與同款條件重跑"></textarea>
-      </div>
-
-      <div>
-        <label>Landing 主標</label>
-        <input id="landing_title" placeholder="例如：一鍵生成你的穿搭靈感"/>
-        <label>Landing 說明</label>
-        <textarea id="landing_desc" placeholder="例如：挑風格、輸入身形，10 秒內看到穿搭示意與可買商品"></textarea>
+        <label>副標/一句話描述</label>
+        <input id="c_tagline" placeholder="例如：3 秒找到最適合你的穿搭" />
       </div>
     </div>
 
+    <div class="row">
+      <div>
+        <label>流程 1：findoutfit（標題）</label>
+        <input id="c_step1" placeholder="例如：FindOutfit" />
+      </div>
+      <div>
+        <label>流程 1：說明</label>
+        <input id="c_step1_desc" placeholder="例如：輸入條件，生成 Outfit" />
+      </div>
+    </div>
+
+    <div class="row">
+      <div>
+        <label>流程 2：輸入條件 → outfit 生成（標題）</label>
+        <input id="c_step2" placeholder="例如：輸入條件 → Outfit 生成" />
+      </div>
+      <div>
+        <label>流程 2：說明</label>
+        <input id="c_step2_desc" placeholder="例如：身形 / 風格 / 天氣，一鍵生成" />
+      </div>
+    </div>
+
+    <div class="row">
+      <div>
+        <label>流程 3：商品推薦（標題）</label>
+        <input id="c_step3" placeholder="例如：商品推薦" />
+      </div>
+      <div>
+        <label>流程 3：說明</label>
+        <input id="c_step3_desc" placeholder="例如：用類似商品快速完成穿搭" />
+      </div>
+    </div>
+
+    <div class="row">
+      <div>
+        <label>右側區塊標題（AI 穿搭示意圖 & 類似商品）</label>
+        <input id="c_right_title" placeholder="例如：AI 穿搭示意圖 & 類似商品" />
+      </div>
+      <div>
+        <label>分享頁 CTA 按鈕文字</label>
+        <input id="c_share_cta" placeholder="例如：製作屬於自己的穿搭" />
+      </div>
+    </div>
+
+    <label>更多文案（JSON，可留空）</label>
+    <textarea id="c_extra" placeholder='例如：{"landing_title":"今天想穿什麼？"}'></textarea>
+    <div class="muted">可留空。這一欄是給你未來想加新的文案 key 時，不用改 UI 也能存。</div>
+
     <div class="actions">
-      <button class="ghost" id="btnReload">重新讀取</button>
+      <button class="ghost" id="btnLoad">讀取</button>
       <button class="primary" id="btnSave">儲存</button>
     </div>
 
-    <div id="err" style="display:none" class="err"></div>
+    <div class="line"></div>
 
-    <div class="muted" style="margin-top:10px;">
-      API：<code>/api/admin?action=homepage_copy.get</code>、<code>/api/admin?action=homepage_copy.save</code><br/>
-      token：沿用 <code>os_supabase_access_token_v1</code>
+    <div class="preview">
+      <h2>前台會讀取這份設定（公開 API：<span class="kbd">/api/public-copy</span>）</h2>
+      <p><b id="p_brand">—</b></p>
+      <p id="p_tagline" class="muted">—</p>
+      <div class="muted" id="debug"></div>
     </div>
   </div>
 
 <script>
-  const AUTH_KEY="os_supabase_access_token_v1";
+  const AUTH_KEY = "os_supabase_access_token_v1";
   const el = (id)=>document.getElementById(id);
   const setStatus = (t)=> el("status").textContent = t;
 
   function token(){ return localStorage.getItem(AUTH_KEY); }
 
+  function jsonParseSafe(s){
+    const t = String(s||"").trim();
+    if(!t) return {};
+    try { return JSON.parse(t); } catch { return {}; }
+  }
+
   async function api(path, opts={}){
     const t = token();
-    if(!t) throw new Error("找不到 token：請先登入後再來設定頁");
-    const headers = Object.assign({}, opts.headers||{}, { "Authorization":"Bearer "+t });
+    if(!t) throw new Error("找不到 token：請先登入後再開 /setting");
+
+    const headers = Object.assign({}, opts.headers||{}, { "Authorization":"Bearer " + t });
     const res = await fetch(path, Object.assign({}, opts, { headers }));
     const text = await res.text();
-    let json={}; try{ json = text ? JSON.parse(text) : {}; }catch{ json={ raw:text }; }
+    let json = {};
+    try{ json = text ? JSON.parse(text) : {}; }catch{ json = { raw:text }; }
+
     if(!res.ok){
-      const e = new Error((json?.error||("HTTP "+res.status)));
-      e.payload=json; throw e;
+      const msg = json?.error ? json.error : ("HTTP " + res.status);
+      const e = new Error(msg);
+      e.payload = json;
+      throw e;
     }
     return json;
   }
 
-  const fields = [
-    "findoutfit_title","findoutfit_desc",
-    "input_title","input_desc",
-    "gen_title","gen_desc",
-    "prod_title","prod_desc",
-    "right_title","right_desc",
-    "landing_title","landing_desc"
-  ];
-
   function readForm(){
-    const out={};
-    fields.forEach(k=> out[k]=(el(k).value||"").trim());
-    return out;
-  }
-  function applyForm(v){
-    const o=v||{};
-    fields.forEach(k=> el(k).value = (o[k] ?? ""));
+    return {
+      brand: el("c_brand").value || "",
+      tagline: el("c_tagline").value || "",
+      step1: el("c_step1").value || "",
+      step1_desc: el("c_step1_desc").value || "",
+      step2: el("c_step2").value || "",
+      step2_desc: el("c_step2_desc").value || "",
+      step3: el("c_step3").value || "",
+      step3_desc: el("c_step3_desc").value || "",
+      right_title: el("c_right_title").value || "",
+      share_cta: el("c_share_cta").value || "",
+      extra: jsonParseSafe(el("c_extra").value),
+    };
   }
 
-  async function reload(){
+  function applyForm(copy){
+    const c = copy || {};
+    el("c_brand").value = c.brand || "";
+    el("c_tagline").value = c.tagline || "";
+    el("c_step1").value = c.step1 || "";
+    el("c_step1_desc").value = c.step1_desc || "";
+    el("c_step2").value = c.step2 || "";
+    el("c_step2_desc").value = c.step2_desc || "";
+    el("c_step3").value = c.step3 || "";
+    el("c_step3_desc").value = c.step3_desc || "";
+    el("c_right_title").value = c.right_title || "";
+    el("c_share_cta").value = c.share_cta || "";
+    el("c_extra").value = JSON.stringify(c.extra || {}, null, 2);
+
+    // preview
+    el("p_brand").textContent = c.brand || "—";
+    el("p_tagline").textContent = c.tagline || "—";
+  }
+
+  async function load(){
     try{
-      el("err").style.display="none";
       setStatus("讀取中…");
-      const j = await api("/api/admin?action=homepage_copy.get");
-      applyForm(j.value || {});
-      setStatus("已載入 ✅ updated_at: " + (j.updated_at||"—"));
+      el("debug").textContent = "";
+      const j = await api("/api/admin?action=get_copy");
+      applyForm(j.copy || null);
+      setStatus("已讀取 ✅（updated_at: " + (j.updated_at || "—") + "）");
     }catch(e){
       setStatus("讀取失敗：" + e.message);
-      el("err").style.display="block";
-      el("err").textContent = JSON.stringify(e.payload||{}, null, 2);
+      el("debug").textContent = JSON.stringify(e.payload || {}, null, 2);
     }
   }
 
   async function save(){
     try{
-      el("err").style.display="none";
       setStatus("儲存中…");
-      const j = await api("/api/admin?action=homepage_copy.save", {
+      el("debug").textContent = "";
+      const payload = readForm();
+
+      const j = await api("/api/admin?action=save_copy", {
         method:"POST",
-        headers:{ "Content-Type":"application/json" },
-        body: JSON.stringify({ copy: readForm() })
+        headers:{"Content-Type":"application/json"},
+        body: JSON.stringify({ copy: payload })
       });
-      setStatus("已儲存 ✅ updated_at: " + (j.updated_at||"—"));
+
+      applyForm(j.saved?.copy || payload);
+      setStatus("已儲存 ✅（updated_at: " + (j.saved?.updated_at || "—") + "）");
     }catch(e){
       setStatus("儲存失敗：" + e.message);
-      el("err").style.display="block";
-      el("err").textContent = JSON.stringify(e.payload||{}, null, 2);
+      el("debug").textContent = JSON.stringify(e.payload || {}, null, 2);
     }
   }
 
-  el("btnReload").addEventListener("click", reload);
+  el("btnLoad").addEventListener("click", load);
   el("btnSave").addEventListener("click", save);
 
-  reload();
+  // boot
+  (async()=>{ await load(); })();
 </script>
 </body>
 </html>
