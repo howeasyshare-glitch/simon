@@ -1,10 +1,8 @@
-// api/admin.js
 import { supabaseServer } from "../lib/supabaseServer";
 import { requireAdmin } from "../lib/adminAuth";
 
 export const config = { runtime: "nodejs" };
 
-// ---------- helpers ----------
 function parseIsActive(v) {
   const s = String(v ?? "").trim().toLowerCase();
   if (["true", "1", "yes", "y"].includes(s)) return true;
@@ -13,19 +11,15 @@ function parseIsActive(v) {
 }
 
 function tagsToArray(x) {
-  if (Array.isArray(x)) return x.map(String).map((s) => s.trim()).filter(Boolean);
-  if (typeof x === "string") return x.split(",").map((s) => s.trim()).filter(Boolean);
+  if (Array.isArray(x)) return x.map(String).map(s => s.trim()).filter(Boolean);
+  if (typeof x === "string") return x.split(",").map(s => s.trim()).filter(Boolean);
   return [];
 }
 
 function jsonObjectOrEmpty(v) {
   if (!v) return {};
   if (typeof v === "object") return v;
-  try {
-    return JSON.parse(String(v));
-  } catch {
-    return {};
-  }
+  try { return JSON.parse(String(v)); } catch { return {}; }
 }
 
 function normalizeItem(item = {}) {
@@ -44,24 +38,14 @@ function normalizeItem(item = {}) {
   };
 }
 
-function pickOnlyKeys(obj = {}, keys = []) {
-  const out = {};
-  for (const k of keys) if (k in obj) out[k] = obj[k];
-  return out;
-}
-
-// ---------- handler ----------
 export default async function handler(req, res) {
   try {
     const admin = await requireAdmin(req, res);
     if (!admin) return;
 
-    // 支援 action=... 或 op=...
     const action = String(req.query.action || req.query.op || "").trim();
 
-    // =====================================================================
-    // RULES: get_rules / save_rules  (stored in admin_kv, key = display_rules)
-    // =====================================================================
+    // ---------------------- Display rules (admin_kv) ----------------------
     if (action === "get_rules") {
       if (req.method !== "GET") return res.status(405).json({ error: "Method not allowed" });
 
@@ -77,7 +61,6 @@ export default async function handler(req, res) {
         ok: true,
         rules: data?.value || null,
         updated_at: data?.updated_at || null,
-        adminEmail: admin?.email || null,
       });
     }
 
@@ -89,10 +72,12 @@ export default async function handler(req, res) {
         return res.status(400).json({ error: "Missing rules (object)" });
       }
 
-      const now = new Date().toISOString();
       const { data, error } = await supabaseServer
         .from("admin_kv")
-        .upsert({ key: "display_rules", value: rules, updated_at: now }, { onConflict: "key" })
+        .upsert(
+          { key: "display_rules", value: rules, updated_at: new Date().toISOString() },
+          { onConflict: "key" }
+        )
         .select("value,updated_at")
         .single();
 
@@ -101,67 +86,54 @@ export default async function handler(req, res) {
       return res.status(200).json({
         ok: true,
         saved: { rules: data?.value || null, updated_at: data?.updated_at || null },
-        adminEmail: admin?.email || null,
       });
     }
 
-    /**
- * Add these actions into your existing /api/admin.js
- * (same token + whitelist flow):
- *   - homepage_copy.get
- *   - homepage_copy.save
- *
- * Storage: admin_kv table
- *   key: "homepage_copy"
- *   value: JSON object
- */
+    // ---------------------- Homepage copy (admin_kv) ----------------------
+    if (action === "homepage_copy.get") {
+      if (req.method !== "GET") return res.status(405).json({ error: "Method not allowed" });
 
-// ---------- homepage_copy.get ----------
-if (action === "homepage_copy.get") {
-  if (req.method !== "GET") return res.status(405).json({ error: "Method not allowed" });
+      const { data, error } = await supabaseServer
+        .from("admin_kv")
+        .select("value,updated_at")
+        .eq("key", "homepage_copy")
+        .maybeSingle();
 
-  const { data, error } = await supabaseServer
-    .from("admin_kv")
-    .select("value,updated_at")
-    .eq("key", "homepage_copy")
-    .maybeSingle();
+      if (error) return res.status(500).json({ error: "Supabase query failed", detail: error });
 
-  if (error) return res.status(500).json({ error: "Supabase query failed", detail: error });
+      return res.status(200).json({
+        ok: true,
+        copy: data?.value || null,
+        updated_at: data?.updated_at || null,
+      });
+    }
 
-  return res.status(200).json({
-    ok: true,
-    value: data?.value || {},
-    updated_at: data?.updated_at || null,
-  });
-}
+    if (action === "homepage_copy.save") {
+      if (req.method !== "POST") return res.status(405).json({ error: "Method not allowed" });
 
-// ---------- homepage_copy.save ----------
-if (action === "homepage_copy.save") {
-  if (req.method !== "POST") return res.status(405).json({ error: "Method not allowed" });
+      const copy = req.body?.copy || null;
+      if (!copy || typeof copy !== "object") {
+        return res.status(400).json({ error: "Missing copy (object)" });
+      }
 
-  const value = req.body?.value;
-  if (!value || typeof value !== "object") {
-    return res.status(400).json({ error: "Missing value (object)" });
-  }
+      const { data, error } = await supabaseServer
+        .from("admin_kv")
+        .upsert(
+          { key: "homepage_copy", value: copy, updated_at: new Date().toISOString() },
+          { onConflict: "key" }
+        )
+        .select("value,updated_at")
+        .single();
 
-  const { data, error } = await supabaseServer
-    .from("admin_kv")
-    .upsert(
-      { key: "homepage_copy", value, updated_at: new Date().toISOString() },
-      { onConflict: "key" }
-    )
-    .select("updated_at")
-    .single();
+      if (error) return res.status(500).json({ error: "Supabase upsert failed", detail: error });
 
-  if (error) return res.status(500).json({ error: "Supabase upsert failed", detail: error });
+      return res.status(200).json({
+        ok: true,
+        saved: { copy: data?.value || null, updated_at: data?.updated_at || null },
+      });
+    }
 
-  return res.status(200).json({ ok: true, updated_at: data?.updated_at || null });
-}
-
-
-    // =====================================================================
-    // CUSTOM PRODUCTS
-    // =====================================================================
+    // ---------------------- custom_products.list ----------------------
     if (action === "custom_products.list") {
       if (req.method !== "GET") return res.status(405).json({ error: "Method not allowed" });
 
@@ -176,10 +148,6 @@ if (action === "homepage_copy.save") {
         .select("*", { count: "exact" })
         .range(offset, offset + limit - 1);
 
-      // 不用 created_at（你表沒有）
-      // 如果你有 priority_boost 可排序也行，但先不要假設欄位存在
-      // query = query.order("priority_boost", { ascending: false });
-
       if (q) query = query.ilike("title", `%${q}%`);
       if (tag) query = query.filter("tags", "cs", JSON.stringify([tag]));
       if (isActive !== null) query = query.eq("is_active", isActive);
@@ -190,6 +158,7 @@ if (action === "homepage_copy.save") {
       return res.status(200).json({ ok: true, items: data || [], count: count ?? 0, limit, offset });
     }
 
+    // ---------------------- custom_products.create ----------------------
     if (action === "custom_products.create") {
       if (req.method !== "POST") return res.status(405).json({ error: "Method not allowed" });
 
@@ -198,7 +167,6 @@ if (action === "homepage_copy.save") {
         return res.status(400).json({ error: "Missing required fields: title, image_url, product_url" });
       }
 
-      // 允許 merchant/badge/tracking 空白，tags 可空但建議要有 item_top / adult 等
       const { data, error } = await supabaseServer
         .from("custom_products")
         .insert(item)
@@ -210,38 +178,18 @@ if (action === "homepage_copy.save") {
       return res.status(200).json({ ok: true, item: data });
     }
 
+    // ---------------------- custom_products.update ----------------------
     if (action === "custom_products.update") {
       if (req.method !== "POST") return res.status(405).json({ error: "Method not allowed" });
 
       const id = req.body?.id;
       if (!id) return res.status(400).json({ error: "Missing id" });
 
-      // 只更新你真的傳來的欄位，避免覆蓋成空字串
+      const patch = normalizeItem(req.body?.patch || {});
       const raw = req.body?.patch || {};
-      const normalized = normalizeItem(raw);
-
-      const allowedKeys = [
-        "title",
-        "image_url",
-        "product_url",
-        "merchant",
-        "priority_boost",
-        "tags",
-        "badge_text",
-        "discount_type",
-        "discount_code",
-        "tracking_params",
-        "is_active",
-      ];
-      const safePatch = pickOnlyKeys(normalized, allowedKeys);
-
-      // 只保留 raw 有傳的 key
-      for (const k of Object.keys(safePatch)) {
-        if (!(k in raw)) delete safePatch[k];
-      }
-
-      if (Object.keys(safePatch).length === 0) {
-        return res.status(400).json({ error: "Empty patch" });
+      const safePatch = {};
+      for (const k of Object.keys(patch)) {
+        if (k in raw) safePatch[k] = patch[k];
       }
 
       const { data, error } = await supabaseServer
@@ -256,8 +204,8 @@ if (action === "homepage_copy.save") {
       return res.status(200).json({ ok: true, item: data });
     }
 
+    // ---------------------- custom_products.delete (soft) ----------------------
     if (action === "custom_products.delete") {
-      // soft delete = is_active=false
       if (req.method !== "POST") return res.status(405).json({ error: "Method not allowed" });
 
       const id = req.body?.id;
@@ -275,6 +223,7 @@ if (action === "homepage_copy.save") {
       return res.status(200).json({ ok: true, item: data });
     }
 
+    // ---------------------- custom_products.import ----------------------
     if (action === "custom_products.import") {
       if (req.method !== "POST") return res.status(405).json({ error: "Method not allowed" });
 
@@ -284,7 +233,7 @@ if (action === "homepage_copy.save") {
       }
 
       const rows = items.map(normalizeItem);
-      const bad = rows.findIndex((r) => !r.title || !r.image_url || !r.product_url);
+      const bad = rows.findIndex(r => !r.title || !r.image_url || !r.product_url);
       if (bad >= 0) {
         return res.status(400).json({
           error: "Missing required fields in one item",
@@ -304,6 +253,6 @@ if (action === "homepage_copy.save") {
 
     return res.status(400).json({ error: "Unknown action", action });
   } catch (e) {
-    return res.status(500).json({ error: e?.message || "Unknown error", stack: String(e?.stack || "") });
+    return res.status(500).json({ error: e?.message || "Unknown error" });
   }
 }
