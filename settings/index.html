@@ -149,7 +149,7 @@
       const j = await api("/api/admin?action=homepage_copy.save", {
         method:"POST",
         headers:{ "Content-Type":"application/json" },
-        body: JSON.stringify({ value: readForm() })
+        body: JSON.stringify({ copy: readForm() })
       });
       setStatus("已儲存 ✅ updated_at: " + (j.updated_at||"—"));
     }catch(e){
