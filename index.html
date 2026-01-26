@@ -434,8 +434,8 @@ body.is-mobile #mobile-actionbar{ display:block !important; }
       <div class="brand">
         <div class="brand-dot" aria-hidden="true"></div>
         <div class="brand-text">
-          <div class="title">findoutfit</div>
-          <div class="subtitle">輸入條件→ outfit生成 → 商品推薦</div>
+          <div class="title" id="copy-brand-title">findoutfit</div>
+          <div class="subtitle" id="copy-brand-subtitle">輸入條件→ outfit生成 → 商品推薦</div>
         </div>
       </div>
 
@@ -452,7 +452,7 @@ body.is-mobile #mobile-actionbar{ display:block !important; }
     <main class="layout">
       <section class="card left-panel" id="left-panel">
         <div class="row">
-          <h3 style="margin:0">穿搭條件</h3>
+          <h3 style="margin:0"><span id="copy-left-title">穿搭條件</span></h3>
           <span class="pill">扣 1 點 / 次</span>
         </div>
 
@@ -651,7 +651,7 @@ body.is-mobile #mobile-actionbar{ display:block !important; }
 
       <section class="card">
         <div class="right-head">
-          <h3>AI 穿搭示意圖 & 類似商品</h3>
+          <h3 id="copy-right-title">AI 穿搭示意圖 & 類似商品</h3>
           <div class="debug-toggle" id="debug-toggle">
             <div class="switch" id="sw-debug" aria-checked="false"></div>
             <div>Debug</div>
@@ -2740,7 +2740,47 @@ optionsRoot.innerHTML = list.map(v=>{
   setSeg(curSource);
 }
 
+
+  // ===== Public copy (from admin settings) =====
+  const DEFAULT_PUBLIC_COPY = {
+    brand_title: "findoutfit",
+    brand_subtitle: "輸入條件→ outfit生成 → 商品推薦",
+    left_title: "穿搭條件",
+    right_title: "AI 穿搭示意圖 & 類似商品"
+  };
+
+  async function fetchPublicCopy(){
+    try{
+      const r = await fetch("/api/public-copy?ts=" + Date.now(), { cache: "no-store" });
+      const t = await r.text();
+      let j = {};
+      try{ j = t ? JSON.parse(t) : {}; } catch { j = { raw: t }; }
+      if(!r.ok) return { ok:false, error: j?.error || ("HTTP " + r.status), detail: j };
+      const copy = j.copy || j.value || j.public_copy || j.data || null;
+      if(!copy || typeof copy !== "object") return { ok:false, error:"no copy object", detail: j };
+      return { ok:true, copy };
+    }catch(e){
+      return { ok:false, error: String(e?.message || e) };
+    }
+  }
+
+  function applyPublicCopy(copy){
+    const c = { ...DEFAULT_PUBLIC_COPY, ...(copy||{}) };
+    const setText = (id, v)=>{
+      const node = document.getElementById(id);
+      if(!node) return;
+      const s = (v == null) ? "" : String(v);
+      if(s.trim()) node.textContent = s;
+    };
+    setText("copy-brand-title", c.brand_title);
+    setText("copy-brand-subtitle", c.brand_subtitle);
+    setText("copy-left-title", c.left_title);
+    setText("copy-right-title", c.right_title);
+  }
+
+
 (async function init(){
+      fetchPublicCopy().then(r=>{ if(r.ok) applyPublicCopy(r.copy); });
       bindRange("age","age-val");
       bindRange("height","height-val");
       bindRange("weight","weight-val");
