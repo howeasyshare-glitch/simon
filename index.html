@@ -2742,41 +2742,56 @@ optionsRoot.innerHTML = list.map(v=>{
 
 
   // ===== Public copy (from admin settings) =====
-  const DEFAULT_PUBLIC_COPY = {
-    brand_title: "findoutfit",
-    brand_subtitle: "輸入條件→ outfit生成 → 商品推薦",
-    left_title: "穿搭條件",
-    right_title: "AI 穿搭示意圖 & 類似商品"
-  };
+// 以「首頁 DOM id」為 key（這樣 settings/admin_kv 都能 1:1 對齊）
+const COPY_IDS = [
+  "copy-brand-title",
+  "copy-brand-subtitle",
+  "copy-left-title",
+  "copy-right-title",
+];
 
-  async function fetchPublicCopy(){
-    try{
-      const r = await fetch("/api/public-copy?ts=" + Date.now(), { cache: "no-store" });
-      const t = await r.text();
-      let j = {};
-      try{ j = t ? JSON.parse(t) : {}; } catch { j = { raw: t }; }
-      if(!r.ok) return { ok:false, error: j?.error || ("HTTP " + r.status), detail: j };
-      const copy = j.copy || j.value || j.public_copy || j.data || null;
-      if(!copy || typeof copy !== "object") return { ok:false, error:"no copy object", detail: j };
-      return { ok:true, copy };
-    }catch(e){
-      return { ok:false, error: String(e?.message || e) };
-    }
-  }
+// 你可以保留預設（避免空白），也可以全部留 ""（避免跳字）
+const DEFAULT_PUBLIC_COPY_BY_ID = {
+  "copy-brand-title": "findoutfit",
+  "copy-brand-subtitle": "輸入條件→ outfit生成 → 商品推薦",
+  "copy-left-title": "穿搭條件",
+  "copy-right-title": "AI 穿搭示意圖 & 類似商品",
+};
 
-  function applyPublicCopy(copy){
-    const c = { ...DEFAULT_PUBLIC_COPY, ...(copy||{}) };
-    const setText = (id, v)=>{
-      const node = document.getElementById(id);
-      if(!node) return;
-      const s = (v == null) ? "" : String(v);
-      if(s.trim()) node.textContent = s;
-    };
-    setText("copy-brand-title", c.copy-brand-title);
-    setText("copy-brand-subtitle", c.copy-brand-subtitle);
-    setText("copy-left-title", c.copy-left-title);
-    setText("copy-right-title", c.copy-right-title);
+async function fetchPublicCopy(){
+  try{
+    const r = await fetch("/api/public-copy?ts=" + Date.now(), { cache: "no-store" });
+    const t = await r.text();
+    let j = {};
+    try{ j = t ? JSON.parse(t) : {}; } catch { j = { raw: t }; }
+    if(!r.ok) return { ok:false, error: j?.error || ("HTTP " + r.status), detail: j };
+
+    // 兼容你的 API 回傳格式
+    const copy = j.copy || j.value || j.public_copy || j.data || null;
+    if(!copy || typeof copy !== "object") return { ok:false, error:"no copy object", detail: j };
+
+    return { ok:true, copy };
+  }catch(e){
+    return { ok:false, error: String(e?.message || e) };
   }
+}
+
+function applyPublicCopy(copyById){
+  const merged = { ...DEFAULT_PUBLIC_COPY_BY_ID, ...(copyById || {}) };
+
+  for(const id of COPY_IDS){
+    const node = document.getElementById(id);
+    if(!node) continue;
+
+    const v = merged[id];
+    if(v == null) continue;
+
+    const s = String(v).trim();
+    if(!s) continue;
+
+    node.textContent = s;
+  }
+}
 
 
 (async function init(){
