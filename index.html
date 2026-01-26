@@ -823,39 +823,89 @@ function applyDeviceClass() {
       return `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())} ${pad(d.getHours())}:${pad(d.getMinutes())}`;
     }
 
-    function payloadSummaryLine(p) {
-  if (!p) return "—";
+    function zhGender(g){
+  if(g==="male") return "男";
+  if(g==="female") return "女";
+  return "中性";
+}
+function zhAgeGroup(ag){
+  if(ag==="kids") return "童裝";
+  return "成人";
+}
+function styleNameFromPayload(p){
+  if(p?.uiStyleValue) return String(p.uiStyleValue); // 最貼近使用者理解
+  const key = p?.audienceKey || `${p?.ageGroup||"adult"}-${p?.gender||"neutral"}`;
+  const pack = STYLE_UI_BY_AUDIENCE[key] || STYLE_UI_BY_AUDIENCE["adult-neutral"];
+  const styleCode = p?.styleId || p?.style || "";
+  const hit = (pack?.styles||[]).find(x=>x.style===styleCode);
+  return hit?.name || (styleCode ? String(styleCode) : "—");
+}
+function accessoriesText(p){
+  const a=[];
+  if(p?.withCoat) a.push("外套");
+  if(p?.withHat) a.push("帽");
+  if(p?.withBag) a.push("包");
+  return a.length? a.join("＋") : "無";
+}
+function formatOutfitMetaChips(p, { includeTime=true, ts=null } = {}){
+  const chips=[];
+  const gender = zhGender(p?.gender);
+  const ag = zhAgeGroup(p?.ageGroup);
+  const age = (p?.age!=null && p?.age!=="") ? `${p.age}歲` : "";
+  const hw = (p?.height && p?.weight) ? `${p.height}/${p.weight}` : (p?.height? `${p.height}cm` : (p?.weight? `${p.weight}kg` : ""));
+  const style = styleNameFromPayload(p);
+  const temp = (p?.temp!=null && p?.temp!=="") ? `${p.temp}°C` : "";
+  const pal = p?.paletteId ? String(p.paletteId) : "";
+  const acc = accessoriesText(p);
 
-  const g = p.gender === "female" ? "女" : p.gender === "male" ? "男" : "中性";
-  const group = p.ageGroup === "kids" ? "童裝" : "成人";
+  if(includeTime){
+    const d = ts ? new Date(ts) : new Date();
+    const t = `${d.getFullYear()}/${String(d.getMonth()+1).padStart(2,"0")}/${String(d.getDate()).padStart(2,"0")} ${String(d.getHours()).padStart(2,"0")}:${String(d.getMinutes()).padStart(2,"0")}`;
+    chips.push({k:"生成", v:t});
+  }
 
-  // Base style (keep for debugging/consistency)
-  const style = (p.style || "").toUpperCase();
+  const who = [ag, gender, age].filter(Boolean).join(" ");
+  if(who) chips.push({k:"對象", v: who});
+  if(hw) chips.push({k:"身形", v: hw});
+  if(style && style!=="—") chips.push({k:"風格", v: style});
+  if(temp) chips.push({k:"氣溫", v: temp});
+  if(acc && acc!=="無") chips.push({k:"配件", v: acc});
+  if(pal) chips.push({k:"色系", v: pal});
 
-  // UI layer: show the user's chosen 2nd-level value (旅行 / GD ...)
-  const uiValue = (p.uiStyleValue || p.ui_style_value || "").trim(); // backward-compatible
+  if(p?.uiStyleSource && p?.uiStyleValue){
+    const srcLabel = (p.uiStyleSource==="scene") ? "情境" : (p.uiStyleSource==="brand") ? "品牌" : (p.uiStyleSource==="celeb") ? "名人" : "來源";
+    // 避免跟「風格」重複：uiStyleValue 只有在不等於 style 時才顯示
+    if(String(p.uiStyleValue) !== style){
+      chips.push({k:srcLabel, v:String(p.uiStyleValue)});
+    }
+  }
+  return chips;
+}
 
-  const extras = [
-    p.withBag ? "包" : "",
-    p.withHat ? "帽" : "",
-    (p.withCoat || (Number(p.temp) <= 20)) ? "外套" : ""
-  ].filter(Boolean).join("、");
-
-  const stylePart = uiValue ? `${style} · ${uiValue}` : style;
-
-  return `${group} · ${g} · ${p.age}歲 · ${p.height}cm/${p.weight}kg · ${p.temp}°C · ${stylePart}${extras ? " · " + extras : ""}`;
+  function payloadSummaryLine(p){
+  const chips = formatOutfitMetaChips(p||{}, { includeTime:false });
+  const want = ["對象","身形","風格","氣溫","配件","色系"];
+  const picked = want.map(k=>chips.find(x=>x.k===k)).filter(Boolean);
+  return picked.map(x=>`${x.k}：${x.v}`).join(" · ") || "—";
 }
 
 
     function setResultMeta(payload){
-      const bar=document.getElementById("result-meta");
-      const timeEl=document.getElementById("result-time");
-      const sumEl=document.getElementById("result-summaryline");
-      if(!bar||!timeEl||!sumEl) return;
-      bar.style.display="flex";
-      timeEl.innerHTML=`<b>${formatNowTS()}</b>`;
-      sumEl.textContent=payloadSummaryLine(payload);
-    }
+  const rmLeft = document.getElementById("result-meta-left");
+  const rmDot = document.getElementById("result-meta-dot");
+  const rmRight = document.getElementById("result-meta-right");
+  if(!rmLeft || !rmRight) return;
+
+  const p = payload || {};
+  const chips = formatOutfitMetaChips(p, { includeTime:true });
+
+  rmLeft.innerHTML = chips
+    .map(x=>`<span class="meta-chip"><b>${escapeHtml(x.k)}</b><span class="dim">${escapeHtml(x.v)}</span></span>`)
+    .join("");
+
+  if(rmDot) rmDot.style.display = "none";
+  rmRight.textContent = "";
+}
 
     function safeJson(obj){ try{ return JSON.stringify(obj,null,2);}catch{ return ""; } }
     function copyText(text){
@@ -1651,9 +1701,12 @@ async function runStepProducts(payload, spec){
         const info=document.createElement("div");
         info.className="mini-info";
         const title=(item.summary||"一套穿搭").trim()||"一套穿搭";
-        const p=item.payload||{};
-        const meta=`${fmtTime(item.ts)} · ${(p.gender||"")} · ${(p.style||"")} · ${(p.temp ?? "")}°C`;
-        info.innerHTML=`<div class="t">${escapeHtml(title)}</div><div class="m">${escapeHtml(meta)}</div>`;
+const p=item.payload||{};
+const chips = formatOutfitMetaChips(p, { includeTime:true, ts: item.ts })
+  .filter(x=>["生成","對象","身形","風格","氣溫","配件","色系","情境","品牌","名人"].includes(x.k))
+  .map(x=>`<span class="meta-chip"><b>${escapeHtml(x.k)}</b><span class="dim">${escapeHtml(x.v)}</span></span>`)
+  .join("");
+info.innerHTML = `<div class="mini-title">${escapeHtml(title)}</div><div class="mini-meta">${chips}</div>`;
 
         const actions=document.createElement("div");
         actions.className="mini-actions";
@@ -2742,56 +2795,41 @@ optionsRoot.innerHTML = list.map(v=>{
 
 
   // ===== Public copy (from admin settings) =====
-// 以「首頁 DOM id」為 key（這樣 settings/admin_kv 都能 1:1 對齊）
-const COPY_IDS = [
-  "copy-brand-title",
-  "copy-brand-subtitle",
-  "copy-left-title",
-  "copy-right-title",
-];
+  const DEFAULT_PUBLIC_COPY = {
+    brand_title: "findoutfit",
+    brand_subtitle: "輸入條件→ outfit生成 → 商品推薦",
+    left_title: "穿搭條件",
+    right_title: "AI 穿搭示意圖 & 類似商品"
+  };
 
-// 你可以保留預設（避免空白），也可以全部留 ""（避免跳字）
-const DEFAULT_PUBLIC_COPY_BY_ID = {
-  "copy-brand-title": "findoutfit",
-  "copy-brand-subtitle": "輸入條件→ outfit生成 → 商品推薦",
-  "copy-left-title": "穿搭條件",
-  "copy-right-title": "AI 穿搭示意圖 & 類似商品",
-};
-
-async function fetchPublicCopy(){
-  try{
-    const r = await fetch("/api/public-copy?ts=" + Date.now(), { cache: "no-store" });
-    const t = await r.text();
-    let j = {};
-    try{ j = t ? JSON.parse(t) : {}; } catch { j = { raw: t }; }
-    if(!r.ok) return { ok:false, error: j?.error || ("HTTP " + r.status), detail: j };
-
-    // 兼容你的 API 回傳格式
-    const copy = j.copy || j.value || j.public_copy || j.data || null;
-    if(!copy || typeof copy !== "object") return { ok:false, error:"no copy object", detail: j };
-
-    return { ok:true, copy };
-  }catch(e){
-    return { ok:false, error: String(e?.message || e) };
+  async function fetchPublicCopy(){
+    try{
+      const r = await fetch("/api/public-copy?ts=" + Date.now(), { cache: "no-store" });
+      const t = await r.text();
+      let j = {};
+      try{ j = t ? JSON.parse(t) : {}; } catch { j = { raw: t }; }
+      if(!r.ok) return { ok:false, error: j?.error || ("HTTP " + r.status), detail: j };
+      const copy = j.copy || j.value || j.public_copy || j.data || null;
+      if(!copy || typeof copy !== "object") return { ok:false, error:"no copy object", detail: j };
+      return { ok:true, copy };
+    }catch(e){
+      return { ok:false, error: String(e?.message || e) };
+    }
   }
-}
 
-function applyPublicCopy(copyById){
-  const merged = { ...DEFAULT_PUBLIC_COPY_BY_ID, ...(copyById || {}) };
-
-  for(const id of COPY_IDS){
-    const node = document.getElementById(id);
-    if(!node) continue;
-
-    const v = merged[id];
-    if(v == null) continue;
-
-    const s = String(v).trim();
-    if(!s) continue;
-
-    node.textContent = s;
+  function applyPublicCopy(copy){
+    const c = { ...DEFAULT_PUBLIC_COPY, ...(copy||{}) };
+    const setText = (id, v)=>{
+      const node = document.getElementById(id);
+      if(!node) return;
+      const s = (v == null) ? "" : String(v);
+      if(s.trim()) node.textContent = s;
+    };
+    setText("copy-brand-title", c.brand_title);
+    setText("copy-brand-subtitle", c.brand_subtitle);
+    setText("copy-left-title", c.left_title);
+    setText("copy-right-title", c.right_title);
   }
-}
 
 
 (async function init(){
