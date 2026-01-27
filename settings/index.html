@@ -3,230 +3,126 @@
 <head>
   <meta charset="utf-8"/>
   <meta name="viewport" content="width=device-width,initial-scale=1"/>
-  <title>設定｜首頁文案</title>
+  <title>設定｜首頁文案與對應表</title>
   <style>
     body{font-family:system-ui,-apple-system,Segoe UI,Roboto,"Noto Sans TC",sans-serif;background:#f6f7fb;margin:0;padding:18px;color:#111}
-    .card{max-width:980px;margin:0 auto;background:#fff;border:1px solid #e5e7eb;border-radius:16px;padding:16px;box-shadow:0 14px 34px rgba(0,0,0,.06)}
-    h1{margin:0 0 10px;font-size:18px}
-    .muted{color:#6b7280;font-size:12px;white-space:pre-wrap}
-    .line{height:1px;background:#eef2f7;margin:14px 0}
-    label{display:block;font-weight:800;font-size:12px;margin:10px 0 6px}
-    input, textarea{width:100%;padding:10px 12px;border:1px solid #e5e7eb;border-radius:12px;font-size:14px;box-sizing:border-box}
-    textarea{min-height:74px}
-    button{border:none;border-radius:999px;padding:10px 14px;font-weight:900;cursor:pointer}
-    .primary{background:#111;color:#fff}
-    .ghost{background:#fff;border:1px solid #e5e7eb}
+    .card{max-width:1100px;margin:0 auto;background:#fff;border:1px solid #e5e7eb;border-radius:16px;padding:16px;box-shadow:0 14px 34px rgba(0,0,0,.06)}
+    h1{font-size:18px;margin:0 0 12px}
+    h2{font-size:15px;margin:18px 0 6px}
+    h3{font-size:13px;margin:14px 0 6px}
+    label{display:block;font-weight:700;font-size:12px;margin:6px 0 4px}
+    input, textarea{width:100%;padding:8px 10px;border:1px solid #e5e7eb;border-radius:10px;font-size:13px}
+    textarea{min-height:64px}
+    .muted{font-size:12px;color:#6b7280}
     .row{display:grid;grid-template-columns:1fr 1fr;gap:12px}
-    @media (max-width: 840px){ .row{grid-template-columns:1fr} }
-    .actions{display:flex;gap:10px;flex-wrap:wrap;margin-top:12px}
-    .preview{border:1px solid #e5e7eb;border-radius:14px;padding:12px;background:#fafafa}
-    .preview h2{margin:0 0 6px;font-size:14px}
-    .preview p{margin:0 0 6px;font-size:13px;color:#111}
-    .kbd{font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:12px;background:#f3f4f6;border:1px solid #e5e7eb;border-radius:8px;padding:2px 6px}
-    .small{font-size:12px;color:#6b7280}
-    .pill{display:inline-block;padding:2px 8px;border-radius:999px;border:1px solid #e5e7eb;background:#fff;font-size:12px}
+    .box{border:1px solid #e5e7eb;border-radius:12px;padding:12px;background:#fafafa}
+    .actions{margin-top:14px;display:flex;gap:10px}
+    button{border-radius:999px;padding:8px 14px;font-weight:700;border:1px solid #e5e7eb;background:#fff;cursor:pointer}
+    .primary{background:#111;color:#fff;border-color:#111}
   </style>
 </head>
 <body>
-  <div class="card">
-    <h1>設定：首頁文案</h1>
-    <div class="muted" id="status">初始化中…</div>
 
-    <div class="line"></div>
+<div class="card">
+  <h1>首頁設定（文案 × 對應邏輯）</h1>
+  <div class="muted" id="status">初始化中…</div>
 
-    <div class="row">
-      <div>
-        <label>品牌/產品名稱（首頁主標）</label>
-        <input id="c_brand" placeholder="例如：FindOutfit" />
-        <div class="small">對應首頁 id：<span class="pill">copy-brand-title</span></div>
-      </div>
-      <div>
-        <label>副標/一句話描述（首頁副標）</label>
-        <input id="c_tagline" placeholder="例如：輸入條件→ outfit生成 → 商品推薦" />
-        <div class="small">對應首頁 id：<span class="pill">copy-brand-subtitle</span></div>
-      </div>
+  <h2>一、基本文案</h2>
+  <div class="row">
+    <div>
+      <label>品牌名稱</label>
+      <input id="brand"/>
     </div>
-
-    <div class="row">
-      <div>
-        <label>左側區塊標題（穿搭條件）</label>
-        <input id="c_left_title" placeholder="例如：穿搭條件" />
-        <div class="small">對應首頁 id：<span class="pill">copy-left-title</span></div>
-      </div>
-      <div>
-        <label>右側區塊標題（AI 穿搭示意圖 & 類似商品）</label>
-        <input id="c_right_title" placeholder="例如：AI 穿搭示意圖 & 類似商品" />
-        <div class="small">對應首頁 id：<span class="pill">copy-right-title</span></div>
-      </div>
-    </div>
-
-    <label>更多文案（JSON，可留空）</label>
-    <textarea id="c_extra" placeholder='例如：{"copy-share-cta":"製作屬於自己的穿搭","landing_title":"今天想穿什麼？"}'></textarea>
-    <div class="muted">
-      這一欄是「擴充用」：你未來在首頁新增任何可編輯文字，只要給一個 id（例如 <span class="kbd">copy-share-cta</span>），就能直接存在這裡，不用改 UI。
-    </div>
-
-    <div class="actions">
-      <button class="ghost" id="btnLoad">讀取</button>
-      <button class="primary" id="btnSave">儲存</button>
-    </div>
-
-    <div class="line"></div>
-
-    <div class="preview">
-      <h2>前台會讀取這份設定（公開 API：<span class="kbd">/api/public-copy</span>）</h2>
-      <p><b id="p_brand">—</b></p>
-      <p id="p_tagline" class="muted">—</p>
-      <p class="muted">左側：<span id="p_left">—</span>　｜　右側：<span id="p_right">—</span></p>
-      <div class="muted" id="debug"></div>
+    <div>
+      <label>副標</label>
+      <input id="tagline"/>
     </div>
   </div>
 
+  <h2>二、情境 / 風格（依類別）</h2>
+
+  <h3>成人（adult）</h3>
+  <textarea id="scene_adult" placeholder='{"scene_formal":"正式場合","scene_travel":"旅行"}'></textarea>
+
+  <h3>童裝（kids）</h3>
+  <textarea id="scene_kids" placeholder='{"scene_school":"上學","scene_play":"玩耍"}'></textarea>
+
+  <h2>三、名人對應（依性別）</h2>
+
+  <h3>男性名人（male）</h3>
+  <textarea id="celeb_male" placeholder='{"gd":"GD","brad_pitt":"布萊德彼特"}'></textarea>
+
+  <h3>女性名人（female）</h3>
+  <textarea id="celeb_female" placeholder='{"iu":"IU","emma_watson":"艾瑪華森"}'></textarea>
+
+  <div class="actions">
+    <button id="btnLoad">讀取</button>
+    <button class="primary" id="btnSave">儲存</button>
+  </div>
+
+  <pre class="muted" id="debug"></pre>
+</div>
+
 <script>
-  const AUTH_KEY = "os_supabase_access_token_v1";
-  const el = (id)=>document.getElementById(id);
-  const setStatus = (t)=> el("status").textContent = t;
+const AUTH_KEY="os_supabase_access_token_v1";
+const el=id=>document.getElementById(id);
+const token=()=>localStorage.getItem(AUTH_KEY);
 
-  function token(){ return localStorage.getItem(AUTH_KEY); }
+function jsonSafe(v){
+  try{ return JSON.parse(v||"{}"); }catch{ return {}; }
+}
 
-  function jsonParseSafe(s){
-    const t = String(s||"").trim();
-    if(!t) return {};
-    try { return JSON.parse(t); } catch { return {}; }
-  }
+async function api(path,opts={}){
+  const t=token(); if(!t) throw new Error("未登入");
+  const r=await fetch(path,{...opts,headers:{...(opts.headers||{}),"Authorization":"Bearer "+t}});
+  const j=await r.json();
+  if(!r.ok) throw j;
+  return j;
+}
 
-  async function api(path, opts={}){
-    const t = token();
-    if(!t) throw new Error("找不到 token：請先登入後再開 /setting");
-
-    const headers = Object.assign({}, opts.headers||{}, { "Authorization":"Bearer " + t });
-    const res = await fetch(path, Object.assign({}, opts, { headers }));
-    const text = await res.text();
-    let json = {};
-    try{ json = text ? JSON.parse(text) : {}; }catch{ json = { raw:text }; }
-
-    if(!res.ok){
-      const msg = json?.error ? json.error : ("HTTP " + res.status);
-      const e = new Error(msg);
-      e.payload = json;
-      throw e;
+function readForm(){
+  return {
+    brand: el("brand").value,
+    tagline: el("tagline").value,
+    scene_maps: {
+      adult: jsonSafe(el("scene_adult").value),
+      kids: jsonSafe(el("scene_kids").value),
+    },
+    celebrity_maps: {
+      male: jsonSafe(el("celeb_male").value),
+      female: jsonSafe(el("celeb_female").value),
     }
-    return json;
-  }
-
-  // ✅ 以「首頁 id」為主
-  const HOME_ID_KEYS = {
-    brand: "copy-brand-title",
-    tagline: "copy-brand-subtitle",
-    left_title: "copy-left-title",
-    right_title: "copy-right-title",
   };
+}
 
-  function readFormAsIdMap(){
-    const idMap = {};
-    idMap[HOME_ID_KEYS.brand] = (el("c_brand").value || "").trim();
-    idMap[HOME_ID_KEYS.tagline] = (el("c_tagline").value || "").trim();
-    idMap[HOME_ID_KEYS.left_title] = (el("c_left_title").value || "").trim();
-    idMap[HOME_ID_KEYS.right_title] = (el("c_right_title").value || "").trim();
+function applyForm(c){
+  el("brand").value=c.brand||"";
+  el("tagline").value=c.tagline||"";
+  el("scene_adult").value=JSON.stringify(c.scene_maps?.adult||{},null,2);
+  el("scene_kids").value=JSON.stringify(c.scene_maps?.kids||{},null,2);
+  el("celeb_male").value=JSON.stringify(c.celebrity_maps?.male||{},null,2);
+  el("celeb_female").value=JSON.stringify(c.celebrity_maps?.female||{},null,2);
+}
 
-    // extra JSON merge（允許你存更多 key）
-    const extra = jsonParseSafe(el("c_extra").value);
-    if(extra && typeof extra === "object"){
-      for(const [k,v] of Object.entries(extra)){
-        idMap[String(k)] = v;
-      }
-    }
-    return idMap;
-  }
+async function load(){
+  const j=await api("/api/admin?action=get_copy");
+  applyForm(j.copy||{});
+}
 
-  // ✅ 兼容：如果 DB 裡還是舊格式（brand/step1...），也能讀起來並轉成 idMap
-  function normalizeAnyCopyToIdMap(copy){
-    if(!copy || typeof copy !== "object") return {};
+async function save(){
+  const copy=readForm();
+  const j=await api("/api/admin?action=save_copy",{
+    method:"POST",
+    headers:{"Content-Type":"application/json"},
+    body:JSON.stringify({copy})
+  });
+  applyForm(j.saved.copy);
+}
 
-    // 已經是 idMap（含 copy-brand-title）就直接用
-    if(Object.keys(copy).some(k => String(k).startsWith("copy-"))){
-      return { ...copy };
-    }
-
-    // 舊格式兼容（你之前 settings 用 brand/tagline/right_title）
-    const out = {};
-    if(copy.brand) out[HOME_ID_KEYS.brand] = copy.brand;
-    if(copy.tagline) out[HOME_ID_KEYS.tagline] = copy.tagline;
-    if(copy.left_title) out[HOME_ID_KEYS.left_title] = copy.left_title;
-    if(copy.right_title) out[HOME_ID_KEYS.right_title] = copy.right_title;
-
-    // 如果你之前把一些文案塞在 extra
-    if(copy.extra && typeof copy.extra === "object"){
-      for(const [k,v] of Object.entries(copy.extra)){
-        out[String(k)] = v;
-      }
-    }
-    return out;
-  }
-
-  function applyFormFromIdMap(idMap){
-    const c = idMap || {};
-    el("c_brand").value = (c[HOME_ID_KEYS.brand] || "");
-    el("c_tagline").value = (c[HOME_ID_KEYS.tagline] || "");
-    el("c_left_title").value = (c[HOME_ID_KEYS.left_title] || "");
-    el("c_right_title").value = (c[HOME_ID_KEYS.right_title] || "");
-
-    // 只把「非四大 key」的其他內容丟進 extra 顯示
-    const extra = { ...c };
-    delete extra[HOME_ID_KEYS.brand];
-    delete extra[HOME_ID_KEYS.tagline];
-    delete extra[HOME_ID_KEYS.left_title];
-    delete extra[HOME_ID_KEYS.right_title];
-    el("c_extra").value = JSON.stringify(extra || {}, null, 2);
-
-    // preview
-    el("p_brand").textContent = c[HOME_ID_KEYS.brand] || "—";
-    el("p_tagline").textContent = c[HOME_ID_KEYS.tagline] || "—";
-    el("p_left").textContent = c[HOME_ID_KEYS.left_title] || "—";
-    el("p_right").textContent = c[HOME_ID_KEYS.right_title] || "—";
-  }
-
-  async function load(){
-    try{
-      setStatus("讀取中…");
-      el("debug").textContent = "";
-      const j = await api("/api/admin?action=get_copy");
-      const idMap = normalizeAnyCopyToIdMap(j.copy || null);
-      applyFormFromIdMap(idMap);
-      setStatus("已讀取 ✅（updated_at: " + (j.updated_at || "—") + "）");
-    }catch(e){
-      setStatus("讀取失敗：" + e.message);
-      el("debug").textContent = JSON.stringify(e.payload || {}, null, 2);
-    }
-  }
-
-  async function save(){
-    try{
-      setStatus("儲存中…");
-      el("debug").textContent = "";
-
-      const idMap = readFormAsIdMap();
-
-      const j = await api("/api/admin?action=save_copy", {
-        method:"POST",
-        headers:{"Content-Type":"application/json"},
-        body: JSON.stringify({ copy: idMap })   // ✅ 存 idMap
-      });
-
-      const saved = normalizeAnyCopyToIdMap(j.saved?.copy || idMap);
-      applyFormFromIdMap(saved);
-      setStatus("已儲存 ✅（updated_at: " + (j.saved?.updated_at || "—") + "）");
-    }catch(e){
-      setStatus("儲存失敗：" + e.message);
-      el("debug").textContent = JSON.stringify(e.payload || {}, null, 2);
-    }
-  }
-
-  el("btnLoad").addEventListener("click", load);
-  el("btnSave").addEventListener("click", save);
-
-  // boot
-  (async()=>{ await load(); })();
+el("btnLoad").onclick=load;
+el("btnSave").onclick=save;
+load();
 </script>
+
 </body>
 </html>
