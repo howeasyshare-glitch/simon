@@ -3,10 +3,10 @@
 <head>
   <meta charset="utf-8"/>
   <meta name="viewport" content="width=device-width,initial-scale=1"/>
-  <title>設定｜首頁文案與對應表</title>
+  <title>設定｜首頁與生成對應</title>
   <style>
     body{font-family:system-ui,-apple-system,Segoe UI,Roboto,"Noto Sans TC",sans-serif;background:#f6f7fb;margin:0;padding:18px;color:#111}
-    .card{max-width:1100px;margin:0 auto;background:#fff;border:1px solid #e5e7eb;border-radius:16px;padding:16px;box-shadow:0 14px 34px rgba(0,0,0,.06)}
+    .card{max-width:1100px;margin:0 auto;background:#fff;border:1px solid #e5e7eb;border-radius:16px;padding:16px}
     h1{font-size:18px;margin:0 0 12px}
     h2{font-size:15px;margin:18px 0 6px}
     h3{font-size:13px;margin:14px 0 6px}
@@ -15,45 +15,53 @@
     textarea{min-height:64px}
     .muted{font-size:12px;color:#6b7280}
     .row{display:grid;grid-template-columns:1fr 1fr;gap:12px}
-    .box{border:1px solid #e5e7eb;border-radius:12px;padding:12px;background:#fafafa}
     .actions{margin-top:14px;display:flex;gap:10px}
-    button{border-radius:999px;padding:8px 14px;font-weight:700;border:1px solid #e5e7eb;background:#fff;cursor:pointer}
+    button{border-radius:999px;padding:8px 14px;font-weight:700;border:1px solid #e5e7eb;background:#fff}
     .primary{background:#111;color:#fff;border-color:#111}
   </style>
 </head>
 <body>
 
 <div class="card">
-  <h1>首頁設定（文案 × 對應邏輯）</h1>
+  <h1>首頁設定（與前台對齊）</h1>
   <div class="muted" id="status">初始化中…</div>
 
-  <h2>一、基本文案</h2>
-  <div class="row">
-    <div>
-      <label>品牌名稱</label>
-      <input id="brand"/>
-    </div>
-    <div>
-      <label>副標</label>
-      <input id="tagline"/>
-    </div>
-  </div>
+  <!-- ================= 基本文案（首頁） ================= -->
+  <h2>一、首頁基本文案（對齊 DOM id）</h2>
 
+  <label>品牌名稱（copy-brand-title）</label>
+  <input id="f_brand" placeholder="findoutfit"/>
+
+  <label>副標（copy-brand-subtitle）</label>
+  <input id="f_tagline" placeholder="輸入條件→ outfit生成 → 商品推薦"/>
+
+  <label>左側標題（copy-left-title）</label>
+  <input id="f_left_title" placeholder="穿搭條件"/>
+
+  <label>右側標題（copy-right-title）</label>
+  <input id="f_right_title" placeholder="AI 穿搭示意圖 & 類似商品"/>
+
+  <!-- ================= 情境 / 風格 ================= -->
   <h2>二、情境 / 風格（依類別）</h2>
 
   <h3>成人（adult）</h3>
-  <textarea id="scene_adult" placeholder='{"scene_formal":"正式場合","scene_travel":"旅行"}'></textarea>
+  <textarea id="f_scene_adult"
+    placeholder='{"scene_formal":"正式場合","scene_travel":"旅行"}'></textarea>
 
   <h3>童裝（kids）</h3>
-  <textarea id="scene_kids" placeholder='{"scene_school":"上學","scene_play":"玩耍"}'></textarea>
+  <textarea id="f_scene_kids"
+    placeholder='{"scene_school":"上學","scene_play":"玩耍"}'></textarea>
 
+  <!-- ================= 名人 ================= -->
   <h2>三、名人對應（依性別）</h2>
 
-  <h3>男性名人（male）</h3>
-  <textarea id="celeb_male" placeholder='{"gd":"GD","brad_pitt":"布萊德彼特"}'></textarea>
+  <h3>男性（male）</h3>
+  <textarea id="f_celeb_male"
+    placeholder='{"gd":"GD","brad_pitt":"布萊德彼特"}'></textarea>
 
-  <h3>女性名人（female）</h3>
-  <textarea id="celeb_female" placeholder='{"iu":"IU","emma_watson":"艾瑪華森"}'></textarea>
+  <h3>女性（female）</h3>
+  <textarea id="f_celeb_female"
+    placeholder='{"iu":"IU","emma_watson":"艾瑪華森"}'></textarea>
 
   <div class="actions">
     <button id="btnLoad">讀取</button>
@@ -68,13 +76,14 @@ const AUTH_KEY="os_supabase_access_token_v1";
 const el=id=>document.getElementById(id);
 const token=()=>localStorage.getItem(AUTH_KEY);
 
-function jsonSafe(v){
-  try{ return JSON.parse(v||"{}"); }catch{ return {}; }
-}
+const jsonSafe=(s)=>{ try{return JSON.parse(s||"{}")}catch{return{}} };
 
 async function api(path,opts={}){
   const t=token(); if(!t) throw new Error("未登入");
-  const r=await fetch(path,{...opts,headers:{...(opts.headers||{}),"Authorization":"Bearer "+t}});
+  const r=await fetch(path,{
+    ...opts,
+    headers:{...(opts.headers||{}),"Authorization":"Bearer "+t}
+  });
   const j=await r.json();
   if(!r.ok) throw j;
   return j;
@@ -82,26 +91,34 @@ async function api(path,opts={}){
 
 function readForm(){
   return {
-    brand: el("brand").value,
-    tagline: el("tagline").value,
-    scene_maps: {
-      adult: jsonSafe(el("scene_adult").value),
-      kids: jsonSafe(el("scene_kids").value),
+    home_copy:{
+      brand: el("f_brand").value,
+      tagline: el("f_tagline").value,
+      left_title: el("f_left_title").value,
+      right_title: el("f_right_title").value,
     },
-    celebrity_maps: {
-      male: jsonSafe(el("celeb_male").value),
-      female: jsonSafe(el("celeb_female").value),
+    scene_maps:{
+      adult: jsonSafe(el("f_scene_adult").value),
+      kids: jsonSafe(el("f_scene_kids").value),
+    },
+    celebrity_maps:{
+      male: jsonSafe(el("f_celeb_male").value),
+      female: jsonSafe(el("f_celeb_female").value),
     }
   };
 }
 
 function applyForm(c){
-  el("brand").value=c.brand||"";
-  el("tagline").value=c.tagline||"";
-  el("scene_adult").value=JSON.stringify(c.scene_maps?.adult||{},null,2);
-  el("scene_kids").value=JSON.stringify(c.scene_maps?.kids||{},null,2);
-  el("celeb_male").value=JSON.stringify(c.celebrity_maps?.male||{},null,2);
-  el("celeb_female").value=JSON.stringify(c.celebrity_maps?.female||{},null,2);
+  const hc=c.home_copy||{};
+  el("f_brand").value=hc.brand||"";
+  el("f_tagline").value=hc.tagline||"";
+  el("f_left_title").value=hc.left_title||"";
+  el("f_right_title").value=hc.right_title||"";
+
+  el("f_scene_adult").value=JSON.stringify(c.scene_maps?.adult||{},null,2);
+  el("f_scene_kids").value=JSON.stringify(c.scene_maps?.kids||{},null,2);
+  el("f_celeb_male").value=JSON.stringify(c.celebrity_maps?.male||{},null,2);
+  el("f_celeb_female").value=JSON.stringify(c.celebrity_maps?.female||{},null,2);
 }
 
 async function load(){
