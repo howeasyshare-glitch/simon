@@ -1,145 +1,353 @@
+
 <!doctype html>
 <html lang="zh-Hant">
 <head>
   <meta charset="utf-8"/>
   <meta name="viewport" content="width=device-width,initial-scale=1"/>
-  <title>設定｜首頁與生成對應</title>
+  <title>設定｜首頁文案 & 選項對應</title>
   <style>
-    body{font-family:system-ui,-apple-system,Segoe UI,Roboto,"Noto Sans TC",sans-serif;background:#f6f7fb;margin:0;padding:18px;color:#111}
-    .card{max-width:1100px;margin:0 auto;background:#fff;border:1px solid #e5e7eb;border-radius:16px;padding:16px}
-    h1{font-size:18px;margin:0 0 12px}
-    h2{font-size:15px;margin:18px 0 6px}
-    h3{font-size:13px;margin:14px 0 6px}
-    label{display:block;font-weight:700;font-size:12px;margin:6px 0 4px}
-    input, textarea{width:100%;padding:8px 10px;border:1px solid #e5e7eb;border-radius:10px;font-size:13px}
-    textarea{min-height:64px}
-    .muted{font-size:12px;color:#6b7280}
+    :root{
+      --bg:#f6f7fb; --card:#fff; --bd:#e5e7eb; --muted:#6b7280; --ink:#111;
+      --shadow:0 14px 34px rgba(0,0,0,.06);
+      --r16:16px; --r14:14px; --r12:12px;
+    }
+    body{font-family:system-ui,-apple-system,Segoe UI,Roboto,"Noto Sans TC",sans-serif;background:var(--bg);margin:0;padding:18px;color:var(--ink)}
+    .card{max-width:1040px;margin:0 auto;background:var(--card);border:1px solid var(--bd);border-radius:var(--r16);padding:16px;box-shadow:var(--shadow)}
+    h1{margin:0 0 10px;font-size:18px}
+    h2{margin:0 0 8px;font-size:14px}
+    .muted{color:var(--muted);font-size:12px;white-space:pre-wrap;line-height:1.5}
+    .line{height:1px;background:#eef2f7;margin:14px 0}
+    label{display:block;font-weight:800;font-size:12px;margin:10px 0 6px}
+    input, textarea, select{
+      width:100%;padding:10px 12px;border:1px solid var(--bd);border-radius:var(--r12);
+      font-size:14px;box-sizing:border-box;background:#fff
+    }
+    textarea{min-height:120px;font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:12.5px;line-height:1.5}
     .row{display:grid;grid-template-columns:1fr 1fr;gap:12px}
-    .actions{margin-top:14px;display:flex;gap:10px}
-    button{border-radius:999px;padding:8px 14px;font-weight:700;border:1px solid #e5e7eb;background:#fff}
-    .primary{background:#111;color:#fff;border-color:#111}
+    @media (max-width: 920px){ .row{grid-template-columns:1fr} }
+    .actions{display:flex;gap:10px;flex-wrap:wrap;margin-top:12px;align-items:center}
+    button{
+      border:none;border-radius:999px;padding:10px 14px;font-weight:900;cursor:pointer;
+      transition:transform .02s ease, opacity .12s ease, box-shadow .12s ease;
+      user-select:none
+    }
+    button:active{ transform: translateY(1px) scale(.99); }
+    button[disabled]{ opacity:.55; cursor:not-allowed; }
+    .primary{background:#111;color:#fff}
+    .ghost{background:#fff;border:1px solid var(--bd)}
+    .kbd{font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:12px;background:#f3f4f6;border:1px solid var(--bd);border-radius:8px;padding:2px 6px}
+    .grid2{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+    @media (max-width: 920px){ .grid2{grid-template-columns:1fr} }
+    .panel{border:1px solid var(--bd);border-radius:var(--r14);padding:12px;background:#fafafa}
+    .panel .muted{margin-top:6px}
+    .pill{display:inline-block;border:1px solid var(--bd);border-radius:999px;padding:3px 8px;font-size:12px;background:#fff;margin:3px 6px 0 0}
+    .previewRow{display:flex;flex-wrap:wrap;gap:6px;margin-top:6px}
+    .stickyBar{
+      position:sticky; top:10px; z-index:10;
+      background:rgba(246,247,251,.85); backdrop-filter: blur(6px);
+      border:1px solid #eef2f7; border-radius:999px;
+      padding:10px 12px; display:flex; gap:10px; align-items:center; flex-wrap:wrap;
+    }
+    .statusDot{width:8px;height:8px;border-radius:999px;background:#9ca3af;display:inline-block;margin-right:6px;vertical-align:middle}
+    .ok{background:#16a34a}
+    .busy{background:#2563eb}
+    .bad{background:#dc2626}
+    .statusText{font-size:12px;color:var(--muted);white-space:pre-wrap}
   </style>
 </head>
 <body>
+  <div class="card">
+    <h1>設定：首頁文案 & 選項對應</h1>
 
-<div class="card">
-  <h1>首頁設定（與前台對齊）</h1>
-  <div class="muted" id="status">初始化中…</div>
+    <div class="stickyBar">
+      <span class="statusText"><span class="statusDot" id="dot"></span><span id="status">初始化中…</span></span>
+      <span class="muted">Admin API：<span class="kbd">/api/admin?action=get_copy</span> / <span class="kbd">save_copy</span></span>
+      <span class="muted">Public API：<span class="kbd">/api/public-copy</span></span>
+      <div style="flex:1"></div>
+      <button class="ghost" id="btnLoad">讀取</button>
+      <button class="primary" id="btnSave">儲存</button>
+    </div>
 
-  <!-- ================= 基本文案（首頁） ================= -->
-  <h2>一、首頁基本文案（對齊 DOM id）</h2>
+    <div class="line"></div>
 
-  <label>品牌名稱（copy-brand-title）</label>
-  <input id="f_brand" placeholder="findoutfit"/>
+    <h2>一、基本文案（✅ 與首頁 id 對齊）</h2>
+    <div class="muted">這四個 key 會對應首頁固定 id：<span class="kbd">copy-brand-title</span> / <span class="kbd">copy-brand-subtitle</span> / <span class="kbd">copy-left-title</span> / <span class="kbd">copy-right-title</span></div>
 
-  <label>副標（copy-brand-subtitle）</label>
-  <input id="f_tagline" placeholder="輸入條件→ outfit生成 → 商品推薦"/>
+    <div class="row" style="margin-top:8px">
+      <div>
+        <label>品牌/產品名稱（brand → copy-brand-title）</label>
+        <input id="c_brand" placeholder="例如：findoutfit" />
+      </div>
+      <div>
+        <label>副標/一句話描述（tagline → copy-brand-subtitle）</label>
+        <input id="c_tagline" placeholder="例如：輸入條件→ outfit生成 → 商品推薦" />
+      </div>
+    </div>
 
-  <label>左側標題（copy-left-title）</label>
-  <input id="f_left_title" placeholder="穿搭條件"/>
+    <div class="row">
+      <div>
+        <label>左側標題（left_title → copy-left-title）</label>
+        <input id="c_left_title" placeholder="例如：穿搭條件" />
+      </div>
+      <div>
+        <label>右側標題（right_title → copy-right-title）</label>
+        <input id="c_right_title" placeholder="例如：AI 穿搭示意圖 & 類似商品" />
+      </div>
+    </div>
 
-  <label>右側標題（copy-right-title）</label>
-  <input id="f_right_title" placeholder="AI 穿搭示意圖 & 類似商品"/>
+    <div class="line"></div>
 
-  <!-- ================= 情境 / 風格 ================= -->
-  <h2>二、情境 / 風格（依類別）</h2>
+    <h2>二、情境 / 風格（依類別：成人 / 童裝）</h2>
+    <div class="muted">格式建議：陣列，每個元素 <span class="kbd">{&quot;label&quot;:&quot;正式場合&quot;,&quot;tag&quot;:&quot;scene_formal&quot;}</span> 。前台會用 label 顯示中文、用 tag 當條件。</div>
 
-  <h3>成人（adult）</h3>
-  <textarea id="f_scene_adult"
-    placeholder='{"scene_formal":"正式場合","scene_travel":"旅行"}'></textarea>
+    <div class="grid2" style="margin-top:8px">
+      <div class="panel">
+        <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap">
+          <h2 style="margin:0">adult（成人）</h2>
+          <span class="muted">key：<span class="kbd">style_by_category.adult</span></span>
+        </div>
+        <textarea id="c_style_adult" spellcheck="false"></textarea>
+        <div class="previewRow" id="p_style_adult"></div>
+      </div>
 
-  <h3>童裝（kids）</h3>
-  <textarea id="f_scene_kids"
-    placeholder='{"scene_school":"上學","scene_play":"玩耍"}'></textarea>
+      <div class="panel">
+        <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap">
+          <h2 style="margin:0">kids（童裝）</h2>
+          <span class="muted">key：<span class="kbd">style_by_category.kids</span></span>
+        </div>
+        <textarea id="c_style_kids" spellcheck="false"></textarea>
+        <div class="previewRow" id="p_style_kids"></div>
+      </div>
+    </div>
 
-  <!-- ================= 名人 ================= -->
-  <h2>三、名人對應（依性別）</h2>
+    <div class="line"></div>
 
-  <h3>男性（male）</h3>
-  <textarea id="f_celeb_male"
-    placeholder='{"gd":"GD","brad_pitt":"布萊德彼特"}'></textarea>
+    <h2>三、名人對應（依性別：男 / 女）</h2>
+    <div class="muted">格式建議：陣列，每個元素 <span class="kbd">{&quot;label&quot;:&quot;GD&quot;,&quot;tag&quot;:&quot;celeb_gd&quot;}</span> 。前台用 label 顯示、tag 當條件。</div>
 
-  <h3>女性（female）</h3>
-  <textarea id="f_celeb_female"
-    placeholder='{"iu":"IU","emma_watson":"艾瑪華森"}'></textarea>
+    <div class="grid2" style="margin-top:8px">
+      <div class="panel">
+        <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap">
+          <h2 style="margin:0">male（男）</h2>
+          <span class="muted">key：<span class="kbd">celebs_by_gender.male</span></span>
+        </div>
+        <textarea id="c_celeb_male" spellcheck="false"></textarea>
+        <div class="previewRow" id="p_celeb_male"></div>
+      </div>
 
-  <div class="actions">
-    <button id="btnLoad">讀取</button>
-    <button class="primary" id="btnSave">儲存</button>
+      <div class="panel">
+        <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap">
+          <h2 style="margin:0">female（女）</h2>
+          <span class="muted">key：<span class="kbd">celebs_by_gender.female</span></span>
+        </div>
+        <textarea id="c_celeb_female" spellcheck="false"></textarea>
+        <div class="previewRow" id="p_celeb_female"></div>
+      </div>
+    </div>
+
+    <div class="line"></div>
+
+    <h2>四、其他文案（可留空）</h2>
+    <div class="muted">這欄是給你未來要加新的 copy key 時，不用改 UI 也能存。</div>
+    <label>extra（JSON）</label>
+    <textarea id="c_extra" placeholder='例如：{"landing_title":"今天想穿什麼？","share_cta":"製作屬於自己的穿搭"}' spellcheck="false"></textarea>
+
+    <div class="line"></div>
+
+    <div class="panel">
+      <h2>預覽（幫你確認有讀到/存到）</h2>
+      <div class="muted">Public API 會回傳：<span class="kbd">admin_kv.key = home_copy</span> 的 value</div>
+      <div style="margin-top:8px">
+        <div><b id="p_brand">—</b></div>
+        <div class="muted" id="p_tagline">—</div>
+        <div class="previewRow" id="p_titles"></div>
+      </div>
+      <div class="muted" id="debug" style="margin-top:8px"></div>
+    </div>
   </div>
 
-  <pre class="muted" id="debug"></pre>
-</div>
-
 <script>
-const AUTH_KEY="os_supabase_access_token_v1";
-const el=id=>document.getElementById(id);
-const token=()=>localStorage.getItem(AUTH_KEY);
+  const AUTH_KEY = "os_supabase_access_token_v1";
 
-const jsonSafe=(s)=>{ try{return JSON.parse(s||"{}")}catch{return{}} };
-
-async function api(path,opts={}){
-  const t=token(); if(!t) throw new Error("未登入");
-  const r=await fetch(path,{
-    ...opts,
-    headers:{...(opts.headers||{}),"Authorization":"Bearer "+t}
-  });
-  const j=await r.json();
-  if(!r.ok) throw j;
-  return j;
-}
-
-function readForm(){
-  return {
-    home_copy:{
-      brand: el("f_brand").value,
-      tagline: el("f_tagline").value,
-      left_title: el("f_left_title").value,
-      right_title: el("f_right_title").value,
-    },
-    scene_maps:{
-      adult: jsonSafe(el("f_scene_adult").value),
-      kids: jsonSafe(el("f_scene_kids").value),
-    },
-    celebrity_maps:{
-      male: jsonSafe(el("f_celeb_male").value),
-      female: jsonSafe(el("f_celeb_female").value),
-    }
+  const el = (id)=>document.getElementById(id);
+  const setDot = (mode)=>{
+    const d = el("dot");
+    d.classList.remove("ok","busy","bad");
+    if(mode==="ok") d.classList.add("ok");
+    else if(mode==="busy") d.classList.add("busy");
+    else if(mode==="bad") d.classList.add("bad");
   };
-}
+  const setStatus = (t, mode)=>{
+    el("status").textContent = t;
+    setDot(mode || null);
+  };
 
-function applyForm(c){
-  const hc=c.home_copy||{};
-  el("f_brand").value=hc.brand||"";
-  el("f_tagline").value=hc.tagline||"";
-  el("f_left_title").value=hc.left_title||"";
-  el("f_right_title").value=hc.right_title||"";
+  function token(){ return localStorage.getItem(AUTH_KEY); }
 
-  el("f_scene_adult").value=JSON.stringify(c.scene_maps?.adult||{},null,2);
-  el("f_scene_kids").value=JSON.stringify(c.scene_maps?.kids||{},null,2);
-  el("f_celeb_male").value=JSON.stringify(c.celebrity_maps?.male||{},null,2);
-  el("f_celeb_female").value=JSON.stringify(c.celebrity_maps?.female||{},null,2);
-}
+  function jsonParseSafe(s, fallback){
+    const t = String(s||"").trim();
+    if(!t) return (fallback === undefined ? {} : fallback);
+    try { return JSON.parse(t); } catch { return (fallback === undefined ? {} : fallback); }
+  }
 
-async function load(){
-  const j=await api("/api/admin?action=get_copy");
-  applyForm(j.copy||{});
-}
+  async function api(path, opts={}){
+    const t = token();
+    if(!t) throw new Error("找不到 token：請先登入後再開 /settings/index.html");
 
-async function save(){
-  const copy=readForm();
-  const j=await api("/api/admin?action=save_copy",{
-    method:"POST",
-    headers:{"Content-Type":"application/json"},
-    body:JSON.stringify({copy})
-  });
-  applyForm(j.saved.copy);
-}
+    const headers = Object.assign({}, opts.headers||{}, { "Authorization":"Bearer " + t });
+    const res = await fetch(path, Object.assign({}, opts, { headers }));
 
-el("btnLoad").onclick=load;
-el("btnSave").onclick=save;
-load();
+    const text = await res.text();
+    let json = {};
+    try{ json = text ? JSON.parse(text) : {}; }catch{ json = { raw:text }; }
+
+    if(!res.ok){
+      const msg = json?.error ? json.error : ("HTTP " + res.status);
+      const e = new Error(msg);
+      e.payload = json;
+      throw e;
+    }
+    return json;
+  }
+
+  function renderPills(containerId, list){
+    const box = el(containerId);
+    box.innerHTML = "";
+    (Array.isArray(list) ? list : []).slice(0, 14).forEach(it=>{
+      const label = (it && (it.label || it.name)) ? String(it.label || it.name) : "";
+      if(!label) return;
+      const span = document.createElement("span");
+      span.className = "pill";
+      span.textContent = label;
+      box.appendChild(span);
+    });
+    if((Array.isArray(list) ? list.length : 0) > 14){
+      const span = document.createElement("span");
+      span.className = "pill";
+      span.textContent = "…";
+      box.appendChild(span);
+    }
+  }
+
+  function readForm(){
+    const brand = (el("c_brand").value || "").trim();
+    const tagline = (el("c_tagline").value || "").trim();
+    const left_title = (el("c_left_title").value || "").trim();
+    const right_title = (el("c_right_title").value || "").trim();
+
+    const styleAdult = jsonParseSafe(el("c_style_adult").value, []);
+    const styleKids = jsonParseSafe(el("c_style_kids").value, []);
+    const celebMale = jsonParseSafe(el("c_celeb_male").value, []);
+    const celebFemale = jsonParseSafe(el("c_celeb_female").value, []);
+
+    const extra = jsonParseSafe(el("c_extra").value, {});
+
+    return {
+      brand,
+      tagline,
+      left_title,
+      right_title,
+      style_by_category: {
+        adult: Array.isArray(styleAdult) ? styleAdult : [],
+        kids: Array.isArray(styleKids) ? styleKids : [],
+      },
+      celebs_by_gender: {
+        male: Array.isArray(celebMale) ? celebMale : [],
+        female: Array.isArray(celebFemale) ? celebFemale : [],
+      },
+      extra: (extra && typeof extra === "object" && !Array.isArray(extra)) ? extra : {},
+    };
+  }
+
+  function applyForm(copy){
+    const c = copy || {};
+
+    el("c_brand").value = c.brand || "";
+    el("c_tagline").value = c.tagline || "";
+    el("c_left_title").value = c.left_title || "";
+    el("c_right_title").value = c.right_title || "";
+
+    const s = c.style_by_category || {};
+    const g = c.celebs_by_gender || {};
+    el("c_style_adult").value = JSON.stringify(Array.isArray(s.adult) ? s.adult : [], null, 2);
+    el("c_style_kids").value = JSON.stringify(Array.isArray(s.kids) ? s.kids : [], null, 2);
+    el("c_celeb_male").value = JSON.stringify(Array.isArray(g.male) ? g.male : [], null, 2);
+    el("c_celeb_female").value = JSON.stringify(Array.isArray(g.female) ? g.female : [], null, 2);
+
+    el("c_extra").value = JSON.stringify((c.extra && typeof c.extra==="object" && !Array.isArray(c.extra)) ? c.extra : {}, null, 2);
+
+    el("p_brand").textContent = c.brand || "—";
+    el("p_tagline").textContent = c.tagline || "—";
+    el("p_titles").innerHTML = "";
+    const addTitle = (txt)=>{
+      if(!txt) return;
+      const span = document.createElement("span");
+      span.className = "pill";
+      span.textContent = txt;
+      el("p_titles").appendChild(span);
+    };
+    addTitle(c.left_title ? "左：" + c.left_title : "");
+    addTitle(c.right_title ? "右：" + c.right_title : "");
+
+    renderPills("p_style_adult", (c.style_by_category||{}).adult);
+    renderPills("p_style_kids", (c.style_by_category||{}).kids);
+    renderPills("p_celeb_male", (c.celebs_by_gender||{}).male);
+    renderPills("p_celeb_female", (c.celebs_by_gender||{}).female);
+  }
+
+  function setBusy(b){
+    el("btnLoad").disabled = b;
+    el("btnSave").disabled = b;
+  }
+
+  async function load(){
+    try{
+      setBusy(true);
+      setStatus("讀取中…", "busy");
+      el("debug").textContent = "";
+
+      const j = await api("/api/admin?action=get_copy");
+      applyForm(j.copy || null);
+      setStatus("已讀取 ✅（updated_at: " + (j.updated_at || "—") + "）", "ok");
+    }catch(e){
+      setStatus("讀取失敗：" + e.message, "bad");
+      el("debug").textContent = JSON.stringify(e.payload || {}, null, 2);
+    }finally{
+      setBusy(false);
+    }
+  }
+
+  async function save(){
+    try{
+      setBusy(true);
+      setStatus("儲存中…", "busy");
+      el("debug").textContent = "";
+
+      const payload = readForm();
+
+      const j = await api("/api/admin?action=save_copy", {
+        method:"POST",
+        headers:{"Content-Type":"application/json"},
+        body: JSON.stringify({ copy: payload })
+      });
+
+      applyForm(j.saved?.copy || payload);
+      setStatus("已儲存 ✅（updated_at: " + (j.saved?.updated_at || "—") + "）", "ok");
+    }catch(e){
+      setStatus("儲存失敗：" + e.message, "bad");
+      el("debug").textContent = JSON.stringify(e.payload || {}, null, 2);
+    }finally{
+      setBusy(false);
+    }
+  }
+
+  el("btnLoad").addEventListener("click", load);
+  el("btnSave").addEventListener("click", save);
+
+  (async()=>{
+    setStatus("初始化中…（準備讀取）", "busy");
+    await load();
+  })();
 </script>
-
 </body>
 </html>
