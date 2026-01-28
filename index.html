@@ -427,6 +427,31 @@ body.is-mobile #mobile-actionbar{ display:block !important; }
 
   .ghost-btn{border:1px solid rgba(0,0,0,.12); background:transparent; border-radius:12px; padding:10px 12px; font-weight:600;}
   .ghost-btn:disabled{opacity:.5;}
+
+/* ===== UI polish: meta chips (result + favorites/recent) ===== */
+.meta-chip{
+  font-size:11px;
+  line-height:1.25;
+  padding:4px 10px;
+  border-radius:999px;
+  border:1px solid #e5e7eb;
+  background:#f3f4f6;
+  color:#111;
+  display:inline-flex;
+  align-items:center;
+  gap:6px;
+  white-space:normal; /* allow wrap */
+}
+.meta-chip b{font-weight:900}
+#result-meta .meta-chip{ margin:0 6px 6px 0; }
+.mini-meta{ display:flex; flex-wrap:wrap; gap:6px; margin-top:6px; }
+.mini-meta .meta-chip{ margin:0; }
+.mini-title{ font-size:13px; line-height:1.25; margin:0 0 4px; }
+.mini-desc{ font-size:12px; line-height:1.35; margin-top:4px; color:#374151; }
+.mini-card{ align-items:flex-start; }
+.mini-info{ min-width:0; }
+.mini-title, .mini-desc{ overflow-wrap:anywhere; }
+
 </style>
 </head>
 
@@ -673,8 +698,8 @@ body.is-mobile #mobile-actionbar{ display:block !important; }
         <div class="preview-wrap anchor" id="anchor-preview">
           <div class="preview-inner" id="preview-box">
             <div class="preview-tools">
-              <button class="tool-btn" id="btn-fullscreen" title="全螢幕預覽" type="button">
-                <span class="icon">⛶</span> 全螢幕
+              <button class="tool-btn" id="btn-share-top" title="分享" type="button">
+                <span class="icon">↗</span> 分享
               </button>
               <button class="tool-btn fav" id="btn-fav" title="收藏/取消收藏" type="button" disabled>
                 <span class="icon" id="fav-icon">♡</span>
@@ -764,7 +789,9 @@ body.is-mobile #mobile-actionbar{ display:block !important; }
     </div>
   </div>
 
-  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2">
+document.getElementById("btn-share-top")?.addEventListener("click", ()=>document.getElementById("share-btn")?.click());
+</script>
 
   <script>
 
@@ -904,6 +931,10 @@ function formatOutfitMetaChips(p, { includeTime=true, ts=null } = {}){
   rmLeft.innerHTML = chips
     .map(x=>`<span class="meta-chip"><b>${escapeHtml(x.k)}</b><span class="dim">${escapeHtml(x.v)}</span></span>`)
     .join("");
+
+  // 同步一份到圖片下方（避免資訊只在標題區）
+  const rmBottom = document.getElementById("result-meta-bottom");
+  if(rmBottom) rmBottom.innerHTML = rmLeft.innerHTML;
 
   if(rmDot) rmDot.style.display = "none";
   rmRight.textContent = "";
@@ -1542,7 +1573,7 @@ async function runStepProducts(payload, spec){
       }catch(e){ console.error(e); }
     });
 
-    document.getElementById("btn-fullscreen").addEventListener("click", openModalWithCurrentImage);
+    document.getElementById("btn-share-top")?.addEventListener("click", () => document.getElementById("share-btn")?.click());
     document.getElementById("outfit-image").addEventListener("click", openModalWithCurrentImage);
     /***********************
      * 收藏 / 最近 10 套（本機儲存）
@@ -3010,6 +3041,8 @@ document.getElementById("login-btn").addEventListener("click", loginGoogle);
       setStatus("", null, false);
       setLoadingUI(false);
     })();
+
+document.getElementById("btn-share-top")?.addEventListener("click", ()=>document.getElementById("share-btn")?.click());
 </script>
 
   <div class="toast" id="toast" style="display:none;">往下看商品 ↓</div>
