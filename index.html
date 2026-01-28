@@ -1,7 +1,6 @@
 
 
 
-
 <!DOCTYPE html>
 <html lang="zh-Hant">
 <head>
@@ -2521,72 +2520,6 @@ const STYLE_SOURCES = {
         "Jisoo": { style: "smart", styleVariant: "" },
         "Karina": { style: "street", styleVariant: "" }
       };
-  
-  // ===== Update Style Sources from Admin Copy =====
-  // 讓「情境/風格」依類別（adult/kids），「名人」依性別（male/female/neutral）可由後台設定
-  function normalizeStyleList(list){
-    const out = [];
-    (Array.isArray(list) ? list : []).forEach((x)=>{
-      if(!x) return;
-      if(typeof x === "string"){
-        const label = String(x).trim();
-        if(label) out.push({ label, style_tag: "" });
-        return;
-      }
-      if(typeof x === "object"){
-        const label = String(x.label || x.name || x.text || "").trim();
-        const style_tag = String(x.style_tag || x.tag || x.styleTag || "").trim();
-        if(label) out.push({ label, style_tag });
-      }
-    });
-    return out;
-  }
-
-  function normalizeCelebList(list){
-    return (Array.isArray(list) ? list : []).map(x=>String(x||"").trim()).filter(Boolean);
-  }
-
-  function pickNeutralCelebs(male, female){
-    const m = normalizeCelebList(male);
-    const f = normalizeCelebList(female);
-    // ✅ 中性：從男/女各抽 2 個（不夠就能抽多少算多少）
-    const shuffle = (arr)=>arr.map(v=>[Math.random(),v]).sort((a,b)=>a[0]-b[0]).map(x=>x[1]);
-    const mm = shuffle(m).slice(0, Math.min(2, m.length));
-    const ff = shuffle(f).slice(0, Math.min(2, f.length));
-    const merged = [...mm, ...ff];
-    // 去重
-    return merged.filter((v,i)=>merged.indexOf(v)===i);
-  }
-
-  function updateStyleSourcesFromCopy(copy){
-    if(!copy || typeof copy !== "object") return;
-
-    // 情境/風格（依類別）
-    const styleBy = copy.style_by_category || {};
-    const adultList = normalizeStyleList(styleBy.adult || styleBy.adults || []);
-    const kidsList  = normalizeStyleList(styleBy.kids  || styleBy.child || []);
-
-    // 名人（依性別）
-    const celebsBy = copy.celebs_by_gender || {};
-    const maleCelebs   = normalizeCelebList(celebsBy.male || []);
-    const femaleCelebs = normalizeCelebList(celebsBy.female || []);
-    const neutralCelebs = normalizeCelebList(celebsBy.neutral || pickNeutralCelebs(maleCelebs, femaleCelebs));
-
-    // 把資料寫回 STYLE_SOURCES（不破壞既有 UI 行為）
-    if(STYLE_SOURCES?.scene?.optionsByAgeGroup){
-      STYLE_SOURCES.scene.optionsByAgeGroup.adult = adultList.length ? adultList.map(x=>x.label) : STYLE_SOURCES.scene.optionsByAgeGroup.adult;
-      STYLE_SOURCES.scene.optionsByAgeGroup.kids  = kidsList.length  ? kidsList.map(x=>x.label)  : STYLE_SOURCES.scene.optionsByAgeGroup.kids;
-      // 另外保留 style_tag 對應（給 payload 用）
-      STYLE_SOURCES.scene._tagByLabel = {};
-      adultList.concat(kidsList).forEach(x=>{ if(x.label && x.style_tag) STYLE_SOURCES.scene._tagByLabel[x.label] = x.style_tag; });
-    }
-
-    if(STYLE_SOURCES?.celeb?.optionsByGender){
-      STYLE_SOURCES.celeb.optionsByGender.male = maleCelebs.length ? maleCelebs : STYLE_SOURCES.celeb.optionsByGender.male;
-      STYLE_SOURCES.celeb.optionsByGender.female = femaleCelebs.length ? femaleCelebs : STYLE_SOURCES.celeb.optionsByGender.female;
-      STYLE_SOURCES.celeb.optionsByGender.neutral = neutralCelebs.length ? neutralCelebs : STYLE_SOURCES.celeb.optionsByGender.neutral;
-    }
-  }
       return m[val] || { style: "casual", styleVariant: "" };
     }
   },
@@ -2864,8 +2797,8 @@ optionsRoot.innerHTML = list.map(v=>{
 }
 
 
-    // ===== Public copy (from admin settings) =====
-  // ✅ 以「首頁 id」為主（對齊 DOM id）
+  // ===== Public copy (from admin settings) =====
+  // ✅ 以「首頁 id」為主（後台存的 key 也用這些）
   const HOME_ID_KEYS = {
     brand: "copy-brand-title",
     tagline: "copy-brand-subtitle",
@@ -2873,38 +2806,44 @@ optionsRoot.innerHTML = list.map(v=>{
     right_title: "copy-right-title",
   };
 
-  // ✅ 預設值：只當作「載入失敗」的 fallback；不做先顯示再跳動
-  const DEFAULT_PUBLIC_COPY = {
-    brand: "findoutfit",
-    tagline: "輸入條件→ outfit生成 → 商品推薦",
-    left_title: "穿搭條件",
-    right_title: "AI 穿搭示意圖 & 類似商品",
-    style_by_category: {
-      adult: [
-        { label: "休閒", style_tag: "scene_casual" },
-        { label: "上班/通勤", style_tag: "scene_work" },
-        { label: "約會", style_tag: "scene_date" },
-        { label: "運動", style_tag: "scene_sport" },
-        { label: "旅行", style_tag: "scene_travel" },
-        { label: "正式場合", style_tag: "scene_formal" },
-      ],
-      kids: [
-        { label: "日常/上學", style_tag: "scene_school" },
-        { label: "戶外玩樂", style_tag: "scene_outdoor" },
-        { label: "運動/體育課", style_tag: "scene_pe" },
-        { label: "聚會/生日", style_tag: "scene_party" },
-        { label: "旅行", style_tag: "scene_travel" },
-        { label: "正式場合", style_tag: "scene_formal" },
-      ],
-    },
-    celebs_by_gender: {
-      male: ["GD", "BTS", "V", "Jungkook", "Jimin", "RM"],
-      female: ["Lisa", "IU", "Jennie", "Rosé", "Jisoo", "Karina"],
-      // neutral 會在前台用 male+female 自動組合（見 updateStyleSourcesFromCopy）
-    },
-    // 你未來可在 extra 裡面放更多 key（前台會 merge）
-    extra: {},
+  // 預設值（只在讀不到後台時才使用）
+  const DEFAULT_PUBLIC_COPY_BY_ID = {
+    [HOME_ID_KEYS.brand]: "findoutfit",
+    [HOME_ID_KEYS.tagline]: "輸入條件→ outfit生成 → 商品推薦",
+    [HOME_ID_KEYS.left_title]: "穿搭條件",
+    [HOME_ID_KEYS.right_title]: "AI 穿搭示意圖 & 類似商品",
   };
+
+  // ✅ 兼容舊版 key：把任何形狀的 copy 轉成「以 id 為 key」的物件
+  function normalizeAnyCopyToIdMap(copy){
+    const c = (copy && typeof copy === "object") ? copy : {};
+
+    // 1) 已經是以 id 為 key（推薦/最新）
+    const looksLikeIdMap = Object.values(HOME_ID_KEYS).some(k => k in c);
+    if (looksLikeIdMap) return c;
+
+    // 2) 舊版：findoutfit_title / findoutfit_subtitle
+    if ("findoutfit_title" in c || "findoutfit_subtitle" in c) {
+      return {
+        [HOME_ID_KEYS.brand]: c.findoutfit_title || c.brand_title || c.brand || "",
+        [HOME_ID_KEYS.tagline]: c.findoutfit_subtitle || c.brand_subtitle || c.tagline || "",
+        [HOME_ID_KEYS.left_title]: c.left_title || "",
+        [HOME_ID_KEYS.right_title]: c.right_title || "",
+      };
+    }
+
+    // 3) 舊版：brand / tagline
+    if ("brand" in c || "tagline" in c) {
+      return {
+        [HOME_ID_KEYS.brand]: c.brand || "",
+        [HOME_ID_KEYS.tagline]: c.tagline || "",
+        [HOME_ID_KEYS.left_title]: c.left_title || "",
+        [HOME_ID_KEYS.right_title]: c.right_title || "",
+      };
+    }
+
+    return c;
+  }
 
   async function fetchPublicCopy(){
     try{
@@ -2914,36 +2853,31 @@ optionsRoot.innerHTML = list.map(v=>{
       try{ j = t ? JSON.parse(t) : {}; } catch { j = { raw: t }; }
       if(!r.ok) return { ok:false, error: j?.error || ("HTTP " + r.status), detail: j };
       const copy = j.copy || j.value || j.public_copy || j.data || null;
-      if(!copy || typeof copy !== "object") return { ok:false, error:"no copy object", detail: j };
       return { ok:true, copy };
     }catch(e){
       return { ok:false, error: String(e?.message || e) };
     }
   }
 
-  // ✅ 用 copy 更新頁面文案 +（風格/名人）選項來源
-  function applyPublicCopy(copy){
-    const c = { ...DEFAULT_PUBLIC_COPY, ...(copy||{}) };
+  // ✅ 避免「先顯示預設 → 再跳到後台」的閃爍：等讀完再一次套用（讀不到才用預設）
+  async function applyPublicCopy(){
+    // 先把目標元素暫時隱藏，避免看到跳動
+    document.documentElement.classList.add("copy-loading");
 
-    // 對齊基本文案
-    const setTextByKey = (key, value)=>{
-      const id = HOME_ID_KEYS[key];
-      if(!id) return;
+    const setTextById = (id, v)=>{
       const node = document.getElementById(id);
       if(!node) return;
-      const s = (value == null) ? "" : String(value);
+      const s = (v == null) ? "" : String(v);
       if(s.trim()) node.textContent = s;
     };
-    setTextByKey("brand", c.brand);
-    setTextByKey("tagline", c.tagline);
-    setTextByKey("left_title", c.left_title);
-    setTextByKey("right_title", c.right_title);
 
-    // ✅ 讓風格/名人選項跟後台同步
-    try { updateStyleSourcesFromCopy(c); } catch(e) { /* ignore */ }
-
-    return c;
-  }
+    const r = await fetchPublicCopy();
+    let idMap = DEFAULT_PUBLIC_COPY_BY_ID;
+    if(r.ok){
+      const normalized = normalizeAnyCopyToIdMap(r.copy);
+      // 只覆蓋有值的欄位，避免把字清空
+      idMap = { ...DEFAULT_PUBLIC_COPY_BY_ID, ...(normalized || {}) };
+    }
 
     setTextById(HOME_ID_KEYS.brand, idMap[HOME_ID_KEYS.brand]);
     setTextById(HOME_ID_KEYS.tagline, idMap[HOME_ID_KEYS.tagline]);
