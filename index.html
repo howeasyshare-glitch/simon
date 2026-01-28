@@ -2590,53 +2590,22 @@ function getCurrentGender(){
 
 
 function getSceneOptions(){
-  const copy = getHomeCopy();
-  const ag = (String(state.ageGroup || "adult") === "kids") ? "kids" : "adult";
-
-  const by = (copy && typeof copy === "object" && copy.style_by_category && typeof copy.style_by_category === "object")
-    ? copy.style_by_category
-    : null;
-
-  const list = by && Array.isArray(by[ag]) ? by[ag].filter(Boolean) : null;
-  if(list && list.length) return list;
-
-  // fallback: built-in defaults (keeps UI working even if admin_kv missing)
-  const fallback = STYLE_SOURCES.scene.optionsByAgeGroup || {};
-  const fb = (ag === "kids") ? (fallback.kids || []) : (fallback.adult || []);
-  return fb.filter(Boolean);
+  // ageGroup is managed by existing UI (adult / kids)
+  let ag = "adult";
+  try {
+    const el = document.getElementById("ageGroup");
+    if (el && el.value) ag = String(el.value);
+  } catch {}
+  const by = STYLE_SOURCES.scene.optionsByAgeGroup || {};
+  return (ag === "kids" ? (by.kids || []) : (by.adult || []));
 }
 
 function getCelebOptionsByGender(gender){
-  const g = (gender === "male" || gender === "female" || gender === "neutral") ? gender : "neutral";
-  const copy = getHomeCopy();
-
-  const by = (copy && typeof copy === "object" && copy.celebs_by_gender && typeof copy.celebs_by_gender === "object")
-    ? copy.celebs_by_gender
-    : null;
-
-  // explicit lists from settings
-  if(by){
-    if((g === "male" || g === "female") && Array.isArray(by[g]) && by[g].length){
-      return by[g].filter(Boolean);
-    }
-    if(g === "neutral"){
-      if(Array.isArray(by.neutral) && by.neutral.length){
-        return by.neutral.filter(Boolean);
-      }
-      const male = Array.isArray(by.male) ? by.male.filter(Boolean) : [];
-      const female = Array.isArray(by.female) ? by.female.filter(Boolean) : [];
-      const pick2 = (arr)=> __shuffle(arr).slice(0, Math.min(2, arr.length));
-      const mixed = [...pick2(male), ...pick2(female)];
-      const uniq = Array.from(new Set(mixed));
-      if(uniq.length) return uniq;
-    }
-  }
-
-  // fallback: built-in defaults
-  const pool = (g === "male") ? (STYLE_SOURCES.celeb.optionsByGender.male || [])
-            : (g === "female") ? (STYLE_SOURCES.celeb.optionsByGender.female || [])
-            : (STYLE_SOURCES.celeb.optionsByGender.neutral || []);
-  return __shuffle(pool).slice(0, Math.min(6, pool.length));
+  if(gender==="male") return STYLE_SOURCES.celebrity.optionsByGender.male.slice();
+  if(gender==="female") return STYLE_SOURCES.celebrity.optionsByGender.female.slice();
+  // neutral: show 4 random
+  const pool = STYLE_SOURCES.celebrity.optionsByGender.neutralPool.slice();
+  return __shuffle(pool).slice(0, Math.min(4, pool.length));
 }
 
 function ensureBtsVariantOption(){
@@ -2846,14 +2815,6 @@ optionsRoot.innerHTML = list.map(v=>{
     [HOME_ID_KEYS.right_title]: "AI 穿搭示意圖 & 類似商品",
   };
 
-  // ✅ cache: public settings payload (home_copy) for dynamic UI (scenes/celebs etc.)
-  // This keeps homepage + /settings aligned via admin_kv key: home_copy
-  let HOME_COPY_CACHE = null;
-  function getHomeCopy(){
-    return (HOME_COPY_CACHE && typeof HOME_COPY_CACHE === 'object') ? HOME_COPY_CACHE : {};
-  }
-
-
   // ✅ 兼容舊版 key：把任何形狀的 copy 轉成「以 id 為 key」的物件
   function normalizeAnyCopyToIdMap(copy){
     const c = (copy && typeof copy === "object") ? copy : {};
@@ -2900,7 +2861,7 @@ optionsRoot.innerHTML = list.map(v=>{
   }
 
   // ✅ 避免「先顯示預設 → 再跳到後台」的閃爍：等讀完再一次套用（讀不到才用預設）
-  async function applyPublicCopy(){
+  async function applyPublicCopy(inCopy){
     // 先把目標元素暫時隱藏，避免看到跳動
     document.documentElement.classList.add("copy-loading");
 
@@ -2911,11 +2872,41 @@ optionsRoot.innerHTML = list.map(v=>{
       if(s.trim()) node.textContent = s;
     };
 
-    const r = await fetchPublicCopy();
+    const r = inCopy ? { ok:true, copy: inCopy } : await fetchPublicCopy();
     let idMap = DEFAULT_PUBLIC_COPY_BY_ID;
     if(r.ok){
-      HOME_COPY_CACHE = (r.copy && typeof r.copy === "object") ? r.copy : null;
       const normalized = normalizeAnyCopyToIdMap(r.copy);
+      // keep global copy for other UI parts
+      try{ window.__HOME_COPY = r.copy || null; }catch{}
+
+      // Sync UI style sources from admin settings (home_copy)
+      try{
+        const c = r.copy || {};
+        const fmtScene = (s)=> String(s||"").trim().replace(/\s*\/\s*/g, " / ");
+        if(c.style_by_category && typeof c.style_by_category === "object"){
+          const adult = Array.isArray(c.style_by_category.adult) ? c.style_by_category.adult.map(fmtScene).filter(Boolean) : null;
+          const kids  = Array.isArray(c.style_by_category.kids)  ? c.style_by_category.kids.map(fmtScene).filter(Boolean)  : null;
+          if(adult && adult.length && typeof STYLE_SOURCES==="object" && STYLE_SOURCES.scene?.optionsByAgeGroup) STYLE_SOURCES.scene.optionsByAgeGroup.adult = adult;
+          if(kids  && kids.length  && typeof STYLE_SOURCES==="object" && STYLE_SOURCES.scene?.optionsByAgeGroup) STYLE_SOURCES.scene.optionsByAgeGroup.kids  = kids;
+        }
+        if(c.celebs_by_gender && typeof c.celebs_by_gender === "object"){
+          const clean = (arr)=> Array.isArray(arr) ? arr.map(x=>String(x).trim()).filter(Boolean) : [];
+          const male = clean(c.celebs_by_gender.male);
+          const female = clean(c.celebs_by_gender.female);
+          const neutral = clean(c.celebs_by_gender.neutral);
+
+          if(male.length && STYLE_SOURCES.celebrity?.optionsByGender) STYLE_SOURCES.celebrity.optionsByGender.male = male;
+          if(female.length && STYLE_SOURCES.celebrity?.optionsByGender) STYLE_SOURCES.celebrity.optionsByGender.female = female;
+
+          const pool = [];
+          for(const x of [...neutral, ...male, ...female]){
+            if(x && !pool.includes(x)) pool.push(x);
+          }
+          if(pool.length && STYLE_SOURCES.celebrity?.optionsByGender) STYLE_SOURCES.celebrity.optionsByGender.neutralPool = pool;
+        }
+        if(typeof updateStyleSourceOptions === "function") updateStyleSourceOptions();
+      }catch(e){}
+
       // 只覆蓋有值的欄位，避免把字清空
       idMap = { ...DEFAULT_PUBLIC_COPY_BY_ID, ...(normalized || {}) };
     }
@@ -2925,7 +2916,6 @@ optionsRoot.innerHTML = list.map(v=>{
     setTextById(HOME_ID_KEYS.left_title, idMap[HOME_ID_KEYS.left_title]);
     setTextById(HOME_ID_KEYS.right_title, idMap[HOME_ID_KEYS.right_title]);
 
-    try{ updateStyleUIForAudience(); }catch(e){}
     document.documentElement.classList.remove("copy-loading");
   }
 
