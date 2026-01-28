@@ -4,145 +4,127 @@
 <head>
   <meta charset="utf-8"/>
   <meta name="viewport" content="width=device-width,initial-scale=1"/>
-  <title>設定｜首頁文案 & 風格/名人</title>
+  <title>設定｜首頁文案與選單</title>
   <style>
-    :root{
-      --bg:#f6f7fb; --card:#fff; --border:#e5e7eb; --muted:#6b7280; --text:#111;
-      --shadow:0 14px 34px rgba(0,0,0,.06);
-    }
-    body{font-family:system-ui,-apple-system,Segoe UI,Roboto,"Noto Sans TC",sans-serif;background:var(--bg);margin:0;padding:18px;color:var(--text)}
-    .card{max-width:1080px;margin:0 auto;background:var(--card);border:1px solid var(--border);border-radius:16px;padding:16px;box-shadow:var(--shadow)}
+    body{font-family:system-ui,-apple-system,Segoe UI,Roboto,"Noto Sans TC",sans-serif;background:#f6f7fb;margin:0;padding:18px;color:#111}
+    .card{max-width:1060px;margin:0 auto;background:#fff;border:1px solid #e5e7eb;border-radius:16px;padding:16px;box-shadow:0 14px 34px rgba(0,0,0,.06)}
     h1{margin:0 0 10px;font-size:18px}
-    h2{margin:0;font-size:14px}
-    .muted{color:var(--muted);font-size:12px;white-space:pre-wrap}
+    h2{margin:0 0 8px;font-size:14px}
+    .muted{color:#6b7280;font-size:12px;white-space:pre-wrap}
     .line{height:1px;background:#eef2f7;margin:14px 0}
     label{display:block;font-weight:800;font-size:12px;margin:10px 0 6px}
-    input, textarea, select{width:100%;padding:10px 12px;border:1px solid var(--border);border-radius:12px;font-size:14px;box-sizing:border-box;background:#fff}
-    textarea{min-height:74px}
-    button{border:none;border-radius:999px;padding:10px 14px;font-weight:900;cursor:pointer;transition:transform .04s ease, opacity .12s ease}
-    button:active{transform:translateY(1px)}
-    button[disabled]{opacity:.55;cursor:not-allowed}
+    input, textarea{width:100%;padding:10px 12px;border:1px solid #e5e7eb;border-radius:12px;font-size:14px;box-sizing:border-box}
+    textarea{min-height:96px}
+    button{border:none;border-radius:999px;padding:10px 14px;font-weight:900;cursor:pointer}
+    button:disabled{opacity:.55;cursor:not-allowed}
     .primary{background:#111;color:#fff}
-    .ghost{background:#fff;border:1px solid var(--border)}
-    .danger{background:#b91c1c;color:#fff}
-    .row{display:grid;grid-template-columns:1fr 1fr;gap:12px;align-items:start}
-    @media (max-width: 860px){ .row{grid-template-columns:1fr} }
-    .actions{display:flex;gap:10px;flex-wrap:wrap;margin-top:12px;align-items:center}
-    .preview{border:1px solid var(--border);border-radius:14px;padding:12px;background:#fafafa}
-    .preview p{margin:0 0 6px;font-size:13px;color:#111}
-    .kbd{font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:12px;background:#f3f4f6;border:1px solid var(--border);border-radius:8px;padding:2px 6px}
-    .section{display:grid;gap:10px}
-    details{border:1px solid var(--border);border-radius:14px;background:#fff;padding:10px}
-    details>summary{cursor:pointer;font-weight:900}
-    .list{display:grid;gap:8px;margin-top:10px}
-    .listRow{display:grid;grid-template-columns:1fr 1fr auto;gap:8px;align-items:center}
-    @media (max-width: 860px){ .listRow{grid-template-columns:1fr} }
-    .chipInputHint{margin-top:6px}
-    .small{font-size:12px}
-    .pill{display:inline-block;border:1px solid var(--border);border-radius:999px;padding:3px 8px;font-size:12px;background:#fff}
-    .right{margin-left:auto}
+    .ghost{background:#fff;border:1px solid #e5e7eb}
+    .row{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+    @media (max-width: 920px){ .row{grid-template-columns:1fr} }
+    .actions{display:flex;gap:10px;flex-wrap:wrap;margin-top:12px}
+    .box{border:1px solid #e5e7eb;border-radius:14px;padding:12px;background:#fafafa}
+    .kbd{font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:12px;background:#f3f4f6;border:1px solid #e5e7eb;border-radius:8px;padding:2px 6px}
+    .help{font-size:12px;color:#6b7280;margin-top:6px;line-height:1.5}
   </style>
 </head>
 <body>
   <div class="card">
-    <h1>設定：首頁文案 & 風格/名人</h1>
+    <h1>設定：首頁文案與選單</h1>
     <div class="muted" id="status">初始化中…</div>
 
     <div class="line"></div>
 
-    <div class="section">
-      <h2>一、基本文案（會對齊首頁 id）</h2>
-      <div class="muted">這四個欄位會對應到首頁的：<span class="kbd">copy-brand-title</span> / <span class="kbd">copy-brand-subtitle</span> / <span class="kbd">copy-left-title</span> / <span class="kbd">copy-right-title</span></div>
-
+    <div class="box">
+      <h2>一、首頁四個主要文字（對齊首頁 id）</h2>
       <div class="row">
         <div>
-          <label>品牌/產品名稱（brand）</label>
+          <label>findoutfit（品牌標題）</label>
           <input id="c_brand" placeholder="例如：findoutfit" />
+          <div class="help">對應首頁：<span class="kbd">copy-brand-title</span></div>
         </div>
         <div>
-          <label>副標（tagline）</label>
+          <label>輸入條件→ outfit生成 → 商品推薦（副標）</label>
           <input id="c_tagline" placeholder="例如：輸入條件→ outfit生成 → 商品推薦" />
+          <div class="help">對應首頁：<span class="kbd">copy-brand-subtitle</span></div>
         </div>
       </div>
 
       <div class="row">
         <div>
-          <label>左側標題（left_title）</label>
+          <label>穿搭條件（左側標題）</label>
           <input id="c_left_title" placeholder="例如：穿搭條件" />
+          <div class="help">對應首頁：<span class="kbd">copy-left-title</span></div>
         </div>
         <div>
-          <label>右側標題（right_title）</label>
+          <label>AI 穿搭示意圖 & 類似商品（右側標題）</label>
           <input id="c_right_title" placeholder="例如：AI 穿搭示意圖 & 類似商品" />
+          <div class="help">對應首頁：<span class="kbd">copy-right-title</span></div>
         </div>
       </div>
     </div>
 
     <div class="line"></div>
 
-    <details open>
-      <summary>二、情境 / 風格（依類別：成人/童裝）</summary>
-      <div class="muted">會影響首頁「情境 / 名人靈感」第二層選項。<br/>每一列可填「顯示文字」與「丟給 AI 的 style_tag（可留空）」</div>
-
-      <div class="line"></div>
-
-      <h2>成人（adult）</h2>
-      <div class="list" id="adultList"></div>
-      <div class="actions">
-        <button class="ghost" id="btnAddAdult">＋新增成人情境</button>
-        <span class="muted small">例如：休閒 / 上班/通勤 / 約會…</span>
+    <div class="box">
+      <h2>二、情境 / 風格（依類別）</h2>
+      <div class="row">
+        <div>
+          <label>成人穿搭情境（每行一個）</label>
+          <textarea id="c_scene_adult" placeholder="休閒\n上班/通勤\n約會\n運動\n旅行\n正式場合"></textarea>
+        </div>
+        <div>
+          <label>兒童穿搭情境（每行一個）</label>
+          <textarea id="c_scene_kids" placeholder="日常/上學\n戶外玩樂\n運動/體育課\n聚會/生日\n旅行\n正式場合"></textarea>
+        </div>
       </div>
-
-      <div class="line"></div>
-
-      <h2>童裝（kids）</h2>
-      <div class="list" id="kidsList"></div>
-      <div class="actions">
-        <button class="ghost" id="btnAddKids">＋新增童裝情境</button>
-        <span class="muted small">例如：日常/上學 / 戶外玩樂 / 聚會/生日…</span>
-      </div>
-    </details>
+      <div class="help">會影響首頁「穿搭情境」選單。資料會存到 <span class="kbd">home_copy.style_by_category</span>。</div>
+    </div>
 
     <div class="line"></div>
 
-    <details open>
-      <summary>三、名人對應（依性別：男/女，中性自動組合）</summary>
-      <div class="muted">首頁「名人靈感」第二層選項會依性別切換：male / female。<br/>neutral 不用存（前台會從男/女各隨機挑 2 個組合成中性）。</div>
-
-      <div class="row" style="margin-top:8px">
+    <div class="box">
+      <h2>三、名人靈感（依性別）</h2>
+      <div class="row">
         <div>
-          <label>男（male）名人清單（逗號分隔）</label>
-          <input id="c_celebs_male" placeholder="例如：GD, BTS, V, Jungkook, Jimin, RM" />
+          <label>男名人靈感（每行一個）</label>
+          <textarea id="c_celeb_male" placeholder="GD\nBTS\nV\nJungkook\nJimin\nRM"></textarea>
         </div>
         <div>
-          <label>女（female）名人清單（逗號分隔）</label>
-          <input id="c_celebs_female" placeholder="例如：Lisa, IU, Jennie, Rosé, Jisoo, Karina" />
+          <label>女名人靈感（每行一個）</label>
+          <textarea id="c_celeb_female" placeholder="Lisa\nIU\nJennie\nRosé\nJisoo\nKarina"></textarea>
         </div>
       </div>
-
-      <div class="muted chipInputHint small">提示：neutral（中性）會由前台自動產生，不用在後台填。</div>
-    </details>
+      <div class="row">
+        <div>
+          <label>中性名人靈感（可留空；每行一個）</label>
+          <textarea id="c_celeb_neutral" placeholder="Jennie\nLisa\nJungkook\nRM"></textarea>
+          <div class="help">留空時：首頁會「從男/女各隨機挑 2 個」組成中性選單。</div>
+        </div>
+        <div>
+          <label>分享頁 CTA 按鈕文字（可選）</label>
+          <input id="c_share_cta" placeholder="例如：製作屬於自己的穿搭" />
+        </div>
+      </div>
+      <div class="help">資料會存到 <span class="kbd">home_copy.celebs_by_gender</span>。</div>
+    </div>
 
     <div class="line"></div>
 
-    <details>
-      <summary>四、更多文案 / 設定（extra JSON，可留空）</summary>
-      <div class="muted">未來你想加新的 key 又不想改 UI，就丟這裡。</div>
-      <label>extra</label>
-      <textarea id="c_extra" placeholder='例如：{"share_cta":"製作屬於自己的穿搭"}'></textarea>
-    </details>
+    <div class="box">
+      <h2>四、更多文案（JSON，可留空）</h2>
+      <textarea id="c_extra" placeholder='{"landing_title":"今天想穿什麼？"}'></textarea>
+      <div class="help">可留空。未來新增文案 key 時，不用改 UI 也能存。</div>
+    </div>
 
     <div class="actions">
       <button class="ghost" id="btnLoad">讀取</button>
       <button class="primary" id="btnSave">儲存</button>
-      <span class="muted right small" id="hint">—</span>
     </div>
 
     <div class="line"></div>
 
-    <div class="preview">
-      <h2>預覽（公開 API：<span class="kbd">/api/public-copy</span>）</h2>
-      <p><b id="p_brand">—</b></p>
-      <p id="p_tagline" class="muted">—</p>
+    <div class="box">
+      <h2>前台會讀取這份設定（公開 API：<span class="kbd">/api/public-copy</span>）</h2>
       <div class="muted" id="debug"></div>
     </div>
   </div>
@@ -154,11 +136,14 @@
 
   function token(){ return localStorage.getItem(AUTH_KEY); }
 
-  function toCSV(arr){
-    return (Array.isArray(arr) ? arr : []).map(x=>String(x||"").trim()).filter(Boolean).join(", ");
+  function parseLines(s){
+    return String(s||"")
+      .split(/\r?\n/)
+      .map(x=>x.trim())
+      .filter(Boolean);
   }
-  function fromCSV(s){
-    return String(s||"").split(",").map(x=>x.trim()).filter(Boolean);
+  function joinLines(arr){
+    return (Array.isArray(arr) ? arr : []).map(String).map(x=>x.trim()).filter(Boolean).join("\n");
   }
   function jsonParseSafe(s){
     const t = String(s||"").trim();
@@ -185,158 +170,89 @@
     return json;
   }
 
-  // ===== Dynamic rows (style_by_category)
-  function makeStyleRow({ label="", style_tag="" } = {}, onRemove){
-    const row = document.createElement("div");
-    row.className = "listRow";
-    row.innerHTML = `
-      <div>
-        <label style="margin:0 0 6px">顯示文字</label>
-        <input class="x_label" value="${escapeHtml(label)}" placeholder="例如：休閒 / 上班/通勤" />
-      </div>
-      <div>
-        <label style="margin:0 0 6px">style_tag（給 AI，可留空）</label>
-        <input class="x_tag" value="${escapeHtml(style_tag)}" placeholder="例如：scene_casual / scene_formal" />
-      </div>
-      <div style="padding-top:28px">
-        <button class="ghost x_remove" type="button">移除</button>
-      </div>
-    `;
-    row.querySelector(".x_remove").addEventListener("click", ()=> onRemove?.(row));
-    return row;
-  }
-
-  function escapeHtml(s){
-    return String(s||"").replace(/[&<>"']/g, (c)=>({
-      "&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"
-    }[c]));
-  }
-
-  function renderStyleList(containerId, list){
-    const box = el(containerId);
-    box.innerHTML = "";
-    (Array.isArray(list) ? list : []).forEach((it)=>{
-      box.appendChild(makeStyleRow(it, (row)=> row.remove()));
-    });
-    if(!box.children.length){
-      // 預設至少一列，讓使用者知道怎麼填
-      box.appendChild(makeStyleRow({}, (row)=> row.remove()));
-    }
-  }
-
-  function readStyleList(containerId){
-    const box = el(containerId);
-    const rows = Array.from(box.querySelectorAll(".listRow"));
-    const out = [];
-    rows.forEach((row)=>{
-      const label = row.querySelector(".x_label")?.value?.trim() || "";
-      const style_tag = row.querySelector(".x_tag")?.value?.trim() || "";
-      if(label) out.push({ label, style_tag });
-    });
-    return out;
-  }
-
   function readForm(){
     return {
-      brand: el("c_brand").value?.trim() || "",
-      tagline: el("c_tagline").value?.trim() || "",
-      left_title: el("c_left_title").value?.trim() || "",
-      right_title: el("c_right_title").value?.trim() || "",
+      brand: el("c_brand").value || "",
+      tagline: el("c_tagline").value || "",
+      left_title: el("c_left_title").value || "",
+      right_title: el("c_right_title").value || "",
+      share_cta: el("c_share_cta").value || "",
       style_by_category: {
-        adult: readStyleList("adultList"),
-        kids: readStyleList("kidsList"),
+        adult: parseLines(el("c_scene_adult").value),
+        kids: parseLines(el("c_scene_kids").value),
       },
       celebs_by_gender: {
-        male: fromCSV(el("c_celebs_male").value),
-        female: fromCSV(el("c_celebs_female").value),
+        male: parseLines(el("c_celeb_male").value),
+        female: parseLines(el("c_celeb_female").value),
+        neutral: parseLines(el("c_celeb_neutral").value),
       },
       extra: jsonParseSafe(el("c_extra").value),
     };
   }
 
   function applyForm(copy){
-    const c = copy || {};
+    const c = (copy && typeof copy === "object") ? copy : {};
     el("c_brand").value = c.brand || "";
     el("c_tagline").value = c.tagline || "";
     el("c_left_title").value = c.left_title || "";
     el("c_right_title").value = c.right_title || "";
+    el("c_share_cta").value = c.share_cta || "";
 
-    renderStyleList("adultList", c.style_by_category?.adult || []);
-    renderStyleList("kidsList", c.style_by_category?.kids || []);
+    const scene = (c.style_by_category && typeof c.style_by_category === "object") ? c.style_by_category : {};
+    el("c_scene_adult").value = joinLines(scene.adult || []);
+    el("c_scene_kids").value = joinLines(scene.kids || []);
 
-    el("c_celebs_male").value = toCSV(c.celebs_by_gender?.male || []);
-    el("c_celebs_female").value = toCSV(c.celebs_by_gender?.female || []);
+    const celebs = (c.celebs_by_gender && typeof c.celebs_by_gender === "object") ? c.celebs_by_gender : {};
+    el("c_celeb_male").value = joinLines(celebs.male || []);
+    el("c_celeb_female").value = joinLines(celebs.female || []);
+    el("c_celeb_neutral").value = joinLines(celebs.neutral || []);
 
     el("c_extra").value = JSON.stringify(c.extra || {}, null, 2);
+  }
 
-    // preview
-    el("p_brand").textContent = c.brand || "—";
-    el("p_tagline").textContent = c.tagline || "—";
+  function setBusy(b, label){
+    el("btnLoad").disabled = b;
+    el("btnSave").disabled = b;
+    if(label) setStatus(label);
   }
 
   async function load(){
-    const btn = el("btnLoad");
-    btn.disabled = true;
     try{
-      setStatus("讀取中…");
+      setBusy(true, "讀取中…");
       el("debug").textContent = "";
       const j = await api("/api/admin?action=get_copy");
       applyForm(j.copy || null);
-      setStatus("已讀取 ✅（updated_at: " + (j.updated_at || "—") + "）");
-      el("hint").textContent = "已同步：home_copy";
+      setBusy(false, "已讀取 ✅（updated_at: " + (j.updated_at || "—") + "）");
+      el("debug").textContent = JSON.stringify({ ok:true, updated_at: j.updated_at || null }, null, 2);
     }catch(e){
-      setStatus("讀取失敗：" + e.message);
+      setBusy(false, "讀取失敗：" + e.message);
       el("debug").textContent = JSON.stringify(e.payload || {}, null, 2);
-      el("hint").textContent = "讀取失敗";
-    }finally{
-      btn.disabled = false;
     }
   }
 
   async function save(){
-    const btn = el("btnSave");
-    btn.disabled = true;
     try{
-      setStatus("儲存中…");
+      setBusy(true, "儲存中…");
       el("debug").textContent = "";
       const payload = readForm();
-
       const j = await api("/api/admin?action=save_copy", {
         method:"POST",
         headers:{"Content-Type":"application/json"},
         body: JSON.stringify({ copy: payload })
       });
-
       applyForm(j.saved?.copy || payload);
-      setStatus("已儲存 ✅（updated_at: " + (j.saved?.updated_at || "—") + "）");
-      el("hint").textContent = "已更新：home_copy";
+      setBusy(false, "已儲存 ✅（updated_at: " + (j.saved?.updated_at || "—") + "）");
+      el("debug").textContent = JSON.stringify({ ok:true, updated_at: j.saved?.updated_at || null }, null, 2);
     }catch(e){
-      setStatus("儲存失敗：" + e.message);
+      setBusy(false, "儲存失敗：" + e.message);
       el("debug").textContent = JSON.stringify(e.payload || {}, null, 2);
-      el("hint").textContent = "儲存失敗";
-    }finally{
-      btn.disabled = false;
     }
   }
 
   el("btnLoad").addEventListener("click", load);
   el("btnSave").addEventListener("click", save);
 
-  el("btnAddAdult").addEventListener("click", ()=>{
-    el("adultList").appendChild(makeStyleRow({}, (row)=> row.remove()));
-  });
-  el("btnAddKids").addEventListener("click", ()=>{
-    el("kidsList").appendChild(makeStyleRow({}, (row)=> row.remove()));
-  });
-
-  // boot
-  (async()=>{
-    try{
-      await load();
-    }catch(e){
-      setStatus(String(e.message || e));
-    }
-  })();
+  (async()=>{ await load(); })();
 </script>
 </body>
 </html>
