@@ -845,6 +845,42 @@ function applyDeviceClass() {
       clearTimeout(toastTimer);
       toastTimer=setTimeout(()=>{ t.classList.remove("on"); setTimeout(()=>{ t.style.display="none"; },220); }, ms);
     }
+    // ===== Share buttons -> /share =====
+    async function handleShareClick(){
+      try{
+        const url = buildShareUrl();
+        if(!url){
+          showToast("目前沒有可分享的生成圖（請先完成生成）");
+          return;
+        }
+
+        // Prefer native share on mobile
+        if (navigator.share){
+          try{
+            await navigator.share({ title: "AI 穿搭", url });
+            showToast("已開啟分享");
+            return;
+          }catch(_e){
+            // user cancelled or not supported, fallback to copy
+          }
+        }
+
+        try{
+          await navigator.clipboard.writeText(url);
+          showToast("分享連結已複製 ✅");
+        }catch(e){
+          // last resort: prompt
+          prompt("複製分享連結", url);
+        }
+      }catch(e){
+        showToast("分享失敗：" + (e?.message || e));
+      }
+    }
+
+    // Wire both share buttons (top + image overlay)
+    document.getElementById("btn-share-top")?.addEventListener("click", handleShareClick);
+    document.getElementById("share-btn")?.addEventListener("click", handleShareClick);
+
 
     function formatNowTS(){
       const d=new Date();
@@ -963,10 +999,48 @@ function formatOutfitMetaChips(p, { includeTime=true, ts=null } = {}){
       return decodeURIComponent(escape(atob(s+pad)));
     }
 
-    function makeShareHash({payload,spec}){
-      const data={v:1,payload:payload||null,spec:spec?{summary:spec.summary||"",items:spec.items||[]}:null};
-      return "#share="+b64urlEncode(JSON.stringify(data));
+      // ===== Share URL (go to /share) =====
+  function toBase64Url(obj){
+    try{
+      const json = JSON.stringify(obj || {});
+      const bytes = new TextEncoder().encode(json);
+      let bin = "";
+      for (const b of bytes) bin += String.fromCharCode(b);
+      return btoa(bin).replace(/\+/g,'-').replace(/\//g,'_').replace(/=+$/,'');
+    }catch(e){
+      return "";
     }
+  }
+
+  function buildSharePayload(){
+    // image src (data url or https url)
+    const img = document.getElementById("outfit-image")?.src || "";
+
+    const p = flowState?.payload || {};
+    const styleSource = p.uiStyleSource || "";
+    const style = {
+      source_label: styleSource === "scene" ? "穿搭情境"
+        : styleSource === "celeb" ? "名人靈感"
+        : styleSource ? String(styleSource) : "風格",
+      value_label: p.uiStyleValue ? String(p.uiStyleValue) : "",
+      detail_label: p.styleVariant ? String(p.styleVariant) : "",
+    };
+
+    return {
+      created_at: new Date().toISOString(),
+      image_url: img,
+      style,
+      spec: p,
+    };
+  }
+
+  function buildShareUrl(){
+    const payload = buildSharePayload();
+    if(!payload.image_url) return "";
+    const p = toBase64Url(payload);
+    if(!p) return "";
+    return `${location.origin}/share?p=${p}`;
+  }
     function parseShareFromLocation(){
       const h=location.hash||"";
       const m=h.match(/#share=([^&]+)/);
@@ -2981,7 +3055,6 @@ document.getElementById("login-btn").addEventListener("click", loginGoogle);
       if(copyBtn) copyBtn.addEventListener("click", ()=>{ if(!flowState.spec) return; copyText(safeJson(flowState.spec)); showToast("已複製 Outfit Spec",1600); haptic(10); });
 
       const shareBtn=document.getElementById("share-btn");
-      if(shareBtn) shareBtn.addEventListener("click", ()=>{ const hash=makeShareHash({ payload: flowState.payload, spec: flowState.spec }); const url=location.origin+location.pathname+hash; copyText(url); showToast("分享連結已複製",1800); haptic(12); });
 
       document.getElementById("retry-btn").addEventListener("click", async ()=>{
         const btn=document.getElementById("retry-btn");
