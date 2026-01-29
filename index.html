@@ -1039,7 +1039,7 @@ function formatOutfitMetaChips(p, { includeTime=true, ts=null } = {}){
     if(!payload.image_url) return "";
     const p = toBase64Url(payload);
     if(!p) return "";
-    return `${location.origin}/share?p=${p}`;
+    return `${location.origin}/share#p=${p}`;
   }
     function parseShareFromLocation(){
       const h=location.hash||"";
