@@ -37,11 +37,16 @@
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 
   <script>
+    const SB = window.supabase || window.supabaseJs || window.Supabase;
+
+if (!SB || typeof SB.createClient !== "function") {
+  throw new Error("Supabase SDK 沒載入成功：請確認 <script src=@supabase/supabase-js@2> 有放在這段程式之前");
+}
     // ✅ 這段請「複製你首頁的 supabase 初始化」來替換
     const SUPABASE_PROJECT_REF="auiwcsolpvufxxyhnvaf";
     const SUPABASE_URL=`https://${SUPABASE_PROJECT_REF}.supabase.co`;
     const SUPABASE_ANON_KEY="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImF1aXdjc29scHZ1Znh4eWhudmFmIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjQ5MzUwMDEsImV4cCI6MjA4MDUxMTAwMX0.KeD8JXdHs5Iu7-wf0F0GpUPp-_y5X5ha6mwBcR5eYDA";
-   
+   const supabase = SB.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
     const el = (id)=>document.getElementById(id);
 
