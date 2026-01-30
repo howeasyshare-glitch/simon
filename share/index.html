@@ -1,4 +1,5 @@
 
+
 <!doctype html>
 <html lang="zh-Hant">
 <head>
@@ -81,7 +82,74 @@
     }catch{ return ""; }
   }
 
-  // ✅ 兼容兩種分享格式：
+  
+  // ✅ 新增：支援短連結 /share/<slug>（透過 Vercel rewrite 變成 /share/?slug=<slug>）
+  const qs2 = new URLSearchParams(location.search);
+  const slug = qs2.get("slug") || "";
+
+  async function fetchOutfitBySlug(slug){
+    const url = `/api/share/${encodeURIComponent(slug)}`;
+    const res = await fetch(url);
+    const json = await res.json().catch(()=> ({}));
+    if(!res.ok) throw new Error(json?.error || `HTTP ${res.status}`);
+    return json.outfit || null;
+  }
+
+  async function renderOutfitFromDb(outfit){
+    // 圖片
+    const imgUrl = outfit?.image_url || "";
+    if(imgUrl){
+      el("img").src = imgUrl;
+    }else{
+      el("img").alt = "找不到圖片";
+    }
+
+    // meta
+    const created = outfit?.created_at ? fmtDate(outfit.created_at) : "";
+    const s = outfit?.style || {};
+    const styleLine = (s?.source_label || s?.value_label)
+      ? `風格：${[s.source_label, s.value_label, s.detail_label].filter(Boolean).join(" / ")}`
+      : (Object.keys(s||{}).length ? `風格：${JSON.stringify(s)}` : "");
+
+    el("meta").textContent = [
+      created ? `生成時間：${created}` : "",
+      styleLine,
+    ].filter(Boolean).join("\n") || "（沒有更多資訊）";
+
+    // pills
+    const pills = [];
+    if(s?.source_label) pills.push(s.source_label);
+    if(s?.value_label) pills.push(s.value_label);
+    if(s?.detail_label) pills.push(s.detail_label);
+
+    const spec = outfit?.spec || null;
+    if(spec?.gender) pills.push(spec.gender === "male" ? "男" : spec.gender === "female" ? "女" : "中性");
+    if(spec?.ageGroup) pills.push(spec.ageGroup === "adult" ? "成人" : spec.ageGroup === "kids" ? "童裝" : spec.ageGroup);
+    if(spec?.paletteId) pills.push(`色系：${spec.paletteId}`);
+
+    el("pills").innerHTML = pills.slice(0, 10).map(x=>`<span class="pill">${String(x)}</span>`).join("");
+
+    // 讓按鈕能用同款條件生成
+    window.__share_spec__ = spec;
+  }
+
+  // 若有 slug：優先走 DB 模式；成功後就不跑下面 base64 payload 流程
+  if(slug){
+    (async ()=>{
+      try{
+        const outfit = await fetchOutfitBySlug(slug);
+        if(!outfit) throw new Error("找不到分享內容（可能未設為公開）");
+        await renderOutfitFromDb(outfit);
+        return;
+      }catch(e){
+        el("err").style.display="block";
+        el("err").textContent="載入分享失敗：" + (e?.message || String(e));
+        // 繼續往下走 base64 模式（向下相容）
+      }
+    })();
+  }
+
+// ✅ 兼容兩種分享格式：
   // 1) /share?p=<base64url(JSON)>
   // 2) /share#p=<base64url(JSON)>   （避免 URI_TOO_LONG）
   const qs = new URLSearchParams(location.search);
@@ -132,24 +200,26 @@
   el("btnMake").addEventListener("click", ()=>{ location.href = "/"; });
 
   el("btnSame").addEventListener("click", ()=>{
-    if(!spec){
+    const spec2 = window.__share_spec__ || spec;
+    if(!spec2){
       el("err").style.display="block";
       el("err").textContent="沒有 spec，無法預填回首頁。你可以改用分享 payload 內帶 spec。";
       return;
     }
     const q = new URLSearchParams();
-    q.set("prefill", toBase64Url(spec));
+    q.set("prefill", toBase64Url(spec2));
     location.href = "/?" + q.toString();
   });
 
   el("btnCopy").addEventListener("click", async ()=>{
-    if(!spec){
+    const spec2 = window.__share_spec__ || spec;
+    if(!spec2){
       el("err").style.display="block";
       el("err").textContent="沒有 spec 可以複製。";
       return;
     }
     try{
-      await navigator.clipboard.writeText(JSON.stringify(spec, null, 2));
+      await navigator.clipboard.writeText(JSON.stringify(spec2, null, 2));
       el("err").style.display="block";
       el("err").textContent="已複製本次設定（Outfit Spec）✅";
     }catch(e){
