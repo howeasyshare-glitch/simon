@@ -1,248 +1,201 @@
 
-
-
 <!doctype html>
 <html lang="zh-Hant">
 <head>
-  <meta charset="utf-8"/>
-  <meta name="viewport" content="width=device-width,initial-scale=1"/>
-  <title>Outfit Share</title>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>分享穿搭</title>
   <style>
-    :root{--bg:#0b0c10;--card:#111318;--muted:#9aa3b2;--text:#f3f4f6;--btn:#ffffff;--btnText:#0b0c10;--line:rgba(255,255,255,.08);}
-    body{margin:0;font-family:system-ui,-apple-system,Segoe UI,Roboto,"Noto Sans TC",sans-serif;background:radial-gradient(1200px 800px at 30% 10%, #1b1f2a 0%, var(--bg) 60%);color:var(--text);}
-    .wrap{max-width:980px;margin:0 auto;padding:18px;}
-    .hero{display:grid;grid-template-columns:1.2fr .8fr;gap:16px;align-items:start}
-    @media (max-width: 920px){.hero{grid-template-columns:1fr}}
-    .card{background:linear-gradient(180deg, rgba(255,255,255,.06), rgba(255,255,255,.03));border:1px solid var(--line);border-radius:18px;overflow:hidden;box-shadow:0 18px 60px rgba(0,0,0,.45)}
-    .imgbox{position:relative;background:#0f1117;min-height:240px}
-    .imgbox img{width:100%;height:auto;display:block}
-    .badge{position:absolute;left:12px;top:12px;background:rgba(0,0,0,.55);border:1px solid rgba(255,255,255,.12);backdrop-filter: blur(10px);padding:6px 10px;border-radius:999px;font-weight:800;font-size:12px}
-    .side{padding:16px}
-    h1{margin:0 0 6px;font-size:18px;letter-spacing:.2px}
-    .meta{color:var(--muted);font-size:12px;line-height:1.5;white-space:pre-wrap}
-    .cta{display:flex;gap:10px;flex-wrap:wrap;margin:14px 0 4px}
-    .btn{border:none;border-radius:999px;padding:12px 14px;font-weight:900;cursor:pointer}
-    .primary{background:var(--btn);color:var(--btnText)}
-    .ghost{background:transparent;color:var(--text);border:1px solid rgba(255,255,255,.18)}
-    .mini{margin-top:12px;border-top:1px solid var(--line);padding-top:12px}
-    .small{color:var(--muted);font-size:12px}
-    .row{display:flex;gap:10px;flex-wrap:wrap;margin-top:10px}
-    .pill{border:1px solid rgba(255,255,255,.16);border-radius:999px;padding:6px 10px;font-size:12px;color:var(--text);background:rgba(255,255,255,.04)}
-    .err{background:#2b0b0b;border:1px solid rgba(255,64,64,.35);padding:10px;border-radius:14px;color:#ffd2d2;font-size:12px;white-space:pre-wrap}
-    a{color:#cfe3ff}
+    :root{--bg:#0b0b0f;--card:#141420;--text:#fff;--muted:#b9b9c6;--pill:#232334;--btn:#ffffff;--btnText:#111;}
+    body{margin:0;background:var(--bg);color:var(--text);font-family:system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif}
+    .wrap{max-width:880px;margin:0 auto;padding:18px}
+    .card{background:var(--card);border-radius:18px;padding:14px;box-shadow:0 10px 30px rgba(0,0,0,.25)}
+    img{width:100%;border-radius:16px;display:block;background:#222}
+    h1{font-size:18px;margin:12px 0 6px}
+    .meta{white-space:pre-line;color:var(--muted);font-size:13px;margin-top:8px}
+    .pills{display:flex;flex-wrap:wrap;gap:8px;margin-top:12px}
+    .pill{background:var(--pill);border-radius:999px;padding:6px 10px;font-size:12px;color:#e9e9f5}
+    .row{display:flex;flex-wrap:wrap;gap:10px;margin-top:14px}
+    button{appearance:none;border:none;border-radius:12px;padding:10px 12px;font-weight:600;cursor:pointer}
+    .btn{background:var(--btn);color:var(--btnText)}
+    .btn2{background:transparent;color:#fff;border:1px solid rgba(255,255,255,.22)}
+    .btn:active,.btn2:active{transform:translateY(1px)}
+    .err{margin-top:12px;color:#ff8a8a;display:none}
+    .toast{position:fixed;left:50%;bottom:18px;transform:translateX(-50%);background:rgba(20,20,32,.92);
+      color:#fff;padding:10px 12px;border-radius:12px;max-width:min(560px,calc(100vw - 24px));
+      box-shadow:0 10px 30px rgba(0,0,0,.35);display:none}
+    .toast.show{display:block}
+    .small{font-size:12px;color:var(--muted);margin-top:10px}
+    a{color:#fff}
   </style>
 </head>
 <body>
   <div class="wrap">
-    <div class="hero">
-      <div class="card">
-        <div class="imgbox">
-          <div class="badge" id="badge">AI 生成穿搭</div>
-          <img id="img" alt="AI Outfit"/>
-        </div>
+    <div class="card">
+      <img id="img" alt="AI Outfit" />
+      <h1 id="title">分享穿搭</h1>
+      <div id="meta" class="meta"></div>
+      <div id="pills" class="pills"></div>
+
+      <div class="row">
+        <button id="btnCopyLink" class="btn" type="button">複製分享連結</button>
+        <button id="btnSame" class="btn2" type="button">用同款條件生成</button>
+        <button id="btnCopySpec" class="btn2" type="button">複製條件 JSON</button>
+        <button id="btnHome" class="btn2" type="button">回首頁</button>
       </div>
 
-      <div class="card">
-        <div class="side">
-          <h1 id="title">這套穿搭怎麼樣？</h1>
-          <div class="meta" id="meta">載入中…</div>
-
-          <div class="cta">
-            <button class="btn primary" id="btnMake">製作屬於自己的穿搭</button>
-            <button class="btn ghost" id="btnSame">用同款條件生成</button>
-            <button class="btn ghost" id="btnCopy">複製本次設定</button>
-          </div>
-
-          <div class="mini">
-            <div class="small">提示：分享頁會以「圖片」為主角；你可以把同款條件帶回首頁預填，降低開始門檻。</div>
-            <div class="row" id="pills"></div>
-            <div id="err" style="display:none" class="err"></div>
-          </div>
-        </div>
-      </div>
+      <div id="err" class="err"></div>
+      <div class="small">如果圖片載入很久，可能是網路或 Storage 權限；但你目前 API 已能回傳 image_url。</div>
     </div>
   </div>
 
+  <div id="toast" class="toast"></div>
+
 <script>
   const el = (id)=>document.getElementById(id);
-  function b64DecodeUnicode(str){
-    try{
-      str = String(str||"").replace(/-/g,'+').replace(/_/g,'/');
-      const pad = str.length % 4; if(pad) str += "=".repeat(4-pad);
-      const bin = atob(str);
-      const bytes = Uint8Array.from(bin, c => c.charCodeAt(0));
-      return new TextDecoder().decode(bytes);
-    }catch(e){ return ""; }
-  }
-  function safeJsonParse(s){ try{ return JSON.parse(s); }catch(e){ return null; } }
-  function fmtDate(d){
-    try{
-      const dt = new Date(d);
-      if(Number.isNaN(dt.getTime())) return "";
-      return dt.toLocaleString("zh-TW", { hour12:false });
-    }catch{ return ""; }
+
+  function showToast(msg){
+    const t = el("toast");
+    t.textContent = String(msg || "");
+    t.classList.add("show");
+    clearTimeout(window.__toastTimer);
+    window.__toastTimer = setTimeout(()=>t.classList.remove("show"), 2200);
   }
 
-  
-  // ✅ 新增：支援短連結 /share/<slug>（透過 Vercel rewrite 變成 /share/?slug=<slug>）
-  const qs2 = new URLSearchParams(location.search);
-  const slugFromQuery = qs2.get("slug") || "";
-  // ✅ 也支援沒有 rewrite 的情況：直接從 /share/<slug> 的 pathname 取出 slug
-  const pathSeg = (location.pathname || "").split("/").filter(Boolean);
-  const lastSeg = pathSeg.length ? pathSeg[pathSeg.length - 1] : "";
-  const slugFromPath = (lastSeg && lastSeg !== "share" && !lastSeg.endsWith(".html")) ? lastSeg : "";
-  const slug = slugFromQuery || slugFromPath || "";
+  function getSlug(){
+    // 1) ?slug=...
+    const qs = new URLSearchParams(location.search);
+    const s1 = (qs.get("slug") || "").trim();
+    if(s1) return s1;
 
-  
-  // 小提示：顯示目前讀到的 slug，方便檢查路徑是否正確
-  try{
-    if(slug){
-      el("badge").textContent = "分享代碼：" + slug;
-    }
-  }catch(e){}
-async function fetchOutfitBySlug(slug){
+    // 2) /share/<slug> or /share/<slug>/
+    const p = (location.pathname || "").replace(/\/+$/,"");
+    const m = p.match(/\/share\/([^\/]+)$/);
+    return (m && m[1]) ? decodeURIComponent(m[1]) : "";
+  }
+
+  async function fetchOutfitBySlug(slug){
     const url = `/api/share/${encodeURIComponent(slug)}`;
-    const res = await fetch(url);
+    const res = await fetch(url, { cache: "no-store" });
     const json = await res.json().catch(()=> ({}));
     if(!res.ok) throw new Error(json?.error || `HTTP ${res.status}`);
     return json.outfit || null;
   }
 
-  async function renderOutfitFromDb(outfit){
-    // 圖片
-    const imgUrl = outfit?.image_url || "";
-    if(imgUrl){
-      el("img").src = imgUrl;
-    }else{
-      el("img").alt = "找不到圖片";
-    }
-
-    // meta
-    const created = outfit?.created_at ? fmtDate(outfit.created_at) : "";
-    const s = outfit?.style || {};
-    const styleLine = (s?.source_label || s?.value_label)
-      ? `風格：${[s.source_label, s.value_label, s.detail_label].filter(Boolean).join(" / ")}`
-      : (Object.keys(s||{}).length ? `風格：${JSON.stringify(s)}` : "");
-
-    el("meta").textContent = [
-      created ? `生成時間：${created}` : "",
-      styleLine,
-    ].filter(Boolean).join("\n") || "（沒有更多資訊）";
-
-    // pills
-    const pills = [];
-    if(s?.source_label) pills.push(s.source_label);
-    if(s?.value_label) pills.push(s.value_label);
-    if(s?.detail_label) pills.push(s.detail_label);
-
-    const spec = outfit?.spec || null;
-    if(spec?.gender) pills.push(spec.gender === "male" ? "男" : spec.gender === "female" ? "女" : "中性");
-    if(spec?.ageGroup) pills.push(spec.ageGroup === "adult" ? "成人" : spec.ageGroup === "kids" ? "童裝" : spec.ageGroup);
-    if(spec?.paletteId) pills.push(`色系：${spec.paletteId}`);
-
-    el("pills").innerHTML = pills.slice(0, 10).map(x=>`<span class="pill">${String(x)}</span>`).join("");
-
-    // 讓按鈕能用同款條件生成
-    window.__share_spec__ = spec;
+  function safeText(x){
+    try{ return typeof x === "string" ? x : JSON.stringify(x); }catch(e){ return String(x); }
   }
 
-  // 若有 slug：優先走 DB 模式；成功後就不跑下面 base64 payload 流程
-  
+  function fmt(dt){
+    try{ return new Date(dt).toLocaleString(); }catch(e){ return String(dt||""); }
+  }
+
+  // --- state ---
+  let SHARE_SLUG = "";
+  let OUTFIT = null;
+  let SPEC = null;
+
   async function main(){
-    // 若有 slug：優先走 DB 模式；成功後就不跑下面 base64 payload 流程（避免被覆蓋）
-    if(slug){
-      try{
-        const outfit = await fetchOutfitBySlug(slug);
-        if(!outfit) throw new Error("找不到分享內容（可能未設為公開）");
-        await renderOutfitFromDb(outfit);
-        return; // ✅ 關鍵：成功就結束，不往下跑 base64 流程
-      }catch(e){
-        el("err").style.display="block";
-        el("err").textContent="載入分享失敗：" + (e?.message || String(e));
-        // 失敗才繼續往下走 base64 模式（向下相容）
-      }
-    }
-
-// ✅ 兼容兩種分享格式：
-  // 1) /share?p=<base64url(JSON)>
-  // 2) /share#p=<base64url(JSON)>   （避免 URI_TOO_LONG）
-  const qs = new URLSearchParams(location.search);
-  const hashStr = (location.hash || "").replace(/^#/, "");
-  const hs = new URLSearchParams(hashStr);
-
-  const pRaw = qs.get("p") || hs.get("p") || "";
-  const payload = safeJsonParse(b64DecodeUnicode(pRaw)) || null;
-
-  // 圖片：優先 payload.image_url，其次 query/hash 的 img
-  const imgUrl = payload?.image_url || qs.get("img") || hs.get("img") || "";
-  if(imgUrl){
-    el("img").src = imgUrl;
-  }else{
-    el("img").alt = "找不到圖片";
-  }
-
-  const created = payload?.created_at ? fmtDate(payload.created_at) : "";
-  const s = payload?.style || {};
-  const styleLine = (s.source_label || s.value_label)
-    ? `風格：${[s.source_label, s.value_label, s.detail_label].filter(Boolean).join(" / ")}`
-    : "";
-
-  el("meta").textContent = [
-    created ? `生成時間：${created}` : "",
-    styleLine,
-  ].filter(Boolean).join("\n") || "（沒有更多資訊）";
-
-  const pills = [];
-  if(s.source_label) pills.push(s.source_label);
-  if(s.value_label) pills.push(s.value_label);
-  if(s.detail_label) pills.push(s.detail_label);
-
-  const spec = payload?.spec || null;
-  if(spec?.gender) pills.push(spec.gender === "male" ? "男" : spec.gender === "female" ? "女" : "中性");
-  if(spec?.ageGroup) pills.push(spec.ageGroup === "adult" ? "成人" : spec.ageGroup === "kids" ? "童裝" : spec.ageGroup);
-  if(spec?.paletteId) pills.push(`色系：${spec.paletteId}`);
-
-  el("pills").innerHTML = pills.slice(0, 10).map(x=>`<span class="pill">${String(x)}</span>`).join("");
-
-  function toBase64Url(obj){
-    const json = JSON.stringify(obj||{});
-    const bytes = new TextEncoder().encode(json);
-    let bin = ""; bytes.forEach(b=>bin += String.fromCharCode(b));
-    return btoa(bin).replace(/\+/g,'-').replace(/\//g,'_').replace(/=+$/,'');
-  }
-
-  el("btnMake").addEventListener("click", ()=>{ location.href = "/"; });
-
-  el("btnSame").addEventListener("click", ()=>{
-    const spec2 = window.__share_spec__ || spec;
-    if(!spec2){
+    SHARE_SLUG = getSlug();
+    if(!SHARE_SLUG){
       el("err").style.display="block";
-      el("err").textContent="沒有 spec，無法預填回首頁。你可以改用分享 payload 內帶 spec。";
+      el("err").textContent="缺少分享代碼（slug）。";
       return;
     }
-    const q = new URLSearchParams();
-    q.set("prefill", toBase64Url(spec2));
+
+    try{
+      OUTFIT = await fetchOutfitBySlug(SHARE_SLUG);
+      if(!OUTFIT) throw new Error("找不到分享內容（可能未設為公開）");
+
+      const imgUrl = OUTFIT.image_url || "";
+      if(imgUrl) el("img").src = imgUrl;
+
+      SPEC = OUTFIT.spec || null;
+
+      // meta
+      const s = OUTFIT.style || {};
+      const styleLine = (s?.source_label || s?.value_label)
+        ? `風格：${[s.source_label, s.value_label, s.detail_label].filter(Boolean).join(" / ")}`
+        : (Object.keys(s||{}).length ? `風格：${safeText(s)}` : "");
+
+      el("meta").textContent = [
+        OUTFIT.created_at ? ("生成時間：" + fmt(OUTFIT.created_at)) : "",
+        styleLine
+      ].filter(Boolean).join("\n");
+
+      // pills
+      const pills = [];
+      if(s?.source_label) pills.push(s.source_label);
+      if(s?.value_label) pills.push(s.value_label);
+      if(s?.detail_label) pills.push(s.detail_label);
+
+      if(SPEC?.uiStyleSource) pills.push(SPEC.uiStyleSource === "celebrity" ? "名人靈感" : SPEC.uiStyleSource);
+      if(SPEC?.uiStyleValue) pills.push(SPEC.uiStyleValue);
+      if(SPEC?.styleId) pills.push(SPEC.styleId);
+      if(SPEC?.paletteId) pills.push("色系：" + SPEC.paletteId);
+      if(typeof SPEC?.temp === "number") pills.push("溫度：" + SPEC.temp + "°C");
+
+      el("pills").innerHTML = pills.slice(0, 12).map(x => `<span class="pill">${String(x)}</span>`).join("");
+
+    }catch(e){
+      el("err").style.display="block";
+      el("err").textContent="載入失敗：" + (e?.message || String(e));
+    }
+  }
+
+  // --- buttons (fix iOS reading list issue: never navigate) ---
+  el("btnCopyLink").addEventListener("click", async (ev)=>{
+    ev.preventDefault(); ev.stopPropagation();
+    const url = `${location.origin}/share/${encodeURIComponent(SHARE_SLUG)}`;
+    try{
+      await navigator.clipboard.writeText(url);
+      showToast("已複製分享連結 ✅");
+    }catch(e){
+      window.prompt("請複製這個連結：", url);
+    }
+  });
+
+  el("btnCopySpec").addEventListener("click", async (ev)=>{
+    ev.preventDefault(); ev.stopPropagation();
+    const txt = SPEC ? JSON.stringify(SPEC, null, 2) : "{}";
+    try{
+      await navigator.clipboard.writeText(txt);
+      showToast("已複製條件 JSON ✅");
+    }catch(e){
+      window.prompt("請複製這段 JSON：", txt);
+    }
+  });
+
+  // Use same conditions to generate: redirect back to home with prefill=base64url(JSON)
+  function toBase64Url(obj){
+    try{
+      const json = JSON.stringify(obj || {});
+      const bytes = new TextEncoder().encode(json);
+      let bin = "";
+      for (const b of bytes) bin += String.fromCharCode(b);
+      return btoa(bin).replace(/\+/g,'-').replace(/\//g,'_').replace(/=+$/,'');
+    }catch(e){
+      return "";
+    }
+  }
+
+  el("btnSame").addEventListener("click", (ev)=>{
+    ev.preventDefault(); ev.stopPropagation();
+    if(!SPEC){
+      showToast("沒有可用的條件資料");
+      return;
+    }
+    const q = new URLSearchParams(location.search);
+    q.set("prefill", toBase64Url(SPEC));
+    // 回首頁（保留 query）
     location.href = "/?" + q.toString();
   });
 
-  el("btnCopy").addEventListener("click", async ()=>{
-    const spec2 = window.__share_spec__ || spec;
-    if(!spec2){
-      el("err").style.display="block";
-      el("err").textContent="沒有 spec 可以複製。";
-      return;
-    }
-    try{
-      await navigator.clipboard.writeText(JSON.stringify(spec2, null, 2));
-      el("err").style.display="block";
-      el("err").textContent="已複製本次設定（Outfit Spec）✅";
-    }catch(e){
-      el("err").style.display="block";
-      el("err").textContent="複製失敗（瀏覽器限制）。";
-    }
+  el("btnHome").addEventListener("click", (ev)=>{
+    ev.preventDefault(); ev.stopPropagation();
+    location.href = "/";
   });
 
-  }
   main();
 </script>
 </body>
