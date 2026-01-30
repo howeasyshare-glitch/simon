@@ -86,9 +86,21 @@
   
   // ✅ 新增：支援短連結 /share/<slug>（透過 Vercel rewrite 變成 /share/?slug=<slug>）
   const qs2 = new URLSearchParams(location.search);
-  const slug = qs2.get("slug") || "";
+  const slugFromQuery = qs2.get("slug") || "";
+  // ✅ 也支援沒有 rewrite 的情況：直接從 /share/<slug> 的 pathname 取出 slug
+  const pathSeg = (location.pathname || "").split("/").filter(Boolean);
+  const lastSeg = pathSeg.length ? pathSeg[pathSeg.length - 1] : "";
+  const slugFromPath = (lastSeg && lastSeg !== "share" && !lastSeg.endsWith(".html")) ? lastSeg : "";
+  const slug = slugFromQuery || slugFromPath || "";
 
-  async function fetchOutfitBySlug(slug){
+  
+  // 小提示：顯示目前讀到的 slug，方便檢查路徑是否正確
+  try{
+    if(slug){
+      el("badge").textContent = "分享代碼：" + slug;
+    }
+  }catch(e){}
+async function fetchOutfitBySlug(slug){
     const url = `/api/share/${encodeURIComponent(slug)}`;
     const res = await fetch(url);
     const json = await res.json().catch(()=> ({}));
