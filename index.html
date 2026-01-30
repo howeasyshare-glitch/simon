@@ -1341,6 +1341,40 @@ function bindStyleCards() {
       img.style.display="block";
       ph.style.display="none";
     }
+import { supabase } from "@/lib/supabaseClient";
+import { saveOutfit } from "@/lib/saveOutfit";
+
+async function onGenerateFinished({ imageBase64, spec, style, summary, products }) {
+  // 1) 取得 session（拿 token + user id）
+  const { data: sessionData, error: sessionErr } = await supabase.auth.getSession();
+  if (sessionErr) throw new Error("取得 session 失敗：" + sessionErr.message);
+
+  const session = sessionData?.session;
+  if (!session) throw new Error("尚未登入，無法儲存穿搭");
+
+  const accessToken = session.access_token;
+  const userId = session.user.id;
+
+  // 2) 存入 Storage + DB
+  const { share_slug } = await saveOutfit({
+    imageBase64,
+    spec,
+    style,
+    summary,
+    products,
+    accessToken,
+    userId,
+    isPublic: true,
+  });
+
+  // 3) 產生分享連結（拿去顯示或複製）
+  const shareUrl = `${location.origin}/share/${share_slug}`;
+  console.log("shareUrl:", shareUrl);
+
+  // 你可以 setState 顯示在 UI
+  // setShareUrl(shareUrl);
+}
+    
     function clearImage(){
       const img=document.getElementById("outfit-image");
       const ph=document.getElementById("img-placeholder");
