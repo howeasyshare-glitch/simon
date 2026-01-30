@@ -1,5 +1,6 @@
 
 
+
 <!doctype html>
 <html lang="zh-Hant">
 <head>
@@ -134,20 +135,21 @@
   }
 
   // 若有 slug：優先走 DB 模式；成功後就不跑下面 base64 payload 流程
-  if(slug){
-    (async ()=>{
+  
+  async function main(){
+    // 若有 slug：優先走 DB 模式；成功後就不跑下面 base64 payload 流程（避免被覆蓋）
+    if(slug){
       try{
         const outfit = await fetchOutfitBySlug(slug);
         if(!outfit) throw new Error("找不到分享內容（可能未設為公開）");
         await renderOutfitFromDb(outfit);
-        return;
+        return; // ✅ 關鍵：成功就結束，不往下跑 base64 流程
       }catch(e){
         el("err").style.display="block";
         el("err").textContent="載入分享失敗：" + (e?.message || String(e));
-        // 繼續往下走 base64 模式（向下相容）
+        // 失敗才繼續往下走 base64 模式（向下相容）
       }
-    })();
-  }
+    }
 
 // ✅ 兼容兩種分享格式：
   // 1) /share?p=<base64url(JSON)>
@@ -227,6 +229,9 @@
       el("err").textContent="複製失敗（瀏覽器限制）。";
     }
   });
+
+  }
+  main();
 </script>
 </body>
 </html>
