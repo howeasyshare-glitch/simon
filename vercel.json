@@ -1,0 +1,8 @@
+{
+  "rewrites": [
+    {
+      "source": "/share/:slug",
+      "destination": "/share/?slug=:slug"
+    }
+  ]
+}
