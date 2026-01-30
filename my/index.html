@@ -38,11 +38,10 @@
 
   <script>
     // ✅ 這段請「複製你首頁的 supabase 初始化」來替換
-    const SUPABASE_URL = window.SUPABASE_URL || "";     // ← 改成你實際值（或沿用首頁寫法）
-    const SUPABASE_ANON_KEY = window.SUPABASE_ANON_KEY || "";
-    const supabase = window.supabase?.createClient
-      ? window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY)
-      : null;
+    const SUPABASE_PROJECT_REF="auiwcsolpvufxxyhnvaf";
+    const SUPABASE_URL=`https://${SUPABASE_PROJECT_REF}.supabase.co`;
+    const SUPABASE_ANON_KEY="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImF1aXdjc29scHZ1Znh4eWhudmFmIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjQ5MzUwMDEsImV4cCI6MjA4MDUxMTAwMX0.KeD8JXdHs5Iu7-wf0F0GpUPp-_y5X5ha6mwBcR5eYDA";
+   
 
     const el = (id)=>document.getElementById(id);
 
