@@ -46,7 +46,11 @@ if (!SB || typeof SB.createClient !== "function") {
     const SUPABASE_PROJECT_REF="auiwcsolpvufxxyhnvaf";
     const SUPABASE_URL=`https://${SUPABASE_PROJECT_REF}.supabase.co`;
     const SUPABASE_ANON_KEY="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImF1aXdjc29scHZ1Znh4eWhudmFmIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjQ5MzUwMDEsImV4cCI6MjA4MDUxMTAwMX0.KeD8JXdHs5Iu7-wf0F0GpUPp-_y5X5ha6mwBcR5eYDA";
-   const supabase = SB.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+   const supabaseClient = window.supabaseClient || window.supabase;
+
+if (!supabaseClient) {
+  throw new Error("supabase 尚未初始化，請確認首頁初始化是否有共用");
+}
 
     const el = (id)=>document.getElementById(id);
 
