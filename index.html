@@ -791,6 +791,15 @@ body.is-mobile #mobile-actionbar{ display:block !important; }
   </div>
 
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2">
+// --- helpers injected (v5) ---
+function scrollToEl(id){
+  try{
+    const node = document.getElementById(id);
+    if(node) node.scrollIntoView({ behavior: "smooth", block: "start" });
+  }catch(e){}
+}
+// --- end helpers ---
+
 document.getElementById("btn-share-top")?.addEventListener("click", ()=>document.getElementById("share-btn")?.click());
 </script>
 
