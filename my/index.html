@@ -1,0 +1,149 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>我的穿搭</title>
+  <style>
+    body{margin:0;font-family:system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;background:#0b0b0f;color:#fff}
+    .wrap{max-width:1000px;margin:0 auto;padding:18px}
+    .top{display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap}
+    .grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:12px;margin-top:14px}
+    .card{background:#141420;border-radius:16px;padding:10px;box-shadow:0 10px 30px rgba(0,0,0,.25)}
+    img{width:100%;border-radius:12px;background:#222;display:block}
+    .meta{font-size:12px;color:#b9b9c6;margin-top:8px;white-space:pre-line}
+    .row{display:flex;gap:8px;flex-wrap:wrap;margin-top:10px}
+    button{border:none;border-radius:12px;padding:8px 10px;font-weight:650;cursor:pointer}
+    .btn{background:#fff;color:#111}
+    .btn2{background:transparent;color:#fff;border:1px solid rgba(255,255,255,.22)}
+    a{color:#fff}
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <div class="top">
+      <h1 style="margin:0;font-size:18px">我的穿搭</h1>
+      <div class="row">
+        <button id="btnHome" class="btn2">回首頁</button>
+        <button id="btnReload" class="btn">重新整理</button>
+      </div>
+    </div>
+
+    <div id="status" class="meta"></div>
+    <div id="grid" class="grid"></div>
+  </div>
+
+  <!-- 你首頁應該已經用過 supabase-js（同一段 script 複製過來即可） -->
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
+  <script>
+    // ✅ 這段請「複製你首頁的 supabase 初始化」來替換
+    const SUPABASE_URL = window.SUPABASE_URL || "";     // ← 改成你實際值（或沿用首頁寫法）
+    const SUPABASE_ANON_KEY = window.SUPABASE_ANON_KEY || "";
+    const supabase = window.supabase?.createClient
+      ? window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY)
+      : null;
+
+    const el = (id)=>document.getElementById(id);
+
+    function fmt(dt){
+      try{return new Date(dt).toLocaleString();}catch(e){return String(dt||"");}
+    }
+
+    async function requireSession(){
+      if(!supabase) throw new Error("Supabase client 未初始化（請把首頁的 createClient 那段貼過來）");
+      const { data } = await supabase.auth.getSession();
+      const s = data?.session;
+      if(!s) throw new Error("尚未登入");
+      return s;
+    }
+
+    async function apiFetch(path, accessToken, init){
+      const res = await fetch(path, {
+        ...(init||{}),
+        headers: {
+          ...(init?.headers||{}),
+          Authorization: `Bearer ${accessToken}`,
+          "Content-Type": "application/json",
+        }
+      });
+      const json = await res.json().catch(()=> ({}));
+      if(!res.ok) throw new Error(json?.error || `HTTP ${res.status}`);
+      return json;
+    }
+
+    async function load(){
+      el("status").textContent = "載入中…";
+      el("grid").innerHTML = "";
+
+      const session = await requireSession();
+      const accessToken = session.access_token;
+
+      const json = await apiFetch("/api/outfits/list?limit=36&offset=0", accessToken);
+      const items = json.items || [];
+
+      el("status").textContent = items.length ? `共 ${items.length} 套` : "目前還沒有穿搭，回首頁生成第一套吧！";
+
+      el("grid").innerHTML = items.map(item => {
+        const shareUrl = item.share_slug ? `/share/${item.share_slug}` : "";
+        const pub = item.is_public ? "公開" : "私密";
+        return `
+          <div class="card" data-id="${item.id}">
+            <img src="${item.image_url || ""}" alt="outfit" loading="lazy" />
+            <div class="meta">${fmt(item.created_at)}\n狀態：${pub}</div>
+            <div class="row">
+              ${shareUrl ? `<a class="btn2" href="${shareUrl}" style="text-decoration:none;padding:8px 10px;border-radius:12px;display:inline-block">開啟分享</a>` : ""}
+              <button class="btn2" data-act="toggle">${item.is_public ? "設為私密" : "設為公開"}</button>
+              <button class="btn2" data-act="delete">刪除</button>
+            </div>
+          </div>
+        `;
+      }).join("");
+    }
+
+    el("grid").addEventListener("click", async (ev)=>{
+      const btn = ev.target.closest("button");
+      if(!btn) return;
+      const card = ev.target.closest(".card");
+      if(!card) return;
+      const id = card.getAttribute("data-id");
+      const act = btn.getAttribute("data-act");
+
+      const session = await requireSession();
+      const accessToken = session.access_token;
+
+      if(act === "toggle"){
+        const isPublicNow = card.querySelector(".meta").textContent.includes("狀態：公開");
+        btn.disabled = true;
+        try{
+          await apiFetch(`/api/outfits/${id}`, accessToken, {
+            method: "PATCH",
+            body: JSON.stringify({ is_public: !isPublicNow })
+          });
+          await load();
+        }finally{
+          btn.disabled = false;
+        }
+      }
+
+      if(act === "delete"){
+        if(!confirm("確定要刪除這套穿搭嗎？（圖片也會一起刪）")) return;
+        btn.disabled = true;
+        try{
+          await apiFetch(`/api/outfits/${id}`, accessToken, { method: "DELETE" });
+          await load();
+        }finally{
+          btn.disabled = false;
+        }
+      }
+    });
+
+    document.getElementById("btnReload").onclick = load;
+    document.getElementById("btnHome").onclick = ()=> location.href="/";
+
+    load().catch(e=>{
+      el("status").textContent = "載入失敗：" + (e?.message || String(e));
+    });
+  </script>
+</body>
+</html>
