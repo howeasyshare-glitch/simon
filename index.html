@@ -3,6 +3,7 @@
 
 
 
+
 <!DOCTYPE html>
 <html lang="zh-Hant">
 <head>
@@ -790,7 +791,9 @@ body.is-mobile #mobile-actionbar{ display:block !important; }
     </div>
   </div>
 
-  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2">
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
+  <script>
 // --- helpers injected (v5) ---
 function scrollToEl(id){
   try{
@@ -1560,14 +1563,29 @@ function bindStyleCards() {
         // Already saved? avoid duplicates
         if(flowState?.serverShareSlug) return;
 
-        const mime = imgResp?.mime || "image/png";
-        const imgDataUrl = imgResp?.image || document.getElementById("outfit-image")?.src || "";
-        if(!imgDataUrl) return;
+        // ✅ 永遠從畫面上的圖片抓 dataURL（避免拿到空字串 / 被截斷 / 非 dataURL）
+        const imgEl = document.getElementById("outfit-image");
+        const imageDataUrl = imgEl?.src || "";
+
+        // 防呆：必須是 data:image/... 才能轉 File
+        if(!imageDataUrl || !String(imageDataUrl).startsWith("data:image/")){
+          throw new Error("找不到可上傳的 base64 圖片（outfit-image.src 不是 data:image/...）");
+        }
+        const _parts = String(imageDataUrl).split(",");
+        if(!_parts[1] || _parts[1].length < 1000){
+          throw new Error("base64 內容太短，疑似空圖或被截斷，取消上傳");
+        }
+
+        const mime = imgResp?.mime || (String(_parts[0]).match(/data:(.*?);/)||[])[1] || "image/png";
+        const ext = (mime==="image/webp") ? "webp" : (mime==="image/jpeg" ? "jpg" : "png");
 
         const outfitId = (crypto?.randomUUID ? crypto.randomUUID() : String(Date.now()));
-        const image_path = `${userId}/${outfitId}.png`;
+        const image_path = `${userId}/${outfitId}.${ext}`;
 
-        const file = dataUrlToFile(imgDataUrl, "outfit.png");
+        // debug：你測完就可刪
+        console.log("[upload] imageDataUrl length =", String(imageDataUrl).length);
+
+        const file = dataUrlToFile(imageDataUrl, `outfit.${ext}`);
 
         const up = await osSupabase.storage.from("outfits").upload(image_path, file, {
           contentType: mime,
@@ -2030,7 +2048,7 @@ info.innerHTML = `<div class="mini-title">${escapeHtml(title)}</div><div class="
         flowState.currentOutfitId=item.id;
         syncFavButtonUI();
 
-        scrollToEl("anchor-preview","smooth","start");
+        scrollToElWithOffset("anchor-preview", 12, "smooth");
       }catch(e){ console.warn("applySavedOutfit failed",e); }
     }
 
