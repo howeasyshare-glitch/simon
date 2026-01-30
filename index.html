@@ -791,7 +791,6 @@ body.is-mobile #mobile-actionbar{ display:block !important; }
   </div>
 
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2">
-document.getElementById("btn-share-top")?.addEventListener("click", ()=>document.getElementById("share-btn")?.click());
 </script>
 
   <script>
@@ -1036,6 +1035,10 @@ function formatOutfitMetaChips(p, { includeTime=true, ts=null } = {}){
   }
 
   function buildShareUrl(){
+    // ✅ Prefer server-side short share url if we have one
+    if(flowState && flowState.serverShareSlug){
+      return `${location.origin}/share/${flowState.serverShareSlug}`;
+    }
     const payload = buildSharePayload();
     if(!payload.image_url) return "";
     const p = toBase64Url(payload);
@@ -1043,10 +1046,132 @@ function formatOutfitMetaChips(p, { includeTime=true, ts=null } = {}){
     return `${location.origin}/share#p=${p}`;
   }
     function parseShareFromLocation(){
-      const h=location.hash||"";
-      const m=h.match(/#share=([^&]+)/);
-      if(!m) return null;
-      try{ const obj=JSON.parse(b64urlDecode(m[1])); if(!obj||!obj.payload) return null; return obj; }catch{ return null; }
+      // ✅ Support:
+      // 1) /?p=<base64url(JSON)> or /#p=<base64url(JSON)>
+      //    - payload format from buildSharePayload(): { created_at, image_url, style, spec }
+      // 2) legacy /#share=<b64url(JSON)>
+      try{
+        const decodeBase64UrlToJson = (str)=>{
+          str = String(str||"").replace(/-/g,'+').replace(/_/g,'/');
+          const pad = str.length % 4; if(pad) str += "=".repeat(4-pad);
+          const bin = atob(str);
+          const bytes = Uint8Array.from(bin, c => c.charCodeAt(0));
+          const json = new TextDecoder().decode(bytes);
+          return safeJsonParse(json, null);
+        };
+
+        const qs = new URLSearchParams(location.search || "");
+        const hs = new URLSearchParams(String(location.hash||"").replace(/^#/, ""));
+        const pRaw = qs.get("p") || hs.get("p") || "";
+        if(pRaw){
+          const obj = decodeBase64UrlToJson(pRaw);
+          // normalize to { payload, spec }
+          const payload = obj?.spec || obj?.payload || null; // prefill form needs this
+          return payload ? { payload, spec: null, _raw: obj } : null;
+        }
+
+        const h = location.hash || "";
+        const m = h.match(/#share=([^&]+)/);
+        if(!m) return null;
+        const legacy = safeJsonParse(b64urlDecode(m[1]), null);
+        const payload = legacy?.payload || null;
+        return payload ? legacy : null;
+      }catch{
+        return null;
+      }
+    }
+
+
+
+
+    // ===== Persist generated outfit (upload image + create DB record) =====
+    // This is NON-BLOCKING: failures here will NOT break the main generation flow.
+    function dataUrlToFile(dataUrl, filename){
+      const arr = String(dataUrl||"").split(",");
+      if(arr.length < 2) throw new Error("bad dataUrl");
+      const mime = (arr[0].match(/:(.*?);/)||[])[1] || "image/png";
+      const bstr = atob(arr[1]);
+      let n = bstr.length;
+      const u8arr = new Uint8Array(n);
+      while(n--) u8arr[n] = bstr.charCodeAt(n);
+      return new File([u8arr], filename, { type: mime });
+    }
+
+    async function tryCreateOutfitRecord({ accessToken, spec, style, summary, products, image_path, is_public }){
+      const body = { spec, style, summary, products, image_path, is_public };
+      const headers = { "Content-Type":"application/json", Authorization: "Bearer " + accessToken };
+
+      // Try common paths (your project may mount api under /simon/api)
+      const candidates = ["/api/outfits/create", "/simon/api/outfits/create"];
+      let lastErr = null;
+
+      for(const url of candidates){
+        try{
+          const res = await fetch(url, { method:"POST", headers, body: JSON.stringify(body) });
+          const json = await res.json().catch(()=> ({}));
+          if(!res.ok) throw new Error(json?.error || `HTTP ${res.status}`);
+          return json; // { ok, id, share_slug }
+        }catch(e){
+          lastErr = e;
+        }
+      }
+      throw lastErr || new Error("create outfit failed");
+    }
+
+    async function persistOutfitNonBlocking({ imgBase64Raw, mime, payload, spec, products }){
+      try{
+        // Need login
+        const ensured = await ensureTokenFromSession();
+        if(!ensured.ok) return;
+
+        const accessToken = getAccessToken();
+        if(!accessToken) return;
+
+        // Get user id from session (not from /api/me)
+        const session = ensured.session;
+        const userId = session?.user?.id;
+        if(!userId) return;
+
+        // Build data URL for upload
+        const dataUrl = `data:${mime||"image/png"};base64,${imgBase64Raw}`;
+        const outfitId = (crypto && crypto.randomUUID) ? crypto.randomUUID() : String(Date.now());
+        const file = dataUrlToFile(dataUrl, "outfit.png");
+        const image_path = `${userId}/${outfitId}.png`;
+
+        // Upload to Supabase Storage bucket: outfits
+        const up = await osSupabase.storage.from("outfits").upload(image_path, file, {
+          contentType: mime || "image/png",
+          upsert: true,
+        });
+        if(up?.error) throw new Error("圖片上傳失敗：" + up.error.message);
+
+        // Create DB record via API
+        const styleObj = (payload && (payload.uiStyleSource || payload.uiStyleValue || payload.styleVariant))
+          ? { source: payload.uiStyleSource || "", value: payload.uiStyleValue || "", detail: payload.styleVariant || "" }
+          : null;
+
+        const created = await tryCreateOutfitRecord({
+          accessToken,
+          spec: spec || null,
+          style: styleObj,
+          summary: spec?.summary || "",
+          products: products || null,
+          image_path,
+          is_public: true,
+        });
+
+        if(created?.share_slug){
+          flowState.serverShareSlug = created.share_slug;
+          flowState.currentOutfitId = created.id || null;
+          updateResultActions();
+          // Optional: show a gentle toast once
+          showToast("已儲存到「我的穿搭」✅", 1600);
+        }
+      }catch(e){
+        // Do not break main flow; just log for debug toggle
+        console.warn("persistOutfitNonBlocking failed:", e);
+        try{ setDebug({ step:"persist", error: String(e) }); }catch{}
+      }
     }
 
     function applyPayloadToForm(payload) {
@@ -1154,7 +1279,7 @@ function formatOutfitMetaChips(p, { includeTime=true, ts=null } = {}){
     const SUPABASE_PROJECT_REF="auiwcsolpvufxxyhnvaf";
     const SUPABASE_URL=`https://${SUPABASE_PROJECT_REF}.supabase.co`;
     const SUPABASE_ANON_KEY="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImF1aXdjc29scHZ1Znh4eWhudmFmIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjQ5MzUwMDEsImV4cCI6MjA4MDUxMTAwMX0.KeD8JXdHs5Iu7-wf0F0GpUPp-_y5X5ha6mwBcR5eYDA";
-    const REDIRECT_TO=location.origin+"/";
+    const REDIRECT_TO=location.origin+"/body-test.html";
 
     function bindRange(rangeId, valueId){
       const r=document.getElementById(rangeId);
@@ -1341,40 +1466,6 @@ function bindStyleCards() {
       img.style.display="block";
       ph.style.display="none";
     }
-import { supabase } from "@/lib/supabaseClient";
-import { saveOutfit } from "@/lib/saveOutfit";
-
-async function onGenerateFinished({ imageBase64, spec, style, summary, products }) {
-  // 1) 取得 session（拿 token + user id）
-  const { data: sessionData, error: sessionErr } = await supabase.auth.getSession();
-  if (sessionErr) throw new Error("取得 session 失敗：" + sessionErr.message);
-
-  const session = sessionData?.session;
-  if (!session) throw new Error("尚未登入，無法儲存穿搭");
-
-  const accessToken = session.access_token;
-  const userId = session.user.id;
-
-  // 2) 存入 Storage + DB
-  const { share_slug } = await saveOutfit({
-    imageBase64,
-    spec,
-    style,
-    summary,
-    products,
-    accessToken,
-    userId,
-    isPublic: true,
-  });
-
-  // 3) 產生分享連結（拿去顯示或複製）
-  const shareUrl = `${location.origin}/share/${share_slug}`;
-  console.log("shareUrl:", shareUrl);
-
-  // 你可以 setState 顯示在 UI
-  // setShareUrl(shareUrl);
-}
-    
     function clearImage(){
       const img=document.getElementById("outfit-image");
       const ph=document.getElementById("img-placeholder");
@@ -1535,6 +1626,8 @@ async function onGenerateFinished({ imageBase64, spec, style, summary, products 
       setDebug({ step:"image", imgResp, spec });
       setImageBase64(imgResp.image, imgResp.mime||"image/png");
       showImageSkeleton(false);
+      // ✅ Persist in background (does not block UI)
+      setTimeout(()=>{ persistOutfitNonBlocking({ imgBase64Raw: imgResp.image, mime: (imgResp.mime||"image/png"), payload, spec, products: flowState.products }); }, 0);
       return imgResp;
     }
 
