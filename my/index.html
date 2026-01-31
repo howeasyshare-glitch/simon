@@ -7,22 +7,23 @@
   <style>
     body{margin:0;font-family:system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;background:#0b0b0f;color:#fff}
     .wrap{max-width:1000px;margin:0 auto;padding:18px}
+    h1{font-size:18px;margin:0}
     .top{display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap}
-    .grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:12px;margin-top:14px}
-    .card{background:#141420;border-radius:16px;padding:10px;box-shadow:0 10px 30px rgba(0,0,0,.25)}
-    img{width:100%;border-radius:12px;background:#222;display:block}
+    .grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:12px;margin-top:16px}
+    .card{background:#141420;border-radius:16px;padding:10px}
+    img{width:100%;border-radius:12px;background:#222}
     .meta{font-size:12px;color:#b9b9c6;margin-top:8px;white-space:pre-line}
     .row{display:flex;gap:8px;flex-wrap:wrap;margin-top:10px}
-    button{border:none;border-radius:12px;padding:8px 10px;font-weight:650;cursor:pointer}
+    button{border:none;border-radius:12px;padding:8px 10px;font-weight:600;cursor:pointer}
     .btn{background:#fff;color:#111}
     .btn2{background:transparent;color:#fff;border:1px solid rgba(255,255,255,.22)}
-    a{color:#fff}
   </style>
 </head>
 <body>
   <div class="wrap">
     <div class="top">
-      <h1 style="margin:0;font-size:18px">我的穿搭</h1>
+      <h1>我的穿搭</h1
+
       <div class="row">
         <button id="btnHome" class="btn2">回首頁</button>
         <button id="btnReload" class="btn">重新整理</button>
@@ -33,50 +34,49 @@
     <div id="grid" class="grid"></div>
   </div>
 
-  <!-- 你首頁應該已經用過 supabase-js（同一段 script 複製過來即可） -->
+  <!-- Supabase SDK -->
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 
   <script>
-    const SB = window.supabase || window.supabaseJs || window.Supabase;
+    // ===== Supabase 初始化（與首頁完全一致）=====
+    const SUPABASE_PROJECT_REF = "auiwcsolpvufxxyhnvaf";
+    const SUPABASE_URL = `https://${SUPABASE_PROJECT_REF}.supabase.co`;
+    const SUPABASE_ANON_KEY =
+      "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImF1aXdjc29scHZ1Znh4eWhudmFmIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjQ5MzUwMDEsImV4cCI6MjA4MDUxMTAwMX0.KeD8JXdHs5Iu7-wf0F0GpUPp-_y5X5ha6mwBcR5eYDA";
 
-if (!SB || typeof SB.createClient !== "function") {
-  throw new Error("Supabase SDK 沒載入成功：請確認 <script src=@supabase/supabase-js@2> 有放在這段程式之前");
-}
-    // ✅ 這段請「複製你首頁的 supabase 初始化」來替換
-    const SUPABASE_PROJECT_REF="auiwcsolpvufxxyhnvaf";
-    const SUPABASE_URL=`https://${SUPABASE_PROJECT_REF}.supabase.co`;
-    const SUPABASE_ANON_KEY="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImF1aXdjc29scHZ1Znh4eWhudmFmIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjQ5MzUwMDEsImV4cCI6MjA4MDUxMTAwMX0.KeD8JXdHs5Iu7-wf0F0GpUPp-_y5X5ha6mwBcR5eYDA";
-   const supabaseClient = window.supabaseClient || window.supabase;
-
-if (!supabaseClient) {
-  throw new Error("supabase 尚未初始化，請確認首頁初始化是否有共用");
-}
-
-    const el = (id)=>document.getElementById(id);
-
-    function fmt(dt){
-      try{return new Date(dt).toLocaleString();}catch(e){return String(dt||"");}
+    const SBSDK = window.supabase;
+    if (!SBSDK?.createClient) {
+      throw new Error("Supabase SDK 載入失敗");
     }
+
+    // 建立唯一 client（避免重複宣告）
+    window.__sb = window.__sb || SBSDK.createClient(
+      SUPABASE_URL,
+      SUPABASE_ANON_KEY
+    );
+    const sb = window.__sb;
+
+    // ===== 小工具 =====
+    const el = (id)=>document.getElementById(id);
+    const fmt = (dt)=>new Date(dt).toLocaleString();
 
     async function requireSession(){
-      if(!supabase) throw new Error("Supabase client 未初始化（請把首頁的 createClient 那段貼過來）");
-      const { data } = await supabase.auth.getSession();
-      const s = data?.session;
-      if(!s) throw new Error("尚未登入");
-      return s;
+      const { data } = await sb.auth.getSession();
+      if (!data?.session) throw new Error("尚未登入");
+      return data.session;
     }
 
-    async function apiFetch(path, accessToken, init){
-      const res = await fetch(path, {
-        ...(init||{}),
-        headers: {
-          ...(init?.headers||{}),
-          Authorization: `Bearer ${accessToken}`,
-          "Content-Type": "application/json",
+    async function apiFetch(url, token, init={}){
+      const res = await fetch(url, {
+        ...init,
+        headers:{
+          ...(init.headers||{}),
+          Authorization:`Bearer ${token}`,
+          "Content-Type":"application/json"
         }
       });
       const json = await res.json().catch(()=> ({}));
-      if(!res.ok) throw new Error(json?.error || `HTTP ${res.status}`);
+      if(!res.ok) throw new Error(json.error || res.status);
       return json;
     }
 
@@ -85,72 +85,66 @@ if (!supabaseClient) {
       el("grid").innerHTML = "";
 
       const session = await requireSession();
-      const accessToken = session.access_token;
+      const json = await apiFetch(
+        "/api/outfits/list?limit=36",
+        session.access_token
+      );
 
-      const json = await apiFetch("/api/outfits/list?limit=36&offset=0", accessToken);
       const items = json.items || [];
+      el("status").textContent =
+        items.length ? `共 ${items.length} 套穿搭` : "目前沒有穿搭";
 
-      el("status").textContent = items.length ? `共 ${items.length} 套` : "目前還沒有穿搭，回首頁生成第一套吧！";
-
-      el("grid").innerHTML = items.map(item => {
-        const shareUrl = item.share_slug ? `/share/${item.share_slug}` : "";
-        const pub = item.is_public ? "公開" : "私密";
-        return `
-          <div class="card" data-id="${item.id}">
-            <img src="${item.image_url || ""}" alt="outfit" loading="lazy" />
-            <div class="meta">${fmt(item.created_at)}\n狀態：${pub}</div>
-            <div class="row">
-              ${shareUrl ? `<a class="btn2" href="${shareUrl}" style="text-decoration:none;padding:8px 10px;border-radius:12px;display:inline-block">開啟分享</a>` : ""}
-              <button class="btn2" data-act="toggle">${item.is_public ? "設為私密" : "設為公開"}</button>
-              <button class="btn2" data-act="delete">刪除</button>
-            </div>
+      el("grid").innerHTML = items.map(o=>`
+        <div class="card" data-id="${o.id}">
+          <img src="${o.image_url}" />
+          <div class="meta">
+${fmt(o.created_at)}
+狀態：${o.is_public ? "公開" : "私密"}
           </div>
-        `;
-      }).join("");
+          <div class="row">
+            ${o.share_slug ? `<a class="btn2" href="/share/${o.share_slug}">分享</a>` : ""}
+            <button class="btn2" data-act="toggle">
+              ${o.is_public ? "設為私密" : "設為公開"}
+            </button>
+            <button class="btn2" data-act="delete">刪除</button>
+          </div>
+        </div>
+      `).join("");
     }
 
-    el("grid").addEventListener("click", async (ev)=>{
-      const btn = ev.target.closest("button");
+    el("grid").onclick = async (e)=>{
+      const btn = e.target.closest("button");
       if(!btn) return;
-      const card = ev.target.closest(".card");
-      if(!card) return;
-      const id = card.getAttribute("data-id");
-      const act = btn.getAttribute("data-act");
+      const card = e.target.closest(".card");
+      const id = card.dataset.id;
+      const act = btn.dataset.act;
 
       const session = await requireSession();
-      const accessToken = session.access_token;
 
-      if(act === "toggle"){
-        const isPublicNow = card.querySelector(".meta").textContent.includes("狀態：公開");
-        btn.disabled = true;
-        try{
-          await apiFetch(`/api/outfits/${id}`, accessToken, {
-            method: "PATCH",
-            body: JSON.stringify({ is_public: !isPublicNow })
-          });
-          await load();
-        }finally{
-          btn.disabled = false;
-        }
+      if(act==="toggle"){
+        await apiFetch(`/api/outfits/${id}`, session.access_token,{
+          method:"PATCH",
+          body:JSON.stringify({
+            is_public: !card.textContent.includes("公開")
+          })
+        });
+        load();
       }
 
-      if(act === "delete"){
-        if(!confirm("確定要刪除這套穿搭嗎？（圖片也會一起刪）")) return;
-        btn.disabled = true;
-        try{
-          await apiFetch(`/api/outfits/${id}`, accessToken, { method: "DELETE" });
-          await load();
-        }finally{
-          btn.disabled = false;
-        }
+      if(act==="delete"){
+        if(!confirm("確定要刪除這套穿搭嗎？")) return;
+        await apiFetch(`/api/outfits/${id}`, session.access_token,{
+          method:"DELETE"
+        });
+        load();
       }
-    });
+    };
 
-    document.getElementById("btnReload").onclick = load;
-    document.getElementById("btnHome").onclick = ()=> location.href="/";
+    el("btnReload").onclick = load;
+    el("btnHome").onclick = ()=>location.href="/";
 
     load().catch(e=>{
-      el("status").textContent = "載入失敗：" + (e?.message || String(e));
+      el("status").textContent = "載入失敗：" + e.message;
     });
   </script>
 </body>
