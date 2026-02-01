@@ -3071,7 +3071,7 @@ optionsRoot.innerHTML = list.map(v=>{
 
   async function fetchPublicCopy(){
     try{
-      const r = await fetch("/api/public-copy?ts=" + Date.now(), { cache: "no-store" });
+      const r = await fetch("/api/copy?name=public?ts=" + Date.now(), { cache: "no-store" });
       const t = await r.text();
       let j = {};
       try{ j = t ? JSON.parse(t) : {}; } catch { j = { raw: t }; }
