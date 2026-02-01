@@ -4,6 +4,7 @@
 
 
 
+
 <!DOCTYPE html>
 <html lang="zh-Hant">
 <head>
@@ -2968,6 +2969,10 @@ optionsRoot.innerHTML = list.map(v=>{
       hValue.value = "";
     }
   }
+
+  // Expose for public-copy updates (so applyPublicCopy can rerender options immediately)
+  window.updateStyleSourceOptions = render;
+  window.__refreshStyleSourceUI = render;
 
   function randomPick(){
     const source = Math.random() < 0.5 ? "scene" : "celebrity";
