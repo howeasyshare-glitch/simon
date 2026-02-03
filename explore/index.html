@@ -1,254 +1,117 @@
-
 <!doctype html>
 <html lang="zh-Hant">
 <head>
   <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <title>公開穿搭｜Explore</title>
+  <title>公開穿搭 Explore</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
   <style>
-    body{margin:0;font-family:system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;background:#0b0b0f;color:#fff}
-    .wrap{max-width:1100px;margin:0 auto;padding:16px 16px 92px}
-    .top{display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap}
-    .brand{font-weight:900;letter-spacing:.2px}
-    .nav a{color:#fff;text-decoration:none;opacity:.9;margin-left:12px}
-    .nav a:hover{opacity:1}
-    .muted{color:#b9b9c6;font-size:12px;line-height:1.6}
-    .grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:12px;margin-top:14px}
-    .card{background:#141420;border-radius:16px;padding:10px}
-    img{width:100%;aspect-ratio:1/1;object-fit:cover;border-radius:14px;background:#222;display:block}
-    .meta{white-space:pre-line;color:#b9b9c6;font-size:12px;margin-top:8px}
-    .row{display:flex;gap:8px;flex-wrap:wrap;margin-top:10px}
-    .btn{border:none;border-radius:12px;padding:8px 10px;font-weight:750;cursor:pointer}
-    .btnP{background:#fff;color:#111}
-    .btnS{background:transparent;color:#fff;border:1px solid rgba(255,255,255,.22)}
-    .filters{display:flex;gap:8px;flex-wrap:wrap;margin-top:10px}
-    select{background:#141420;color:#fff;border:1px solid rgba(255,255,255,.14);border-radius:12px;padding:8px 10px}
-    .bottomNav{position:fixed;left:0;right:0;bottom:0;background:rgba(20,20,32,.92);backdrop-filter:blur(10px);
-      border-top:1px solid rgba(255,255,255,.08)}
-    .bottomNav .inner{max-width:1100px;margin:0 auto;display:flex;justify-content:space-around;padding:10px 6px}
-    .bottomNav a{color:#fff;text-decoration:none;font-size:12px;opacity:.85}
-    .bottomNav a.active{opacity:1;font-weight:900}
-    @media(min-width:820px){.bottomNav{display:none}}
-  
-    /* phase2 actions */
-    .actions{display:flex; gap:8px; flex-wrap:wrap; align-items:center}
-    .btnIcon{display:inline-flex; align-items:center; gap:6px}
-    .btnIcon .n{opacity:.85}
-    .btnIcon[aria-pressed="true"]{outline:2px solid rgba(255,255,255,.25)}
-</style>
+    body{font-family:system-ui,-apple-system,BlinkMacSystemFont,sans-serif;margin:0;background:#fafafa}
+    header{padding:12px 16px;border-bottom:1px solid #ddd;background:#fff}
+    main{padding:16px}
+    .grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:16px}
+    .card{background:#fff;border:1px solid #ddd;border-radius:12px;overflow:hidden}
+    .card img{width:100%;display:block}
+    .card-body{padding:10px}
+    .counts{font-size:13px;color:#555;margin-bottom:6px}
+    .actions{display:flex;gap:6px}
+    .actions button{flex:1;font-size:13px;padding:6px;border-radius:6px;border:1px solid #ccc;background:#f7f7f7;cursor:pointer}
+    .actions button:hover{background:#eee}
+  </style>
 </head>
 <body>
-  <div class="wrap">
-    <div class="top">
-      <div>
-        <div class="brand">Explore</div>
-        <div class="muted">大家公開分享的穿搭。點圖片可開啟分享頁。</div>
-      </div>
-      <div class="nav" aria-label="desktop nav">
-        <a href="/">首頁</a>
-        <a href="/explore">公開穿搭</a>
-        <a href="/my">我的穿搭</a>
-        <a href="/settings">會員設定</a>
-      </div>
-    </div>
 
-    <div class="filters">
-      <select id="filterSource">
-        <option value="">風格來源：全部</option>
-        <option value="celebrity">名人靈感</option>
-        <option value="scene">穿搭情境</option>
-      </select>
-      <select id="filterGender">
-        <option value="">性別：全部</option>
-        <option value="male">male</option>
-        <option value="female">female</option>
-      </select>
-      <button id="btnReload" class="btn btnS" type="button">重新整理</button>
-    </div>
+<header>
+  <strong>公開穿搭 Explore</strong>
+</header>
 
-    <div id="status" class="muted" style="margin-top:10px"></div>
-    <div id="grid" class="grid"></div>
-
-    <div class="row" style="margin-top:14px">
-      <button id="btnMore" class="btn btnP" type="button">載入更多</button>
-    </div>
-  </div>
-
-  <nav class="bottomNav" aria-label="mobile bottom nav">
-    <div class="inner">
-      <a href="/">首頁</a>
-      <a class="active" href="/explore">公開</a>
-      <a href="/my">我的</a>
-      <a href="/settings">設定</a>
-    </div>
-  </nav>
+<main>
+  <div id="grid" class="grid"></div>
+</main>
 
 <script>
-  const el = (id)=>document.getElementById(id);
-  const fmt = (dt)=>{ try{return new Date(dt).toLocaleString();}catch(e){return String(dt||"");} };
-
-  let OFFSET = 0;
-  const LIMIT = 30;
-  let CACHE = [];
-
-  function passFilters(item){
-    const src = el("filterSource").value;
-    const g = el("filterGender").value;
-    const uiSrc = item?.spec?.uiStyleSource || item?.style?.source || "";
-    const gender = item?.spec?.gender || "";
-    if(src && uiSrc !== src) return false;
-    if(g && gender !== g) return false;
-    return true;
+/* ---------- utils ---------- */
+function getAnonId(){
+  let id = localStorage.getItem("anon_id");
+  if(!id){
+    id = crypto.randomUUID();
+    localStorage.setItem("anon_id", id);
   }
+  return id;
+}
+const anonId = getAnonId();
 
-  
-  function getAnonId(){
-    try{
-      const k = "findoutfit_anon_id";
-      let id = localStorage.getItem(k);
-      if(!id){
-        id = (crypto?.randomUUID ? crypto.randomUUID() : (Date.now().toString(16)+Math.random().toString(16).slice(2)));
-        localStorage.setItem(k, id);
-      }
-      return id;
-    }catch(e){
-      return "";
-    }
-  }
-
-  async function postAction(action, outfitId, shareUrl){
-    const body = { outfit_id: outfitId };
-    if(action === "like"){
-      body.toggle = true;
-      body.anon_id = getAnonId();
-    }
-    const res = await fetch(`/explore/list?action=${encodeURIComponent(action)}`,{
-      method:"POST",
-      headers:{ "Content-Type":"application/json" },
-      body: JSON.stringify(body)
-    });
-    const j = await res.json().catch(()=> ({}));
-    if(!res.ok || !j?.ok) throw new Error(j?.error || `action ${action} failed`);
-    return j;
-  }
-
-  async function copyText(text){
-    try{
-      await navigator.clipboard.writeText(text);
-      return true;
-    }catch(e){
-      // fallback
-      const ta = document.createElement("textarea");
-      ta.value = text;
-      ta.style.position="fixed"; ta.style.left="-9999px";
-      document.body.appendChild(ta);
-      ta.select();
-      try{ document.execCommand("copy"); }catch(_){}
-      document.body.removeChild(ta);
-      return true;
-    }
-  }
-
-  function bumpCount(btn, delta){
-    const n = btn.querySelector(".n");
-    if(!n) return;
-    const v = parseInt(n.textContent||"0",10)||0;
-    n.textContent = String(Math.max(0, v + delta));
-  }
-
-function render(){
-    const items = CACHE.filter(passFilters);
-    el("status").textContent = `顯示 ${items.length} / 已載入 ${CACHE.length} 套`;
-    el("grid").innerHTML = items.map(o=>{
-      const share = o.share_url || (o.share_slug ? `/share/${o.share_slug}` : "#");
-      const style = o.style?.value_label || o.style?.styleId || o.spec?.styleId || "";
-      const src = o.spec?.uiStyleSource ? (o.spec.uiStyleSource === "celebrity" ? "名人靈感" : "穿搭情境") : "";
-      const line2 = [src, style].filter(Boolean).join(" · ");
-      return `
-        <div class="card">
-          <a href="${share}" style="text-decoration:none;color:inherit">
-            <img src="${o.image_url || ""}" alt="outfit" loading="lazy" />
-          </a>
-          <div class="meta">${fmt(o.created_at)}${line2 ? "\n"+line2 : ""}</div>
-          <div class="row actions">
-            <button type="button" class="btn btnS btnIcon btnLike" data-id="${o.id}" aria-pressed="false">❤️ <span class="n">${o.like_count||0}</span></button>
-            <button type="button" class="btn btnS btnIcon btnShare" data-id="${o.id}" data-share="${share}">🔁 <span class="n">${o.share_count||0}</span></button>
-            <button type="button" class="btn btnS btnIcon btnApply" data-id="${o.id}" data-share="${share}">✨ <span class="n">${o.apply_count||0}</span></button>
-            <a class="btn btnS" href="${share}" style="text-decoration:none;display:inline-block">開啟分享</a>
-          </div>
-        </div>
-      `;
-    }).join("");
-  }
-
-  async function load(reset=false){
-    if(reset){
-      OFFSET = 0;
-      CACHE = [];
-    }
-    el("btnMore").disabled = true;
-    el("status").textContent = "載入中…";
-    try{
-      const res = await fetch(`/api/explore/list?limit=${LIMIT}&offset=${OFFSET}`, { cache:"no-store" });
-      const json = await res.json().catch(()=> ({}));
-      if(!res.ok) throw new Error(json?.error || res.status);
-      const items = json.items || [];
-      CACHE = CACHE.concat(items);
-      OFFSET += items.length;
-      render();
-      el("btnMore").disabled = items.length < LIMIT;
-      el("btnMore").textContent = items.length < LIMIT ? "沒有更多了" : "載入更多";
-    }catch(e){
-      el("status").textContent = "載入失敗：" + (e?.message || String(e));
-      el("btnMore").disabled = false;
-    }
-  }
-
-  el("btnReload").addEventListener("click", ()=>load(true));
-  el("btnMore").addEventListener("click", ()=>load(false));
-  el("filterSource").addEventListener("change", render);
-  el("filterGender").addEventListener("change", render);
-  // Phase2 interactions (event delegation)
-  el("grid").addEventListener("click", async (ev)=>{
-    const t = ev.target?.closest?.("button.btnLike,button.btnShare,button.btnApply");
-    if(!t) return;
-    const id = t.getAttribute("data-id");
-    const share = t.getAttribute("data-share") || "";
-    try{
-      if(t.classList.contains("btnLike")){
-        const pressed = t.getAttribute("aria-pressed")==="true";
-        // optimistic toggle
-        t.setAttribute("aria-pressed", pressed ? "false" : "true");
-        bumpCount(t, pressed ? -1 : +1);
-        const r = await postAction("like", id, share);
-        const c = r?.counts;
-        if(c){
-          t.querySelector(".n").textContent = String(c.like_count ?? parseInt(t.querySelector(".n").textContent||"0",10)||0);
-        }
-      }else if(t.classList.contains("btnShare")){
-        bumpCount(t, +1);
-        await copyText(location.origin + share);
-        await postAction("share", id, share);
-      }else if(t.classList.contains("btnApply")){
-        bumpCount(t, +1);
-        await postAction("apply", id, share);
-        // go home with apply slug (share path)
-        const slug = (share || "").split("/").pop() || "";
-        if(slug) location.href = `/?apply=${encodeURIComponent(slug)}`;
-      }
-    }catch(e){
-      // revert optimistic on like if failed
-      if(t.classList.contains("btnLike")){
-        const pressed = t.getAttribute("aria-pressed")==="true";
-        t.setAttribute("aria-pressed", pressed ? "false" : "true");
-        bumpCount(t, pressed ? -1 : +1);
-      }
-      alert("操作失敗：" + (e?.message || String(e)));
-    }
+async function api(action, body){
+  const res = await fetch("/explore/list?action=" + action, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(body || {})
   });
+  if(!res.ok) throw new Error("API failed");
+  return res.json();
+}
 
+/* ---------- render ---------- */
+async function load(){
+  const res = await fetch("/explore/list?limit=30&sort=like");
+  const json = await res.json();
+  const grid = document.getElementById("grid");
+  grid.innerHTML = "";
 
-  load(true);
+  json.items.forEach(item => {
+    const el = document.createElement("div");
+    el.className = "card";
+    el.innerHTML = `
+      <img src="${item.image_url}" alt="">
+      <div class="card-body">
+        <div class="counts">
+          ❤️ <span class="like">${item.like_count}</span>
+          · 🔁 <span class="share">${item.share_count}</span>
+          · ✨ <span class="apply">${item.apply_count}</span>
+        </div>
+        <div class="actions">
+          <button class="btn-like">Like</button>
+          <button class="btn-share">分享</button>
+          <button class="btn-apply">套用</button>
+        </div>
+      </div>
+    `;
+
+    // Like
+    el.querySelector(".btn-like").onclick = async () => {
+      el.querySelector(".like").textContent =
+        parseInt(el.querySelector(".like").textContent,10) + 1;
+      try{
+        await api("like", { outfit_id: item.id, anon_id: anonId, toggle: true });
+      }catch(e){ alert("Like 失敗"); }
+    };
+
+    // Share
+    el.querySelector(".btn-share").onclick = async () => {
+      el.querySelector(".share").textContent =
+        parseInt(el.querySelector(".share").textContent,10) + 1;
+      await navigator.clipboard.writeText(location.origin + item.share_url);
+      try{
+        await api("share", { outfit_id: item.id });
+        alert("已複製分享連結");
+      }catch(e){ alert("Share 失敗"); }
+    };
+
+    // Apply
+    el.querySelector(".btn-apply").onclick = async () => {
+      el.querySelector(".apply").textContent =
+        parseInt(el.querySelector(".apply").textContent,10) + 1;
+      try{
+        await api("apply", { outfit_id: item.id });
+        location.href = "/?apply=" + item.share_slug;
+      }catch(e){ alert("Apply 失敗"); }
+    };
+
+    grid.appendChild(el);
+  });
+}
+
+load();
 </script>
+
 </body>
 </html>
