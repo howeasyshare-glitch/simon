@@ -1,3 +1,4 @@
+
 <!doctype html>
 <html lang="zh-Hant">
 <head>
@@ -29,7 +30,6 @@
 </main>
 
 <script>
-/* ---------- utils ---------- */
 function getAnonId(){
   let id = localStorage.getItem("anon_id");
   if(!id){
@@ -41,23 +41,27 @@ function getAnonId(){
 const anonId = getAnonId();
 
 async function api(action, body){
-  const res = await fetch("/explore/list?action=" + action, {
+  const res = await fetch("/explore/list?action=" + encodeURIComponent(action), {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify(body || {})
   });
-  if(!res.ok) throw new Error("API failed");
-  return res.json();
+
+  const text = await res.text();
+  if(!res.ok){
+    throw new Error(text || ("API failed: " + res.status));
+  }
+  if(!text.trim()) return { ok: true }; // handle 204/empty
+  try { return JSON.parse(text); } catch { return { ok: true, raw: text }; }
 }
 
-/* ---------- render ---------- */
 async function load(){
-  const res = await fetch("/explore/list?limit=30&sort=like");
-  const json = await res.json();
+  const r = await fetch("/explore/list?limit=30&sort=like");
+  const json = await r.json();
   const grid = document.getElementById("grid");
   grid.innerHTML = "";
 
-  json.items.forEach(item => {
+  (json.items || []).forEach(item => {
     const el = document.createElement("div");
     el.className = "card";
     el.innerHTML = `
@@ -76,40 +80,52 @@ async function load(){
       </div>
     `;
 
-    // Like
+    const $like = el.querySelector(".like");
+    const $share = el.querySelector(".share");
+    const $apply = el.querySelector(".apply");
+
     el.querySelector(".btn-like").onclick = async () => {
-      el.querySelector(".like").textContent =
-        parseInt(el.querySelector(".like").textContent,10) + 1;
+      $like.textContent = String(parseInt($like.textContent,10) + 1);
       try{
-        await api("like", { outfit_id: item.id, anon_id: anonId, toggle: true });
-      }catch(e){ alert("Like 失敗"); }
+        const out = await api("like", { outfit_id: item.id, anon_id: anonId, toggle: true });
+        const c = out && out.counts;
+        if(c && typeof c.like_count === "number") $like.textContent = String(c.like_count);
+      }catch(e){
+        $like.textContent = String(Math.max(parseInt($like.textContent,10) - 1, 0));
+        alert("Like 失敗：" + (e && e.message ? e.message : ""));
+      }
     };
 
-    // Share
     el.querySelector(".btn-share").onclick = async () => {
-      el.querySelector(".share").textContent =
-        parseInt(el.querySelector(".share").textContent,10) + 1;
-      await navigator.clipboard.writeText(location.origin + item.share_url);
+      $share.textContent = String(parseInt($share.textContent,10) + 1);
+      try{ await navigator.clipboard.writeText(location.origin + item.share_url); }catch(_){}
       try{
-        await api("share", { outfit_id: item.id });
+        const out = await api("share", { outfit_id: item.id });
+        const c = out && out.counts;
+        if(c && typeof c.share_count === "number") $share.textContent = String(c.share_count);
         alert("已複製分享連結");
-      }catch(e){ alert("Share 失敗"); }
+      }catch(e){
+        $share.textContent = String(Math.max(parseInt($share.textContent,10) - 1, 0));
+        alert("Share 失敗：" + (e && e.message ? e.message : ""));
+      }
     };
 
-    // Apply
     el.querySelector(".btn-apply").onclick = async () => {
-      el.querySelector(".apply").textContent =
-        parseInt(el.querySelector(".apply").textContent,10) + 1;
+      $apply.textContent = String(parseInt($apply.textContent,10) + 1);
       try{
-        await api("apply", { outfit_id: item.id });
-        location.href = "/?apply=" + item.share_slug;
-      }catch(e){ alert("Apply 失敗"); }
+        const out = await api("apply", { outfit_id: item.id });
+        const c = out && out.counts;
+        if(c && typeof c.apply_count === "number") $apply.textContent = String(c.apply_count);
+        location.href = "/?apply=" + encodeURIComponent(item.share_slug || "");
+      }catch(e){
+        $apply.textContent = String(Math.max(parseInt($apply.textContent,10) - 1, 0));
+        alert("Apply 失敗：" + (e && e.message ? e.message : ""));
+      }
     };
 
     grid.appendChild(el);
   });
 }
-
 load();
 </script>
 
