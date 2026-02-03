@@ -3,6 +3,10 @@
     {
       "source": "/share/:slug",
       "destination": "/share/?slug=:slug"
+    },
+    {
+      "source": "/explore/list",
+      "destination": "/api/explore/list"
     }
   ]
 }
