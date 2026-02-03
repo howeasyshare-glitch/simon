@@ -109,6 +109,7 @@
             <img src="${o.image_url || ""}" alt="outfit" loading="lazy" />
           </a>
           <div class="meta">${fmt(o.created_at)}${line2 ? "\n"+line2 : ""}</div>
+          <div class="meta">❤️ ${o.like_count||0} · 🔁 ${o.share_count||0} · ✨ ${o.apply_count||0}</div>
           <div class="row">
             <a class="btn btnS" href="${share}" style="text-decoration:none;display:inline-block">開啟分享</a>
           </div>
@@ -125,7 +126,7 @@
     el("btnMore").disabled = true;
     el("status").textContent = "載入中…";
     try{
-      const res = await fetch(`/api/explore/list?limit=${LIMIT}&offset=${OFFSET}`, { cache:"no-store" });
+      const res = await fetch(`/explore/list?limit=${LIMIT}&offset=${OFFSET}&sort=like`, { cache:"no-store" });
       const json = await res.json().catch(()=> ({}));
       if(!res.ok) throw new Error(json?.error || res.status);
       const items = json.items || [];
