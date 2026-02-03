@@ -29,7 +29,13 @@
     .bottomNav a{color:#fff;text-decoration:none;font-size:12px;opacity:.85}
     .bottomNav a.active{opacity:1;font-weight:900}
     @media(min-width:820px){.bottomNav{display:none}}
-  </style>
+  
+    /* phase2 actions */
+    .actions{display:flex; gap:8px; flex-wrap:wrap; align-items:center}
+    .btnIcon{display:inline-flex; align-items:center; gap:6px}
+    .btnIcon .n{opacity:.85}
+    .btnIcon[aria-pressed="true"]{outline:2px solid rgba(255,255,255,.25)}
+</style>
 </head>
 <body>
   <div class="wrap">
@@ -95,7 +101,62 @@
     return true;
   }
 
-  function render(){
+  
+  function getAnonId(){
+    try{
+      const k = "findoutfit_anon_id";
+      let id = localStorage.getItem(k);
+      if(!id){
+        id = (crypto?.randomUUID ? crypto.randomUUID() : (Date.now().toString(16)+Math.random().toString(16).slice(2)));
+        localStorage.setItem(k, id);
+      }
+      return id;
+    }catch(e){
+      return "";
+    }
+  }
+
+  async function postAction(action, outfitId, shareUrl){
+    const body = { outfit_id: outfitId };
+    if(action === "like"){
+      body.toggle = true;
+      body.anon_id = getAnonId();
+    }
+    const res = await fetch(`/explore/list?action=${encodeURIComponent(action)}`,{
+      method:"POST",
+      headers:{ "Content-Type":"application/json" },
+      body: JSON.stringify(body)
+    });
+    const j = await res.json().catch(()=> ({}));
+    if(!res.ok || !j?.ok) throw new Error(j?.error || `action ${action} failed`);
+    return j;
+  }
+
+  async function copyText(text){
+    try{
+      await navigator.clipboard.writeText(text);
+      return true;
+    }catch(e){
+      // fallback
+      const ta = document.createElement("textarea");
+      ta.value = text;
+      ta.style.position="fixed"; ta.style.left="-9999px";
+      document.body.appendChild(ta);
+      ta.select();
+      try{ document.execCommand("copy"); }catch(_){}
+      document.body.removeChild(ta);
+      return true;
+    }
+  }
+
+  function bumpCount(btn, delta){
+    const n = btn.querySelector(".n");
+    if(!n) return;
+    const v = parseInt(n.textContent||"0",10)||0;
+    n.textContent = String(Math.max(0, v + delta));
+  }
+
+function render(){
     const items = CACHE.filter(passFilters);
     el("status").textContent = `顯示 ${items.length} / 已載入 ${CACHE.length} 套`;
     el("grid").innerHTML = items.map(o=>{
@@ -109,8 +170,10 @@
             <img src="${o.image_url || ""}" alt="outfit" loading="lazy" />
           </a>
           <div class="meta">${fmt(o.created_at)}${line2 ? "\n"+line2 : ""}</div>
-          <div class="meta">❤️ ${o.like_count||0} · 🔁 ${o.share_count||0} · ✨ ${o.apply_count||0}</div>
-          <div class="row">
+          <div class="row actions">
+            <button type="button" class="btn btnS btnIcon btnLike" data-id="${o.id}" aria-pressed="false">❤️ <span class="n">${o.like_count||0}</span></button>
+            <button type="button" class="btn btnS btnIcon btnShare" data-id="${o.id}" data-share="${share}">🔁 <span class="n">${o.share_count||0}</span></button>
+            <button type="button" class="btn btnS btnIcon btnApply" data-id="${o.id}" data-share="${share}">✨ <span class="n">${o.apply_count||0}</span></button>
             <a class="btn btnS" href="${share}" style="text-decoration:none;display:inline-block">開啟分享</a>
           </div>
         </div>
@@ -126,7 +189,7 @@
     el("btnMore").disabled = true;
     el("status").textContent = "載入中…";
     try{
-      const res = await fetch(`/explore/list?limit=${LIMIT}&offset=${OFFSET}&sort=like`, { cache:"no-store" });
+      const res = await fetch(`/api/explore/list?limit=${LIMIT}&offset=${OFFSET}`, { cache:"no-store" });
       const json = await res.json().catch(()=> ({}));
       if(!res.ok) throw new Error(json?.error || res.status);
       const items = json.items || [];
@@ -145,6 +208,45 @@
   el("btnMore").addEventListener("click", ()=>load(false));
   el("filterSource").addEventListener("change", render);
   el("filterGender").addEventListener("change", render);
+  // Phase2 interactions (event delegation)
+  el("grid").addEventListener("click", async (ev)=>{
+    const t = ev.target?.closest?.("button.btnLike,button.btnShare,button.btnApply");
+    if(!t) return;
+    const id = t.getAttribute("data-id");
+    const share = t.getAttribute("data-share") || "";
+    try{
+      if(t.classList.contains("btnLike")){
+        const pressed = t.getAttribute("aria-pressed")==="true";
+        // optimistic toggle
+        t.setAttribute("aria-pressed", pressed ? "false" : "true");
+        bumpCount(t, pressed ? -1 : +1);
+        const r = await postAction("like", id, share);
+        const c = r?.counts;
+        if(c){
+          t.querySelector(".n").textContent = String(c.like_count ?? parseInt(t.querySelector(".n").textContent||"0",10)||0);
+        }
+      }else if(t.classList.contains("btnShare")){
+        bumpCount(t, +1);
+        await copyText(location.origin + share);
+        await postAction("share", id, share);
+      }else if(t.classList.contains("btnApply")){
+        bumpCount(t, +1);
+        await postAction("apply", id, share);
+        // go home with apply slug (share path)
+        const slug = (share || "").split("/").pop() || "";
+        if(slug) location.href = `/?apply=${encodeURIComponent(slug)}`;
+      }
+    }catch(e){
+      // revert optimistic on like if failed
+      if(t.classList.contains("btnLike")){
+        const pressed = t.getAttribute("aria-pressed")==="true";
+        t.setAttribute("aria-pressed", pressed ? "false" : "true");
+        bumpCount(t, pressed ? -1 : +1);
+      }
+      alert("操作失敗：" + (e?.message || String(e)));
+    }
+  });
+
 
   load(true);
 </script>
