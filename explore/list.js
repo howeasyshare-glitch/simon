@@ -1,4 +1,6 @@
-// api/explore/list.js
+// explore/list.js
+// Public Explore list endpoint (Vercel Serverless Function)
+// URL: GET /explore/list?limit=30&offset=0&sort=like|new
 export default async function handler(req, res) {
   try {
     if (req.method !== "GET") return res.status(405).json({ error: "Method not allowed" });
@@ -7,7 +9,7 @@ export default async function handler(req, res) {
     const SERVICE_ROLE = process.env.SUPABASE_SERVICE_ROLE_KEY;
     if (!SUPABASE_URL || !SERVICE_ROLE) return res.status(500).json({ error: "Supabase env not set" });
 
-    // public list: allow CDN caching briefly
+    // Public list: allow CDN caching briefly
     res.setHeader("Cache-Control", "public, s-maxage=30, stale-while-revalidate=300");
 
     const limit = Math.min(parseInt(req.query.limit || "30", 10) || 30, 100);
@@ -21,14 +23,15 @@ export default async function handler(req, res) {
       `?is_public=eq.true` +
       `&share_slug=not.is.null`;
 
-    // New schema (Phase 1+): includes counters
+    // Phase 1+ schema: includes counters (if your DB has these columns)
     const selectV2 = `id,created_at,share_slug,image_path,style,spec,summary,like_count,share_count,apply_count`;
+    // Backward compatible schema
     const selectV1 = `id,created_at,share_slug,image_path,style,spec,summary`;
 
     const orderLike = `&order=like_count.desc,created_at.desc`;
     const orderNew = `&order=created_at.desc`;
 
-    function buildUrl({ v2, forceNewOrder } = {}) {
+    const buildUrl = ({ v2, forceNewOrder } = {}) => {
       const select = v2 ? selectV2 : selectV1;
       const order =
         forceNewOrder
@@ -40,7 +43,7 @@ export default async function handler(req, res) {
         order +
         `&limit=${limit}&offset=${offset}`
       );
-    }
+    };
 
     async function fetchRows(url) {
       const r = await fetch(url, {
@@ -54,18 +57,20 @@ export default async function handler(req, res) {
       return { ok: r.ok, status: r.status, text };
     }
 
-    // 1) Try V2 (with counters) + desired order (like/new)
+    // 1) Try V2 (with counters) + requested order
     let used = { schema: "v2", sort: sort === "new" ? "new" : "like" };
     let r = await fetchRows(buildUrl({ v2: true, forceNewOrder: false }));
 
-    // If DB doesn't have like_count/share_count/apply_count yet,
-    // PostgREST often returns 400 with "column ... does not exist".
-    // Then fallback to V1 select and created_at sorting.
+    // 2) Fallback if DB columns not ready yet
     if (!r.ok) {
       const t = (r.text || "").toLowerCase();
       const looksLikeMissingCols =
         r.status === 400 &&
-        (t.includes("does not exist") || t.includes("column") || t.includes("like_count") || t.includes("share_count") || t.includes("apply_count"));
+        (t.includes("does not exist") ||
+          t.includes("column") ||
+          t.includes("like_count") ||
+          t.includes("share_count") ||
+          t.includes("apply_count"));
 
       if (looksLikeMissingCols) {
         used = { schema: "v1", sort: "new" }; // fallback uses created_at desc
@@ -79,7 +84,7 @@ export default async function handler(req, res) {
 
     const items = rows.map((row) => ({
       ...row,
-      // counters: ensure numbers exist even on v1 schema
+      // Ensure counters exist even on v1 schema
       like_count: typeof row.like_count === "number" ? row.like_count : 0,
       share_count: typeof row.share_count === "number" ? row.share_count : 0,
       apply_count: typeof row.apply_count === "number" ? row.apply_count : 0,
