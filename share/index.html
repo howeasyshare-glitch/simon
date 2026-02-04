@@ -74,7 +74,25 @@ async function api(action,body){
 }
 
 /* ---------- load share ---------- */
-const slug=new URLSearchParams(location.search).get("slug");
+const function getShareSlug() {
+  // 1) query string: /share/?slug=xxxx
+  const q = new URLSearchParams(location.search).get("slug");
+  if (q) return q;
+
+  // 2) path: /share/xxxx
+  // pathname might be "/share/xxxx" or "/share/index.html"
+  const parts = location.pathname.split("/").filter(Boolean);
+  const i = parts.indexOf("share");
+  if (i >= 0 && parts[i + 1]) return parts[i + 1];
+
+  return "";
+}
+
+const slug = getShareSlug();
+if (!slug) {
+  document.body.innerHTML = "缺少分享代碼";
+  throw new Error("Missing slug");
+} URLSearchParams(location.search).get("slug");
 if(!slug){document.body.innerHTML="缺少分享代碼";throw ""}
 
 fetch("/api/share/"+slug)
