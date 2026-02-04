@@ -1,4 +1,3 @@
-
 <!doctype html>
 <html lang="zh-Hant">
 <head>
@@ -17,6 +16,8 @@
     .actions{display:flex;gap:6px}
     .actions button{flex:1;font-size:13px;padding:6px;border-radius:6px;border:1px solid #ccc;background:#f7f7f7;cursor:pointer}
     .actions button:hover{background:#eee}
+    .actions button[disabled]{opacity:.55;cursor:not-allowed}
+    .btn-like.liked{background:#ffe9ef;border-color:#ff9db7}
   </style>
 </head>
 <body>
@@ -40,6 +41,10 @@ function getAnonId(){
 }
 const anonId = getAnonId();
 
+function likeKey(outfitId){ return `liked:${anonId}:${outfitId}`; }
+function getLiked(outfitId){ return localStorage.getItem(likeKey(outfitId)) === "1"; }
+function setLiked(outfitId, v){ localStorage.setItem(likeKey(outfitId), v ? "1" : "0"); }
+
 async function api(action, body){
   const res = await fetch("/explore/list?action=" + encodeURIComponent(action), {
     method: "POST",
@@ -51,19 +56,25 @@ async function api(action, body){
   if(!res.ok){
     throw new Error(text || ("API failed: " + res.status));
   }
-  if(!text.trim()) return { ok: true }; // handle 204/empty
+  if(!text.trim()) return { ok: true };
   try { return JSON.parse(text); } catch { return { ok: true, raw: text }; }
 }
 
 async function load(){
-  const r = await fetch("/explore/list?limit=30&sort=like");
+  // ✅ 加 ts：避免 CDN 快取造成「刷新後像沒保留」
+  const url = "/explore/list?limit=30&sort=like&ts=" + Date.now();
+  const r = await fetch(url);
   const json = await r.json();
+
   const grid = document.getElementById("grid");
   grid.innerHTML = "";
 
   (json.items || []).forEach(item => {
     const el = document.createElement("div");
     el.className = "card";
+
+    const liked = getLiked(item.id);
+
     el.innerHTML = `
       <img src="${item.image_url}" alt="">
       <div class="card-body">
@@ -73,7 +84,7 @@ async function load(){
           · ✨ <span class="apply">${item.apply_count}</span>
         </div>
         <div class="actions">
-          <button class="btn-like">Like</button>
+          <button class="btn-like ${liked ? "liked" : ""}">${liked ? "已 Like" : "Like"}</button>
           <button class="btn-share">分享</button>
           <button class="btn-apply">套用</button>
         </div>
@@ -83,39 +94,81 @@ async function load(){
     const $like = el.querySelector(".like");
     const $share = el.querySelector(".share");
     const $apply = el.querySelector(".apply");
+    const $btnLike = el.querySelector(".btn-like");
+    const $btnShare = el.querySelector(".btn-share");
+    const $btnApply = el.querySelector(".btn-apply");
 
-    el.querySelector(".btn-like").onclick = async () => {
-      $like.textContent = String(parseInt($like.textContent,10) + 1);
+    // ---- Like: toggle 去重（同一 anon_id 只會 like/unlike，不會一直+1）----
+    $btnLike.onclick = async () => {
+      $btnLike.disabled = true;
+
+      const wasLiked = getLiked(item.id);
+
+      // optimistic：先在 UI 切換
+      const nextLiked = !wasLiked;
+      setLiked(item.id, nextLiked);
+      $btnLike.classList.toggle("liked", nextLiked);
+      $btnLike.textContent = nextLiked ? "已 Like" : "Like";
+      $like.textContent = String(Math.max(parseInt($like.textContent,10) + (nextLiked ? 1 : -1), 0));
+
       try{
         const out = await api("like", { outfit_id: item.id, anon_id: anonId, toggle: true });
-        const c = out && out.counts;
-        if(c && typeof c.like_count === "number") $like.textContent = String(c.like_count);
+        // 後端若回傳 counts，就以後端為準
+        if(out && out.counts && typeof out.counts.like_count === "number"){
+          $like.textContent = String(out.counts.like_count);
+        }
+        // 後端若回傳 liked（toggle path），以後端狀態為準
+        if(typeof out.liked === "boolean"){
+          setLiked(item.id, out.liked);
+          $btnLike.classList.toggle("liked", out.liked);
+          $btnLike.textContent = out.liked ? "已 Like" : "Like";
+        }
       }catch(e){
-        $like.textContent = String(Math.max(parseInt($like.textContent,10) - 1, 0));
+        // revert
+        setLiked(item.id, wasLiked);
+        $btnLike.classList.toggle("liked", wasLiked);
+        $btnLike.textContent = wasLiked ? "已 Like" : "Like";
+        $like.textContent = String(Math.max(parseInt($like.textContent,10) + (wasLiked ? 1 : -1), 0));
         alert("Like 失敗：" + (e && e.message ? e.message : ""));
+      }finally{
+        $btnLike.disabled = false;
       }
     };
 
-    el.querySelector(".btn-share").onclick = async () => {
+    // ---- Share: 記次數OK，但加防連點（1.2s）----
+    $btnShare.onclick = async () => {
+      $btnShare.disabled = true;
+      setTimeout(()=>{ $btnShare.disabled = false; }, 1200);
+
+      // optimistic
       $share.textContent = String(parseInt($share.textContent,10) + 1);
+
       try{ await navigator.clipboard.writeText(location.origin + item.share_url); }catch(_){}
+
       try{
         const out = await api("share", { outfit_id: item.id });
-        const c = out && out.counts;
-        if(c && typeof c.share_count === "number") $share.textContent = String(c.share_count);
-        alert("已複製分享連結");
+        if(out && out.counts && typeof out.counts.share_count === "number"){
+          $share.textContent = String(out.counts.share_count);
+        }
+        // 不要每次都 alert，很吵；需要的話你再說
       }catch(e){
         $share.textContent = String(Math.max(parseInt($share.textContent,10) - 1, 0));
         alert("Share 失敗：" + (e && e.message ? e.message : ""));
       }
     };
 
-    el.querySelector(".btn-apply").onclick = async () => {
+    // ---- Apply: 記次數OK + 防連點，成功後跳回首頁 ----
+    $btnApply.onclick = async () => {
+      $btnApply.disabled = true;
+      setTimeout(()=>{ $btnApply.disabled = false; }, 1200);
+
       $apply.textContent = String(parseInt($apply.textContent,10) + 1);
+
       try{
         const out = await api("apply", { outfit_id: item.id });
-        const c = out && out.counts;
-        if(c && typeof c.apply_count === "number") $apply.textContent = String(c.apply_count);
+        if(out && out.counts && typeof out.counts.apply_count === "number"){
+          $apply.textContent = String(out.counts.apply_count);
+        }
         location.href = "/?apply=" + encodeURIComponent(item.share_slug || "");
       }catch(e){
         $apply.textContent = String(Math.max(parseInt($apply.textContent,10) - 1, 0));
@@ -126,6 +179,7 @@ async function load(){
     grid.appendChild(el);
   });
 }
+
 load();
 </script>
 
