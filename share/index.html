@@ -1,202 +1,146 @@
-
 <!doctype html>
 <html lang="zh-Hant">
 <head>
   <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <title>分享穿搭</title>
+  <title>穿搭分享</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
   <style>
-    :root{--bg:#0b0b0f;--card:#141420;--text:#fff;--muted:#b9b9c6;--pill:#232334;--btn:#ffffff;--btnText:#111;}
-    body{margin:0;background:var(--bg);color:var(--text);font-family:system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif}
-    .wrap{max-width:880px;margin:0 auto;padding:18px}
-    .card{background:var(--card);border-radius:18px;padding:14px;box-shadow:0 10px 30px rgba(0,0,0,.25)}
-    img{width:100%;border-radius:16px;display:block;background:#222}
-    h1{font-size:18px;margin:12px 0 6px}
-    .meta{white-space:pre-line;color:var(--muted);font-size:13px;margin-top:8px}
-    .pills{display:flex;flex-wrap:wrap;gap:8px;margin-top:12px}
-    .pill{background:var(--pill);border-radius:999px;padding:6px 10px;font-size:12px;color:#e9e9f5}
-    .row{display:flex;flex-wrap:wrap;gap:10px;margin-top:14px}
-    button{appearance:none;border:none;border-radius:12px;padding:10px 12px;font-weight:600;cursor:pointer}
-    .btn{background:var(--btn);color:var(--btnText)}
-    .btn2{background:transparent;color:#fff;border:1px solid rgba(255,255,255,.22)}
-    .btn:active,.btn2:active{transform:translateY(1px)}
-    .err{margin-top:12px;color:#ff8a8a;display:none}
-    .toast{position:fixed;left:50%;bottom:18px;transform:translateX(-50%);background:rgba(20,20,32,.92);
-      color:#fff;padding:10px 12px;border-radius:12px;max-width:min(560px,calc(100vw - 24px));
-      box-shadow:0 10px 30px rgba(0,0,0,.35);display:none}
-    .toast.show{display:block}
-    .small{font-size:12px;color:var(--muted);margin-top:10px}
-    a{color:#fff}
+    body{font-family:system-ui,-apple-system,BlinkMacSystemFont,sans-serif;margin:0;background:#fafafa}
+    main{max-width:960px;margin:0 auto;padding:16px}
+    img{max-width:100%;border-radius:16px}
+    .row{display:flex;gap:12px;flex-wrap:wrap;margin-top:12px}
+    .btn{padding:10px 14px;border-radius:10px;border:1px solid #ccc;background:#fff;cursor:pointer}
+    .btn.primary{background:#111;color:#fff;border-color:#111}
+    .btn.like.liked{background:#ffe9ef;border-color:#ff9db7}
+    .counts{font-size:14px;color:#555;margin-top:6px}
+    .toast{position:fixed;bottom:20px;left:50%;transform:translateX(-50%);
+      background:#111;color:#fff;padding:10px 14px;border-radius:8px;opacity:0;transition:.2s}
+    .toast.show{opacity:1}
   </style>
 </head>
 <body>
-  <div class="wrap">
-    <div class="card">
-      <img id="img" alt="AI Outfit" />
-      <h1 id="title">分享穿搭</h1>
-      <div id="meta" class="meta"></div>
-      <div id="pills" class="pills"></div>
 
-      <div class="row">
-        <button id="btnCopyLink" class="btn" type="button">複製分享連結</button>
-        <button id="btnSame" class="btn2" type="button">用同款條件生成</button>
-        <button id="btnCopySpec" class="btn2" type="button">複製條件 JSON</button>
-        <button id="btnHome" class="btn2" type="button">回首頁</button>
-      </div>
-
-      <div id="err" class="err"></div>
-      <div class="small">如果圖片載入很久，可能是網路或 Storage 權限；但你目前 API 已能回傳 image_url。</div>
-    </div>
+<main>
+  <h1 id="title">穿搭分享</h1>
+  <img id="image" src="" alt="">
+  <div class="counts">
+    ❤️ <span id="likeCount">0</span>
+    · 🔁 <span id="shareCount">0</span>
+    · ✨ <span id="applyCount">0</span>
   </div>
 
-  <div id="toast" class="toast"></div>
+  <div class="row">
+    <button id="btnLike" class="btn like">Like</button>
+    <button id="btnShare" class="btn">分享</button>
+    <button id="btnApply" class="btn primary">用同款條件生成</button>
+  </div>
+</main>
+
+<div id="toast" class="toast"></div>
 
 <script>
-  const el = (id)=>document.getElementById(id);
+/* ---------- utils ---------- */
+function toast(msg){
+  const t=document.getElementById("toast");
+  t.textContent=msg;
+  t.classList.add("show");
+  setTimeout(()=>t.classList.remove("show"),1200);
+}
 
-  function showToast(msg){
-    const t = el("toast");
-    t.textContent = String(msg || "");
-    t.classList.add("show");
-    clearTimeout(window.__toastTimer);
-    window.__toastTimer = setTimeout(()=>t.classList.remove("show"), 2200);
+function getAnonId(){
+  let id=localStorage.getItem("anon_id");
+  if(!id){
+    id=crypto.randomUUID();
+    localStorage.setItem("anon_id",id);
   }
+  return id;
+}
+const anonId=getAnonId();
 
-  function getSlug(){
-    // 1) ?slug=...
-    const qs = new URLSearchParams(location.search);
-    const s1 = (qs.get("slug") || "").trim();
-    if(s1) return s1;
+function likeKey(id){return `liked:${anonId}:${id}`}
+function getLiked(id){return localStorage.getItem(likeKey(id))==="1"}
+function setLiked(id,v){localStorage.setItem(likeKey(id),v?"1":"0")}
 
-    // 2) /share/<slug> or /share/<slug>/
-    const p = (location.pathname || "").replace(/\/+$/,"");
-    const m = p.match(/\/share\/([^\/]+)$/);
-    return (m && m[1]) ? decodeURIComponent(m[1]) : "";
-  }
+async function api(action,body){
+  const r=await fetch("/explore/list?action="+encodeURIComponent(action),{
+    method:"POST",
+    headers:{"Content-Type":"application/json"},
+    body:JSON.stringify(body||{})
+  });
+  const text=await r.text();
+  if(!r.ok) throw new Error(text||r.status);
+  if(!text.trim()) return {ok:true};
+  try{return JSON.parse(text)}catch{return {ok:true}}
+}
 
-  async function fetchOutfitBySlug(slug){
-    const url = `/api/share/${encodeURIComponent(slug)}`;
-    const res = await fetch(url, { cache: "no-store" });
-    const json = await res.json().catch(()=> ({}));
-    if(!res.ok) throw new Error(json?.error || `HTTP ${res.status}`);
-    return json.outfit || null;
-  }
+/* ---------- load share ---------- */
+const slug=new URLSearchParams(location.search).get("slug");
+if(!slug){document.body.innerHTML="缺少分享代碼";throw ""}
 
-  function safeText(x){
-    try{ return typeof x === "string" ? x : JSON.stringify(x); }catch(e){ return String(x); }
-  }
+fetch("/api/share/"+slug)
+  .then(r=>r.json())
+  .then(d=>{
+    const o=d.outfit;
+    window._outfit=o;
 
-  function fmt(dt){
-    try{ return new Date(dt).toLocaleString(); }catch(e){ return String(dt||""); }
-  }
+    document.getElementById("image").src=o.image_url;
+    document.getElementById("likeCount").textContent=o.like_count||0;
+    document.getElementById("shareCount").textContent=o.share_count||0;
+    document.getElementById("applyCount").textContent=o.apply_count||0;
 
-  // --- state ---
-  let SHARE_SLUG = "";
-  let OUTFIT = null;
-  let SPEC = null;
-
-  async function main(){
-    SHARE_SLUG = getSlug();
-    if(!SHARE_SLUG){
-      el("err").style.display="block";
-      el("err").textContent="缺少分享代碼（slug）。";
-      return;
-    }
-
-    try{
-      OUTFIT = await fetchOutfitBySlug(SHARE_SLUG);
-      if(!OUTFIT) throw new Error("找不到分享內容（可能未設為公開）");
-
-      const imgUrl = OUTFIT.image_url || "";
-      if(imgUrl) el("img").src = imgUrl;
-
-      SPEC = OUTFIT.spec || null;
-
-      // meta
-      const s = OUTFIT.style || {};
-      const styleLine = (s?.source_label || s?.value_label)
-        ? `風格：${[s.source_label, s.value_label, s.detail_label].filter(Boolean).join(" / ")}`
-        : (Object.keys(s||{}).length ? `風格：${safeText(s)}` : "");
-
-      el("meta").textContent = [
-        OUTFIT.created_at ? ("生成時間：" + fmt(OUTFIT.created_at)) : "",
-        styleLine
-      ].filter(Boolean).join("\n");
-
-      // pills
-      const pills = [];
-      if(s?.source_label) pills.push(s.source_label);
-      if(s?.value_label) pills.push(s.value_label);
-      if(s?.detail_label) pills.push(s.detail_label);
-
-      if(SPEC?.uiStyleSource) pills.push(SPEC.uiStyleSource === "celebrity" ? "名人靈感" : SPEC.uiStyleSource);
-      if(SPEC?.uiStyleValue) pills.push(SPEC.uiStyleValue);
-      if(SPEC?.styleId) pills.push(SPEC.styleId);
-      if(SPEC?.paletteId) pills.push("色系：" + SPEC.paletteId);
-      if(typeof SPEC?.temp === "number") pills.push("溫度：" + SPEC.temp + "°C");
-
-      el("pills").innerHTML = pills.slice(0, 12).map(x => `<span class="pill">${String(x)}</span>`).join("");
-
-    }catch(e){
-      el("err").style.display="block";
-      el("err").textContent="載入失敗：" + (e?.message || String(e));
-    }
-  }
-
-  // --- buttons (fix iOS reading list issue: never navigate) ---
-  el("btnCopyLink").addEventListener("click", async (ev)=>{
-    ev.preventDefault(); ev.stopPropagation();
-    const url = `${location.origin}/share/${encodeURIComponent(SHARE_SLUG)}`;
-    try{
-      await navigator.clipboard.writeText(url);
-      showToast("已複製分享連結 ✅");
-    }catch(e){
-      window.prompt("請複製這個連結：", url);
+    if(getLiked(o.id)){
+      document.getElementById("btnLike").classList.add("liked");
+      document.getElementById("btnLike").textContent="已 Like";
     }
   });
 
-  el("btnCopySpec").addEventListener("click", async (ev)=>{
-    ev.preventDefault(); ev.stopPropagation();
-    const txt = SPEC ? JSON.stringify(SPEC, null, 2) : "{}";
-    try{
-      await navigator.clipboard.writeText(txt);
-      showToast("已複製條件 JSON ✅");
-    }catch(e){
-      window.prompt("請複製這段 JSON：", txt);
-    }
-  });
+/* ---------- actions ---------- */
+const btnLike=document.getElementById("btnLike");
+btnLike.onclick=async()=>{
+  const o=window._outfit;
+  const was=getLiked(o.id);
+  const next=!was;
 
-  // Use same conditions to generate: redirect back to home with prefill=base64url(JSON)
-  function toBase64Url(obj){
-    try{
-      const json = JSON.stringify(obj || {});
-      const bytes = new TextEncoder().encode(json);
-      let bin = "";
-      for (const b of bytes) bin += String.fromCharCode(b);
-      return btoa(bin).replace(/\+/g,'-').replace(/\//g,'_').replace(/=+$/,'');
-    }catch(e){
-      return "";
+  setLiked(o.id,next);
+  btnLike.classList.toggle("liked",next);
+  btnLike.textContent=next?"已 Like":"Like";
+  document.getElementById("likeCount").textContent=
+    Math.max(parseInt(document.getElementById("likeCount").textContent,10)+(next?1:-1),0);
+
+  try{
+    const out=await api("like",{outfit_id:o.id,anon_id:anonId,toggle:true});
+    if(out.counts && typeof out.counts.like_count==="number"){
+      document.getElementById("likeCount").textContent=out.counts.like_count;
     }
+  }catch(e){
+    setLiked(o.id,was);
+    btnLike.classList.toggle("liked",was);
+    btnLike.textContent=was?"已 Like":"Like";
+    toast("Like 失敗");
   }
+};
 
-  el("btnSame").addEventListener("click", (ev)=>{
-    ev.preventDefault(); ev.stopPropagation();
-    if(!SPEC){
-      showToast("沒有可用的條件資料");
-      return;
-    }
-    const q = new URLSearchParams(location.search);
-    q.set("prefill", toBase64Url(SPEC));
-    // 回首頁（保留 query）
-    location.href = "/?" + q.toString();
-  });
+document.getElementById("btnShare").onclick=async()=>{
+  const o=window._outfit;
+  document.getElementById("shareCount").textContent=
+    parseInt(document.getElementById("shareCount").textContent,10)+1;
+  try{
+    await navigator.clipboard.writeText(location.href);
+    await api("share",{outfit_id:o.id});
+    toast("已複製分享連結");
+  }catch(e){toast("分享失敗")}
+};
 
-  el("btnHome").addEventListener("click", (ev)=>{
-    ev.preventDefault(); ev.stopPropagation();
-    location.href = "/";
-  });
-
-  main();
+document.getElementById("btnApply").onclick=async()=>{
+  const o=window._outfit;
+  document.getElementById("applyCount").textContent=
+    parseInt(document.getElementById("applyCount").textContent,10)+1;
+  try{
+    await api("apply",{outfit_id:o.id});
+    location.href="/?apply="+encodeURIComponent(slug);
+  }catch(e){toast("套用失敗")}
+};
 </script>
+
 </body>
 </html>
