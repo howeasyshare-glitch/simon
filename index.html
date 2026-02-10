@@ -4,7 +4,6 @@
 
 
 
-
 <!DOCTYPE html>
 <html lang="zh-Hant">
 <head>
@@ -792,9 +791,7 @@ body.is-mobile #mobile-actionbar{ display:block !important; }
     </div>
   </div>
 
-  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-
-  <script>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2">
 // --- helpers injected (v5) ---
 function scrollToEl(id){
   try{
@@ -1564,29 +1561,14 @@ function bindStyleCards() {
         // Already saved? avoid duplicates
         if(flowState?.serverShareSlug) return;
 
-        // ✅ 永遠從畫面上的圖片抓 dataURL（避免拿到空字串 / 被截斷 / 非 dataURL）
-        const imgEl = document.getElementById("outfit-image");
-        const imageDataUrl = imgEl?.src || "";
-
-        // 防呆：必須是 data:image/... 才能轉 File
-        if(!imageDataUrl || !String(imageDataUrl).startsWith("data:image/")){
-          throw new Error("找不到可上傳的 base64 圖片（outfit-image.src 不是 data:image/...）");
-        }
-        const _parts = String(imageDataUrl).split(",");
-        if(!_parts[1] || _parts[1].length < 1000){
-          throw new Error("base64 內容太短，疑似空圖或被截斷，取消上傳");
-        }
-
-        const mime = imgResp?.mime || (String(_parts[0]).match(/data:(.*?);/)||[])[1] || "image/png";
-        const ext = (mime==="image/webp") ? "webp" : (mime==="image/jpeg" ? "jpg" : "png");
+        const mime = imgResp?.mime || "image/png";
+        const imgDataUrl = imgResp?.image || document.getElementById("outfit-image")?.src || "";
+        if(!imgDataUrl) return;
 
         const outfitId = (crypto?.randomUUID ? crypto.randomUUID() : String(Date.now()));
-        const image_path = `${userId}/${outfitId}.${ext}`;
+        const image_path = `${userId}/${outfitId}.png`;
 
-        // debug：你測完就可刪
-        console.log("[upload] imageDataUrl length =", String(imageDataUrl).length);
-
-        const file = dataUrlToFile(imageDataUrl, `outfit.${ext}`);
+        const file = dataUrlToFile(imgDataUrl, "outfit.png");
 
         const up = await osSupabase.storage.from("outfits").upload(image_path, file, {
           contentType: mime,
@@ -2049,7 +2031,7 @@ info.innerHTML = `<div class="mini-title">${escapeHtml(title)}</div><div class="
         flowState.currentOutfitId=item.id;
         syncFavButtonUI();
 
-        scrollToElWithOffset("anchor-preview", 12, "smooth");
+        scrollToEl("anchor-preview","smooth","start");
       }catch(e){ console.warn("applySavedOutfit failed",e); }
     }
 
@@ -2970,10 +2952,6 @@ optionsRoot.innerHTML = list.map(v=>{
     }
   }
 
-  // Expose for public-copy updates (so applyPublicCopy can rerender options immediately)
-  window.updateStyleSourceOptions = render;
-  window.__refreshStyleSourceUI = render;
-
   function randomPick(){
     const source = Math.random() < 0.5 ? "scene" : "celebrity";
     setSeg(source);
@@ -3076,7 +3054,7 @@ optionsRoot.innerHTML = list.map(v=>{
 
   async function fetchPublicCopy(){
     try{
-      const r = await fetch("/api/copy?name=public&ts=" + Date.now(), { cache: "no-store" });
+      const r = await fetch("/api/public-copy?ts=" + Date.now(), { cache: "no-store" });
       const t = await r.text();
       let j = {};
       try{ j = t ? JSON.parse(t) : {}; } catch { j = { raw: t }; }
@@ -3231,6 +3209,70 @@ document.getElementById("login-btn").addEventListener("click", loginGoogle);
         updateResultActions();
         showToast("已載入分享條件", 1600);
       }
+
+
+      // Phase 4-1: support /?apply=<share_slug> to prefill from a shared outfit
+      async function applyFromShareSlug(slug){
+        try{
+          if(!slug) return false;
+          const r = await fetch(`/api/share/${encodeURIComponent(slug)}?ts=${Date.now()}`);
+          if(!r.ok){
+            console.warn("applyFromShareSlug fetch failed", r.status);
+            return false;
+          }
+          const j = await r.json().catch(()=>null);
+          const outfit = j?.outfit || j?.data || j?.item || j?.row || j;
+          const payload = outfit?.payload || outfit?.payload_json || outfit?.ui_payload || null;
+          const spec = outfit?.spec || outfit?.spec_json || null;
+          const products = outfit?.products || outfit?.products_json || null;
+
+          if(!payload){
+            console.warn("applyFromShareSlug: no payload in response", j);
+            return false;
+          }
+
+          applyPayloadToForm(payload);
+          try{ updateStyleUIForAudience(); }catch{}
+          flowState.payload = payload;
+          setResultMeta(payload);
+
+          if(spec){
+            flowState.spec = { ...spec, items: spec.items || [], summary: spec.summary || "" };
+            renderOutfitSummary(flowState.spec.summary || "");
+          }else{
+            flowState.spec = null;
+            renderOutfitSummary(null);
+          }
+
+          if(Array.isArray(products)){
+            flowState.products = products;
+            if(flowState.products?.length) renderProductsGrouped(flowState.products);
+          }
+
+          updateResultActions();
+          showToast("已套用分享穿搭（可直接生成）", 1800);
+          return true;
+        }catch(e){
+          console.warn("applyFromShareSlug failed", e);
+          return false;
+        }
+      }
+
+      // run apply flow if present
+      const applySlug = new URLSearchParams(location.search).get("apply");
+      if(applySlug){
+        const ok = await applyFromShareSlug(applySlug);
+        // clean URL (remove apply=...) to avoid re-applying on refresh
+        try{
+          const u = new URL(location.href);
+          u.searchParams.delete("apply");
+          history.replaceState({}, "", u.pathname + (u.search ? u.search : "") + u.hash);
+        }catch{}
+        if(ok){
+          try{ scrollToElWithOffset("anchor-form", 12, "smooth"); }catch{}
+        }
+      }
+
 
       setGenerateStep("idle");
       setProgress(0);
