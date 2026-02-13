@@ -1,0 +1,68 @@
+
+<!-- ===== Lightweight Landing Section (drop into your homepage) ===== -->
+<section id="landing" style="margin:10px 0 16px;">
+  <style>
+    .lz{border-radius:18px;border:1px solid #e5e7eb;background:#fff;box-shadow:0 14px 34px rgba(0,0,0,.06);overflow:hidden}
+    .lzTop{display:grid;grid-template-columns:1.2fr .8fr}
+    @media (max-width: 920px){.lzTop{grid-template-columns:1fr}}
+    .lzCarousel{position:relative;background:#0f1117}
+    .lzCarousel img{width:100%;height:100%;object-fit:cover;display:block;aspect-ratio:16/10}
+    .lzDots{position:absolute;left:12px;bottom:12px;display:flex;gap:8px}
+    .lzDots button{width:10px;height:10px;border-radius:999px;border:1px solid rgba(255,255,255,.35);background:rgba(255,255,255,.20);cursor:pointer}
+    .lzDots button.active{background:#fff}
+    .lzRight{padding:16px}
+    .lzTitle{margin:0 0 6px;font-size:18px;font-weight:900}
+    .lzDesc{margin:0;color:#6b7280;font-size:13px;line-height:1.5}
+    .lzActions{display:flex;gap:10px;flex-wrap:wrap;margin-top:12px}
+    .lzBtn{border:none;border-radius:999px;padding:10px 14px;font-weight:900;cursor:pointer}
+    .lzPrimary{background:#111;color:#fff}
+    .lzGhost{background:#fff;border:1px solid #e5e7eb}
+    .lzMini{margin-top:10px;color:#6b7280;font-size:12px}
+  </style>
+
+  <div class="lz">
+    <div class="lzTop">
+      <div class="lzCarousel">
+        <img id="lzImg" alt="Outfit carousel"/>
+        <div class="lzDots" id="lzDots"></div>
+      </div>
+
+      <div class="lzRight">
+        <h2 class="lzTitle" id="lzTitle">一鍵生成你的穿搭靈感</h2>
+        <p class="lzDesc" id="lzDesc">挑風格、輸入身形，幾秒內看到穿搭示意與可買商品。</p>
+
+        <div class="lzActions">
+          <button class="lzBtn lzPrimary" id="lzStart">立即開始</button>
+          <button class="lzBtn lzGhost" id="lzLogin">登入 / 註冊</button>
+        </div>
+
+        <div class="lzMini">不想登入也能先試；登入可保存穿搭與分享。</div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const images = ["/assets/landing/1.jpg","/assets/landing/2.jpg","/assets/landing/3.jpg","/assets/landing/4.jpg"];
+    const imgEl = document.getElementById("lzImg");
+    const dotsEl = document.getElementById("lzDots");
+    let idx = 0, timer = null;
+
+    function renderDots(){
+      dotsEl.innerHTML = images.map((_, i)=>`<button data-i="${i}" class="${i===idx?'active':''}" aria-label="slide ${i+1}"></button>`).join("");
+      [...dotsEl.querySelectorAll("button")].forEach(b=>{
+        b.addEventListener("click", ()=>{ idx = Number(b.dataset.i||0); show(); restart(); });
+      });
+    }
+    function show(){ if(!images.length) return; imgEl.src = images[idx]; renderDots(); }
+    function restart(){ if(timer) clearInterval(timer); timer=setInterval(()=>{ idx=(idx+1)%images.length; show(); }, 4500); }
+
+    document.getElementById("lzStart").addEventListener("click", ()=>{
+      const target = document.getElementById("conditions") || document.querySelector("[data-section='conditions']");
+      if(target) target.scrollIntoView({ behavior:"smooth", block:"start" });
+      else location.href = "/#conditions";
+    });
+    document.getElementById("lzLogin").addEventListener("click", ()=>{ location.href="/body-test.html"; });
+
+    show(); restart();
+  </script>
+</section>
