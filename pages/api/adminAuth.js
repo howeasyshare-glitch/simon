@@ -1,4 +1,4 @@
-import { supabaseServer } from "./supabaseServer";
+import { supabaseServer } from "../../lib/supabaseServer";
 
 // 用 email 白名單當 admin（建議放 env：ADMIN_EMAILS="a@x.com,b@y.com"）
 function getAdminEmailWhitelist() {
