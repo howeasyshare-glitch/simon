@@ -1,4 +1,4 @@
-import { supabaseServer } from "../lib/supabaseServer";
+import { supabaseServer } from "../../lib/supabaseServer";
 
 export const config = { runtime: "nodejs" };
 
