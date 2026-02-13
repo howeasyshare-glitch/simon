@@ -1,0 +1,3299 @@
+
+
+
+
+
+
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="UTF-8" />
+  <title>findoutfit</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@300;400;500;700&display=swap" rel="stylesheet">
+
+  <style>
+
+    :root{
+      --bg:#FBF7F1;         /* warm cream */
+      --card:#FFFFFF;
+      --text:#221F1A;       /* cocoa ink */
+      --muted:#6B625B;
+      --line:#E6D9CC;
+      --brand:#2C241F;      /* espresso primary */
+      --accent:#C96A5A;     /* terracotta accent */
+      --ok:#16a34a;
+      --warn:#ef4444;
+      --shadow:0 12px 30px rgba(44,36,31,.10);
+      --r-lg:18px;
+      --r-md:14px;
+      --r-sm:10px;
+      --safe-b: env(safe-area-inset-bottom, 0px);
+      --safe-t: env(safe-area-inset-top, 0px);
+    }
+    *{box-sizing:border-box}
+    body{
+      margin:0;
+      font-family:"Noto Sans TC",system-ui,-apple-system,Segoe UI,Roboto,Helvetica,Arial,sans-serif;
+      color:var(--text);
+      background: radial-gradient(circle at top, #FFF3E8 0, var(--bg) 45%, var(--bg) 100%);
+    }
+    a{ color:inherit }
+    .skel { position: relative; overflow: hidden; background: #f3f4f6; border-radius: 14px; border: 1px solid #eef0f3; }
+    .skel::after{ content:""; position:absolute; inset:0; background: linear-gradient(90deg, rgba(255,255,255,0) 0%, rgba(255,255,255,.65) 50%, rgba(255,255,255,0) 100%); transform:translateX(-120%); animation: skelmove 1.15s infinite; }
+    @keyframes skelmove { 0%{transform:translateX(-120%)} 100%{transform:translateX(120%)} }
+    .form-disabled { pointer-events:none; opacity:.6; }
+    .img-skel-wrap{ width:100%; height:100%; padding:14px; display:flex; flex-direction:column; gap:12px; justify-content:flex-start; }
+    .img-skel-line{ height:14px; border-radius:999px }
+    .img-skel-block{ height:100%; min-height:220px; border-radius:18px; flex: 1 1 auto; }
+    .products-skel{ display:flex; flex-direction:column; gap:10px; }
+    .products-skel .row{ display:grid; grid-template-columns:60px 1fr; gap:10px; }
+    .products-skel .thumb{ width:60px; height:60px; border-radius:12px }
+    .products-skel .t1{ height:14px; border-radius:999px; width:75% }
+    .products-skel .t2{ height:12px; border-radius:999px; width:45%; margin-top:8px }
+    .page{max-width:1280px;margin:0 auto;padding:16px 14px 40px}
+
+    /* Header re-layout (1236) */
+    header{ display:grid; grid-template-columns: 1fr auto; gap:12px; align-items:center; padding:12px 10px 14px; }
+    .brand{ display:flex; gap:10px; align-items:center; min-width:0; }
+    .brand-dot{ width:28px;height:28px;border-radius:999px; background: linear-gradient(135deg, var(--brand), var(--brand)); box-shadow:0 10px 20px rgba(0,0,0,.2); flex:0 0 auto; }
+    .brand-text{min-width:0}
+    .title{font-size:20px;font-weight:900;letter-spacing:.02em; line-height:1.15}
+    .subtitle{color:var(--muted);font-size:12px;margin-top:6px; line-height:1.35; max-width: 520px}
+    .top-right{ display:flex; align-items:center; gap:10px; justify-content:flex-end; flex-wrap:wrap; }
+    .auth-chip{ display:flex; flex-direction:column; align-items:flex-end; gap:2px; padding:8px 10px; border-radius:14px; border:1px solid #eef0f3; background:rgba(255,255,255,.75); backdrop-filter: blur(8px); box-shadow: 0 10px 22px rgba(0,0,0,.06); max-width:min(56vw, 320px); }
+    .auth-chip .line1{ font-size:12px; color:var(--muted); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; width:100%; text-align:right; }
+    .auth-chip .line2{ font-size:12px; color:var(--muted); }
+    .auth-chip b{color:var(--text)}
+    .btn{ border:none;cursor:pointer;border-radius:999px; padding:10px 14px;font-weight:900;background:var(--brand);color:#fff; box-shadow:0 10px 20px rgba(0,0,0,.18); transition:transform .1s ease, opacity .1s ease;white-space:nowrap; }
+    .btn:active{transform:translateY(1px);opacity:.92}
+    .btn.secondary{background:#fff;color:var(--text);border:1px solid var(--line);box-shadow:none;font-weight:900}
+
+    .layout{ display:grid; grid-template-columns: minmax(320px, 0.9fr) minmax(0, 1.6fr); gap:16px; align-items:start; }
+    @media (max-width: 980px){
+    .layout{grid-template-columns:1fr}
+}
+
+.card{ background:var(--card); border-radius:var(--r-lg); box-shadow:var(--shadow); border:1px solid rgba(0,0,0,.04); padding:16px; }
+    .pill{ display:inline-flex;align-items:center;gap:6px; padding:6px 10px;border-radius:999px; font-size:12px;color:var(--muted); background:#f3f4f6;border:1px solid #eef0f3; }
+    .row{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:10px}
+
+    .section-block{ padding:12px; border:1px solid var(--line); border-radius:16px; background:linear-gradient(135deg,#fff,#fafafa); margin-bottom:8px; }
+    .section-head{ display:flex;align-items:center;justify-content:space-between; gap:10px;margin-bottom:10px; }
+    .section-head .stitle{ font-weight:900; font-size:14px; color:var(--brand); display:flex; align-items:center; gap:8px; }
+    .tag{ font-size:11px; padding:4px 8px; border-radius:999px; border:1px solid #eef0f3; background:#fff; color:var(--muted); white-space:nowrap; }
+
+    .form-grid{ display:grid; grid-template-columns:1fr 1fr; gap:10px 12px; align-items:flex-start; }
+    @media (max-width: 560px){ .form-grid{grid-template-columns:1fr} }
+    label{ display:block;font-size:12px;font-weight:900; margin:0 0 6px 0;color:var(--brand); }
+    input, select{ width:100%;padding:8px 10px;border-radius:12px; border:1px solid var(--line);background:#fafafa;outline:none;font-size:14px; }
+    input:focus, select:focus{ background:#fff;border-color:var(--accent); box-shadow:0 0 0 3px rgba(201,106,90,.18); }
+
+    .slider-group{ padding:8px;border-radius:14px;border:1px solid var(--line);background:#fafafa; }
+    .slider-head{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:6px}
+    .slider-head .label{font-size:12px;font-weight:900;color:var(--brand)}
+    .value-chip{ display:inline-flex;align-items:baseline;gap:6px; padding:6px 10px;border-radius:999px;background:#fff;border:1px solid #eef0f3; font-size:12px;color:var(--muted);white-space:nowrap; }
+    .value-chip b{color:var(--brand);font-weight:900}
+    input[type="range"]{ width:100%; padding:0; border:none; background:transparent; accent-color:var(--brand); height:26px; }
+    .range-sub{display:flex;justify-content:space-between;font-size:11px;color:var(--muted);margin-top:4px}
+/* ✅ Segmented (Gender) */
+.visually-hidden{
+  position:absolute !important;
+  width:1px;height:1px;
+  padding:0;margin:-1px;
+  overflow:hidden;clip:rect(0,0,0,0);
+  white-space:nowrap;border:0;
+}
+.segmented{
+  display:flex;
+  gap:8px;
+  padding:6px;
+  border-radius:14px;
+  border:1px solid var(--line);
+  background:#fafafa;
+}
+.seg-btn{
+  flex:1;
+  border:none;
+  cursor:pointer;
+  border-radius:12px;
+  padding:9px 10px;
+  font-weight:900;
+  background:#fff;
+  color:var(--brand);
+  transition:transform .1s ease, opacity .1s ease, box-shadow .12s ease;
+  box-shadow:0 1px 0 rgba(0,0,0,.02);
+}
+.seg-btn:active{transform:translateY(1px);opacity:.94}
+.seg-btn.selected,.seg-btn.on{
+  background:var(--brand);
+  color:#fff;
+  box-shadow:0 10px 20px rgba(44,36,31,.12);
+}
+
+
+/* Age group segmented: slightly more compact */
+#agegroup-seg .seg-btn{padding:8px 10px}
+#agegroup-seg .seg-sub{font-size:11px}
+.seg-btn.on{
+  background:var(--brand) !important;
+  color:#fff !important;
+  border-color:var(--brand) !important;
+}
+.seg-btn.on *{
+  color:#fff !important;
+}
+
+
+/* ✅ Range thumb bigger (drag easier) */
+input[type="range"]{ -webkit-appearance:none; appearance:none; }
+input[type="range"]::-webkit-slider-runnable-track{
+  height:6px;border-radius:999px;background:#e5e7eb;
+}
+input[type="range"]::-webkit-slider-thumb{
+  -webkit-appearance:none; appearance:none;
+  width:22px;height:22px;border-radius:999px;
+  background:var(--brand);border:3px solid #fff;
+  margin-top:-8px;
+  box-shadow:0 4px 10px rgba(0,0,0,.18);
+}
+input[type="range"]::-moz-range-track{
+  height:6px;border-radius:999px;background:#e5e7eb;
+}
+input[type="range"]::-moz-range-thumb{
+  width:22px;height:22px;border-radius:999px;
+  background:var(--brand);border:3px solid #fff;
+  box-shadow:0 4px 10px rgba(0,0,0,.18);
+}
+
+
+    .style-grid{ display:grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap:10px; }
+    @media (max-width:560px){ .style-grid{grid-template-columns:1fr 1fr} }
+    .style-card{ border:1px solid var(--line); background:#fff; border-radius:16px; padding:12px 12px; cursor:pointer; user-select:none; transition:transform .08s ease, border-color .08s ease, box-shadow .08s ease; display:flex; flex-direction:column; gap:6px; min-height:76px; }
+    .style-card:active{transform:translateY(1px)}
+    .style-card .name{font-weight:900;font-size:14px;color:var(--brand)}
+    .style-card .desc{font-size:12px;color:var(--muted);line-height:1.4}
+    .style-card.selected{ border-color:var(--brand); box-shadow:0 10px 20px rgba(44,36,31,.12); }
+    .style-card .chip{ align-self:flex-start; font-size:11px; padding:4px 8px; border-radius:999px; border:1px solid #eef0f3; background:#f9fafb; color:var(--brand); font-weight:900; }
+
+    .toggle-list{ margin-top:10px;border:1px solid var(--line);border-radius:14px;overflow:hidden; }
+    .toggle-item{ display:flex;justify-content:space-between;align-items:center; padding:12px 12px;border-top:1px solid var(--line); }
+    .toggle-item:first-child{border-top:none}
+    .toggle-item .left{display:flex;flex-direction:column;gap:0px}
+    .toggle-item .name{font-weight:900;font-size:14px}
+    .toggle-item .desc{font-size:12px;color:var(--muted)}
+    .switch{ width:44px;height:24px;border-radius:999px;background:#e5e7eb; position:relative;cursor:pointer;flex:0 0 auto; }
+    .switch::after{ content:"";position:absolute;top:3px;left:3px;width:18px;height:18px;border-radius:999px; background:#fff;box-shadow:0 3px 8px rgba(0,0,0,.18);transition:transform .15s ease; }
+    .switch.on{background:var(--brand)}
+    .switch.on::after{transform:translateX(20px)}
+
+    .primary-wide{ width:100%; margin-top:12px; padding:14px 14px; border-radius:14px; font-size:15px; font-weight:900; background:var(--brand); color:#fff; border:none; cursor:pointer; }
+    .primary-wide:disabled{opacity:.55;cursor:default}
+
+    .hint{margin-top:10px;font-size:12px;color:var(--muted)}
+    .hint.error{color:var(--warn);font-weight:900}
+
+    .right-head{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:10px}
+    .right-head h3{margin:0;font-size:18px;font-weight:900}
+    .debug-toggle{display:flex;align-items:center;gap:8px;font-size:13px;color:var(--muted);user-select:none;cursor:pointer}
+
+    .preview-wrap{ border:1px solid var(--line); border-radius:18px; background:linear-gradient(125deg,#FFF3EC,#f9fbff); padding:12px; }
+    .preview-inner{ width:100%; max-width:450px; aspect-ratio: 9 / 16; height:auto; margin:0 auto; border-radius:16px; background:#fff; border:1px solid #f0f0f5; display:flex;align-items:center;justify-content:center; overflow:hidden;position:relative; }
+    img#outfit-image{ width:100%; height:100%; object-fit:contain; display:none; cursor: zoom-in; }
+    .placeholder{text-align:center;color:var(--muted);font-size:14px;padding:20px}
+
+    .preview-tools{ position:absolute; top:10px; right:10px; display:flex; gap:8px; z-index:5; }
+    .tool-btn{ display:inline-flex; align-items:center; gap:6px; border:1px solid rgba(229,231,235,.95); background:rgba(255,255,255,.92); padding:8px 10px; border-radius:999px; cursor:pointer; font-weight:900; font-size:12px; color:var(--brand); backdrop-filter: blur(6px); }
+    .tool-btn:disabled{opacity:.55; cursor:default}
+    .tool-btn .icon{font-size:14px}
+    .tool-btn.fav.on{ border-color:#fecaca; background:rgba(255,245,245,.92); color:#ef4444; }
+
+    .section-title{margin:14px 0 8px;display:flex;gap:8px;align-items:center}
+    .section-title .pill{font-weight:900}
+
+    .products{ border:1px solid var(--line); border-radius:18px; padding:12px;background:#fff; min-height:160px; }
+
+    .slot-group{ border:1px solid #f1f2f4; background:#fafafa; border-radius:16px; padding:10px; margin-bottom:10px; }
+    .slot-group:last-child{margin-bottom:0}
+    .slot-head{ display:flex; align-items:center; justify-content:space-between; gap:10px; margin-bottom:8px; }
+    .slot-title{ font-weight:900; color:var(--brand); font-size:14px; display:flex; align-items:center; gap:8px; }
+    .slot-count{ font-size:12px; color:var(--muted); border:1px solid #eef0f3; background:#fff; padding:4px 8px; border-radius:999px; white-space:nowrap; }
+
+    .product-item{ display:grid;grid-template-columns:60px 1fr;gap:10px;padding:10px;border-radius:14px; background:#fff;border:1px solid #f1f2f4;margin-bottom:10px; }
+    .product-item:last-child{margin-bottom:0}
+    .thumb{ width:60px;height:60px;border-radius:12px;background:#fff;border:1px solid #eee; display:flex;align-items:center;justify-content:center;overflow:hidden;color:var(--muted);font-size:12px; }
+    .thumb img{width:100%;height:100%;object-fit:cover}
+    .pname{font-weight:900;font-size:14px;margin:0 0 4px}
+    .pmeta{font-size:12px;color:var(--muted);display:flex;gap:8px;flex-wrap:wrap;margin-bottom:6px}
+    .plink{font-size:12px;color:var(--accent);text-decoration:none;font-weight:900}
+    .plink:hover{text-decoration:underline}
+
+    .statusbar{margin-top:10px;font-size:12px;color:var(--muted)}
+    .statusbar .ok{color:var(--ok);font-weight:900}
+    .statusbar .bad{color:var(--warn);font-weight:900}
+    .progress{ margin-top:8px; height:8px; border-radius:999px; background:#eef0f3; overflow:hidden; border:1px solid #e9ecf1; }
+    .progress > div{ height:100%; width:0%; background:var(--brand); transition:width .25s ease; }
+
+    .dots{ display:inline-flex; gap:3px; vertical-align:middle; margin-left:6px; }
+    .ldot{ width:5px;height:5px;border-radius:999px;background:var(--muted); opacity:.3; animation:blink 1s infinite; }
+    .ldot:nth-child(2){animation-delay:.15s}
+    .ldot:nth-child(3){animation-delay:.3s}
+    @keyframes blink{ 0%,100%{opacity:.25;transform:translateY(0)} 50%{opacity:.9;transform:translateY(-1px)} }
+
+    .shimmer{ position:relative; overflow:hidden; border-radius:16px; }
+    .shimmer::after{ content:""; position:absolute;inset:0; background:linear-gradient(90deg, rgba(255,255,255,0) 0%, rgba(255,255,255,.7) 50%, rgba(255,255,255,0) 100%); transform:translateX(-120%); animation:shimmer 1.2s infinite; }
+    @keyframes shimmer{ 0%{transform:translateX(-120%)} 100%{transform:translateX(120%)} }
+
+    .debug{ margin-top:12px;display:none; border:1px dashed #d1d5db;background:#fff;border-radius:14px; padding:10px;font-size:12px;color:var(--brand); max-height:280px;overflow:visible;white-space:pre-wrap; }
+    .debug.on{display:block}
+
+    .outfit-summary { margin-top: 14px; background: #fafafa; border: 1px solid #e5e7eb; }
+    .summary-head { display: flex; align-items: center; gap: 8px; font-weight: 900; font-size: 14px; margin-bottom: 6px; }
+    .summary-icon { font-size: 18px; }
+    .summary-title { color: var(--brand); }
+    .summary-text { font-size: 14px; line-height: 1.6; color: #374151; }
+
+    .action-row{ display:flex; gap:10px; align-items:center; margin-top:10px; flex-wrap:wrap; }
+    .mini-btn{ border:1px solid var(--line); background:#fff; color:var(--brand); padding:9px 12px; border-radius:999px; cursor:pointer; font-weight:900; font-size:13px; }
+    .mini-btn:disabled{opacity:.55; cursor:default}
+    .mini-btn.primary{ background:var(--brand); color:#fff; border-color:var(--brand); }
+    .mini-btn.danger{ background:#fff; color:#ef4444; border-color:#fecaca; }
+    .mini-hint{ font-size:12px; color:var(--muted); }
+
+    .collection-wrap{ margin-top:12px; border:1px solid var(--line); border-radius:18px; overflow:hidden; background:#fff; }
+    .tabs{ display:flex; gap:0; border-bottom:1px solid var(--line); background:#fafafa; }
+    .tab{ flex:1; padding:10px 12px; font-weight:900; font-size:13px; cursor:pointer; border:none; background:transparent; color:#6b7280; }
+    .tab.active{ color:var(--brand); background:#fff; }
+    .tabpanes{ padding:10px; }
+    .pane{ display:none; }
+    .pane.active{ display:block; }
+
+    .mini-list{ display:flex; flex-direction:column; gap:10px; }
+    .mini-card{ display:grid; grid-template-columns:68px 1fr auto; gap:10px; align-items:center; padding:10px; border:1px solid #eef0f3; border-radius:14px; background:#fafafa; }
+    .mini-thumb{ width:68px; aspect-ratio: 9/16; border-radius:12px; overflow:hidden; border:1px solid #eee; background:#fff; display:flex; align-items:center; justify-content:center; color:#9ca3af; font-size:12px; }
+    .mini-thumb img{ width:100%; height:100%; object-fit:cover; display:block; }
+    .mini-info .t{ font-weight:900; font-size:13px; margin:0 0 4px; color:var(--brand); }
+    .mini-info .m{ font-size:12px; color:#6b7280; line-height:1.35; overflow:hidden; display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical; }
+    .mini-actions{ display:flex; flex-direction:column; gap:6px; align-items:flex-end; }
+    .chip-btn{ border:1px solid #e5e7eb; background:#fff; padding:7px 10px; border-radius:999px; cursor:pointer; font-weight:900; font-size:12px; color:var(--brand); white-space:nowrap; }
+    .chip-btn.danger{ color:#ef4444; border-color:#fecaca; }
+    .mini-empty{ padding:14px; color:#6b7280; font-size:12px; background:#fff; border:1px dashed #e5e7eb; border-radius:14px; }
+
+    @media (min-width: 1024px) {
+      .layout { overflow: visible; }
+      .left-panel { position: sticky; top: 18px; align-self: flex-start; max-height: calc(100vh - 24px); overflow-y: auto; padding-right: 6px; }
+      .left-panel.card { padding: 14px; }
+      .left-panel .row { margin-bottom: 8px; }
+      .left-panel .form-grid { gap: 8px 10px; }
+      .left-panel label { margin-bottom: 4px; font-size: 12px; }
+      .left-panel input, .left-panel select { padding: 8px 10px; }
+      .left-panel .toggle-list { margin-top: 8px; }
+      .left-panel .toggle-item { padding: 10px 10px; }
+      .left-panel .sticky-generate { position: sticky; bottom: 0; padding-top: 10px; background: linear-gradient(to top, #fff 60%, rgba(255,255,255,0)); z-index: 5; }
+      .preview-inner { max-height: 70vh; }
+    }
+
+    @media (max-width: 640px){
+      .page{ padding:14px 12px calc(104px + var(--safe-b)); }
+      header{ grid-template-columns: 1fr; gap:10px; padding:10px 6px 10px; align-items:flex-start; }
+      .brand-dot{ width:24px; height:24px; }
+      .title{ font-size:18px; }
+      .subtitle{ display:none; }
+      .top-right{ width:100%; justify-content:space-between; gap:10px; }
+      .auth-chip{ flex:1 1 auto; align-items:flex-start; max-width:none; }
+      .auth-chip .line1{ text-align:left; }
+      .btn{ padding:9px 12px; font-size:13px; }
+      .card{ padding:14px; border-radius:16px; }
+      .toggle-item{ padding:12px 10px; }
+      .style-card{ min-height:72px; padding:12px; }
+      .products{ padding:10px; }
+      .product-item{ padding:10px; }
+      .mobile-actionbar{ display:block;
+  position: fixed; left: 12px; right: 12px; bottom: calc(14px + var(--safe-b)); z-index: 9999; pointer-events:none; }
+      .mobile-actionbar .primary-wide{ width:100%; height:54px; font-size:16px; border-radius:16px; box-shadow:0 18px 38px rgba(0,0,0,.18); pointer-events:auto; }
+      .left-panel .sticky-generate{ display:none; }
+      .anchor { scroll-margin-top: 12px; }
+.mobile-actionbar{display:none;}
+
+    }
+
+    .anchor { scroll-margin-top: 12px; }
+
+    .modal{ position:fixed; inset:0; z-index: 10000; background: rgba(0,0,0,.72); display:none; align-items:center; justify-content:center; padding: 14px; }
+    .modal.on{ display:flex; }
+    .modal-card{ width: min(520px, 100%); aspect-ratio: 9/16; background:var(--brand); border-radius: 18px; overflow:hidden; position:relative; box-shadow: 0 30px 70px rgba(0,0,0,.35); }
+    .modal-card img{ width:100%; height:100%; object-fit:contain; display:block; background:#0b1020; }
+    .modal-top{ position:absolute; top:10px; left:10px; right:10px; display:flex; justify-content:space-between; gap:10px; pointer-events:none; }
+    .modal-top .m-btn{ pointer-events:auto; border:none; cursor:pointer; background: rgba(255,255,255,.12); color:#fff; padding:9px 12px; border-radius: 999px; font-weight:900; font-size:12px; backdrop-filter: blur(8px); }
+    .modal-top .m-btn:active{ transform: translateY(1px); opacity:.95; }
+
+    .status-sub{ margin-top:6px; font-size:12px; color:var(--muted); line-height:1.4; }
+    .result-meta{ display:flex; align-items:center; justify-content:space-between; gap:10px; padding:10px 12px; border:1px solid #eef0f3; background:linear-gradient(135deg,#fff,#fafafa); border-radius:16px; margin:10px 0 14px; }
+    .rm-left{ display:flex; flex-wrap:wrap; gap:8px; align-items:center; font-size:12px; color:var(--muted); line-height:1.3; }
+    .rm-left b{ color:var(--brand); }
+    .rm-dot{ opacity:.5; }
+    .rm-actions{ display:flex; gap:8px; flex:0 0 auto; }
+    .cta-row{ display:flex; gap:10px; align-items:center; margin-top:10px; flex-wrap:wrap; }
+    .toast{ position:fixed; left:50%; transform:translateX(-50%); bottom:calc(90px + var(--safe-b)); z-index:1200; background:rgba(44,36,31,.92); color:#fff; padding:10px 12px; border-radius:999px; font-size:13px; font-weight:900; box-shadow:0 18px 38px rgba(0,0,0,.22); max-width:min(92vw,520px); text-align:center; opacity:0; pointer-events:none; transition:opacity .18s ease, transform .18s ease; }
+    .toast.on{ opacity:1; transform:translateX(-50%) translateY(-2px); }
+    .newbie-tip{ margin:10px 0 6px; padding:10px 12px; border-radius:14px; border:1px solid #eef0f3; background:#fff; color:var(--muted); font-size:12px; line-height:1.5; }
+    .newbie-tip b{ color:var(--brand); }
+  
+    /* === UI fixes (2026-01) === */
+    /* Gender segmented: match style-card logic (bold, clean, consistent) */
+    .segmented{
+      display:flex;
+      gap:10px;
+      background:#fff;
+      border:1px solid var(--line);
+      border-radius:16px;
+      padding:8px;
+    }
+    .seg-btn{
+      flex:1;
+      border:1px solid transparent;
+      background:#fafafa;
+      border-radius:14px;
+      padding:9px 10px;
+      cursor:pointer;
+      display:flex;
+      flex-direction:column;
+      align-items:flex-start;
+      gap:2px;
+      transition:transform .08s ease, border-color .08s ease, box-shadow .08s ease, background .08s ease;
+    }
+    .seg-btn:active{ transform:translateY(1px); }
+    .seg-btn .seg-main{ font-weight:900; font-size:14px; color:var(--brand); }
+    .seg-btn .seg-sub{ font-weight:800; font-size:11px; color:var(--muted); letter-spacing:.02em; }
+.seg-btn.on .seg-main{ color:#fff; }
+.seg-btn.on .seg-sub{ color: rgba(255,255,255,.82); }
+
+    .seg-btn.on{
+      background:#fff;
+      border-color:var(--brand);
+      box-shadow:0 10px 20px rgba(44,36,31,.12);
+    }
+
+    /* Compact sliders (reduce height) */
+    .slider-group{
+      padding:8px;
+      border-radius:14px;
+    }
+    .slider-head{ margin-bottom:6px; }
+    .value-chip{ padding:5px 8px; font-size:12px; }
+    .range-sub{ margin-top:2px; font-size:10px; }
+
+    /* Bigger thumb + better track (override earlier range styles) */
+    input[type="range"]{
+      -webkit-appearance:none;
+      appearance:none;
+      height:28px;
+      background:transparent;
+      border:none;
+      padding:0;
+    }
+    input[type="range"]::-webkit-slider-runnable-track{
+      height:6px;
+      border-radius:999px;
+      background:#d1d5db;
+    }
+    input[type="range"]::-webkit-slider-thumb{
+      -webkit-appearance:none;
+      appearance:none;
+      width:28px;height:28px;
+      border-radius:999px;
+      background:var(--brand);
+      border:4px solid #fff;
+      box-shadow:0 10px 18px rgba(0,0,0,.18);
+      margin-top:-11px;
+    }
+    input[type="range"]::-moz-range-track{
+      height:6px;border-radius:999px;background:#d1d5db;
+    }
+    input[type="range"]::-moz-range-thumb{
+      width:28px;height:28px;border-radius:999px;
+      background:var(--brand);border:4px solid #fff;
+      box-shadow:0 10px 18px rgba(0,0,0,.18);
+    }
+
+    /* Hide admin-only helper text under accessories */
+    .toggle-item .desc{ display:none !important; }
+
+ 
+/* ✅ Force desktop/mobile behavior via JS class (prevents wrong breakpoint) */
+body.is-desktop .layout{ grid-template-columns: minmax(320px, 0.9fr) minmax(0, 1.6fr); }
+body.is-desktop #mobile-actionbar{ display:none !important; }
+body.is-mobile .layout{ grid-template-columns: 1fr; }
+body.is-mobile #mobile-actionbar{ display:block !important; }
+ 
+
+  .ghost-btn{border:1px solid rgba(0,0,0,.12); background:transparent; border-radius:12px; padding:10px 12px; font-weight:600;}
+  .ghost-btn:disabled{opacity:.5;}
+
+/* ===== UI polish: meta chips (result + favorites/recent) ===== */
+.meta-chip{
+  font-size:11px;
+  line-height:1.25;
+  padding:4px 10px;
+  border-radius:999px;
+  border:1px solid #e5e7eb;
+  background:#f3f4f6;
+  color:#111;
+  display:inline-flex;
+  align-items:center;
+  gap:6px;
+  white-space:normal; /* allow wrap */
+}
+.meta-chip b{font-weight:900}
+#result-meta .meta-chip{ margin:0 6px 6px 0; }
+.mini-meta{ display:flex; flex-wrap:wrap; gap:6px; margin-top:6px; }
+.mini-meta .meta-chip{ margin:0; }
+.mini-title{ font-size:13px; line-height:1.25; margin:0 0 4px; }
+.mini-desc{ font-size:12px; line-height:1.35; margin-top:4px; color:#374151; }
+.mini-card{ align-items:flex-start; }
+.mini-info{ min-width:0; }
+.mini-title, .mini-desc{ overflow-wrap:anywhere; }
+
+</style>
+</head>
+
+<body>
+  <div class="page">
+    <header>
+      <div class="brand">
+        <div class="brand-dot" aria-hidden="true"></div>
+        <div class="brand-text">
+          <div class="title" id="copy-brand-title">findoutfit</div>
+          <div class="subtitle" id="copy-brand-subtitle">輸入條件→ outfit生成 → 商品推薦</div>
+        </div>
+      </div>
+
+      <div class="top-right">
+        <div class="auth-chip" aria-label="登入與點數">
+          <div class="line1" id="login-status">未登入</div>
+          <div class="line2">點數：<b><span id="credits">—</span></b> <span id="auth-hint" style="margin-left:6px;"></span></div>
+        </div>
+        <button id="login-btn" class="btn">Google 登入</button>
+        <button id="logout-btn" class="btn secondary" style="display:none;">登出</button>
+      </div>
+    </header>
+
+    <main class="layout">
+      <section class="card left-panel" id="left-panel">
+        <div class="row">
+          <h3 style="margin:0"><span id="copy-left-title">穿搭條件</span></h3>
+          <span class="pill">扣 1 點 / 次</span>
+        </div>
+
+        <div class="section-block">
+  <div class="section-head">
+    <div class="stitle">① 基本資料 </div>
+  </div>
+
+  <div class="form-grid">
+    <div class="seg-group">
+      <label>性別</label>
+      <div class="segmented" id="gender-seg" role="radiogroup" aria-label="性別">
+        <button type="button" class="seg-btn" data-value="female" role="radio" aria-checked="true">女</button>
+        <button type="button" class="seg-btn" data-value="male" role="radio" aria-checked="false">男</button>
+        <button type="button" class="seg-btn" data-value="neutral" role="radio" aria-checked="false">中性</button>
+      </div>
+      <input type="hidden" id="gender" value="female" />
+    </div>
+
+    <div class="seg-group">
+      <label>類別</label>
+      <div class="segmented agegroup-seg" id="agegroup-seg" role="radiogroup" aria-label="類別">
+        <button type="button" class="seg-btn" data-value="adult" role="radio" aria-checked="true">
+          <div class="seg-title">成人</div>
+          <div class="seg-sub">13–70</div>
+        </button>
+        <button type="button" class="seg-btn" data-value="kids" role="radio" aria-checked="false">
+          <div class="seg-title">童裝</div>
+          <div class="seg-sub">4–12</div>
+        </button>
+      </div>
+      <input type="hidden" id="ageGroup" value="adult" />
+    </div>
+
+    <div class="slider-group" style="grid-column:1/-1">
+      <div class="slider-head">
+        <div class="label">年齡</div>
+        <div class="value-chip"><b id="age-val">25</b> 歲</div>
+      </div>
+      <input id="age" type="range" min="13" max="70" step="1" value="25" aria-label="年齡" />
+      <div class="range-sub"><span id="age-min">13</span><span id="age-max">70</span></div>
+    </div>
+<div class="slider-group">
+      <div class="slider-head">
+        <div class="label">身高</div>
+        <div class="value-chip"><b id="height-val">165</b> cm</div>
+      </div>
+      <input id="height" type="range" min="140" max="200" step="1" value="165" aria-label="身高" />
+      <div class="range-sub"><span id="height-min">140</span><span id="height-max">200</span></div>
+    </div>
+
+    <div class="slider-group">
+      <div class="slider-head">
+        <div class="label">體重</div>
+        <div class="value-chip"><b id="weight-val">55</b> kg</div>
+      </div>
+      <input id="weight" type="range" min="35" max="120" step="1" value="55" aria-label="體重" />
+      <div class="range-sub"><span id="weight-min">35</span><span id="weight-max">120</span></div>
+    </div>
+
+    <div class="slider-group" style="grid-column:1/-1">
+      <div class="slider-head">
+        <div class="label">溫度</div>
+        <div class="value-chip"><b id="temp-val">22</b> °C</div>
+      </div>
+      <input id="temp" type="range" min="0" max="35" step="1" value="22" aria-label="溫度" />
+      <div class="range-sub"><span>0</span><span>35</span></div>
+
+      <div class="cta-row">
+        <button class="mini-btn" id="cta-products" style="display:none;" type="button">看商品 ↓</button>
+        <div class="mini-hint" id="cta-hint" style="display:none;"></div>
+      </div>
+    </div>
+  </div>
+</div><div class="section-block">
+          <div class="section-head">
+            <div class="stitle">② 風格</div>
+          </div>
+
+          <!-- 風格類型（互斥） -->
+          <div class="segmented" id="style-source-seg" role="tablist" aria-label="風格">
+            <button type="button" class="seg-btn on" data-source="scene" role="tab" aria-selected="true">
+              <div class="seg-main">穿搭情境</div>
+              <div class="seg-sub">休閒 / 上班 / 約會...</div>
+            </button>
+            <button type="button" class="seg-btn" data-source="celebrity" role="tab" aria-selected="false">
+              <div class="seg-main">名人靈感</div>
+              <div class="seg-sub">GD / Jennie / Lisa...</div>
+            </button>
+          </div>
+
+          <!-- 第二層選項（依上方切換） -->
+          <!-- ✅ 第二層不捲動：移除 max-height，讓容器隨內容自然長高，避免卡片溢出壓到下方按鈕 -->
+          <div class="style-grid" id="style-source-options" style="margin-top:10px;"></div>
+
+          <!-- 隨機一下（獨立主行為） -->
+          <div style="margin-top:10px; display:flex; gap:10px;">
+            <button class="primary-wide" id="style-random-btn" type="button" style="flex:1;">隨機一下</button>
+</div>
+
+          <!-- 已選預覽（UI-only） -->
+          <div id="style-preview" class="muted" style="margin-top:8px; font-size:12px; opacity:.85;"></div>
+
+
+          <!-- UI 狀態（未來可映射到 payload） -->
+          <input type="hidden" id="uiStyleSource" value="scene" />
+          <input type="hidden" id="uiStyleValue" value="" />
+
+          <!-- 保留既有風格/變體欄位（隱藏），避免破壞既有流程 -->
+          <div style="display:none;">
+            <div class="style-grid" id="style-grid">
+            <div class="style-card selected" data-style="casual">
+<div class="name">休閒 <span class="en">Casual</span></div>
+              <div class="desc">舒服、日常、好搭配</div>
+            </div>
+            <div class="style-card" data-style="minimal">
+<div class="name">極簡 <span class="en">Minimal</span></div>
+              <div class="desc">乾淨俐落、低彩度</div>
+            </div>
+            <div class="style-card" data-style="street">
+<div class="name">街頭 <span class="en">Street</span></div>
+              <div class="desc">層次、比例、個性</div>
+            </div>
+            <div class="style-card" data-style="sporty">
+<div class="name">運動 <span class="en">Sporty</span></div>
+              <div class="desc">機能、輕鬆、好活動</div>
+            </div>
+            <div class="style-card" data-style="smart" style="grid-column:1/-1">
+<div class="name">Smart Casual <span class="en">Smart</span></div>
+              <div class="desc">正式一點但不拘謹</div>
+            </div>
+          </div>
+
+          <div style="margin-top:10px">
+            <label>風格變體（品牌 / 名人）</label>
+            <select id="styleVariant">
+              <option value="">（不使用變體）</option>
+              <optgroup label="品牌">
+                <option value="brand-uniqlo">UNIQLO（日系基本）</option>
+                <option value="brand-muji">MUJI（生活極簡）</option>
+                <option value="brand-cos">COS（結構極簡）</option>
+                <option value="brand-nike-tech">Nike Tech（機能運動）</option>
+                <option value="brand-ader-error">Ader Error（韓系街頭）</option>
+              </optgroup>
+              <optgroup label="名人（風格靈感，不模仿臉）">
+                <option value="celeb-iu-casual">IU（韓系清新）</option>
+                <option value="celeb-jennie-minimal">Jennie（極簡辣）</option>
+                <option value="celeb-gd-street">G-Dragon（街頭層次）</option>
+                <option value="celeb-lisa-sporty">Lisa（舞者運動）</option>
+              </optgroup>
+            </select>
+          </div>
+
+          <input type="hidden" id="style" value="casual" />
+          </div>
+        </div>
+<div class="section-block" style="margin-bottom:0">
+          <div class="section-head">
+            <div class="stitle">③ 配件 </div>
+          </div>
+
+          <div class="toggle-list" style="margin-top:0">
+            <div class="toggle-item">
+              <div class="left">
+                <div class="name">包包</div>
+                
+              </div>
+              <div class="switch" id="sw-bag" role="switch" aria-checked="false"></div>
+            </div>
+            <div class="toggle-item">
+              <div class="left">
+                <div class="name">帽子</div>
+                
+              </div>
+              <div class="switch" id="sw-hat" role="switch" aria-checked="false"></div>
+            </div>
+            <div class="toggle-item">
+              <div class="left">
+                <div class="name">外套</div>
+                
+              </div>
+              <div class="switch" id="sw-coat" role="switch" aria-checked="false"></div>
+            </div>
+          </div>
+        </div>
+
+        <div class="newbie-tip" id="newbie-tip" style="display:none;">首次使用：按下 <b>「產生穿搭圖」</b> 後會自動跳到右側結果（示意圖 → 商品）。</div>
+
+        <div class="sticky-generate">
+          <button id="go-btn" class="primary-wide">產生穿搭圖</button>
+        </div>
+
+        <div class="hint" id="form-hint"></div>
+        <div class="hint error" id="error-hint" style="display:none;"></div>
+      </section>
+
+      <section class="card">
+        <div class="right-head">
+          <h3 id="copy-right-title">AI 穿搭示意圖 & 類似商品</h3>
+          <div class="debug-toggle" id="debug-toggle">
+            <div class="switch" id="sw-debug" aria-checked="false"></div>
+            <div>Debug</div>
+          </div>
+        </div>
+
+        <div class="result-meta" id="result-meta" style="display:none;">
+          <div class="rm-left">
+            <span id="result-time">—</span><span class="rm-dot">•</span>
+            <span id="result-summaryline">—</span>
+          </div>
+          <div class="rm-actions">
+            <button class="mini-btn" id="copy-spec-btn" disabled>一鍵複製 Outfit Spec</button>
+            <button class="mini-btn" id="share-btn" disabled>分享</button>
+          </div>
+        </div>
+        <div class="preview-wrap anchor" id="anchor-preview">
+          <div class="preview-inner" id="preview-box">
+            <div class="preview-tools">
+              <button class="tool-btn" id="btn-share-top" title="分享" type="button">
+                <span class="icon">↗</span> 分享
+              </button>
+              <button class="tool-btn fav" id="btn-fav" title="收藏/取消收藏" type="button" disabled>
+                <span class="icon" id="fav-icon">♡</span>
+                <span id="fav-text">收藏</span>
+              </button>
+            </div>
+
+            <div id="img-skeleton" style="display:none;width:100%;height:100%;">
+              <div class="img-skel-wrap">
+                <div class="skel img-skel-line" style="width:68%"></div>
+                <div class="skel img-skel-line" style="width:52%"></div>
+                <div class="skel img-skel-block"></div>
+              </div>
+            </div>
+
+            <img id="outfit-image" alt="Outfit preview" />
+            <div class="placeholder" id="img-placeholder">尚未產生示意圖</div>
+          </div>
+
+          <div class="anchor" id="anchor-status"></div>
+
+          <div class="statusbar" id="statusbar">
+            狀態：<span id="status-text">等待操作</span>
+            <div class="status-sub" id="status-sub">按下左側按鈕開始。</div>
+            <span id="status-dots" style="display:none">
+              <span class="dots"><span class="ldot"></span><span class="ldot"></span><span class="ldot"></span></span>
+            </span>
+            <div class="progress"><div id="progress-bar"></div></div>
+
+            <div class="action-row" id="retry-row" style="display:none;">
+              <button class="mini-btn primary" id="retry-btn" type="button">重試目前步驟</button>
+              <button class="mini-btn danger" id="restart-btn" type="button">從頭重跑</button>
+              <div class="mini-hint" id="retry-hint"></div>
+            </div>
+          </div>
+        </div>
+
+        <div class="outfit-summary card" id="outfit-summary" style="display:none;">
+          <div class="summary-head">
+            <span class="summary-icon">👔</span>
+            <span class="summary-title">AI 穿搭建議</span>
+          </div>
+          <div class="summary-text" id="summary-text"></div>
+        </div>
+
+        <div class="section-title" style="margin-top:12px;">
+          <span class="pill">收藏 / 最近 10 套</span>
+        </div>
+        <div class="collection-wrap" id="collection-wrap">
+          <div class="tabs">
+            <button class="tab active" id="tab-recents" type="button">最近 10 套</button>
+            <button class="tab" id="tab-favs" type="button">已收藏</button>
+          </div>
+          <div class="tabpanes">
+            <div class="pane active" id="pane-recents">
+              <div class="mini-list" id="recents-list"></div>
+            </div>
+            <div class="pane" id="pane-favs">
+              <div class="mini-list" id="favs-list"></div>
+            </div>
+          </div>
+        </div>
+
+        <div class="section-title anchor" id="anchor-products">
+          <span class="pill">推薦商品</span>
+        </div>
+        <div class="products" id="products">
+          <div class="placeholder" style="padding:16px;">尚未產生商品</div>
+        </div>
+
+        <pre class="debug" id="debug-box"></pre>
+      </section>
+    </main>
+  </div>
+
+  <div class="mobile-actionbar" id="mobile-actionbar">
+    <button id="go-btn-mobile" class="primary-wide" type="button">產生穿搭圖</button>
+  </div>
+
+  <div class="modal" id="img-modal" aria-hidden="true">
+    <div class="modal-card" role="dialog" aria-modal="true" aria-label="全螢幕預覽">
+      <div class="modal-top">
+        <button class="m-btn" id="modal-close" type="button">關閉 ✕</button>
+        <button class="m-btn" id="modal-save" type="button">下載圖片 ⬇︎</button>
+      </div>
+      <img id="modal-img" alt="Outfit fullscreen preview" />
+    </div>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2">
+// --- helpers injected (v5) ---
+function scrollToEl(id){
+  try{
+    const node = document.getElementById(id);
+    if(node) node.scrollIntoView({ behavior: "smooth", block: "start" });
+  }catch(e){}
+}
+// --- end helpers ---
+
+document.getElementById("btn-share-top")?.addEventListener("click", ()=>document.getElementById("share-btn")?.click());
+</script>
+
+  <script>
+
+
+// --- JS runtime guard: show error banner if script fails ---
+(function(){
+  function showErr(msg){
+    try{
+      var el=document.getElementById('js-error-banner');
+      if(!el){
+        el=document.createElement('div');
+        el.id='js-error-banner';
+        el.style.cssText='position:fixed;left:12px;right:12px;bottom:calc(80px + env(safe-area-inset-bottom,0px));z-index:20000;background:rgba(239,68,68,.95);color:#fff;padding:10px 12px;border-radius:14px;font:600 13px/1.35 system-ui,-apple-system,Segoe UI,Roboto,Helvetica,Arial;box-shadow:0 18px 38px rgba(0,0,0,.22);';
+        document.body.appendChild(el);
+      }
+      el.textContent='JS 錯誤：' + msg + '（請打開 Console 看細節）';
+    }catch(e){}
+  }
+  window.addEventListener('error', function(e){ showErr(e.message || '未知錯誤'); });
+  window.addEventListener('unhandledrejection', function(e){ showErr((e.reason && (e.reason.message||String(e.reason))) || 'Promise 錯誤'); });
+})();
+
+function isMobile(){ return window.matchMedia && window.matchMedia("(max-width: 640px)").matches; }
+
+function applyDeviceClass() {
+  const m = isMobile();
+  document.body.classList.toggle("is-mobile", m);
+  document.body.classList.toggle("is-desktop", !m);
+}
+
+
+    function scrollToElWithOffset(id, offsetPx = 0, behavior="smooth"){
+      const el = document.getElementById(id);
+      if (!el) return;
+      const y = el.getBoundingClientRect().top + window.scrollY - (offsetPx || 0);
+      window.scrollTo({ top: Math.max(0, y), behavior });
+    }
+
+    function haptic(ms = 12){
+      try{ if (navigator.vibrate) navigator.vibrate(ms); }catch{}
+    }
+
+    let toastTimer=null;
+    function showToast(text, ms=2000){
+      const t=document.getElementById("toast");
+      if(!t) return;
+      t.textContent=text||"";
+      t.style.display="block";
+      void t.offsetWidth;
+      t.classList.add("on");
+      clearTimeout(toastTimer);
+      toastTimer=setTimeout(()=>{ t.classList.remove("on"); setTimeout(()=>{ t.style.display="none"; },220); }, ms);
+    }
+    // ===== Share buttons -> /share =====
+    async function handleShareClick(){
+      try{
+        const url = buildShareUrl();
+        if(!url){
+          showToast("目前沒有可分享的生成圖（請先完成生成）");
+          return;
+        }
+
+        // Prefer native share on mobile
+        if (navigator.share){
+          try{
+            await navigator.share({ title: "AI 穿搭", url });
+            showToast("已開啟分享");
+            return;
+          }catch(_e){
+            // user cancelled or not supported, fallback to copy
+          }
+        }
+
+        try{
+          await navigator.clipboard.writeText(url);
+          showToast("分享連結已複製 ✅");
+        }catch(e){
+          // last resort: prompt
+          prompt("複製分享連結", url);
+        }
+      }catch(e){
+        showToast("分享失敗：" + (e?.message || e));
+      }
+    }
+
+    // Wire both share buttons (top + image overlay)
+    document.getElementById("btn-share-top")?.addEventListener("click", handleShareClick);
+    document.getElementById("share-btn")?.addEventListener("click", handleShareClick);
+
+
+    function formatNowTS(){
+      const d=new Date();
+      const pad=(n)=>String(n).padStart(2,"0");
+      return `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())} ${pad(d.getHours())}:${pad(d.getMinutes())}`;
+    }
+
+    function zhGender(g){
+  if(g==="male") return "男";
+  if(g==="female") return "女";
+  return "中性";
+}
+function zhAgeGroup(ag){
+  if(ag==="kids") return "童裝";
+  return "成人";
+}
+function styleNameFromPayload(p){
+  if(p?.uiStyleValue) return String(p.uiStyleValue); // 最貼近使用者理解
+  const key = p?.audienceKey || `${p?.ageGroup||"adult"}-${p?.gender||"neutral"}`;
+  const pack = STYLE_UI_BY_AUDIENCE[key] || STYLE_UI_BY_AUDIENCE["adult-neutral"];
+  const styleCode = p?.styleId || p?.style || "";
+  const hit = (pack?.styles||[]).find(x=>x.style===styleCode);
+  return hit?.name || (styleCode ? String(styleCode) : "—");
+}
+function accessoriesText(p){
+  const a=[];
+  if(p?.withCoat) a.push("外套");
+  if(p?.withHat) a.push("帽");
+  if(p?.withBag) a.push("包");
+  return a.length? a.join("＋") : "無";
+}
+function formatOutfitMetaChips(p, { includeTime=true, ts=null } = {}){
+  const chips=[];
+  const gender = zhGender(p?.gender);
+  const ag = zhAgeGroup(p?.ageGroup);
+  const age = (p?.age!=null && p?.age!=="") ? `${p.age}歲` : "";
+  const hw = (p?.height && p?.weight) ? `${p.height}/${p.weight}` : (p?.height? `${p.height}cm` : (p?.weight? `${p.weight}kg` : ""));
+  const style = styleNameFromPayload(p);
+  const temp = (p?.temp!=null && p?.temp!=="") ? `${p.temp}°C` : "";
+  const pal = p?.paletteId ? String(p.paletteId) : "";
+  const acc = accessoriesText(p);
+
+  if(includeTime){
+    const d = ts ? new Date(ts) : new Date();
+    const t = `${d.getFullYear()}/${String(d.getMonth()+1).padStart(2,"0")}/${String(d.getDate()).padStart(2,"0")} ${String(d.getHours()).padStart(2,"0")}:${String(d.getMinutes()).padStart(2,"0")}`;
+    chips.push({k:"生成", v:t});
+  }
+
+  const who = [ag, gender, age].filter(Boolean).join(" ");
+  if(who) chips.push({k:"對象", v: who});
+  if(hw) chips.push({k:"身形", v: hw});
+  if(style && style!=="—") chips.push({k:"風格", v: style});
+  if(temp) chips.push({k:"氣溫", v: temp});
+  if(acc && acc!=="無") chips.push({k:"配件", v: acc});
+  if(pal) chips.push({k:"色系", v: pal});
+
+  if(p?.uiStyleSource && p?.uiStyleValue){
+    const srcLabel = (p.uiStyleSource==="scene") ? "情境" : (p.uiStyleSource==="brand") ? "品牌" : (p.uiStyleSource==="celeb") ? "名人" : "來源";
+    // 避免跟「風格」重複：uiStyleValue 只有在不等於 style 時才顯示
+    if(String(p.uiStyleValue) !== style){
+      chips.push({k:srcLabel, v:String(p.uiStyleValue)});
+    }
+  }
+  return chips;
+}
+
+  function payloadSummaryLine(p){
+  const chips = formatOutfitMetaChips(p||{}, { includeTime:false });
+  const want = ["對象","身形","風格","氣溫","配件","色系"];
+  const picked = want.map(k=>chips.find(x=>x.k===k)).filter(Boolean);
+  return picked.map(x=>`${x.k}：${x.v}`).join(" · ") || "—";
+}
+
+
+    function setResultMeta(payload){
+  const rmLeft = document.getElementById("result-meta-left");
+  const rmDot = document.getElementById("result-meta-dot");
+  const rmRight = document.getElementById("result-meta-right");
+  if(!rmLeft || !rmRight) return;
+
+  const p = payload || {};
+  const chips = formatOutfitMetaChips(p, { includeTime:true });
+
+  rmLeft.innerHTML = chips
+    .map(x=>`<span class="meta-chip"><b>${escapeHtml(x.k)}</b><span class="dim">${escapeHtml(x.v)}</span></span>`)
+    .join("");
+
+  // 同步一份到圖片下方（避免資訊只在標題區）
+  const rmBottom = document.getElementById("result-meta-bottom");
+  if(rmBottom) rmBottom.innerHTML = rmLeft.innerHTML;
+
+  if(rmDot) rmDot.style.display = "none";
+  rmRight.textContent = "";
+}
+
+    function safeJson(obj){ try{ return JSON.stringify(obj,null,2);}catch{ return ""; } }
+    function copyText(text){
+      const s=String(text||"");
+      if(!s) return false;
+      if(navigator.clipboard && navigator.clipboard.writeText){ navigator.clipboard.writeText(s).catch(()=>{}); return true; }
+      const ta=document.createElement("textarea");
+      ta.value=s; ta.style.position="fixed"; ta.style.left="-9999px";
+      document.body.appendChild(ta); ta.select();
+      try{ document.execCommand("copy"); }catch{}
+      document.body.removeChild(ta);
+      return true;
+    }
+
+    function b64urlEncode(str){
+      const b64=btoa(unescape(encodeURIComponent(str)));
+      return b64.replace(/\+/g,"-").replace(/\//g,"_").replace(/=+$/g,"");
+    }
+    function b64urlDecode(str){
+      const s=String(str||"").replace(/-/g,"+").replace(/_/g,"/");
+      const pad=s.length%4? "=".repeat(4-(s.length%4)):"";
+      return decodeURIComponent(escape(atob(s+pad)));
+    }
+
+      // ===== Share URL (go to /share) =====
+  function toBase64Url(obj){
+    try{
+      const json = JSON.stringify(obj || {});
+      const bytes = new TextEncoder().encode(json);
+      let bin = "";
+      for (const b of bytes) bin += String.fromCharCode(b);
+      return btoa(bin).replace(/\+/g,'-').replace(/\//g,'_').replace(/=+$/,'');
+    }catch(e){
+      return "";
+    }
+  }
+
+  function buildSharePayload(){
+    // image src (data url or https url)
+    const img = document.getElementById("outfit-image")?.src || "";
+
+    const p = flowState?.payload || {};
+    const styleSource = p.uiStyleSource || "";
+    const style = {
+      source_label: styleSource === "scene" ? "穿搭情境"
+        : styleSource === "celeb" ? "名人靈感"
+        : styleSource ? String(styleSource) : "風格",
+      value_label: p.uiStyleValue ? String(p.uiStyleValue) : "",
+      detail_label: p.styleVariant ? String(p.styleVariant) : "",
+    };
+
+    return {
+      created_at: new Date().toISOString(),
+      image_url: img,
+      style,
+      spec: p,
+    };
+  }
+
+  function buildShareUrl(){
+    // ✅ Prefer server short share link if available
+    const slug = flowState?.serverShareSlug || "";
+    if(slug){
+      return `${location.origin}/share/${encodeURIComponent(slug)}`;
+    }
+    const payload = buildSharePayload();
+    if(!payload.image_url) return "";
+    const p = toBase64Url(payload);
+    if(!p) return "";
+    return `${location.origin}/share#p=${p}`;
+  }
+function parseShareFromLocation(){
+      const h=location.hash||"";
+      const m=h.match(/#share=([^&]+)/);
+      if(!m) return null;
+      try{ const obj=JSON.parse(b64urlDecode(m[1])); if(!obj||!obj.payload) return null; return obj; }catch{ return null; }
+    }
+
+    function applyPayloadToForm(payload) {
+  if (!payload) return;
+
+  // Age group first (affects slider min/max)
+  const ag = payload.ageGroup || (Number(payload.age) < 13 ? "kids" : "adult");
+  const agEl = document.getElementById("ageGroup");
+  if (agEl) agEl.value = ag;
+  try { if (window.__setAgeGroup) window.__setAgeGroup(ag); } catch {}
+
+  // Gender (segmented control)
+  const gEl = document.getElementById("gender");
+  if (gEl && payload.gender) gEl.value = String(payload.gender);
+  try { if (window.__setGenderSeg && payload.gender) window.__setGenderSeg(payload.gender); } catch {}
+
+  const setRange = (id, valId, v) => {
+    const el = document.getElementById(id);
+    const lab = document.getElementById(valId);
+    if (!el || v === undefined || v === null) return;
+    el.value = String(v);
+    if (lab) lab.textContent = String(v);
+    try { el.dispatchEvent(new Event("input", { bubbles: true })); } catch {}
+  };
+
+  setRange("age", "age-val", payload.age);
+  setRange("height", "height-val", payload.height);
+  setRange("weight", "weight-val", payload.weight);
+  setRange("temp", "temp-val", payload.temp);
+
+  // Style cards
+  const styleHidden = document.getElementById("style");
+  if (styleHidden && payload.style) styleHidden.value = payload.style;
+  const cards = Array.from(document.querySelectorAll("#style-grid .style-card"));
+  cards.forEach(c => c.classList.toggle("selected", c.dataset.style === payload.style));
+
+  // Style variant
+  const sv = document.getElementById("styleVariant");
+  if (sv) sv.value = payload.styleVariant || "";
+
+  // Switches
+  const setSwitch = (id, on) => {
+    const el = document.getElementById(id);
+    if (!el) return;
+    el.classList.toggle("on", !!on);
+    el.setAttribute("aria-checked", !!on ? "true" : "false");
+  };
+  setSwitch("sw-bag", !!payload.withBag);
+  setSwitch("sw-hat", !!payload.withHat);
+  setSwitch("sw-coat", !!payload.withCoat);
+
+  // Ensure ageGroup application clamps values if needed
+  try { if (window.__setAgeGroup) window.__setAgeGroup(ag); } catch {}
+}
+
+    function userFriendlyError(e, step, hasImage){
+      const raw=String(e?.message||e||"");
+      if(raw.includes("未登入")||raw.includes("no session")||raw.includes("Missing bearer token")||raw.includes("Invalid token")){
+        return { title:"登入狀態已失效", desc:"請先登入後再試一次。", next:"按右上「Google 登入」→ 再點「重試目前步驟」。" };
+      }
+      if(raw.includes("/api/search-products")||raw.includes("search-products")){
+        return { title:"商品搜尋暫時不穩", desc: hasImage? "示意圖已保留，你可以稍後再試搜尋商品。":"請稍後再試一次。", next: hasImage? "按「重試目前步驟」即可重新找商品。":"按「從頭重跑」再試。" };
+      }
+      if(raw.includes("/api/generate-image")||raw.includes("generate-image")){
+        return { title:"示意圖生成暫時失敗", desc:"通常是模型或網路波動，稍後可再試。", next:"按「重試目前步驟」即可。" };
+      }
+      if(raw.includes("/api/generate-outfit-spec")||raw.includes("generate-outfit-spec")){
+        return { title:"分析條件暫時失敗", desc:"請稍後再試，或先檢查登入與點數。", next:"按「從頭重跑」再試一次。" };
+      }
+      return { title:"暫時失敗", desc:"可能是網路或服務波動，稍後再試即可。", next:"按「重試目前步驟」或稍後再試。" };
+    }
+
+    function setFormDisabled(disabled){
+      const form=document.getElementById("left-panel");
+      if(!form) return;
+      form.classList.toggle("form-disabled", disabled);
+    }
+
+    const GENERATE_STEPS={
+      idle:{ btn:"產生穿搭圖", text:"準備就緒", sub:"按下後會自動跳到示意圖與商品區。", eta:"" },
+      spec:{ btn:"分析身形…", text:"分析身形與需求", sub:"為了挑出更合身、符合風格的版型與配色。", eta:"通常 10–20 秒" },
+      image:{ btn:"組合穿搭…", text:"組衣服與比例", sub:"把單品組成完整穿搭，並生成示意圖。", eta:"通常 10–20 秒" },
+      products:{ btn:"找商品…", text:"找可買商品", sub:"用穿搭單品去搜尋相似商品，方便直接購買。", eta:"通常 5–15 秒" },
+      done:{ btn:"再生成一套", text:"完成 ✅", sub:"你可以收藏、分享，或再試一套不同風格。", eta:"" },
+      failed:{ btn:"再試一次", text:"暫時失敗", sub:"別擔心，結果已盡量保留，你可以重試。", eta:"" }
+    };
+
+    function setGenerateStep(step){
+      const cfg=GENERATE_STEPS[step]||GENERATE_STEPS.idle;
+      const btn1=document.getElementById("go-btn");
+      const btn2=document.getElementById("go-btn-mobile");
+      if(btn1) btn1.textContent=cfg.btn;
+      if(btn2) btn2.textContent=cfg.btn;
+
+      const statusTextEl=document.getElementById("status-text");
+      if(statusTextEl) statusTextEl.textContent=cfg.text;
+
+      const statusSubEl=document.getElementById("status-sub");
+      if(statusSubEl){
+        const extra=cfg.eta? `（${cfg.eta}）`:"";
+        statusSubEl.textContent=(cfg.sub||"") + (cfg.sub? " ":"") + extra;
+      }
+    }
+
+    const SUPABASE_PROJECT_REF="auiwcsolpvufxxyhnvaf";
+    const SUPABASE_URL=`https://${SUPABASE_PROJECT_REF}.supabase.co`;
+    const SUPABASE_ANON_KEY="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImF1aXdjc29scHZ1Znh4eWhudmFmIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjQ5MzUwMDEsImV4cCI6MjA4MDUxMTAwMX0.KeD8JXdHs5Iu7-wf0F0GpUPp-_y5X5ha6mwBcR5eYDA";
+    const REDIRECT_TO=location.origin+"/body-test.html";
+
+    function bindRange(rangeId, valueId){
+      const r=document.getElementById(rangeId);
+      const v=document.getElementById(valueId);
+      const paint=()=>{ v.textContent=String(r.value); };
+      r.addEventListener("input", paint);
+      paint();
+    }
+
+    
+function bindGenderSeg(){
+  const seg = document.getElementById("gender-seg");
+  const hidden = document.getElementById("gender");
+  if (!seg || !hidden) return;
+  const btns = Array.from(seg.querySelectorAll(".seg-btn"));
+  const select = (val, opts={emit:true}) => {
+    if (!val) return;
+    hidden.value = val;
+    btns.forEach(b => {
+      const on = b.dataset.value === val;
+      b.classList.toggle("on", on);
+      b.setAttribute("aria-checked", on ? "true" : "false");
+    });
+    // update style/variant labels per audience
+    try { if (typeof updateStyleUIForAudience === "function") updateStyleUIForAudience(); } catch {}
+    if(opts.emit){
+      try{ hidden.dispatchEvent(new Event("input",{bubbles:true})); }catch{}
+      try{ hidden.dispatchEvent(new Event("change",{bubbles:true})); }catch{}
+    }
+  };
+  btns.forEach(b => b.addEventListener("click", () => select(b.dataset.value,{emit:true})));
+  hidden.addEventListener("change", () => select(hidden.value,{emit:false}));
+  // expose for applyPayloadToForm / share restore
+  window.__setGenderSeg = (val)=>select(val,{emit:true});
+  select(hidden.value || "female",{emit:false});
+}
+
+function bindStyleCards() {
+      const grid = document.getElementById("style-grid");
+      const hidden = document.getElementById("style");
+      const cards = Array.from(grid.querySelectorAll(".style-card"));
+      const select = (style, opts = {}) => {
+        hidden.value = style;
+        cards.forEach((c) => c.classList.toggle("selected", c.dataset.style === style));
+        if (!opts.silent) haptic(6);
+      };
+      cards.forEach((c) => {
+        c.addEventListener("click", () => select(c.dataset.style));
+      });
+      window.__setStyleCard = (val) => select(val, { silent: true });
+      select(hidden.value || "casual", { silent: true });
+      return select;
+    }
+
+    const AUTH_KEY="os_supabase_access_token_v1";
+    function saveAccessToken(t){ localStorage.setItem(AUTH_KEY,t); }
+    function getAccessToken(){ return localStorage.getItem(AUTH_KEY); }
+    function clearAccessToken(){ localStorage.removeItem(AUTH_KEY); }
+
+    const osSupabase=supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
+      auth:{ persistSession:true, autoRefreshToken:true, detectSessionInUrl:true, flowType:"pkce" }
+    });
+
+    async function apiMe(){
+      const token=getAccessToken();
+      if(!token) return { ok:false, error:"no token" };
+      const r=await fetch("/api/me", { headers:{ Authorization:"Bearer "+token } });
+      const j=await r.json().catch(()=>({}));
+      if(!r.ok) return { ok:false, error:j?.error||"me failed", detail:j?.detail };
+      return j;
+    }
+
+    function renderOutfitSummary(summary){
+      const box=document.getElementById("outfit-summary");
+      const text=document.getElementById("summary-text");
+      if(!summary){ box.style.display="none"; return; }
+      text.textContent=summary;
+      box.style.display="block";
+    }
+
+    function setAuthUI({loggedIn,email,credits,hint}){
+      const st=document.getElementById("login-status");
+      const cr=document.getElementById("credits");
+      const hintEl=document.getElementById("auth-hint");
+      const loginBtn=document.getElementById("login-btn");
+      const logoutBtn=document.getElementById("logout-btn");
+      if(loggedIn){
+        st.textContent=email? `已登入：${email}`:"已登入";
+        cr.textContent=String(credits ?? 0);
+        hintEl.textContent=hint||"";
+        loginBtn.style.display="none";
+        logoutBtn.style.display="inline-flex";
+      } else {
+        st.textContent=hint||"未登入";
+        cr.textContent="—";
+        hintEl.textContent="";
+        loginBtn.style.display="inline-flex";
+        logoutBtn.style.display="none";
+      }
+    }
+
+    async function refreshAuthUI(){
+      const token=getAccessToken();
+      if(!token){ setAuthUI({loggedIn:false, hint:"未登入"}); return; }
+      const me=await apiMe();
+      if(!me.ok){ setAuthUI({loggedIn:false, hint:"登入狀態異常（/api/me 失敗）"}); return; }
+      setAuthUI({loggedIn:true, email:me.user?.email, credits:me.credits_left, hint:""});
+    }
+
+    async function ensureTokenFromSession(){
+      const {data, error}=await osSupabase.auth.getSession();
+      if(error) return { ok:false, error:error.message };
+      const session=data?.session;
+      if(!session?.access_token){ clearAccessToken(); return { ok:false, error:"no session" }; }
+      saveAccessToken(session.access_token);
+      if(location.hash||location.search) history.replaceState(null,"",location.pathname);
+      return { ok:true, session };
+    }
+
+    async function loginGoogle(){
+      if(!SUPABASE_ANON_KEY || SUPABASE_ANON_KEY.startsWith("PASTE_")){
+        alert("請先在 body-test.html 填入 SUPABASE_ANON_KEY（Supabase → Settings → API → anon public key）");
+        return;
+      }
+      const {error}=await osSupabase.auth.signInWithOAuth({ provider:"google", options:{ redirectTo: REDIRECT_TO } });
+      if(error){ console.error(error); setAuthUI({loggedIn:false, hint:"登入啟動失敗："+error.message}); }
+    }
+
+    async function logout(){
+      try{ await osSupabase.auth.signOut(); }catch{}
+      clearAccessToken();
+      try{
+        const keys=Object.keys(localStorage);
+        for(const k of keys){ if(k.startsWith("sb-")||k.includes("supabase")||k.includes("auth")) localStorage.removeItem(k); }
+        const skeys=Object.keys(sessionStorage);
+        for(const k of skeys){ if(k.startsWith("sb-")||k.includes("supabase")||k.includes("auth")) sessionStorage.removeItem(k); }
+      }catch{}
+      setAuthUI({loggedIn:false, hint:"已登出"});
+      window.location.href="/body-test.html";
+    }
+
+    function bindSwitch(id, initial=false){
+      const el=document.getElementById(id);
+      let on=initial;
+      const paint=()=>{ el.classList.toggle("on",on); el.setAttribute("aria-checked", on?"true":"false"); };
+      paint();
+      el.addEventListener("click", ()=>{ on=!on; paint(); });
+      return ()=>on;
+    }
+
+    const getBag=bindSwitch("sw-bag", false);
+    const getHat=bindSwitch("sw-hat", false);
+    const getCoat=bindSwitch("sw-coat", false);
+    const getDebug=bindSwitch("sw-debug", false);
+
+    document.getElementById("debug-toggle").addEventListener("click", (e)=>{
+      if(e.target.id!=="sw-debug") document.getElementById("sw-debug").click();
+      document.getElementById("debug-box").classList.toggle("on", getDebug());
+    });
+
+    const statusTextEl=document.getElementById("status-text");
+    const statusDotsEl=document.getElementById("status-dots");
+    const progressBarEl=document.getElementById("progress-bar");
+    const previewBox=document.getElementById("preview-box");
+
+    function setStatus(_ignored, ok=null, loading=false){
+      statusTextEl.className = ok===true ? "ok" : ok===false ? "bad" : "";
+      statusDotsEl.style.display = loading ? "inline" : "none";
+    }
+    function setProgress(pct){ const v=Math.max(0,Math.min(100,Number(pct||0))); progressBarEl.style.width=v+"%"; }
+    function setLoadingUI(on){
+      const products=document.getElementById("products");
+      if(on){ previewBox.classList.add("shimmer"); products.classList.add("shimmer"); }
+      else{ previewBox.classList.remove("shimmer"); products.classList.remove("shimmer"); }
+    }
+
+    function showError(msg){ const el=document.getElementById("error-hint"); el.style.display="block"; el.textContent=msg; }
+    function clearError(){ const el=document.getElementById("error-hint"); el.style.display="none"; el.textContent=""; }
+
+    function setImageBase64(base64, mime="image/png"){
+      const img=document.getElementById("outfit-image");
+      const ph=document.getElementById("img-placeholder");
+      img.src=`data:${mime};base64,${base64}`;
+      img.style.display="block";
+      ph.style.display="none";
+    }
+    function clearImage(){
+      const img=document.getElementById("outfit-image");
+      const ph=document.getElementById("img-placeholder");
+      img.src="";
+      img.style.display="none";
+      ph.style.display="block";
+    }
+    function showImageSkeleton(on){
+      const sk=document.getElementById("img-skeleton");
+      const img=document.getElementById("outfit-image");
+      const ph=document.getElementById("img-placeholder");
+      if(!sk) return;
+      if(on){ sk.style.display="block"; img.style.display="none"; ph.style.display="none"; }
+      else { sk.style.display="none"; }
+    }
+
+    function renderProductsSkeleton(rows=4){
+      const root=document.getElementById("products");
+      root.innerHTML = `<div class="products-skel">` + Array.from({length:rows}).map(()=>`
+          <div class="row">
+            <div class="skel thumb"></div>
+            <div><div class="skel t1"></div><div class="skel t2"></div></div>
+          </div>`).join("") + `</div>`;
+    }
+
+    function escapeHtml(str){
+      return String(str).replaceAll("&","&amp;").replaceAll("<","&lt;").replaceAll(">","&gt;").replaceAll('"',"&quot;").replaceAll("'","&#039;");
+    }
+    function setDebug(obj){
+      const box=document.getElementById("debug-box");
+      box.textContent = typeof obj==="string" ? obj : JSON.stringify(obj,null,2);
+      box.classList.toggle("on", getDebug());
+    }
+
+    const SLOT_ORDER=["top","bottom","shoes","outer","bag","hat"];
+    const SLOT_LABEL_ZH={ top:"上衣", bottom:"下身", shoes:"鞋子", outer:"外套", bag:"包包", hat:"帽子" };
+
+    function groupProductsBySlot(list){
+      const groups={}; for(const s of SLOT_ORDER) groups[s]=[];
+      (list||[]).forEach(p=>{ const slot=(p.slot||"").toLowerCase(); (groups[slot] ||= []).push(p); });
+      return groups;
+    }
+
+    function renderProductsGrouped(list){
+      const root=document.getElementById("products");
+      root.innerHTML="";
+      if(!Array.isArray(list) || list.length===0){
+        root.innerHTML=`<div class="placeholder" style="padding:16px;">沒有找到商品（或 API 尚未回傳）</div>`;
+        return;
+      }
+      const groups=groupProductsBySlot(list);
+      for(const slot of SLOT_ORDER){
+        const items=groups[slot]||[];
+        if(items.length===0) continue;
+        const wrap=document.createElement("div");
+        wrap.className="slot-group";
+        wrap.innerHTML=`<div class="slot-head"><div class="slot-title">🧩 ${escapeHtml(SLOT_LABEL_ZH[slot]||slot)}</div><div class="slot-count">${items.length} 個</div></div>`;
+        items.forEach(p=>{
+          const div=document.createElement("div");
+          div.className="product-item";
+          const thumb=p.thumbnail? `<img src="${p.thumbnail}" alt="">`:"示意";
+          const price=p.price||p.extracted_price||"";
+          const link=p.product_link||p.link||p.url||"#";
+          div.innerHTML=`<div class="thumb">${thumb}</div><div><div class="pname">${escapeHtml(p.title||p.name||"商品")}</div><div class="pmeta">${price? `<span>價格：${escapeHtml(String(price))}</span>`:""}${p.source? `<span>來源：${escapeHtml(String(p.source))}</span>`:""}</div><a class="plink" href="${link}" target="_blank" rel="noopener noreferrer">前往查看</a></div>`;
+          wrap.appendChild(div);
+        });
+        root.appendChild(wrap);
+      }
+    }
+
+    async function postJson(url, body, withAuth=true){
+  const headers={ "Content-Type":"application/json" };
+  if(withAuth){
+    const token=getAccessToken();
+    if(!token) throw new Error("未登入（沒有 Bearer token）");
+    headers["Authorization"]="Bearer "+token;
+  }
+
+  // ✅ only patch search-products (safe)
+  if (typeof url === "string" && url.includes("/api/search-products")) {
+    const b = body && typeof body === "object" ? { ...body } : {};
+
+    if (!b.ageGroup) b.ageGroup = document.getElementById("ageGroup")?.value || "adult";
+
+    // 如果呼叫端沒帶 styleTag，就用 UI 的選擇補上
+    if (!b.styleTag) b.styleTag = getSelectedStyleTagForApi();
+
+    body = b;
+  }
+
+  const r=await fetch(url, { method:"POST", headers, body: JSON.stringify(body) });
+  const text=await r.text();
+  let j=null;
+  try{ j=JSON.parse(text); }catch{ j={ raw:text }; }
+  if(!r.ok){
+    const msg=j?.error ? `${j.error}${j.detail? " / "+(typeof j.detail==="string"? j.detail: JSON.stringify(j.detail)):""}` : `HTTP ${r.status} / ${text.slice(0,500)}`;
+    throw new Error(`${url} 失敗：${msg}`);
+  }
+  return j;
+}
+
+
+
+
+    const flowState={ lastStep:"idle", payload:null, me:null, spec:null, imgResp:null, products:null, currentOutfitId:null };
+
+    function updateResultActions(){
+      const copyBtn=document.getElementById("copy-spec-btn");
+      const shareBtn=document.getElementById("share-btn");
+      const ctaBtn=document.getElementById("cta-products");
+      if(copyBtn) copyBtn.disabled=!flowState.spec;
+      if(shareBtn) shareBtn.disabled=!(flowState.payload && (flowState.spec || flowState.payload));
+      if(ctaBtn) ctaBtn.style.display=(Array.isArray(flowState.products) && flowState.products.length) ? "inline-flex":"none";
+      const ctaHint=document.getElementById("cta-hint");
+      if(ctaHint) ctaHint.style.display=(ctaBtn && ctaBtn.style.display!=="none") ? "block":"none";
+    }
+
+    function showRetryUI(show, step="", hint=""){
+      const row=document.getElementById("retry-row");
+      const ht=document.getElementById("retry-hint");
+      if(!row||!ht) return;
+      if(!show){ row.style.display="none"; ht.textContent=""; return; }
+      row.style.display="flex";
+      ht.textContent=hint ? hint : (step? `可重試：${step}`:"");
+    }
+
+    async function runStepSpec(payload, me){
+      setGenerateStep("spec"); setStatus("", null, true); setProgress(20);
+      const spec=await postJson("/api/generate-outfit-spec", payload, true);
+      flowState.spec=spec; flowState.lastStep="spec"; updateResultActions(); haptic(12);
+      setDebug({ step:"spec", spec });
+      renderOutfitSummary(spec.summary);
+      if(typeof spec.credits_left!=="undefined"){ setAuthUI({ loggedIn:true, email: me.user?.email, credits: spec.credits_left }); }
+      else { await refreshAuthUI();
+      try{ await refreshCollectionsUI(); }catch(e){ console.warn(e); }
+      syncFavButtonUI(); }
+      return spec;
+    }
+
+    async function runStepImage(payload, spec){
+      setGenerateStep("image"); setStatus("", null, true); setProgress(55);
+      const kidHint = payload.ageGroup === "kids"
+    ? `child, age ${payload.age}, youthful face, child body proportions`
+    : "";
+  const specForImage = payload.ageGroup === "kids"
+    ? { ...spec, audience: "kids", person_hint: kidHint, age: payload.age }
+    : spec;
+  const imgResp = await postJson("/api/generate-image", {
+    ...payload,
+    ageGroup: payload.ageGroup,
+    personHint: kidHint,
+    outfitSpec: specForImage,
+    aspectRatio: "9:16",
+    imageSize: "1K"
+  }, true);
+      if(!imgResp.image) throw new Error("Image API 沒回傳 image");
+      flowState.imgResp=imgResp; flowState.lastStep="image"; haptic(12);
+      setDebug({ step:"image", imgResp, spec });
+      setImageBase64(imgResp.image, imgResp.mime||"image/png");
+      showImageSkeleton(false);
+      // ✅ Save to Supabase in background (won't break main flow)
+      setTimeout(()=>{ persistOutfitNonBlocking({ payload, spec, products: flowState.products, imgResp }); }, 0);
+      return imgResp;
+    }
+
+    // ===== Persist Outfit to Supabase (non-blocking) =====
+    function dataUrlToFile(dataUrl, filename){
+      const arr = String(dataUrl||"").split(",");
+      const mime = (arr[0].match(/:(.*?);/)||[])[1] || "image/png";
+      const bstr = atob(arr[1] || "");
+      let n = bstr.length;
+      const u8 = new Uint8Array(n);
+      while(n--) u8[n] = bstr.charCodeAt(n);
+      return new File([u8], filename, { type: mime });
+    }
+
+    async function tryCreateOutfitRecord({ accessToken, spec, style, summary, products, image_path, is_public }){
+      const body = { spec, style, summary, products, image_path, is_public: !!is_public };
+      const headers = { "Content-Type":"application/json", "Authorization": `Bearer ${accessToken}` };
+      const candidates = ["/api/outfits/create", "/simon/api/outfits/create"];
+      let lastErr = null;
+      for(const url of candidates){
+        try{
+          const r = await fetch(url, { method:"POST", headers, body: JSON.stringify(body) });
+          const j = await r.json().catch(()=> ({}));
+          if(r.ok) return j;
+          lastErr = new Error(`${url} ${r.status} ${j?.error || JSON.stringify(j)}`);
+        }catch(e){ lastErr = e; }
+      }
+      throw lastErr || new Error("create outfit failed");
+    }
+
+    async function persistOutfitNonBlocking({ payload, spec, products, imgResp }){
+      try{
+        // Need login + token
+        const ensured = await ensureTokenFromSession();
+        if(!ensured?.ok) return;
+
+        const accessToken = getAccessToken();
+        const userId = ensured?.session?.user?.id;
+        if(!accessToken || !userId) return;
+
+        // Already saved? avoid duplicates
+        if(flowState?.serverShareSlug) return;
+
+        const mime = imgResp?.mime || "image/png";
+        const imgDataUrl = imgResp?.image || document.getElementById("outfit-image")?.src || "";
+        if(!imgDataUrl) return;
+
+        const outfitId = (crypto?.randomUUID ? crypto.randomUUID() : String(Date.now()));
+        const image_path = `${userId}/${outfitId}.png`;
+
+        const file = dataUrlToFile(imgDataUrl, "outfit.png");
+
+        const up = await osSupabase.storage.from("outfits").upload(image_path, file, {
+          contentType: mime,
+          upsert: true,
+        });
+        if(up?.error) throw new Error("圖片上傳失敗：" + up.error.message);
+
+        const styleObj = payload ? {
+          source: payload.uiStyleSource || "",
+          value: payload.uiStyleValue || "",
+          detail: payload.styleVariant || ""
+        } : null;
+
+        const created = await tryCreateOutfitRecord({
+          accessToken,
+          spec: spec || null,
+          style: styleObj,
+          summary: spec?.summary || null,
+          products: products || null,
+          image_path,
+          is_public: true
+        });
+
+        if(created?.share_slug){
+          flowState.serverShareSlug = created.share_slug;
+          flowState.currentOutfitId = created.id || null;
+          updateResultActions();
+          showToast("已儲存到「我的穿搭」✅", 1600);
+        }
+      }catch(e){
+        console.warn("persistOutfitNonBlocking failed:", e);
+        try{ setDebug({ step:"persist", error: String(e) }); }catch{}
+      }
+    }
+
+    
+    // --- Global keyword prefix helpers (stability shim) ---
+    // Some parts of the page expect these helpers to exist at the top scope.
+    // Define them defensively here to avoid breaking product recommendation.
+    window.getProductKeywordPrefix = window.getProductKeywordPrefix || function(payload) {
+      const ak = payload?.audienceKey || (typeof getAudienceKey === "function" ? getAudienceKey(payload) : "adult-neutral");
+      const g = payload?.gender || "neutral";
+      if (String(ak).startsWith("kids")) {
+        if (g === "female") return "女童";
+        if (g === "male") return "男童";
+        return "童裝";
+      }
+      if (String(ak).startsWith("adult")) {
+        if (g === "female") return "女裝";
+        if (g === "male") return "男裝";
+        return "";
+      }
+      return "";
+    };
+
+    window.getProductKeywordPrefixEn = window.getProductKeywordPrefixEn || function(payload) {
+      const ak = payload?.audienceKey || (typeof getAudienceKey === "function" ? getAudienceKey(payload) : "adult-neutral");
+      const g = payload?.gender || "neutral";
+      if (String(ak).startsWith("kids")) {
+        if (g === "female") return "girls";
+        if (g === "male") return "boys";
+        return "kids";
+      }
+      if (String(ak).startsWith("adult")) {
+        if (g === "female") return "women";
+        if (g === "male") return "men";
+        return "";
+      }
+      return "";
+    };
+
+async function runStepProducts(payload, spec){
+      setGenerateStep("products"); setStatus("", null, true); setProgress(80);
+      const itemsForSearch = (spec.items || []).map(it => {
+    const prefixZh = getProductKeywordPrefix(payload);
+    const prefixEn = getProductKeywordPrefixEn(payload);
+
+    if (!prefixZh && !prefixEn) return it;
+
+    const zh0 = String(it.display_name_zh || it.generic_name || it.display_name_en || "").trim();
+    const zh = prefixZh && zh0
+      ? (zh0.startsWith(prefixZh) ? zh0 : (prefixZh + zh0))
+      : (prefixZh ? (prefixZh + (zh0 || "")) : zh0);
+
+    const en0 = String(it.generic_name || it.display_name_en || "").trim();
+    const en = prefixEn && en0
+      ? (en0.toLowerCase().startsWith(prefixEn.toLowerCase()) ? en0 : (prefixEn + " " + en0))
+      : en0;
+
+    return {
+      ...it,
+      display_name_zh: zh || it.display_name_zh,
+      generic_name: en || it.generic_name,
+      audienceKey: payload.audienceKey,
+      ageGroup: payload.ageGroup,
+      age: payload.age,
+      query_hint: prefixZh ? `${prefixZh} clothing` : undefined
+    };
+  });
+
+  const prodResp = await postJson("/api/search-products", {
+    items: itemsForSearch,
+    locale: "tw",
+    gender: payload.gender,
+    ageGroup: payload.ageGroup,
+    age: payload.age,
+    audience: payload.ageGroup === "kids" ? "kids" : "adult"
+  }, true);
+      const list=prodResp.products || prodResp.items || prodResp.shopping_results || [];
+      flowState.products=list; flowState.lastStep="products"; updateResultActions(); haptic(14);
+      setDebug({ step:"products", prodResp, spec });
+      renderProductsGrouped(list);
+      return list;
+    }
+
+    async function retryCurrentStep(){
+      showRetryUI(false); clearError();
+      const ensured=await ensureTokenFromSession();
+      if(!ensured.ok) throw new Error("未登入或 session 不存在");
+      const me=await apiMe();
+      if(!me.ok) throw new Error("登入狀態異常（/api/me 失敗）");
+      const payload=flowState.payload;
+      if(!payload) throw new Error("沒有可重試的 payload（請從頭重跑）");
+      if(flowState.lastStep==="spec"){
+        if(!flowState.spec) throw new Error("spec 不存在（請從頭重跑）");
+        showImageSkeleton(true);
+        await runStepImage(payload, flowState.spec);
+        renderProductsSkeleton(4);
+        await runStepProducts(payload, flowState.spec);
+        finalizeDoneNoThrow();
+        scrollToElWithOffset("anchor-products", 12, "smooth");
+        return;
+      }
+      if(flowState.lastStep==="image"){
+        if(!flowState.spec) throw new Error("spec 不存在（請從頭重跑）");
+        renderProductsSkeleton(4);
+        await runStepProducts(payload, flowState.spec);
+        finalizeDoneNoThrow();
+        scrollToElWithOffset("anchor-products", 12, "smooth");
+        return;
+      }
+      await generateAll(true);
+    }
+
+    // Auto scroll fix (1238): scroll to anchor-status (status text area)
+    function autoScrollOnStart(){ scrollToElWithOffset("anchor-status", isMobile()? 16:12, "smooth"); haptic(10); }
+    function autoScrollOnDone(){ scrollToElWithOffset("anchor-products", 12, "smooth"); showToast("往下看商品 ↓", 2000); haptic(18); }
+
+    const modal=document.getElementById("img-modal");
+    const modalImg=document.getElementById("modal-img");
+    const modalClose=document.getElementById("modal-close");
+    const modalSave=document.getElementById("modal-save");
+    function openModalWithCurrentImage(){
+      const img=document.getElementById("outfit-image");
+      if(!img || !img.src) return;
+      modalImg.src=img.src;
+      modal.classList.add("on");
+      modal.setAttribute("aria-hidden","false");
+      document.body.style.overflow="hidden";
+    }
+    function closeModal(){
+      modal.classList.remove("on");
+      modal.setAttribute("aria-hidden","true");
+      document.body.style.overflow="";
+    }
+    modalClose.addEventListener("click", closeModal);
+    modal.addEventListener("click", (e)=>{ if(e.target===modal) closeModal(); });
+    window.addEventListener("keydown", (e)=>{ if(e.key==="Escape" && modal.classList.contains("on")) closeModal(); });
+
+    modalSave.addEventListener("click", ()=>{
+      try{
+        const src=modalImg.src;
+        if(!src) return;
+        const a=document.createElement("a");
+        a.href=src; a.download="outfit.png";
+        document.body.appendChild(a); a.click(); a.remove();
+      }catch(e){ console.error(e); }
+    });
+
+    document.getElementById("btn-share-top")?.addEventListener("click", () => document.getElementById("share-btn")?.click());
+    document.getElementById("outfit-image").addEventListener("click", openModalWithCurrentImage);
+    /***********************
+     * 收藏 / 最近 10 套（本機儲存）
+     * - metadata: localStorage
+     * - image dataUrl: IndexedDB（避免 localStorage 爆掉）
+     ***********************/
+    const LS_RECENTS="os_recents_v2";
+    const LS_FAVS="os_favs_v2";
+
+    function safeJsonParse(str,fallback){ try{ return JSON.parse(str); }catch{ return fallback; } }
+    function readList(key){ const raw=localStorage.getItem(key); const arr=safeJsonParse(raw,[]); return Array.isArray(arr)?arr:[]; }
+    function writeList(key,arr){ try{ localStorage.setItem(key,JSON.stringify(arr)); return true; }catch(e){ console.warn("localStorage write failed",e); return false; } }
+
+    // IndexedDB (store images by id)
+    const IDB_NAME="os_outfits_db_v1";
+    const IDB_STORE="images";
+
+    function openDb(){
+      return new Promise((resolve,reject)=>{
+        const req=indexedDB.open(IDB_NAME,1);
+        req.onupgradeneeded=()=>{
+          const db=req.result;
+          if(!db.objectStoreNames.contains(IDB_STORE)){
+            db.createObjectStore(IDB_STORE,{ keyPath:"id" });
+          }
+        };
+        req.onsuccess=()=>resolve(req.result);
+        req.onerror=()=>reject(req.error);
+      });
+    }
+
+    async function idbPutImage(id,dataUrl){
+      try{
+        const db=await openDb();
+        await new Promise((resolve,reject)=>{
+          const tx=db.transaction(IDB_STORE,"readwrite");
+          tx.objectStore(IDB_STORE).put({ id, dataUrl });
+          tx.oncomplete=()=>resolve(true);
+          tx.onerror=()=>reject(tx.error);
+        });
+        db.close();
+        return true;
+      }catch(e){ console.warn("idbPutImage failed",e); return false; }
+    }
+
+    async function idbGetImage(id){
+      try{
+        const db=await openDb();
+        const dataUrl=await new Promise((resolve,reject)=>{
+          const tx=db.transaction(IDB_STORE,"readonly");
+          const req=tx.objectStore(IDB_STORE).get(id);
+          req.onsuccess=()=>resolve(req.result?.dataUrl||null);
+          req.onerror=()=>reject(req.error);
+        });
+        db.close();
+        return dataUrl;
+      }catch(e){ console.warn("idbGetImage failed",e); return null; }
+    }
+
+    async function idbDelImage(id){
+      try{
+        const db=await openDb();
+        await new Promise((resolve,reject)=>{
+          const tx=db.transaction(IDB_STORE,"readwrite");
+          tx.objectStore(IDB_STORE).delete(id);
+          tx.oncomplete=()=>resolve(true);
+          tx.onerror=()=>reject(tx.error);
+        });
+        db.close();
+        return true;
+      }catch(e){ console.warn("idbDelImage failed",e); return false; }
+    }
+
+    // stable id (hash)
+    function stableStringify(obj){
+      const seen=new WeakSet();
+      const sorter=(k,v)=>{
+        if(v && typeof v==="object"){
+          if(seen.has(v)) return;
+          seen.add(v);
+          if(Array.isArray(v)) return v;
+          const out={};
+          Object.keys(v).sort().forEach(key=>out[key]=v[key]);
+          return out;
+        }
+        return v;
+      };
+      return JSON.stringify(obj,sorter);
+    }
+
+    async function sha256Hex(str){
+      if(!crypto?.subtle) throw new Error("crypto.subtle unavailable");
+      const enc=new TextEncoder().encode(str);
+      const buf=await crypto.subtle.digest("SHA-256",enc);
+      return [...new Uint8Array(buf)].map(b=>b.toString(16).padStart(2,"0")).join("");
+    }
+
+    async function computeOutfitId(payload,spec){
+      const core={
+        payload:{
+          gender:payload.gender, age: payload.age,
+      ageGroup: payload.ageGroup || "adult", height:payload.height, weight:payload.weight,
+          style:payload.style, styleVariant:payload.styleVariant||"", temp:payload.temp,
+          withBag:!!payload.withBag, withHat:!!payload.withHat, withCoat:!!payload.withCoat
+        },
+        items:(spec?.items||[]).map(i=>({
+          slot:i.slot, generic_name:i.generic_name, display_name_zh:i.display_name_zh,
+          color:i.color, style:i.style, gender:i.gender, warmth:i.warmth
+        })),
+        summary:spec?.summary||""
+      };
+      return await sha256Hex(stableStringify(core));
+    }
+
+    function fmtTime(ts){
+      try{
+        const d=new Date(ts);
+        const m=String(d.getMonth()+1).padStart(2,"0");
+        const day=String(d.getDate()).padStart(2,"0");
+        const hh=String(d.getHours()).padStart(2,"0");
+        const mm=String(d.getMinutes()).padStart(2,"0");
+        return `${m}/${day} ${hh}:${mm}`;
+      }catch{ return ""; }
+    }
+
+    // Tabs
+    const tabRecents=document.getElementById("tab-recents");
+    const tabFavs=document.getElementById("tab-favs");
+    const paneRecents=document.getElementById("pane-recents");
+    const paneFavs=document.getElementById("pane-favs");
+    function setTab(which){
+      const rec=(which==="recents");
+      tabRecents?.classList.toggle("active",rec);
+      tabFavs?.classList.toggle("active",!rec);
+      paneRecents?.classList.toggle("active",rec);
+      paneFavs?.classList.toggle("active",!rec);
+    }
+    tabRecents?.addEventListener("click",()=>setTab("recents"));
+    tabFavs?.addEventListener("click",()=>setTab("favs"));
+
+    async function renderMiniList(targetId,listKey){
+      const root=document.getElementById(targetId);
+      if(!root) return;
+      const list=readList(listKey);
+      root.innerHTML="";
+      if(!list.length){
+        root.innerHTML='<div class="mini-empty">目前沒有資料。</div>';
+        return;
+      }
+      for(const item of list){
+        const row=document.createElement("div");
+        row.className="mini-card";
+
+        const thumb=document.createElement("div");
+        thumb.className="mini-thumb";
+        thumb.textContent="載入中…";
+
+        const info=document.createElement("div");
+        info.className="mini-info";
+        const title=(item.summary||"一套穿搭").trim()||"一套穿搭";
+const p=item.payload||{};
+const chips = formatOutfitMetaChips(p, { includeTime:true, ts: item.ts })
+  .filter(x=>["生成","對象","身形","風格","氣溫","配件","色系","情境","品牌","名人"].includes(x.k))
+  .map(x=>`<span class="meta-chip"><b>${escapeHtml(x.k)}</b><span class="dim">${escapeHtml(x.v)}</span></span>`)
+  .join("");
+info.innerHTML = `<div class="mini-title">${escapeHtml(title)}</div><div class="mini-meta">${chips}</div>`;
+
+        const actions=document.createElement("div");
+        actions.className="mini-actions";
+
+        const btnLoad=document.createElement("button");
+        btnLoad.className="chip-btn";
+        btnLoad.type="button";
+        btnLoad.textContent="套用";
+        btnLoad.addEventListener("click",async()=>{ await applySavedOutfit(item.id); });
+
+        const btnDel=document.createElement("button");
+        btnDel.className="chip-btn danger";
+        btnDel.type="button";
+        btnDel.textContent="刪除";
+        btnDel.addEventListener("click",async()=>{ await removeSavedOutfit(listKey,item.id); });
+
+        actions.appendChild(btnLoad);
+        actions.appendChild(btnDel);
+
+        row.appendChild(thumb);
+        row.appendChild(info);
+        row.appendChild(actions);
+        root.appendChild(row);
+
+        const dataUrl=await idbGetImage(item.imageId||item.id);
+        if(dataUrl) thumb.innerHTML=`<img src="${dataUrl}" alt="">`;
+        else thumb.textContent="無圖";
+
+        thumb.addEventListener("click",async()=>{
+          const d=await idbGetImage(item.imageId||item.id);
+          if(!d) return;
+          try{
+            modalImg.src=d;
+            modal.classList.add("on");
+            modal.setAttribute("aria-hidden","false");
+            document.body.style.overflow="hidden";
+          }catch{}
+        });
+      }
+    }
+
+    async function refreshCollectionsUI(){
+      await renderMiniList("recents-list",LS_RECENTS);
+      await renderMiniList("favs-list",LS_FAVS);
+    }
+
+    async function upsertRecent(outfit){
+      try{
+        const list=readList(LS_RECENTS);
+        const filtered=list.filter(x=>x.id!==outfit.id);
+        filtered.unshift(outfit);
+        writeList(LS_RECENTS, filtered.slice(0,10));
+      }catch(e){ console.warn("upsertRecent failed",e); }
+    }
+
+    function isFav(id){
+      const list=readList(LS_FAVS);
+      return list.some(x=>x.id===id);
+    }
+
+    async function setFav(outfit,on){
+      try{
+        const list=readList(LS_FAVS);
+        const exists=list.some(x=>x.id===outfit.id);
+        let next=list;
+        if(on){
+          if(!exists) next=[outfit, ...list].slice(0,200);
+        }else{
+          next=list.filter(x=>x.id!==outfit.id);
+        }
+        writeList(LS_FAVS,next);
+      }catch(e){ console.warn("setFav failed",e); }
+    }
+
+    async function removeSavedOutfit(listKey,id){
+      try{
+        const list=readList(listKey);
+        const item=list.find(x=>x.id===id);
+        const next=list.filter(x=>x.id!==id);
+        writeList(listKey,next);
+        const imageId=item?.imageId||id;
+        await idbDelImage(imageId);
+      }catch(e){ console.warn("removeSavedOutfit failed",e); }
+      await refreshCollectionsUI();
+      syncFavButtonUI();
+    }
+
+    async function applySavedOutfit(id){
+      const all=[...readList(LS_RECENTS), ...readList(LS_FAVS)];
+      const item=all.find(x=>x.id===id);
+      if(!item) return;
+
+      try{
+        applyPayloadToForm(item.payload||{});
+
+        flowState.payload=item.payload||null;
+        flowState.spec=item.spec||null;
+        flowState.products=Array.isArray(item.products)?item.products:[];
+        updateResultActions();
+
+        renderOutfitSummary(item.summary||flowState.spec?.summary||"");
+        if(flowState.products?.length) renderProductsGrouped(flowState.products);
+
+        const dataUrl=await idbGetImage(item.imageId||item.id);
+        if(dataUrl){
+          const img=document.getElementById("outfit-image");
+          const ph=document.getElementById("img-placeholder");
+          img.src=dataUrl;
+          img.style.display="block";
+          ph.style.display="none";
+          showImageSkeleton(false);
+        }
+
+        flowState.currentOutfitId=item.id;
+        syncFavButtonUI();
+
+        scrollToEl("anchor-preview","smooth","start");
+      }catch(e){ console.warn("applySavedOutfit failed",e); }
+    }
+
+    const favBtn=document.getElementById("btn-fav");
+    const favIcon=document.getElementById("fav-icon");
+    const favText=document.getElementById("fav-text");
+
+    function syncFavButtonUI(){
+      const id=flowState.currentOutfitId;
+      const hasImage=!!(document.getElementById("outfit-image")?.src);
+      const enabled=!!id && hasImage;
+      if(!favBtn) return;
+
+      favBtn.disabled=!enabled;
+
+      if(!enabled){
+        favBtn.classList.remove("on");
+        if(favIcon) favIcon.textContent="♡";
+        if(favText) favText.textContent="收藏";
+        return;
+      }
+
+      const on=isFav(id);
+      favBtn.classList.toggle("on",on);
+      if(favIcon) favIcon.textContent=on ? "♥" : "♡";
+      if(favText) favText.textContent=on ? "已收藏" : "收藏";
+    }
+
+    async function buildCurrentOutfitSnapshotNoThrow(){
+      try{
+        const id=flowState.currentOutfitId;
+        if(!id) return null;
+        const img=document.getElementById("outfit-image");
+        const dataUrl=img?.src||"";
+        if(dataUrl.startsWith("data:")) await idbPutImage(id,dataUrl);
+
+        return {
+          id,
+          ts: Date.now(),
+          payload: flowState.payload,
+          summary: flowState.spec?.summary || "",
+          spec: flowState.spec,
+          products: Array.isArray(flowState.products) ? flowState.products : [],
+          imageId: id
+        };
+      }catch(e){ console.warn("buildCurrentOutfitSnapshot failed",e); return null; }
+    }
+
+    favBtn?.addEventListener("click",async()=>{
+      const id=flowState.currentOutfitId;
+      if(!id) return;
+      const outfit=await buildCurrentOutfitSnapshotNoThrow();
+      if(!outfit) return;
+      const on=!isFav(id);
+      await setFav(outfit,on);
+      syncFavButtonUI();
+      await refreshCollectionsUI();
+    });
+
+
+    function resetPerRunUI(){
+      showRetryUI(false);
+      clearError();
+      clearImage();
+      showImageSkeleton(true);
+      renderProductsSkeleton(4);
+      renderOutfitSummary(null);
+      flowState.currentOutfitId=null;
+      flowState.imgResp=null;
+      flowState.spec=null;
+      flowState.products=null;
+        syncFavButtonUI();
+    }
+
+    function finalizeDoneNoThrow(){
+      setGenerateStep("done");
+      setProgress(100);
+      setStatus("", true, false);
+      showRetryUI(false);
+    }
+
+    async function generateAll(forceRestart=false){
+      showRetryUI(false); clearError();
+      setLoadingUI(true); setFormDisabled(true);
+      try{
+        setGenerateStep("spec"); setProgress(0); setStatus("", null, true);
+        autoScrollOnStart();
+        resetPerRunUI();
+
+        const ensured=await ensureTokenFromSession();
+        if(!ensured.ok){ setAuthUI({ loggedIn:false, hint:"未登入（請按 Google 登入）" }); throw new Error("未登入或 session 不存在"); }
+
+        const me=await apiMe();
+        if(!me.ok){ setAuthUI({ loggedIn:false, hint:"登入狀態異常（/api/me 失敗）" }); throw new Error("登入狀態異常（/api/me 失敗）"); }
+        flowState.me=me;
+
+        const basePayload={
+          gender: document.getElementById("gender").value,
+          age: Number(document.getElementById("age").value),
+      ageGroup: (document.getElementById("ageGroup")?.value || "adult"),
+          height: Number(document.getElementById("height").value),
+          weight: Number(document.getElementById("weight").value),
+          style: document.getElementById("style").value,
+          styleVariant: document.getElementById("styleVariant").value || "",
+          temp: Number(document.getElementById("temp").value),
+          withBag: !!getBag(),
+          withHat: !!getHat(),
+          withCoat: !!getCoat()
+        };
+        const payload=enrichPayload(basePayload);
+        flowState.payload=payload;
+        setResultMeta(payload);
+        updateResultActions();
+
+        if(forceRestart){ flowState.spec=null; flowState.imgResp=null; flowState.products=null;
+        syncFavButtonUI(); flowState.lastStep="idle"; }
+
+        const spec=await runStepSpec(payload, me);
+        try{ flowState.currentOutfitId = await computeOutfitId(payload, spec); }catch(e){ flowState.currentOutfitId = String(Date.now()); }
+        syncFavButtonUI();
+        const imgResp=await runStepImage(payload, spec);
+        syncFavButtonUI();
+        scrollToElWithOffset("anchor-preview", 12, "smooth");
+        const products=await runStepProducts(payload, spec);
+        syncFavButtonUI();
+
+        finalizeDoneNoThrow();
+        autoScrollOnDone();
+        (async ()=>{
+    try{ await applyPublicCopy(); }catch(e){}
+ try{ const outfit=await buildCurrentOutfitSnapshotNoThrow(); if(!outfit) return; await upsertRecent(outfit); await refreshCollectionsUI(); syncFavButtonUI(); }catch(e){ console.warn("persist recent failed (non-fatal)",e); }})();
+      }catch(e){
+        console.error(e);
+        setGenerateStep("failed");
+        setStatus("", false, false);
+        setProgress(0);
+        const raw=String(e?.message||e||"");
+        setDebug({ error: raw, step: flowState.lastStep, state: flowState });
+        const friendly=userFriendlyError(e, flowState.lastStep, !!flowState.imgResp);
+        showError(`${friendly.title}：${friendly.desc}（下一步：${friendly.next}）`);
+        showRetryUI(true, flowState.lastStep, friendly.next);
+      } finally {
+        setLoadingUI(false);
+        setFormDisabled(false);
+      }
+    }
+
+/***********************
+ * Age group (成人 / 童裝) + dynamic ranges
+ * - 童裝：年齡 4–12，並同步調整身高/體重 slider 區間
+ ***********************/
+const AGE_GROUP_RULES = {
+  adult: {
+    age:    { min: 13, max: 70, dft: 25 },
+    height: { min: 140, max: 200, dft: 165 },
+    weight: { min: 35,  max: 120, dft: 55 }
+  },
+  kids: {
+    age:    { min: 4,  max: 12, dft: 7 },
+    height: { min: 90, max: 170, dft: 120 },
+    weight: { min: 12, max: 80, dft: 25 }
+  }
+};
+
+function clampNum(n, min, max){
+  const x = Number(n);
+  if (!Number.isFinite(x)) return min;
+  return Math.max(min, Math.min(max, x));
+}
+
+// Update slider min/max + chips + range-sub numbers, keeping user value if still valid.
+// If user value falls outside, set to group default.
+function setRangeAttributes(rangeId, valId, minId, maxId, min, max, dft){
+  const r = document.getElementById(rangeId);
+  if (!r) return;
+  r.min = String(min);
+  r.max = String(max);
+  r.step = "1";
+
+  const cur = Number(r.value);
+  let next = cur;
+  if (!Number.isFinite(next) || next < min || next > max) next = (dft !== undefined && dft !== null) ? dft : min;
+  next = clampNum(next, min, max);
+  r.value = String(next);
+
+  const v = document.getElementById(valId);
+  if (v) v.textContent = String(next);
+
+  const mn = document.getElementById(minId);
+  const mx = document.getElementById(maxId);
+  if (mn) mn.textContent = String(min);
+  if (mx) mx.textContent = String(max);
+
+  // re-paint value chips bound by input listeners
+  try { r.dispatchEvent(new Event("input", { bubbles: true })); } catch {}
+}
+
+function applyAgeGroup(group, { silent=false } = {}){
+  const g = AGE_GROUP_RULES[group] ? group : "adult";
+  const cfg = AGE_GROUP_RULES[g];
+
+  // Update hidden value
+  const hidden = document.getElementById("ageGroup");
+  if (hidden) hidden.value = g;
+
+  // Sliders
+  setRangeAttributes("age", "age-val", "age-min", "age-max", cfg.age.min, cfg.age.max, cfg.age.dft);
+  setRangeAttributes("height", "height-val", "height-min", "height-max", cfg.height.min, cfg.height.max, cfg.height.dft);
+  setRangeAttributes("weight", "weight-val", "weight-min", "weight-max", cfg.weight.min, cfg.weight.max, cfg.weight.dft);
+
+  if (!silent) haptic(10);
+}
+
+function bindAgeGroupSeg(){
+  const seg = document.getElementById("agegroup-seg");
+  const hidden = document.getElementById("ageGroup");
+  if (!seg || !hidden) return;
+
+  const btns = Array.from(seg.querySelectorAll(".seg-btn"));
+  const select = (val, opts={emit:true}) => {
+    const v = (val === "kids" || val === "adult") ? val : "adult";
+    hidden.value = v;
+    btns.forEach(b => {
+      const on = b.dataset.value === v;
+      b.classList.toggle("on", on);
+      b.setAttribute("aria-checked", on ? "true" : "false");
+    });
+    applyAgeGroup(v, opts);
+    // update style/variant labels per audience
+    try { if (typeof updateStyleUIForAudience === "function") updateStyleUIForAudience(); } catch {}
+    if(opts.emit){
+      try{ hidden.dispatchEvent(new Event("input",{bubbles:true})); }catch{}
+      try{ hidden.dispatchEvent(new Event("change",{bubbles:true})); }catch{}
+    }
+  };
+
+  btns.forEach(b => b.addEventListener("click", () => select(b.dataset.value,{emit:true})));
+  // allow share/restore to set this before sliders
+  window.__setAgeGroup = (val) => select(val, { silent: true, emit: true });
+
+  // init: if current age < 13, default to kids, otherwise adult
+  const curAge = Number(document.getElementById("age")?.value ?? 25);
+  const initial = hidden.value || (Number.isFinite(curAge) && curAge < 13 ? "kids" : "adult");
+  select(initial, { silent: true, emit: false });
+}
+
+
+    /***********************
+     * Audience / presets / metadata (non-breaking)
+     * Q1:B 追加新欄位（styleId / paletteId / celebId / audienceKey）
+     * - 不影響既有：style / styleVariant
+     * Q2:A 商品搜尋：依 audienceKey 前置 keyword（男裝/女裝/男童/女童/童裝）
+     ***********************/
+    let uiPaletteId = null; // set by 隨機推薦（之後可擴展成可視化選單）
+
+    function getAgeGroupValue() {
+      return document.getElementById("ageGroup")?.value || "adult";
+    }
+
+    function getAudienceKey(p) {
+      const ag = p?.ageGroup || getAgeGroupValue();
+      const g = p?.gender || (document.getElementById("gender")?.value || "neutral");
+      return `${ag}-${g}`; // e.g. adult-female, kids-neutral
+    }
+
+    const DEFAULT_PALETTE_BY_AUDIENCE = {
+      "adult-female": "cream-warm",
+      "adult-male": "mono-dark",
+      "adult-neutral": "mono-dark",
+      "kids-female": "bright",
+      "kids-male": "bright",
+      "kids-neutral": "bright",
+    };
+
+    function deriveCelebId(styleVariant) {
+      const v = String(styleVariant || "");
+      return v.startsWith("celeb-") ? v : "";
+    }
+// ---- styleTag helpers (UI -> API) ----
+function normalizeStyleChoiceToSlug(source, valueRaw){
+  const v = String(valueRaw || "").trim();
+  if(!v) return "";
+
+  // Scene (情境) mapping
+  if(source === "scene"){
+    const map = {
+      "休閒": "casual",
+      "上班 / 通勤": "commute",
+      "約會": "date",
+      "運動": "sport",
+      "旅行": "travel",
+      "正式場合": "formal",
+
+      "日常 / 上學": "school",
+      "戶外玩樂": "outdoor",
+      "運動 / 體育課": "sport_class",
+      "聚會 / 生日": "party_birthday",
+    };
+    return map[v] || v
+      .toLowerCase()
+      .replace(/\s+/g, "_")
+      .replace(/[^\w\u4e00-\u9fff]/g, "_")
+      .replace(/_+/g, "_")
+      .replace(/^_+|_+$/g, "");
+  }
+
+  // Celebrity mapping
+  if(source === "celebrity"){
+    const map = {
+      "GD": "gd",
+      "BTS": "bts",
+      "V": "v",
+      "Jungkook": "jungkook",
+      "Jimin": "jimin",
+      "RM": "rm",
+      "Lisa": "lisa",
+      "IU": "iu",
+      "Jennie": "jennie",
+      "Rosé": "rose",
+      "Jisoo": "jisoo",
+      "Karina": "karina",
+    };
+    return map[v] || v
+      .toLowerCase()
+      .replace(/\s+/g, "_")
+      .replace(/[^\w]/g, "_")
+      .replace(/_+/g, "_")
+      .replace(/^_+|_+$/g, "");
+  }
+
+  return "";
+}
+
+function getSelectedStyleTagForApi(){
+  const source = (document.getElementById("uiStyleSource")?.value || "").trim();
+  const value  = (document.getElementById("uiStyleValue")?.value  || "").trim();
+  if(!source || !value) return null;
+
+  const src = source === "celebrity" ? "celeb" : "scene"; // API 想要 celeb_/scene_
+  const slug = normalizeStyleChoiceToSlug(source, value);
+  if(!slug) return null;
+
+  return `${src}_${slug}`;
+}
+
+    function enrichPayload(base) {
+  const audienceKey = getAudienceKey(base);
+  const paletteId = uiPaletteId || DEFAULT_PALETTE_BY_AUDIENCE[audienceKey] || "cream-warm";
+  const celebId = deriveCelebId(base.styleVariant);
+  const styleId = base.style;
+
+  const uiStyleSource = document.getElementById("uiStyleSource")?.value || "";
+  const uiStyleValue  = document.getElementById("uiStyleValue")?.value || "";
+
+  const styleTag = getSelectedStyleTagForApi(); // ✅ 這裡會變成 scene_travel / celeb_gd ...
+
+  return { ...base, audienceKey, styleId, paletteId, celebId, uiStyleSource, uiStyleValue, styleTag };
+}
+
+
+    function getProductKeywordPrefix(payload) {
+      const ak = payload?.audienceKey || getAudienceKey(payload);
+      const g = payload?.gender || "neutral";
+      if (ak.startsWith("kids")) {
+        if (g === "female") return "女童";
+        if (g === "male") return "男童";
+        return "童裝";
+      }
+      if (ak.startsWith("adult")) {
+        if (g === "female") return "女裝";
+        if (g === "male") return "男裝";
+        return ""; // 中性：不前置，避免縮小結果
+      }
+      return "";
+
+    function getProductKeywordPrefixEn(payload) {
+      const ak = payload?.audienceKey || getAudienceKey(payload);
+      const g = payload?.gender || "neutral";
+      if (ak.startsWith("kids")) {
+        if (g === "female") return "girls";
+        if (g === "male") return "boys";
+        return "kids";
+      }
+      if (ak.startsWith("adult")) {
+        if (g === "female") return "women";
+        if (g === "male") return "men";
+        return "";
+      }
+      return "";
+    }
+
+    }
+
+    // 隨機推薦（中文名，依：男/女/中性 + 成人/童裝）
+    const RANDOM_PRESETS = {
+      "adult-female": [
+        { label: "韓系日常", style: "casual", styleVariant: "celeb-iu-casual", paletteId: "cream-warm" },
+        { label: "奶油極簡", style: "minimal", styleVariant: "brand-muji", paletteId: "cream-warm" },
+        { label: "微正式", style: "smart", styleVariant: "brand-cos", paletteId: "cream-warm" },
+      ],
+      "adult-male": [
+        { label: "乾淨日常", style: "minimal", styleVariant: "brand-uniqlo", paletteId: "mono-dark" },
+        { label: "機能運動", style: "sporty", styleVariant: "brand-nike-tech", paletteId: "mono-dark" },
+        { label: "街頭層次", style: "street", styleVariant: "celeb-gd-street", paletteId: "mono-dark" },
+      ],
+      "adult-neutral": [
+        { label: "中性極簡", style: "minimal", styleVariant: "brand-cos", paletteId: "mono-dark" },
+        { label: "中性街頭", style: "street", styleVariant: "brand-ader-error", paletteId: "mono-dark" },
+        { label: "中性日常", style: "casual", styleVariant: "", paletteId: "mono-dark" },
+      ],
+      "kids-female": [
+        { label: "校園日常", style: "casual", styleVariant: "", paletteId: "bright" },
+        { label: "活力運動", style: "sporty", styleVariant: "", paletteId: "bright" },
+        { label: "可愛簡約", style: "minimal", styleVariant: "brand-uniqlo", paletteId: "bright" },
+      ],
+      "kids-male": [
+        { label: "校園日常", style: "casual", styleVariant: "", paletteId: "bright" },
+        { label: "運動機能", style: "sporty", styleVariant: "brand-nike-tech", paletteId: "bright" },
+        { label: "酷感街頭", style: "street", styleVariant: "", paletteId: "bright" },
+      ],
+      "kids-neutral": [
+        { label: "校園日常", style: "casual", styleVariant: "", paletteId: "bright" },
+        { label: "活力運動", style: "sporty", styleVariant: "", paletteId: "bright" },
+        { label: "清爽簡約", style: "minimal", styleVariant: "", paletteId: "bright" },
+      ],
+    };
+
+    
+    /***********************
+     * Style UI per audience (gender + age group)
+     * - Q1:B: 不同族群 → 不同「顯示名稱/描述/變體選項」
+     *   （保留原本 style / styleVariant 的 value，避免後端相容性問題）
+     ***********************/
+    const STYLE_UI_BY_AUDIENCE = {
+      "adult-female": {
+        styles: [
+          { style: "casual", chip: "Daily", name: "韓系日常", desc: "柔和、好搭、帶點甜感" },
+          { style: "minimal", chip: "Minimal", name: "奶油極簡", desc: "乾淨比例、低飽和" },
+          { style: "street",  chip: "Street",  name: "韓系街頭", desc: "層次、寬鬆、個性" },
+          { style: "sporty",  chip: "Sporty",  name: "輕運動機能", desc: "輕便、好活動" },
+          { style: "smart",   chip: "Smart",   name: "輕熟通勤", desc: "正式一點但不拘謹", wide: true },
+        ],
+        variants: {
+          brands: [
+            { v: "brand-uniqlo",      t: "UNIQLO（基本百搭）" },
+            { v: "brand-muji",        t: "MUJI（生活極簡）" },
+            { v: "brand-cos",         t: "COS（結構極簡）" },
+            { v: "brand-nike-tech",   t: "Nike Tech（機能運動）" },
+            { v: "brand-ader-error",  t: "Ader Error（韓系街頭）" },
+          ],
+          celebs: [
+            { v: "celeb-iu-casual",       t: "IU（清新日常）" },
+            { v: "celeb-jennie-minimal",  t: "Jennie（極簡辣）" },
+            { v: "celeb-gd-street",       t: "G-Dragon（層次街頭）" },
+            { v: "celeb-lisa-sporty",     t: "Lisa（舞者運動）" },
+          ],
+        },
+      },
+      "adult-male": {
+        styles: [
+          { style: "casual", chip: "Clean",  name: "乾淨日常", desc: "俐落、耐看、好上手" },
+          { style: "minimal", chip: "Mono",  name: "黑白灰極簡", desc: "線條乾淨、低彩度" },
+          { style: "street",  chip: "Layer", name: "街頭層次", desc: "寬鬆比例、機能感" },
+          { style: "sporty",  chip: "Tech",  name: "機能運動", desc: "輕量、耐用、好活動" },
+          { style: "smart",   chip: "Smart", name: "通勤俐落", desc: "成熟但不老氣", wide: true },
+        ],
+        variants: {
+          brands: [
+            { v: "brand-uniqlo",      t: "UNIQLO（乾淨通勤）" },
+            { v: "brand-muji",        t: "MUJI（簡約舒適）" },
+            { v: "brand-cos",         t: "COS（俐落剪裁）" },
+            { v: "brand-nike-tech",   t: "Nike Tech（機能運動）" },
+            { v: "brand-ader-error",  t: "Ader Error（韓系街頭）" },
+          ],
+          celebs: [
+            { v: "celeb-gd-street",       t: "G-Dragon（層次街頭）" },
+            { v: "celeb-lisa-sporty",     t: "Lisa（舞者運動）" },
+            { v: "celeb-iu-casual",       t: "IU（清新配色）" },
+            { v: "celeb-jennie-minimal",  t: "Jennie（極簡辣）" },
+          ],
+        },
+      },
+      "adult-neutral": {
+        styles: [
+          { style: "casual", chip: "Daily",  name: "中性日常", desc: "舒服、好搭、留白感" },
+          { style: "minimal", chip: "Mono",  name: "極簡中性", desc: "黑白灰、線條乾淨" },
+          { style: "street",  chip: "Street", name: "中性街頭", desc: "寬鬆比例、層次" },
+          { style: "sporty",  chip: "Sporty", name: "中性運動", desc: "機能、輕鬆、好活動" },
+          { style: "smart",   chip: "Smart",  name: "中性俐落", desc: "正式感＋休閒平衡", wide: true },
+        ],
+        variants: {
+          brands: [
+            { v: "brand-uniqlo",      t: "UNIQLO（中性基本）" },
+            { v: "brand-muji",        t: "MUJI（中性極簡）" },
+            { v: "brand-cos",         t: "COS（中性結構）" },
+            { v: "brand-nike-tech",   t: "Nike Tech（中性機能）" },
+            { v: "brand-ader-error",  t: "Ader Error（中性街頭）" },
+          ],
+          celebs: [
+            { v: "celeb-jennie-minimal",  t: "Jennie（極簡辣）" },
+            { v: "celeb-gd-street",       t: "G-Dragon（層次街頭）" },
+            { v: "celeb-iu-casual",       t: "IU（清新日常）" },
+            { v: "celeb-lisa-sporty",     t: "Lisa（舞者運動）" },
+          ],
+        },
+      },
+      "kids-female": {
+        styles: [
+          { style: "casual", chip: "School", name: "校園日常", desc: "可愛乾淨、耐看好搭" },
+          { style: "minimal", chip: "Soft",  name: "柔和簡約", desc: "低飽和、舒服親膚" },
+          { style: "street",  chip: "Cute",  name: "童趣潮流", desc: "亮點單品、俏皮層次" },
+          { style: "sporty",  chip: "Active", name: "活力運動", desc: "好活動、耐髒耐磨" },
+          { style: "smart",   chip: "Neat",  name: "小小正式", desc: "聚會/生日也合適", wide: true },
+        ],
+        variants: {
+          brands: [
+            { v: "brand-uniqlo",      t: "UNIQLO Kids（基本百搭）" },
+            { v: "brand-muji",        t: "MUJI（童裝簡約）" },
+            { v: "brand-nike-tech",   t: "Nike（童裝運動）" },
+          ],
+          celebs: [],
+        },
+      },
+      "kids-male": {
+        styles: [
+          { style: "casual", chip: "School", name: "校園日常", desc: "乾淨俐落、耐看" },
+          { style: "minimal", chip: "Soft",  name: "簡約舒服", desc: "好穿好洗、親膚" },
+          { style: "street",  chip: "Cool",  name: "童裝街頭", desc: "寬鬆比例、潮流感" },
+          { style: "sporty",  chip: "Active", name: "活力運動", desc: "機能、好活動" },
+          { style: "smart",   chip: "Neat",  name: "小小紳士", desc: "聚會/節日更合適", wide: true },
+        ],
+        variants: {
+          brands: [
+            { v: "brand-uniqlo",      t: "UNIQLO Kids（基本百搭）" },
+            { v: "brand-muji",        t: "MUJI（童裝簡約）" },
+            { v: "brand-nike-tech",   t: "Nike（童裝運動）" },
+          ],
+          celebs: [],
+        },
+      },
+      "kids-neutral": {
+        styles: [
+          { style: "casual", chip: "School", name: "中性校園", desc: "乾淨好搭、耐看" },
+          { style: "minimal", chip: "Soft",  name: "中性簡約", desc: "低飽和、舒服" },
+          { style: "street",  chip: "Play",  name: "童趣層次", desc: "俏皮、亮點單品" },
+          { style: "sporty",  chip: "Active", name: "中性運動", desc: "好活動、耐用" },
+          { style: "smart",   chip: "Neat",  name: "整齊可愛", desc: "拍照也好看", wide: true },
+        ],
+        variants: {
+          brands: [
+            { v: "brand-uniqlo",      t: "UNIQLO Kids（中性基本）" },
+            { v: "brand-muji",        t: "MUJI（中性簡約）" },
+            { v: "brand-nike-tech",   t: "Nike（中性運動）" },
+          ],
+          celebs: [],
+        },
+      },
+    };
+
+    function getAudienceKey() {
+      const g = document.getElementById("gender")?.value || "neutral";
+      const ag = (typeof getAgeGroupValue === "function") ? (getAgeGroupValue() || "adult") : "adult";
+      return `${ag}-${g}`;
+    }
+
+    function getStyleUIForAudience() {
+      const key = getAudienceKey();
+      return STYLE_UI_BY_AUDIENCE[key] || STYLE_UI_BY_AUDIENCE["adult-neutral"];
+    }
+
+    function rebuildStyleCardsForAudience() {
+      const grid = document.getElementById("style-grid");
+      const hidden = document.getElementById("style");
+      if (!grid || !hidden) return;
+
+      const ui = getStyleUIForAudience();
+      const current = hidden.value || "casual";
+
+      grid.innerHTML = (ui.styles || []).map(s => {
+        const wide = s.wide ? ' style="grid-column:1/-1"' : "";
+        const selected = (s.style === current) ? " selected" : "";
+        return `
+          <div class="style-card${selected}" data-style="${s.style}"${wide}>
+            <div class="chip">${s.chip || s.style}</div>
+            <div class="name">${s.name || s.style}</div>
+            <div class="desc">${s.desc || ""}</div>
+          </div>
+        `.trim();
+      }).join("");
+
+      // Re-bind click handlers (and keep compatibility with existing code)
+      try { bindStyleCards(); } catch {}
+
+      // Ensure selected style exists; otherwise fallback to first card
+      const exists = (ui.styles || []).some(s => s.style === current);
+      if (!exists && ui.styles && ui.styles.length) {
+        hidden.value = ui.styles[0].style;
+        try { if (window.__setStyleCard) window.__setStyleCard(hidden.value); } catch {}
+      } else {
+        try { if (window.__setStyleCard) window.__setStyleCard(current); } catch {}
+      }
+    }
+
+    function rebuildStyleVariantOptionsForAudience() {
+      const sel = document.getElementById("styleVariant");
+      if (!sel) return;
+
+      const ui = getStyleUIForAudience();
+      const prev = sel.value || "";
+
+      const option = (v, t) => `<option value="${v}">${t}</option>`;
+      const group = (label, arr) => {
+        if (!arr || !arr.length) return "";
+        return `<optgroup label="${label}">${arr.map(x => option(x.v, x.t)).join("")}</optgroup>`;
+      };
+
+      sel.innerHTML =
+        option("", "（不使用變體）") +
+        group("品牌", ui.variants?.brands || []) +
+        group("名人（風格靈感，不模仿臉）", ui.variants?.celebs || []);
+
+      // restore previous if still exists
+      const hasPrev = Array.from(sel.options).some(o => o.value === prev);
+      sel.value = hasPrev ? prev : "";
+    }
+
+    function updateStyleUIForAudience() {
+      rebuildStyleCardsForAudience();
+      rebuildStyleVariantOptionsForAudience();
+    }
+
+
+function safeSetSelectValue(id, value) {
+      const el = document.getElementById(id);
+      if (!el) return false;
+      const v = String(value || "");
+      const has = Array.from(el.options || []).some((o) => o.value === v);
+      el.value = has ? v : "";
+      el.dispatchEvent(new Event("change"));
+      return true;
+    }
+
+    function applyRandomPreset() {
+      const gender = document.getElementById("gender")?.value || "neutral";
+      const ageGroup = getAgeGroupValue();
+      const key = `${ageGroup}-${gender}`;
+      const pool = RANDOM_PRESETS[key] || RANDOM_PRESETS[`adult-${gender}`] || RANDOM_PRESETS["adult-neutral"];
+      if (!pool || !pool.length) return;
+
+      const p = pool[Math.floor(Math.random() * pool.length)];
+      if (window.__setStyleCard) window.__setStyleCard(p.style);
+      else {
+        const hidden = document.getElementById("style");
+        if (hidden) hidden.value = p.style;
+      }
+      safeSetSelectValue("styleVariant", p.styleVariant || "");
+      uiPaletteId = p.paletteId || null;
+
+      showToast(`已幫你選：${p.label}`, 1600);
+      haptic(10);
+    }
+
+
+
+/***********************
+ * 風格（穿搭情境 / 名人靈感）UI（穩定版：不改既有 payload 結構）
+ * - UI 顯示：情境 6 個；名人依性別顯示（男 / 女 / 中性）
+ * - 點選後：映射到既有 #style / #styleVariant（不破壞後端相容性）
+ * - 隨機一下：隨機來源 + 該來源底下項目
+ ***********************/
+const STYLE_SOURCES = {
+  scene: {
+    label: "穿搭情境",
+    optionsByAgeGroup: {
+      adult: ["休閒", "上班 / 通勤", "約會", "運動", "旅行", "正式場合"],
+      kids:  ["日常 / 上學", "戶外玩樂", "運動 / 體育課", "聚會 / 生日", "旅行", "正式場合"]
+    },
+    mapToPayload: (val) => {
+      // scene → existing 5 styles (casual/minimal/street/sporty/smart)
+      const m = {
+        "休閒": { style: "casual", styleVariant: "" },
+        "上班 / 通勤": { style: "smart", styleVariant: "" },
+        "約會": { style: "minimal", styleVariant: "" },
+        "運動": { style: "sporty", styleVariant: "" },
+        "旅行": { style: "casual", styleVariant: "" },
+        "正式場合": { style: "smart", styleVariant: "" }
+        ,
+        "V": { style: "street", styleVariant: "" },
+        "Jungkook": { style: "sporty", styleVariant: "" },
+        "Jimin": { style: "minimal", styleVariant: "" },
+        "RM": { style: "smart", styleVariant: "" },
+        "Rosé": { style: "minimal", styleVariant: "" },
+        "Jisoo": { style: "smart", styleVariant: "" },
+        "Karina": { style: "street", styleVariant: "" }
+      };
+      return m[val] || { style: "casual", styleVariant: "" };
+    }
+  },
+  celebrity: {
+    label: "名人靈感",
+    // options are derived by gender at runtime
+    optionsByGender: {
+      male: ["GD", "BTS", "V", "Jungkook", "Jimin", "RM"],
+      female: ["Lisa", "IU", "Jennie", "Rosé", "Jisoo", "Karina"],
+      neutralPool: ["GD", "BTS", "V", "Jungkook", "Jimin", "RM", "Lisa", "IU", "Jennie", "Rosé", "Jisoo", "Karina"]
+    },
+    mapToPayload: (val) => {
+      const m = {
+        "GD": { style: "street", styleVariant: "celeb-gd-street" },
+        "BTS": { style: "street", styleVariant: "celeb-bts-street" },
+        "Lisa": { style: "sporty", styleVariant: "celeb-lisa-sporty" },
+        "IU": { style: "casual", styleVariant: "celeb-iu-casual" },
+        "Jennie": { style: "minimal", styleVariant: "celeb-jennie-minimal" }
+      };
+      return m[val] || { style: "casual", styleVariant: "" };
+    }
+  }
+};
+
+function __shuffle(arr){
+  const a = arr.slice();
+  for(let i=a.length-1;i>0;i--){
+    const j = Math.floor(Math.random()*(i+1));
+    [a[i],a[j]] = [a[j],a[i]];
+  }
+  return a;
+}
+
+// --- Gender reader (robust): supports select#gender, radios name="gender", and common Chinese labels ---
+function __normalizeGender(v){
+  if(v==null) return "neutral";
+  const s = String(v).trim().toLowerCase();
+  if(["male","m","man","boy","男","男性"].includes(s)) return "male";
+  if(["female","f","woman","girl","女","女性"].includes(s)) return "female";
+  if(["neutral","x","other","none","不指定","中性","皆可"].includes(s)) return "neutral";
+  // fallback: accept already-normalized
+  if(s === "male" || s === "female") return s;
+  return "neutral";
+}
+
+function getCurrentGender(){
+  // 1) select / hidden input #gender
+  try{
+    const el = document.getElementById("gender");
+    if(el && ("value" in el) && String(el.value||"").trim()!=="") return __normalizeGender(el.value);
+  }catch{}
+
+  // 2) radios name="gender"
+  try{
+    const checked = document.querySelector('input[name="gender"]:checked');
+    if(checked && String(checked.value||"").trim()!=="") return __normalizeGender(checked.value);
+  }catch{}
+
+  // 3) any element with data-field="gender"
+  try{
+    const el = document.querySelector('[data-field="gender"]');
+    if(el && ("value" in el) && String(el.value||"").trim()!=="") return __normalizeGender(el.value);
+  }catch{}
+
+  return "neutral";
+}
+
+
+function getSceneOptions(){
+  // ageGroup is managed by existing UI (adult / kids)
+  let ag = "adult";
+  try {
+    const el = document.getElementById("ageGroup");
+    if (el && el.value) ag = String(el.value);
+  } catch {}
+  const by = STYLE_SOURCES.scene.optionsByAgeGroup || {};
+  return (ag === "kids" ? (by.kids || []) : (by.adult || []));
+}
+
+function getCelebOptionsByGender(gender){
+  if(gender==="male") return STYLE_SOURCES.celebrity.optionsByGender.male.slice();
+  if(gender==="female") return STYLE_SOURCES.celebrity.optionsByGender.female.slice();
+  // neutral: show 4 random
+  const pool = STYLE_SOURCES.celebrity.optionsByGender.neutralPool.slice();
+  return __shuffle(pool).slice(0, Math.min(4, pool.length));
+}
+
+function ensureBtsVariantOption(){
+  // keep existing variant UX working even if BTS isn't pre-defined
+  const sel = document.getElementById("styleVariant");
+  if(!sel) return;
+  const exists = Array.from(sel.options).some(o => o.value === "celeb-bts-street");
+  if(exists) return;
+
+  // Find celeb optgroup; if none, append at end
+  let celebGroup = Array.from(sel.querySelectorAll("optgroup")).find(g => (g.label||"").includes("名人"));
+  const opt = document.createElement("option");
+  opt.value = "celeb-bts-street";
+  opt.textContent = "BTS（團體街頭）";
+
+  if(celebGroup) celebGroup.appendChild(opt);
+  else sel.appendChild(opt);
+}
+
+function bindStyleSourceUI(){
+  const seg = document.getElementById("style-source-seg");
+  const optionsRoot = document.getElementById("style-source-options");
+  const btnRandom = document.getElementById("style-random-btn");
+  const btnUndo = document.getElementById("style-undo-btn");
+  const previewEl = document.getElementById("style-preview");
+  const hSource = document.getElementById("uiStyleSource");
+  const hValue = document.getElementById("uiStyleValue");
+  if(!seg || !optionsRoot || !btnRandom || !hSource || !hValue) return;
+  let lastPick = null;
+
+  function showToast(msg){
+    const t = document.getElementById("mini-toast");
+    if(!t) return;
+    t.textContent = msg;
+    t.style.opacity = "1";
+    clearTimeout(showToast._tm);
+    showToast._tm = setTimeout(()=>{ t.style.opacity = "0"; }, 1400);
+  }
+
+
+  let curSource = hSource.value || "scene";
+  let curValue = hValue.value || "";
+
+  function setSeg(source){
+    curSource = (source==="celebrity") ? "celebrity" : "scene";
+    hSource.value = curSource;
+
+    const btns = Array.from(seg.querySelectorAll(".seg-btn"));
+    btns.forEach(b=>{
+      const on = b.dataset.source === curSource;
+      b.classList.toggle("on", on);
+      b.setAttribute("aria-selected", on ? "true" : "false");
+    });
+
+    render();
+  }
+
+  function applySelection(source, value, {silent=false}={}){
+    curSource = source;
+    curValue = value;
+    hSource.value = source;
+    hValue.value = value;
+
+    // Visual selected state
+    Array.from(optionsRoot.querySelectorAll(".style-card")).forEach(c=>{
+      c.classList.toggle("selected", c.dataset.value === value);
+    });
+
+    // Map to existing payload fields (safe)
+    const mapper = STYLE_SOURCES[source]?.mapToPayload;
+    if(typeof mapper === "function"){
+      const out = mapper(value) || {};
+      if(out.style){
+        try{ if(window.__setStyleCard) window.__setStyleCard(out.style); }catch{}; try{ const st=document.getElementById("style"); if(st){ st.dispatchEvent(new Event("change",{bubbles:true})); st.dispatchEvent(new Event("input",{bubbles:true})); }}catch{}
+      }
+      if(typeof safeSetSelectValue === "function"){
+        safeSetSelectValue("styleVariant", out.styleVariant || "");
+      }else{
+        // fallback
+        const sv = document.getElementById("styleVariant");
+        if(sv){ sv.value = out.styleVariant || ""; try{ sv.dispatchEvent(new Event("change",{bubbles:true})); }catch{} }
+      }
+    }
+
+    // Update preview (UI-only)
+    if(previewEl){
+      const label = (curSource === "scene") ? "穿搭情境" : "名人靈感";
+      previewEl.textContent = curValue ? `已選：${label} / ${curValue}` : `已選：${label} / （未選）`;
+    }
+
+    // Undo availability
+    if(btnUndo){
+      btnUndo.disabled = !(lastPick && lastPick.value);
+    }
+
+    if(!silent) haptic(8);
+  }
+
+  function render(){
+    const gender = getCurrentGender();
+    let list = [];
+
+    if(curSource === "scene"){
+      list = getSceneOptions().slice();
+    }else{
+      list = getCelebOptionsByGender(gender);
+      ensureBtsVariantOption();
+    }
+
+      // If previously selected value is not in new list (e.g., gender changed), clear it
+    if(curValue && !list.includes(curValue)){
+      applySelection(curSource, "", {silent:true});
+    }
+
+optionsRoot.innerHTML = list.map(v=>{
+      const sel = (v === curValue) ? " selected" : "";
+      return `
+        <div class="style-card${sel}" data-value="${escapeHtml(v)}" role="button" tabindex="0">
+          <div class="name">${escapeHtml(v)}</div>
+          <div class="desc"></div>
+        </div>
+      `.trim();
+    }).join("");
+
+    Array.from(optionsRoot.querySelectorAll(".style-card")).forEach(card=>{
+      const v = card.dataset.value;
+      const activate = ()=>applySelection(curSource, v);
+      card.addEventListener("click", activate);
+      card.addEventListener("keydown", (e)=>{
+        if(e.key==="Enter" || e.key===" "){ e.preventDefault(); activate(); }
+      });
+    });
+
+    // If current selection is no longer in list, clear it
+    if(curValue && !list.includes(curValue)){
+      curValue = "";
+      hValue.value = "";
+    }
+  }
+
+  function randomPick(){
+    const source = Math.random() < 0.5 ? "scene" : "celebrity";
+    setSeg(source);
+
+    const gender = getCurrentGender();
+    const list = (source==="scene") ? getSceneOptions() : getCelebOptionsByGender(gender);
+    const pick = list[Math.floor(Math.random()*list.length)];
+    applySelection(source, pick);
+    showToast("已幫你隨機選一個風格", 1200);
+  }
+
+  // events
+  seg.addEventListener("click", (e)=>{
+    const btn = e.target.closest(".seg-btn");
+    if(!btn) return;
+    setSeg(btn.dataset.source);
+  });
+
+  btnRandom.addEventListener("click", randomPick);
+
+  // when gender changes, celebrity options should follow
+  function bindGenderWatch(){
+    const els = [];
+    try{ const el = document.getElementById("gender"); if(el) els.push(el); }catch{}
+    try{ document.querySelectorAll('input[name="gender"]').forEach(el=>els.push(el)); }catch{}
+    try{ const el = document.querySelector('[data-field="gender"]'); if(el) els.push(el); }catch{}
+    Array.from(new Set(els)).forEach(el=>{
+      el.addEventListener("change", ()=>{
+        // If currently on celebrity tab, update immediately
+        if(curSource === "celebrity") render();
+      });
+    });
+  }
+  bindGenderWatch();
+
+  // when ageGroup changes (adult/kids), re-render options if needed
+  const ageGroupEl = document.getElementById("ageGroup");
+  if(ageGroupEl){
+    ageGroupEl.addEventListener("change", ()=>{
+      showToast(String(ageGroupEl.value)==="kids" ? "童裝模式：情境已切換" : "成人模式：情境已切換");
+      // scene list differs between adult/kids; keep current tab stable
+      if(curSource === "scene") render();
+      // (future-proof) if celeb list should differ by age, rerender too
+      if(curSource === "celebrity") render();
+    });
+  }
+
+  // init
+  setSeg(curSource);
+}
+
+
+  // ===== Public copy (from admin settings) =====
+  // ✅ 以「首頁 id」為主（後台存的 key 也用這些）
+  const HOME_ID_KEYS = {
+    brand: "copy-brand-title",
+    tagline: "copy-brand-subtitle",
+    left_title: "copy-left-title",
+    right_title: "copy-right-title",
+  };
+
+  // 預設值（只在讀不到後台時才使用）
+  const DEFAULT_PUBLIC_COPY_BY_ID = {
+    [HOME_ID_KEYS.brand]: "findoutfit",
+    [HOME_ID_KEYS.tagline]: "輸入條件→ outfit生成 → 商品推薦",
+    [HOME_ID_KEYS.left_title]: "穿搭條件",
+    [HOME_ID_KEYS.right_title]: "AI 穿搭示意圖 & 類似商品",
+  };
+
+  // ✅ 兼容舊版 key：把任何形狀的 copy 轉成「以 id 為 key」的物件
+  function normalizeAnyCopyToIdMap(copy){
+    const c = (copy && typeof copy === "object") ? copy : {};
+
+    // 1) 已經是以 id 為 key（推薦/最新）
+    const looksLikeIdMap = Object.values(HOME_ID_KEYS).some(k => k in c);
+    if (looksLikeIdMap) return c;
+
+    // 2) 舊版：findoutfit_title / findoutfit_subtitle
+    if ("findoutfit_title" in c || "findoutfit_subtitle" in c) {
+      return {
+        [HOME_ID_KEYS.brand]: c.findoutfit_title || c.brand_title || c.brand || "",
+        [HOME_ID_KEYS.tagline]: c.findoutfit_subtitle || c.brand_subtitle || c.tagline || "",
+        [HOME_ID_KEYS.left_title]: c.left_title || "",
+        [HOME_ID_KEYS.right_title]: c.right_title || "",
+      };
+    }
+
+    // 3) 舊版：brand / tagline
+    if ("brand" in c || "tagline" in c) {
+      return {
+        [HOME_ID_KEYS.brand]: c.brand || "",
+        [HOME_ID_KEYS.tagline]: c.tagline || "",
+        [HOME_ID_KEYS.left_title]: c.left_title || "",
+        [HOME_ID_KEYS.right_title]: c.right_title || "",
+      };
+    }
+
+    return c;
+  }
+
+  async function fetchPublicCopy(){
+    try{
+      const r = await fetch("/api/public-copy?ts=" + Date.now(), { cache: "no-store" });
+      const t = await r.text();
+      let j = {};
+      try{ j = t ? JSON.parse(t) : {}; } catch { j = { raw: t }; }
+      if(!r.ok) return { ok:false, error: j?.error || ("HTTP " + r.status), detail: j };
+      const copy = j.copy || j.value || j.public_copy || j.data || null;
+      return { ok:true, copy };
+    }catch(e){
+      return { ok:false, error: String(e?.message || e) };
+    }
+  }
+
+  // ✅ 避免「先顯示預設 → 再跳到後台」的閃爍：等讀完再一次套用（讀不到才用預設）
+  async function applyPublicCopy(inCopy){
+    // 先把目標元素暫時隱藏，避免看到跳動
+    document.documentElement.classList.add("copy-loading");
+
+    const setTextById = (id, v)=>{
+      const node = document.getElementById(id);
+      if(!node) return;
+      const s = (v == null) ? "" : String(v);
+      if(s.trim()) node.textContent = s;
+    };
+
+    const r = inCopy ? { ok:true, copy: inCopy } : await fetchPublicCopy();
+    let idMap = DEFAULT_PUBLIC_COPY_BY_ID;
+    if(r.ok){
+      const normalized = normalizeAnyCopyToIdMap(r.copy);
+      // keep global copy for other UI parts
+      try{ window.__HOME_COPY = r.copy || null; }catch{}
+
+      // Sync UI style sources from admin settings (home_copy)
+      try{
+        const c = r.copy || {};
+        const fmtScene = (s)=> String(s||"").trim().replace(/\s*\/\s*/g, " / ");
+        if(c.style_by_category && typeof c.style_by_category === "object"){
+          const adult = Array.isArray(c.style_by_category.adult) ? c.style_by_category.adult.map(fmtScene).filter(Boolean) : null;
+          const kids  = Array.isArray(c.style_by_category.kids)  ? c.style_by_category.kids.map(fmtScene).filter(Boolean)  : null;
+          if(adult && adult.length && typeof STYLE_SOURCES==="object" && STYLE_SOURCES.scene?.optionsByAgeGroup) STYLE_SOURCES.scene.optionsByAgeGroup.adult = adult;
+          if(kids  && kids.length  && typeof STYLE_SOURCES==="object" && STYLE_SOURCES.scene?.optionsByAgeGroup) STYLE_SOURCES.scene.optionsByAgeGroup.kids  = kids;
+        }
+        if(c.celebs_by_gender && typeof c.celebs_by_gender === "object"){
+          const clean = (arr)=> Array.isArray(arr) ? arr.map(x=>String(x).trim()).filter(Boolean) : [];
+          const male = clean(c.celebs_by_gender.male);
+          const female = clean(c.celebs_by_gender.female);
+          const neutral = clean(c.celebs_by_gender.neutral);
+
+          if(male.length && STYLE_SOURCES.celebrity?.optionsByGender) STYLE_SOURCES.celebrity.optionsByGender.male = male;
+          if(female.length && STYLE_SOURCES.celebrity?.optionsByGender) STYLE_SOURCES.celebrity.optionsByGender.female = female;
+
+          const pool = [];
+          for(const x of [...neutral, ...male, ...female]){
+            if(x && !pool.includes(x)) pool.push(x);
+          }
+          if(pool.length && STYLE_SOURCES.celebrity?.optionsByGender) STYLE_SOURCES.celebrity.optionsByGender.neutralPool = pool;
+        }
+        if(typeof updateStyleSourceOptions === "function") updateStyleSourceOptions();
+      }catch(e){}
+
+      // 只覆蓋有值的欄位，避免把字清空
+      idMap = { ...DEFAULT_PUBLIC_COPY_BY_ID, ...(normalized || {}) };
+    }
+
+    setTextById(HOME_ID_KEYS.brand, idMap[HOME_ID_KEYS.brand]);
+    setTextById(HOME_ID_KEYS.tagline, idMap[HOME_ID_KEYS.tagline]);
+    setTextById(HOME_ID_KEYS.left_title, idMap[HOME_ID_KEYS.left_title]);
+    setTextById(HOME_ID_KEYS.right_title, idMap[HOME_ID_KEYS.right_title]);
+
+    document.documentElement.classList.remove("copy-loading");
+  }
+
+
+(async function init(){
+      fetchPublicCopy().then(r=>{ if(r.ok) applyPublicCopy(r.copy); });
+      bindRange("age","age-val");
+      bindRange("height","height-val");
+      bindRange("weight","weight-val");
+      bindRange("temp","temp-val");
+      bindStyleCards();
+    // initial style/variant labels per audience
+    try { updateStyleUIForAudience(); } catch {}
+bindGenderSeg();
+      const genderSel=document.getElementById("gender");
+      if(genderSel) genderSel.addEventListener("change", () => { uiPaletteId=null; });
+bindAgeGroupSeg();
+      try{ bindStyleSourceUI(); }catch(e){ console.warn(e); }
+      const ageGroupSel=document.getElementById("ageGroup");
+      if(ageGroupSel) ageGroupSel.addEventListener("change", () => { uiPaletteId=null; });
+document.getElementById("login-btn").addEventListener("click", loginGoogle);
+      document.getElementById("logout-btn").addEventListener("click", logout);
+
+      applyDeviceClass();
+      window.addEventListener("resize", applyDeviceClass);
+
+      /* mobile actionbar handled by applyDeviceClass() */
+      const ctaBtn=document.getElementById("cta-products");
+      if(ctaBtn) ctaBtn.addEventListener("click", ()=>{ scrollToElWithOffset("anchor-products",12,"smooth"); haptic(8); });
+
+      const copyBtn=document.getElementById("copy-spec-btn");
+      if(copyBtn) copyBtn.addEventListener("click", ()=>{ if(!flowState.spec) return; copyText(safeJson(flowState.spec)); showToast("已複製 Outfit Spec",1600); haptic(10); });
+
+      const shareBtn=document.getElementById("share-btn");
+
+      document.getElementById("retry-btn").addEventListener("click", async ()=>{
+        const btn=document.getElementById("retry-btn");
+        btn.disabled=true;
+        try{ setLoadingUI(true); await retryCurrentStep(); }
+        catch(e){ console.error(e); showError(String(e?.message||e)); }
+        finally{ setLoadingUI(false); btn.disabled=false; }
+      });
+
+      document.getElementById("restart-btn").addEventListener("click", async ()=>{
+        const btn=document.getElementById("restart-btn");
+        btn.disabled=true;
+        try{ setLoadingUI(true); await generateAll(true); }
+        catch(e){ console.error(e); showError(String(e?.message||e)); }
+        finally{ setLoadingUI(false); btn.disabled=false; }
+      });
+
+      async function onGenerateClick(){ showRetryUI(false); try{ await generateAll(false); }catch{} }
+
+      const goBtnDesktop=document.getElementById("go-btn");
+      const goBtnMobile=document.getElementById("go-btn-mobile");
+      if(goBtnDesktop) goBtnDesktop.addEventListener("click", async ()=>{
+        goBtnDesktop.disabled=true; if(goBtnMobile) goBtnMobile.disabled=true;
+        try{ await onGenerateClick(); } finally { goBtnDesktop.disabled=false; if(goBtnMobile) goBtnMobile.disabled=false; }
+      });
+      if(goBtnMobile) goBtnMobile.addEventListener("click", async ()=>{
+        goBtnMobile.disabled=true; if(goBtnDesktop) goBtnDesktop.disabled=true;
+        try{ await onGenerateClick(); } finally { goBtnMobile.disabled=false; if(goBtnDesktop) goBtnDesktop.disabled=false; }
+      });
+
+      document.getElementById("debug-box").classList.toggle("on", getDebug());
+
+      await ensureTokenFromSession();
+      await refreshAuthUI();
+      try{ await refreshCollectionsUI(); }catch(e){ console.warn(e); }
+      syncFavButtonUI();
+
+      osSupabase.auth.onAuthStateChange(async (_event, session)=>{ if(session?.access_token) saveAccessToken(session.access_token); else clearAccessToken(); await refreshAuthUI();
+      try{ await refreshCollectionsUI(); }catch(e){ console.warn(e); }
+      syncFavButtonUI(); });
+
+      const shared=parseShareFromLocation();
+      if(shared && shared.payload){
+        applyPayloadToForm(shared.payload);
+        flowState.payload=shared.payload;
+        setResultMeta(shared.payload);
+        if(shared.spec){
+          flowState.spec={ ...shared.spec, items: shared.spec.items||[], summary: shared.spec.summary||"" };
+          renderOutfitSummary(flowState.spec.summary);
+        }
+        updateResultActions();
+        showToast("已載入分享條件", 1600);
+      }
+
+
+      // Phase 4-1: support /?apply=<share_slug> to prefill from a shared outfit
+      async function applyFromShareSlug(slug){
+        try{
+          if(!slug) return false;
+          const r = await fetch(`/api/share/${encodeURIComponent(slug)}?ts=${Date.now()}`);
+          if(!r.ok){
+            console.warn("applyFromShareSlug fetch failed", r.status);
+            return false;
+          }
+          const j = await r.json().catch(()=>null);
+          const outfit = j?.outfit || j?.data || j?.item || j?.row || j;
+          const payload = outfit?.payload || outfit?.payload_json || outfit?.ui_payload || null;
+          const spec = outfit?.spec || outfit?.spec_json || null;
+          const products = outfit?.products || outfit?.products_json || null;
+
+          if(!payload){
+            console.warn("applyFromShareSlug: no payload in response", j);
+            return false;
+          }
+
+          applyPayloadToForm(payload);
+          try{ updateStyleUIForAudience(); }catch{}
+          flowState.payload = payload;
+          setResultMeta(payload);
+
+          if(spec){
+            flowState.spec = { ...spec, items: spec.items || [], summary: spec.summary || "" };
+            renderOutfitSummary(flowState.spec.summary || "");
+          }else{
+            flowState.spec = null;
+            renderOutfitSummary(null);
+          }
+
+          if(Array.isArray(products)){
+            flowState.products = products;
+            if(flowState.products?.length) renderProductsGrouped(flowState.products);
+          }
+
+          updateResultActions();
+          showToast("已套用分享穿搭（可直接生成）", 1800);
+          return true;
+        }catch(e){
+          console.warn("applyFromShareSlug failed", e);
+          return false;
+        }
+      }
+
+      // run apply flow if present
+      const applySlug = new URLSearchParams(location.search).get("apply");
+      if(applySlug){
+        const ok = await applyFromShareSlug(applySlug);
+        // clean URL (remove apply=...) to avoid re-applying on refresh
+        try{
+          const u = new URL(location.href);
+          u.searchParams.delete("apply");
+          history.replaceState({}, "", u.pathname + (u.search ? u.search : "") + u.hash);
+        }catch{}
+        if(ok){
+          try{ scrollToElWithOffset("anchor-form", 12, "smooth"); }catch{}
+        }
+      }
+
+
+      setGenerateStep("idle");
+      setProgress(0);
+      setStatus("", null, false);
+      setLoadingUI(false);
+    })();
+
+document.getElementById("btn-share-top")?.addEventListener("click", ()=>document.getElementById("share-btn")?.click());
+</script>
+
+  <div class="toast" id="toast" style="display:none;">往下看商品 ↓</div>
+
+  <!-- mini toast (UI-only) -->
+  <div id="mini-toast" style="
+    position:fixed; left:50%; transform:translateX(-50%);
+    bottom:18px; z-index:9999;
+    background:rgba(0,0,0,.72); color:#fff;
+    padding:10px 12px; border-radius:14px;
+    font-size:13px; line-height:1; letter-spacing:.2px;
+    opacity:0; pointer-events:none; transition:opacity .18s ease;
+    max-width:min(92vw,520px); text-align:center;
+  "></div>
+</body>
+</html>
