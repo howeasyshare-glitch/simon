@@ -20,7 +20,7 @@ export default async function handler(req, res) {
     }
 
     // 2) 用動態 import，並且加上 .js（避免 module resolution crash）
-    const mod = await import("../lib/supabaseServer.js");
+    const mod = await import("../../lib/supabaseServer.js");
     const supabaseServer = mod.supabaseServer;
 
     if (!supabaseServer) {
