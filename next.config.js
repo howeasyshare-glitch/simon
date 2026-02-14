@@ -1,16 +1,14 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
-  // Keep your pretty function-like routes working
   async rewrites() {
     return [
-      // Explore list endpoint (your frontends call /explore/list)
-      { source: '/explore/list', destination: '/api/explore/list' },
+      // 讓 explore.html 的 /explore/list 轉去新的扁平 API
+      { source: "/explore/list", destination: "/api/explore" },
 
-      // Optional: keep old /api/share/:slug if you already have it
-      // Next will serve /api/share/:slug from pages/api/share/[slug].js
-      { source: '/api/share/:slug', destination: '/api/share/:slug' }
+      // 讓 /api/share/<slug> 也能用（轉成 query）
+      { source: "/api/share/:slug", destination: "/api/share?slug=:slug" },
     ];
   },
 };
 
-export default nextConfig;
+module.exports = nextConfig;
