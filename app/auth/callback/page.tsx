@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { supabaseBrowser } from "@/lib/supabaseBrowser";
+import { supabaseBrowser } from "../../../lib/supabaseBrowser";
 
 export default function AuthCallbackPage() {
   const [msg, setMsg] = useState("登入中…");
