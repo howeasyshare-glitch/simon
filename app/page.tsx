@@ -2,8 +2,8 @@
 
 import { useEffect, useMemo, useState } from "react";
 import styles from "./page.module.css";
-import { supabaseBrowser } from "@/lib/supabaseBrowser";
-import { apiGetJson, apiPostJson } from "@/lib/apiFetch";
+import { supabaseBrowser } from "../lib/supabaseBrowser";
+import { apiGetJson, apiPostJson } from "../lib/apiFetch";
 
 type MeResp =
   | { ok: true; user?: { id: string; email?: string }; credits_left?: number; is_tester?: boolean }
