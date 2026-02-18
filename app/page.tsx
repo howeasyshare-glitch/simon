@@ -3,7 +3,8 @@
 import { useEffect, useMemo, useState } from "react";
 import styles from "./page.module.css";
 import { supabaseBrowser } from "../lib/supabaseBrowser";
-import { apiGetJson, apiPostJson } from "../lib/apiFetch";
+import { apiFetch, apiGetJson, apiPostJson } from "../lib/apiFetch";
+
 
 type MeResp =
   | { ok: true; user?: { id: string; email?: string }; credits_left?: number; is_tester?: boolean }
@@ -54,7 +55,31 @@ export default function Home() {
     try {
       // token 由 apiFetch 自動帶；但 /api/me 目前如果只接受 cookie，也會 401
       // 先用 apiFetch 走一遍，未登入就當正常
-      const r = await fetch("/api/me?ts=" + Date.now(), { credentials: "include" });
+      async function refreshMe() {
+  try {
+    const r = await apiFetch("/api/me?ts=" + Date.now(), { method: "GET" });
+
+    if (r.status === 401) {
+      setMe({ ok: false, error: "unauthorized" });
+      return;
+    }
+
+    const text = await r.text();
+    let j: any = null;
+    try { j = JSON.parse(text); } catch {}
+
+    if (!r.ok) {
+      // 例如 Missing bearer token
+      setMe({ ok: false, error: j?.error || text || `HTTP ${r.status}` });
+      return;
+    }
+
+    setMe(j);
+  } catch (e: any) {
+    setMe({ ok: false, error: e?.message || "me fetch failed" });
+  }
+}
+
       if (r.status === 401) {
         setMe({ ok: false, error: "unauthorized" });
         return;
