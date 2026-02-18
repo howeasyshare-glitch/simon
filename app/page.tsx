@@ -52,7 +52,8 @@ export default function Home() {
 
   async function refreshMe() {
     try {
-      // 用 token 讀 /api/me（未登入會回 401，我們當作正常）
+      // token 由 apiFetch 自動帶；但 /api/me 目前如果只接受 cookie，也會 401
+      // 先用 apiFetch 走一遍，未登入就當正常
       const r = await fetch("/api/me?ts=" + Date.now(), { credentials: "include" });
       if (r.status === 401) {
         setMe({ ok: false, error: "unauthorized" });
@@ -68,10 +69,10 @@ export default function Home() {
   useEffect(() => {
     refreshMe();
 
-    // 登入狀態變化就刷新
     const { data } = supabaseBrowser.auth.onAuthStateChange(() => {
       refreshMe();
     });
+
     return () => {
       data.subscription.unsubscribe();
     };
@@ -157,7 +158,6 @@ export default function Home() {
         <div className={styles.brand}>findoutfit</div>
 
         <div className={styles.headerRight}>
-          {/* 桌面選單 */}
           <div style={{ display: "flex", gap: 16, alignItems: "center" }}>
             <a className={styles.link} href="/explore">Explore</a>
             <a className={styles.link} href="/my">我的穿搭</a>
@@ -343,10 +343,6 @@ export default function Home() {
           ) : (
             <div className={styles.muted}>目前沒有資料</div>
           )}
-
-          <div className={styles.footerLinks}>
-            <a className={styles.link} href="/explore">前往 Explore</a>
-          </div>
         </section>
       </main>
     </div>
