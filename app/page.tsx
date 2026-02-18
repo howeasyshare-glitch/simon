@@ -52,14 +52,11 @@ export default function Home() {
   }, [gender, age, height, weight, temp, styleId, paletteId, withBag, withHat, withCoat]);
 
   async function refreshMe() {
-    try {
-      // token 由 apiFetch 自動帶；但 /api/me 目前如果只接受 cookie，也會 401
-      // 先用 apiFetch 走一遍，未登入就當正常
-      async function refreshMe() {
   try {
     const r = await apiFetch("/api/me?ts=" + Date.now(), { method: "GET" });
 
     if (r.status === 401) {
+      // 未登入：正常狀態
       setMe({ ok: false, error: "unauthorized" });
       return;
     }
@@ -69,7 +66,6 @@ export default function Home() {
     try { j = JSON.parse(text); } catch {}
 
     if (!r.ok) {
-      // 例如 Missing bearer token
       setMe({ ok: false, error: j?.error || text || `HTTP ${r.status}` });
       return;
     }
@@ -79,6 +75,7 @@ export default function Home() {
     setMe({ ok: false, error: e?.message || "me fetch failed" });
   }
 }
+
 
       if (r.status === 401) {
         setMe({ ok: false, error: "unauthorized" });
