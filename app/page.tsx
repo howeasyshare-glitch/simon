@@ -1,10 +1,9 @@
-"use client";  
+"use client";
 
 import { useEffect, useMemo, useState } from "react";
 import styles from "./page.module.css";
 import { supabaseBrowser } from "../lib/supabaseBrowser";
 import { apiFetch, apiGetJson, apiPostJson } from "../lib/apiFetch";
-
 
 type MeResp =
   | { ok: true; user?: { id: string; email?: string }; credits_left?: number; is_tester?: boolean }
@@ -51,37 +50,29 @@ export default function Home() {
     return { gender, age, height, weight, temp, styleId, paletteId, withBag, withHat, withCoat };
   }, [gender, age, height, weight, temp, styleId, paletteId, withBag, withHat, withCoat]);
 
+  // ✅ 修好：用 apiFetch 會自動帶 Authorization: Bearer <token>
   async function refreshMe() {
-  try {
-    const r = await apiFetch("/api/me?ts=" + Date.now(), { method: "GET" });
-
-    if (r.status === 401) {
-      // 未登入：正常狀態
-      setMe({ ok: false, error: "unauthorized" });
-      return;
-    }
-
-    const text = await r.text();
-    let j: any = null;
-    try { j = JSON.parse(text); } catch {}
-
-    if (!r.ok) {
-      setMe({ ok: false, error: j?.error || text || `HTTP ${r.status}` });
-      return;
-    }
-
-    setMe(j);
-  } catch (e: any) {
-    setMe({ ok: false, error: e?.message || "me fetch failed" });
-  }
-}
-
+    try {
+      const r = await apiFetch("/api/me?ts=" + Date.now(), { method: "GET" });
 
       if (r.status === 401) {
         setMe({ ok: false, error: "unauthorized" });
         return;
       }
-      const j = await r.json();
+
+      const text = await r.text();
+      let j: any = null;
+      try {
+        j = JSON.parse(text);
+      } catch {
+        j = null;
+      }
+
+      if (!r.ok) {
+        setMe({ ok: false, error: j?.error || text || `HTTP ${r.status}` });
+        return;
+      }
+
       setMe(j);
     } catch (e: any) {
       setMe({ ok: false, error: e?.message || "me fetch failed" });
@@ -91,6 +82,7 @@ export default function Home() {
   useEffect(() => {
     refreshMe();
 
+    // 登入狀態變化就刷新（登入/登出/自動 refresh）
     const { data } = supabaseBrowser.auth.onAuthStateChange(() => {
       refreshMe();
     });
@@ -148,11 +140,13 @@ export default function Home() {
     setImageBase64("");
 
     try {
+      // 1) Spec
       const specResp = await apiPostJson<SpecResp>("/api/generate-outfit-spec", { payload });
       if (!specResp || specResp.ok === false) throw new Error(specResp?.error || "SPEC failed");
       const s = (specResp as any).spec ?? specResp;
       setSpec(s);
 
+      // 2) Image
       setStatus("正在生成穿搭圖…");
       const imgResp = await apiPostJson<ImgResp>("/api/generate-image", { payload, spec: s });
       if (!imgResp || imgResp.ok === false) throw new Error(imgResp?.error || "IMAGE failed");
@@ -181,9 +175,15 @@ export default function Home() {
 
         <div className={styles.headerRight}>
           <div style={{ display: "flex", gap: 16, alignItems: "center" }}>
-            <a className={styles.link} href="/explore">Explore</a>
-            <a className={styles.link} href="/my">我的穿搭</a>
-            <a className={styles.link} href="/settings">設定</a>
+            <a className={styles.link} href="/explore">
+              Explore
+            </a>
+            <a className={styles.link} href="/my">
+              我的穿搭
+            </a>
+            <a className={styles.link} href="/settings">
+              設定
+            </a>
           </div>
 
           {isAuthed ? (
@@ -215,7 +215,9 @@ export default function Home() {
             <button className={styles.primaryBtn} onClick={handleGenerate} disabled={!isAuthed}>
               立即生成
             </button>
-            <a className={styles.secondaryBtn} href="/explore">看看大家公開穿搭</a>
+            <a className={styles.secondaryBtn} href="/explore">
+              看看大家公開穿搭
+            </a>
           </div>
           {!!status && <div className={styles.status}>{status}</div>}
         </div>
@@ -224,7 +226,7 @@ export default function Home() {
           <div className={styles.previewCard}>
             <div className={styles.previewTop}>
               <div className={styles.previewTitle}>預覽</div>
-              <div className={styles.previewSub}>圖最大｜生成最順（Phase A）</div>
+              <div className={styles.previewSub}>圖最大｜生成最順（Next 版）</div>
             </div>
 
             <div className={styles.previewBox}>
@@ -266,22 +268,42 @@ export default function Home() {
 
             <label className={styles.field}>
               <div className={styles.label}>年齡</div>
-              <input className={styles.input} type="number" value={age} onChange={(e) => setAge(parseInt(e.target.value || "0", 10) || 0)} />
+              <input
+                className={styles.input}
+                type="number"
+                value={age}
+                onChange={(e) => setAge(parseInt(e.target.value || "0", 10) || 0)}
+              />
             </label>
 
             <label className={styles.field}>
               <div className={styles.label}>身高（cm）</div>
-              <input className={styles.input} type="number" value={height} onChange={(e) => setHeight(parseInt(e.target.value || "0", 10) || 0)} />
+              <input
+                className={styles.input}
+                type="number"
+                value={height}
+                onChange={(e) => setHeight(parseInt(e.target.value || "0", 10) || 0)}
+              />
             </label>
 
             <label className={styles.field}>
               <div className={styles.label}>體重（kg）</div>
-              <input className={styles.input} type="number" value={weight} onChange={(e) => setWeight(parseInt(e.target.value || "0", 10) || 0)} />
+              <input
+                className={styles.input}
+                type="number"
+                value={weight}
+                onChange={(e) => setWeight(parseInt(e.target.value || "0", 10) || 0)}
+              />
             </label>
 
             <label className={styles.field}>
               <div className={styles.label}>溫度（°C）</div>
-              <input className={styles.input} type="number" value={temp} onChange={(e) => setTemp(parseInt(e.target.value || "0", 10) || 0)} />
+              <input
+                className={styles.input}
+                type="number"
+                value={temp}
+                onChange={(e) => setTemp(parseInt(e.target.value || "0", 10) || 0)}
+              />
             </label>
 
             <label className={styles.field}>
@@ -322,7 +344,7 @@ export default function Home() {
 
           <div className={styles.stickyAction}>
             <button className={styles.primaryBtnWide} onClick={handleGenerate} disabled={!isAuthed}>
-              立即生成（A 版）
+              立即生成
             </button>
             {!isAuthed && <div className={styles.smallHint}>未登入無法生成，請先 Google 登入</div>}
           </div>
