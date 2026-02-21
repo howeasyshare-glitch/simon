@@ -11,7 +11,7 @@
   z-index: 50;
 
   display: flex;
-  justify-content: space-between;
+  justify-content: flex-start; /* ✅ 原本 space-between 改掉 */
   gap: 16px;
   align-items: center;
   padding: 14px 18px;
@@ -31,7 +31,7 @@
 .nav {
   display: flex;
   align-items: center;
-  gap: 18px;
+  gap: 12px; /* ✅ 原本 18 縮小，讓 links 更貼近頭像 */
 }
 
 .navLink {
@@ -46,9 +46,10 @@
 }
 
 .headerRight {
+  margin-left: auto; /* ✅ 整組推到最右 */
   display: flex;
   align-items: center;
-  gap: 12px;
+  gap: 10px; /* ✅ 原本 12，可更緊 */
 }
 
 .iconBtn {
