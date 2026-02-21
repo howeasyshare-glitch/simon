@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import styles from "./page.module.css";
 import { supabaseBrowser } from "../lib/supabaseBrowser";
 import { apiFetch, apiGetJson, apiPostJson } from "../lib/apiFetch";
@@ -26,6 +26,11 @@ export default function Home() {
   const [explore, setExplore] = useState<ExploreItem[]>([]);
   const [loadingExplore, setLoadingExplore] = useState(false);
 
+  // Header UI
+  const [userMenuOpen, setUserMenuOpen] = useState(false);
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const avatarWrapRef = useRef<HTMLDivElement | null>(null);
+
   // Form
   const [gender, setGender] = useState<"male" | "female">("male");
   const [age, setAge] = useState<number>(25);
@@ -44,13 +49,15 @@ export default function Home() {
   const [imageUrl, setImageUrl] = useState<string>("");
   const [imageBase64, setImageBase64] = useState<string>("");
 
+  const generatorRef = useRef<HTMLElement | null>(null);
+
   const isAuthed = !!(me && (me as any).ok);
 
   const payload = useMemo(() => {
     return { gender, age, height, weight, temp, styleId, paletteId, withBag, withHat, withCoat };
   }, [gender, age, height, weight, temp, styleId, paletteId, withBag, withHat, withCoat]);
 
-  // ✅ 修好：用 apiFetch 會自動帶 Authorization: Bearer <token>
+  // ✅ 用 apiFetch 會自動帶 Authorization: Bearer <token>
   async function refreshMe() {
     try {
       const r = await apiFetch("/api/me?ts=" + Date.now(), { method: "GET" });
@@ -93,6 +100,7 @@ export default function Home() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
+  // Explore preview
   useEffect(() => {
     (async () => {
       setLoadingExplore(true);
@@ -108,6 +116,41 @@ export default function Home() {
       }
     })();
   }, []);
+
+  // Close menus on outside click / Esc
+  useEffect(() => {
+    function onDocDown(e: MouseEvent) {
+      const t = e.target as HTMLElement | null;
+      if (!t) return;
+
+      // user menu
+      if (userMenuOpen) {
+        const wrap = avatarWrapRef.current;
+        if (wrap && !wrap.contains(t)) setUserMenuOpen(false);
+      }
+
+      // mobile menu
+      // 點到 header 之外就關
+      if (mobileMenuOpen) {
+        const header = document.querySelector(`.${styles.header}`);
+        if (header && !header.contains(t)) setMobileMenuOpen(false);
+      }
+    }
+
+    function onKey(e: KeyboardEvent) {
+      if (e.key === "Escape") {
+        setUserMenuOpen(false);
+        setMobileMenuOpen(false);
+      }
+    }
+
+    document.addEventListener("mousedown", onDocDown);
+    window.addEventListener("keydown", onKey);
+    return () => {
+      document.removeEventListener("mousedown", onDocDown);
+      window.removeEventListener("keydown", onKey);
+    };
+  }, [userMenuOpen, mobileMenuOpen]);
 
   async function handleGoogleLogin() {
     try {
@@ -126,6 +169,13 @@ export default function Home() {
     await supabaseBrowser.auth.signOut();
     setMe({ ok: false, error: "signed out" });
     setStatus("已登出");
+    setUserMenuOpen(false);
+  }
+
+  function scrollToGenerator() {
+    setMobileMenuOpen(false);
+    setUserMenuOpen(false);
+    generatorRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
   }
 
   async function handleGenerate() {
@@ -168,33 +218,67 @@ export default function Home() {
     return "";
   }, [imageUrl, imageBase64]);
 
+  const email = (me as any)?.user?.email || "";
+  const avatarLetter = (email ? email[0] : "U").toUpperCase();
+  const credits = (me as any)?.credits_left ?? "-";
+
   return (
     <div className={styles.page}>
       <header className={styles.header}>
         <div className={styles.brand}>findoutfit</div>
 
-        <div className={styles.headerRight}>
-          <div style={{ display: "flex", gap: 16, alignItems: "center" }}>
-            <a className={styles.link} href="/explore">
-              Explore
-            </a>
-            <a className={styles.link} href="/my">
-              我的穿搭
-            </a>
-            <a className={styles.link} href="/settings">
-              設定
-            </a>
-          </div>
+        {/* Desktop nav */}
+        <nav className={styles.nav}>
+          <a className={styles.navLink} href="/explore">
+            Explore
+          </a>
+          <a className={styles.navLink} href="/my">
+            我的穿搭
+          </a>
+          <a className={styles.navLink} href="/settings">
+            設定
+          </a>
+        </nav>
 
+        <div className={styles.headerRight}>
+          {/* Mobile menu btn */}
+          <button
+            className={styles.iconBtn}
+            onClick={() => setMobileMenuOpen((v) => !v)}
+            aria-label="Open menu"
+          >
+            <span className={styles.burger} />
+          </button>
+
+          {/* Auth area */}
           {isAuthed ? (
-            <div className={styles.meBox}>
-              <div className={styles.meEmail}>{(me as any)?.user?.email || "已登入"}</div>
-              <div className={styles.meMeta}>
-                <span>點數：{(me as any)?.credits_left ?? "-"}</span>
-                <button className={styles.secondaryBtn} onClick={handleLogout} style={{ padding: "8px 10px" }}>
-                  登出
-                </button>
-              </div>
+            <div className={styles.avatarWrap} ref={avatarWrapRef}>
+              <button
+                className={styles.avatarBtn}
+                onClick={() => setUserMenuOpen((v) => !v)}
+                aria-label="User menu"
+              >
+                <span className={styles.avatarCircle}>{avatarLetter}</span>
+              </button>
+
+              {userMenuOpen && (
+                <div className={styles.userMenu}>
+                  <div className={styles.userMenuTop}>
+                    <div className={styles.userEmail}>{email || "已登入"}</div>
+                    <div className={styles.userMeta}>點數：{credits}</div>
+                  </div>
+
+                  <a className={styles.userItem} href="/my" onClick={() => setUserMenuOpen(false)}>
+                    我的穿搭
+                  </a>
+                  <a className={styles.userItem} href="/settings" onClick={() => setUserMenuOpen(false)}>
+                    設定
+                  </a>
+                  <button className={styles.userItemBtn} onClick={handleLogout}>
+                    登出
+                  </button>
+                </div>
+              )}
             </div>
           ) : (
             <div className={styles.authBox}>
@@ -205,20 +289,57 @@ export default function Home() {
             </div>
           )}
         </div>
+
+        {/* Mobile menu panel */}
+        {mobileMenuOpen && (
+          <div className={styles.mobileMenu}>
+            <a className={styles.mobileItem} href="/explore" onClick={() => setMobileMenuOpen(false)}>
+              Explore
+            </a>
+            <a className={styles.mobileItem} href="/my" onClick={() => setMobileMenuOpen(false)}>
+              我的穿搭
+            </a>
+            <a className={styles.mobileItem} href="/settings" onClick={() => setMobileMenuOpen(false)}>
+              設定
+            </a>
+
+            <div className={styles.mobileDivider} />
+
+            {isAuthed ? (
+              <button className={styles.mobileItemBtn} onClick={handleLogout}>
+                登出
+              </button>
+            ) : (
+              <button
+                className={styles.mobilePrimaryBtn}
+                onClick={() => {
+                  setMobileMenuOpen(false);
+                  handleGoogleLogin();
+                }}
+              >
+                Google 登入
+              </button>
+            )}
+          </div>
+        )}
       </header>
 
       <section className={styles.hero}>
         <div className={styles.heroLeft}>
           <h1 className={styles.h1}>幫你找到最棒的穿搭</h1>
-          <p className={styles.p}>快速選條件 → 一鍵生成 → 可再微調重跑。</p>
+          <p className={styles.p}>先選條件 → 再一鍵生成。生成結果會顯示在右側預覽。</p>
+
           <div className={styles.heroActions}>
-            <button className={styles.primaryBtn} onClick={handleGenerate} disabled={!isAuthed}>
-              立即生成
+            {/* ✅ 不算「第二個生成按鈕」：只負責帶你到設定區 */}
+            <button className={styles.primaryBtn} onClick={scrollToGenerator}>
+              開始設定
             </button>
+
             <a className={styles.secondaryBtn} href="/explore">
               看看大家公開穿搭
             </a>
           </div>
+
           {!!status && <div className={styles.status}>{status}</div>}
         </div>
 
@@ -226,7 +347,7 @@ export default function Home() {
           <div className={styles.previewCard}>
             <div className={styles.previewTop}>
               <div className={styles.previewTitle}>預覽</div>
-              <div className={styles.previewSub}>圖最大｜生成最順（Next 版）</div>
+              <div className={styles.previewSub}>生成後會顯示在這裡（Next 版）</div>
             </div>
 
             <div className={styles.previewBox}>
@@ -236,25 +357,32 @@ export default function Home() {
               ) : (
                 <div className={styles.previewEmpty}>
                   <div className={styles.previewEmptyTitle}>還沒有生成圖</div>
-                  <div className={styles.previewEmptyDesc}>選好條件後按「立即生成」</div>
+                  <div className={styles.previewEmptyDesc}>先到下方設定條件，再按「立即生成」</div>
                 </div>
               )}
             </div>
 
+            {/* ✅ Preview 不再提供「生成」按鈕，避免 3 個生成按鈕 */}
             <div className={styles.previewActions}>
-              <button className={styles.primaryBtn} onClick={handleGenerate} disabled={!isAuthed}>
-                產生穿搭圖
-              </button>
-              <a className={styles.ghostBtn} href={previewSrc ? "/share" : "/explore"}>
-                {previewSrc ? "分享（下一階段接上）" : "去 Explore"}
-              </a>
+              {previewSrc ? (
+                <>
+                  <a className={styles.primaryBtn} href="/share">
+                    分享
+                  </a>
+                  <a className={styles.ghostBtn} href="/my">
+                    存到我的穿搭
+                  </a>
+                </>
+              ) : (
+                <div className={styles.muted}>完成設定後，在左下的「立即生成」產生圖片</div>
+              )}
             </div>
           </div>
         </div>
       </section>
 
       <main className={styles.mainGrid}>
-        <section className={styles.panel}>
+        <section className={styles.panel} ref={generatorRef as any}>
           <div className={styles.panelTitle}>條件設定</div>
 
           <div className={styles.formGrid}>
@@ -342,6 +470,7 @@ export default function Home() {
             </label>
           </div>
 
+          {/* ✅ 唯一的生成按鈕 */}
           <div className={styles.stickyAction}>
             <button className={styles.primaryBtnWide} onClick={handleGenerate} disabled={!isAuthed}>
               立即生成
@@ -359,7 +488,11 @@ export default function Home() {
 
             <div className={styles.k}>Spec</div>
             <div className={styles.v}>
-              {spec ? <pre className={styles.pre}>{JSON.stringify(spec, null, 2)}</pre> : <span className={styles.muted}>尚未生成</span>}
+              {spec ? (
+                <pre className={styles.pre}>{JSON.stringify(spec, null, 2)}</pre>
+              ) : (
+                <span className={styles.muted}>尚未生成</span>
+              )}
             </div>
           </div>
 
@@ -372,7 +505,11 @@ export default function Home() {
           ) : explore.length ? (
             <div className={styles.exploreGrid}>
               {explore.map((it) => (
-                <a key={it.id} className={styles.exploreCard} href={it.share_slug ? `/share/${it.share_slug}` : "/explore"}>
+                <a
+                  key={it.id}
+                  className={styles.exploreCard}
+                  href={it.share_slug ? `/share/${it.share_slug}` : "/explore"}
+                >
                   <div className={styles.exploreThumb}>
                     {/* eslint-disable-next-line @next/next/no-img-element */}
                     {it.image_url ? <img src={it.image_url} alt="" /> : <div className={styles.thumbEmpty} />}
