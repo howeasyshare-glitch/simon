@@ -227,20 +227,20 @@ export default function Home() {
       <header className={styles.header}>
         <div className={styles.brand}>findoutfit</div>
 
-        {/* Desktop nav */}
-        <nav className={styles.nav}>
-          <a className={styles.navLink} href="/explore">
-            Explore
-          </a>
-          <a className={styles.navLink} href="/my">
-            我的穿搭
-          </a>
-          <a className={styles.navLink} href="/settings">
-            設定
-          </a>
-        </nav>
-
         <div className={styles.headerRight}>
+          {/* ✅ Desktop nav 移到右側 cluster，讓 links 貼近頭像 */}
+          <nav className={styles.nav}>
+            <a className={styles.navLink} href="/explore">
+              Explore
+            </a>
+            <a className={styles.navLink} href="/my">
+              我的穿搭
+            </a>
+            <a className={styles.navLink} href="/settings">
+              設定
+            </a>
+          </nav>
+
           {/* Mobile menu btn */}
           <button
             className={styles.iconBtn}
