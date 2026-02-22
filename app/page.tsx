@@ -53,10 +53,19 @@ export default function Home() {
 
   const isAuthed = !!(me && (me as any).ok);
 
+  // ✅ debug only if URL has ?debug=1
+  const debugEnabled = useMemo(() => {
+    try {
+      return new URLSearchParams(window.location.search).get("debug") === "1";
+    } catch {
+      return false;
+    }
+  }, []);
+
   /**
-   * ✅ 修 Missing parameters 的核心：
-   * 同時送 camelCase + snake_case + temperature alias
-   * 讓後端不管檢查哪套 key 都會命中
+   * ✅ 核心：把同一份參數「同時放在 root + payload」
+   * - 很多後端會寫：const {gender, styleId...} = req.body; if(!gender||!styleId) throw "Missing parameters"
+   * - 你之前送 { payload: {...} } 就會被判 missing
    */
   const payload = useMemo(() => {
     const safeAge = Number.isFinite(age) ? age : 25;
@@ -64,32 +73,35 @@ export default function Home() {
     const safeWeight = Number.isFinite(weight) ? weight : 55;
     const safeTemp = Number.isFinite(temp) ? temp : 22;
 
-    return {
-      // camelCase（你原本用的）
+    const base = {
       gender,
       age: safeAge,
       height: safeHeight,
       weight: safeWeight,
       temp: safeTemp,
+      temperature: safeTemp,
+
       styleId,
       paletteId,
       withBag,
       withHat,
       withCoat,
 
-      // snake_case（後端常見檢查）
+      // snake_case (保險)
       style_id: styleId,
       palette_id: paletteId,
       with_bag: withBag,
       with_hat: withHat,
       with_coat: withCoat,
 
-      // 常見別名（有些用 temperature）
-      temperature: safeTemp,
+      // 有些後端會期待 style/palette 物件
+      style: { id: styleId },
+      palette: { id: paletteId },
     };
+
+    return base;
   }, [gender, age, height, weight, temp, styleId, paletteId, withBag, withHat, withCoat]);
 
-  // ✅ 用 apiFetch 會自動帶 Authorization: Bearer <token>
   async function refreshMe() {
     try {
       const r = await apiFetch("/api/me?ts=" + Date.now(), { method: "GET" });
@@ -120,19 +132,13 @@ export default function Home() {
 
   useEffect(() => {
     refreshMe();
-
-    // 登入狀態變化就刷新（登入/登出/自動 refresh）
     const { data } = supabaseBrowser.auth.onAuthStateChange(() => {
       refreshMe();
     });
-
-    return () => {
-      data.subscription.unsubscribe();
-    };
+    return () => data.subscription.unsubscribe();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  // Explore preview
   useEffect(() => {
     (async () => {
       setLoadingExplore(true);
@@ -149,20 +155,16 @@ export default function Home() {
     })();
   }, []);
 
-  // Close menus on outside click / Esc
   useEffect(() => {
     function onDocDown(e: MouseEvent) {
       const t = e.target as HTMLElement | null;
       if (!t) return;
 
-      // user menu
       if (userMenuOpen) {
         const wrap = avatarWrapRef.current;
         if (wrap && !wrap.contains(t)) setUserMenuOpen(false);
       }
 
-      // mobile menu
-      // 點到 header 之外就關
       if (mobileMenuOpen) {
         const header = document.querySelector(`.${styles.header}`);
         if (header && !header.contains(t)) setMobileMenuOpen(false);
@@ -210,6 +212,19 @@ export default function Home() {
     generatorRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
   }
 
+  /**
+   * ✅ 自動 fallback：同一個 API 失敗（Missing parameters）就換另一種 body 再試一次
+   * 讓你不用先打開後端也能有最大成功率
+   */
+  async function postWithFallback<T>(url: string, bodyA: any, bodyB: any): Promise<T> {
+    const a = await apiPostJson<T>(url, bodyA);
+    if ((a as any)?.ok === false && String((a as any)?.error || "").includes("Missing parameters")) {
+      const b = await apiPostJson<T>(url, bodyB);
+      return b;
+    }
+    return a;
+  }
+
   async function handleGenerate() {
     if (!isAuthed) {
       setStatus("請先登入後才能生成。");
@@ -222,19 +237,33 @@ export default function Home() {
     setImageBase64("");
 
     try {
-      // Debug：如果還 missing parameters，你可以開 console 看 payload
-      // console.log("generate payload =>", payload);
+      // Body A：root + payload 同時存在（最大相容）
+      const bodyA = { ...payload, payload };
+
+      // Body B：只放 root（對某些後端更友善）
+      const bodyB = { ...payload };
 
       // 1) Spec
-      const specResp = await apiPostJson<SpecResp>("/api/generate-outfit-spec", { payload });
-      if (!specResp || specResp.ok === false) throw new Error(specResp?.error || "SPEC failed");
+      const specResp = await postWithFallback<SpecResp>("/api/generate-outfit-spec", bodyA, bodyB);
+      if (!specResp || (specResp as any).ok === false) {
+        throw new Error((specResp as any)?.error || "SPEC failed");
+      }
       const s = (specResp as any).spec ?? specResp;
       setSpec(s);
 
       // 2) Image
       setStatus("正在生成穿搭圖…");
-      const imgResp = await apiPostJson<ImgResp>("/api/generate-image", { payload, spec: s });
-      if (!imgResp || imgResp.ok === false) throw new Error(imgResp?.error || "IMAGE failed");
+
+      // Image bodyA：root + payload + spec
+      const imgBodyA = { ...payload, payload, spec: s, spec_json: s };
+
+      // Image bodyB：只 root + spec
+      const imgBodyB = { ...payload, spec: s, spec_json: s };
+
+      const imgResp = await postWithFallback<ImgResp>("/api/generate-image", imgBodyA, imgBodyB);
+      if (!imgResp || (imgResp as any).ok === false) {
+        throw new Error((imgResp as any)?.error || "IMAGE failed");
+      }
 
       const b64 = (imgResp as any).image_base64 || "";
       const url = (imgResp as any).image_url || "";
@@ -263,7 +292,6 @@ export default function Home() {
         <div className={styles.brand}>findoutfit</div>
 
         <div className={styles.headerRight}>
-          {/* Desktop nav（在右側 cluster，貼近頭像） */}
           <nav className={styles.nav}>
             <a className={styles.navLink} href="/explore">
               Explore
@@ -276,7 +304,6 @@ export default function Home() {
             </a>
           </nav>
 
-          {/* Mobile menu btn */}
           <button
             className={styles.iconBtn}
             onClick={() => setMobileMenuOpen((v) => !v)}
@@ -285,7 +312,6 @@ export default function Home() {
             <span className={styles.burger} />
           </button>
 
-          {/* Auth area */}
           {isAuthed ? (
             <div className={styles.avatarWrap} ref={avatarWrapRef}>
               <button
@@ -325,7 +351,6 @@ export default function Home() {
           )}
         </div>
 
-        {/* Mobile menu panel */}
         {mobileMenuOpen && (
           <div className={styles.mobileMenu}>
             <a className={styles.mobileItem} href="/explore" onClick={() => setMobileMenuOpen(false)}>
@@ -359,17 +384,33 @@ export default function Home() {
         )}
       </header>
 
-      {/* ✅ Hero 改成更像導引列：短、清楚，避免像一個「功能區塊」 */}
-      <section className={styles.hero}>
-        <div className={styles.heroLeft}>
-          <h1 className={styles.h1}>幫你找到最棒的穿搭</h1>
-          <p className={styles.p}>選條件 → 一鍵生成。結果會顯示在右側預覽。</p>
+      {/* ✅ Hero 縮成「薄導覽列」：不再占很大 */}
+      <section
+        className={styles.hero}
+        style={{
+          gridTemplateColumns: "1fr",
+          paddingTop: 12,
+          paddingBottom: 8,
+          gap: 10,
+        }}
+      >
+        <div
+          className={styles.heroLeft}
+          style={{
+            padding: 14,
+          }}
+        >
+          <h1 className={styles.h1} style={{ fontSize: 26, marginBottom: 8 }}>
+            幫你找到最棒的穿搭
+          </h1>
+          <p className={styles.p} style={{ marginBottom: 10 }}>
+            選條件 → 一鍵生成。結果會顯示在右側預覽。
+          </p>
 
           <div className={styles.heroActions}>
             <button className={styles.primaryBtn} onClick={scrollToGenerator}>
               開始設定
             </button>
-
             <a className={styles.secondaryBtn} href="/explore">
               先逛 Explore
             </a>
@@ -377,65 +418,10 @@ export default function Home() {
 
           {!!status && <div className={styles.status}>{status}</div>}
         </div>
-
-        {/* ✅ 右上：預覽 + 狀態 + Spec（折疊）合併成一張卡，避免四格切割 */}
-        <div className={styles.heroRight}>
-          <div className={styles.previewCard}>
-            <div className={styles.previewTop}>
-              <div className={styles.previewTitle}>預覽</div>
-              <div className={styles.previewSub}>生成後會顯示在這裡</div>
-            </div>
-
-            <div className={styles.previewBox}>
-              {previewSrc ? (
-                // eslint-disable-next-line @next/next/no-img-element
-                <img className={styles.previewImg} src={previewSrc} alt="outfit preview" />
-              ) : (
-                <div className={styles.previewEmpty}>
-                  <div className={styles.previewEmptyTitle}>還沒有生成圖</div>
-                  <div className={styles.previewEmptyDesc}>先到下方設定條件，再按「立即生成」</div>
-                </div>
-              )}
-            </div>
-
-            {/* ✅ 狀態 + Spec（折疊） */}
-            <div style={{ padding: 14, borderTop: "1px solid rgba(255,255,255,0.08)" }}>
-              <div style={{ fontWeight: 900, marginBottom: 6 }}>狀態</div>
-              <div style={{ fontSize: 13, opacity: 0.85 }}>{status || "—"}</div>
-
-              {spec && (
-                <details style={{ marginTop: 10 }}>
-                  <summary style={{ cursor: "pointer", opacity: 0.9, fontWeight: 900 }}>
-                    展開 Spec
-                  </summary>
-                  <pre className={styles.pre} style={{ marginTop: 10 }}>
-                    {JSON.stringify(spec, null, 2)}
-                  </pre>
-                </details>
-              )}
-            </div>
-
-            {/* Actions（目前仍保留跳頁，之後可接真正 share/save） */}
-            <div className={styles.previewActions}>
-              {previewSrc ? (
-                <>
-                  <a className={styles.primaryBtn} href="/share">
-                    分享
-                  </a>
-                  <a className={styles.ghostBtn} href="/my">
-                    存到我的穿搭
-                  </a>
-                </>
-              ) : (
-                <div className={styles.muted}>完成設定後，在左下的「立即生成」產生圖片</div>
-              )}
-            </div>
-          </div>
-        </div>
       </section>
 
-      {/* ✅ 主工作區只保留：左=條件設定 / 右=（移除原生成資訊 panel） */}
-      <main className={styles.mainGrid}>
+      {/* ✅ 主工作區：2 欄（左=條件 / 右=預覽+狀態+debug(可選)） */}
+      <main className={styles.mainGrid} style={{ paddingTop: 8 }}>
         <section className={styles.panel} ref={generatorRef as any}>
           <div className={styles.panelTitle}>條件設定</div>
 
@@ -524,7 +510,6 @@ export default function Home() {
             </label>
           </div>
 
-          {/* ✅ 唯一的生成按鈕 */}
           <div className={styles.stickyAction}>
             <button className={styles.primaryBtnWide} onClick={handleGenerate} disabled={!isAuthed}>
               立即生成
@@ -533,27 +518,46 @@ export default function Home() {
           </div>
         </section>
 
-        {/* ✅ 右欄改成「提示/小抄」，不再是生成資訊大卡，讓版面更順 */}
-        <section className={styles.panel}>
-          <div className={styles.panelTitle}>小提示</div>
-          <div className={styles.kv}>
-            <div className={styles.k}>建議</div>
-            <div className={styles.v}>
-              先選風格與配色，再用溫度調整外套/層次。
-              <br />
-              如果生成失敗，先確認已登入，或稍後再試一次。
-            </div>
+        {/* 右欄：預覽卡（sticky） */}
+        <section className={styles.panel} style={{ position: "sticky", top: 76, alignSelf: "start" }}>
+          <div className={styles.panelTitle}>預覽</div>
 
-            <div className={styles.k}>目前條件</div>
-            <div className={styles.v}>
-              <pre className={styles.pre}>{JSON.stringify(payload, null, 2)}</pre>
-              <div className={styles.smallHint}>（這裡是 debug 用：若後端說缺參數，可直接對照）</div>
-            </div>
+          <div className={styles.previewBox} style={{ borderRadius: 14, overflow: "hidden" }}>
+            {previewSrc ? (
+              // eslint-disable-next-line @next/next/no-img-element
+              <img className={styles.previewImg} src={previewSrc} alt="outfit preview" />
+            ) : (
+              <div className={styles.previewEmpty}>
+                <div className={styles.previewEmptyTitle}>還沒有生成圖</div>
+                <div className={styles.previewEmptyDesc}>完成左側條件後，按「立即生成」</div>
+              </div>
+            )}
           </div>
+
+          <div style={{ marginTop: 12, fontSize: 13, opacity: 0.9 }}>
+            <b>狀態：</b> {status || "—"}
+          </div>
+
+          {/* ✅ Debug 不影響版面：只有 ?debug=1 才出現，而且是折疊 */}
+          {debugEnabled && (
+            <details style={{ marginTop: 12 }}>
+              <summary style={{ cursor: "pointer", fontWeight: 900 }}>Debug</summary>
+
+              <div style={{ marginTop: 10 }}>
+                <div style={{ fontWeight: 900, marginBottom: 6 }}>payload (root)</div>
+                <pre className={styles.pre}>{JSON.stringify(payload, null, 2)}</pre>
+              </div>
+
+              <div style={{ marginTop: 10 }}>
+                <div style={{ fontWeight: 900, marginBottom: 6 }}>spec</div>
+                {spec ? <pre className={styles.pre}>{JSON.stringify(spec, null, 2)}</pre> : <div className={styles.muted}>—</div>}
+              </div>
+            </details>
+          )}
         </section>
       </main>
 
-      {/* ✅ Explore 精選移到 mainGrid 下方：動線更自然 */}
+      {/* Explore 精選（不再塞在右下） */}
       <section className={styles.panel} style={{ maxWidth: 1200, margin: "0 auto 28px" }}>
         <div className={styles.panelTitle}>公開穿搭精選</div>
 
