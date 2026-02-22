@@ -18,8 +18,8 @@ type ExploreItem = {
   style?: any;
 };
 
-type SpecResp = { ok?: boolean; spec?: any; error?: string; detail?: any };
-type ImgResp = { ok?: boolean; image_base64?: string; image_url?: string; error?: string; detail?: any };
+type SpecResp = { error?: string; detail?: any; credits_left?: number; is_tester?: boolean; summary?: string; items?: any[] };
+type ImgResp = { error?: string; detail?: any; image?: string; mime?: string; aspectRatio?: string; imageSize?: string };
 
 export default function Home() {
   const [me, setMe] = useState<MeResp | null>(null);
@@ -37,8 +37,10 @@ export default function Home() {
   const [height, setHeight] = useState<number>(165);
   const [weight, setWeight] = useState<number>(55);
   const [temp, setTemp] = useState<number>(22);
+
+  // 你 UI 叫 styleId / paletteId，但後端吃的是 style（required）、styleVariant（optional）
   const [styleId, setStyleId] = useState<string>("street");
-  const [paletteId, setPaletteId] = useState<string>("mono-dark");
+  const [paletteId, setPaletteId] = useState<string>("mono-dark"); // 目前後端未用到，先保留 UI
   const [withBag, setWithBag] = useState<boolean>(false);
   const [withHat, setWithHat] = useState<boolean>(false);
   const [withCoat, setWithCoat] = useState<boolean>(false);
@@ -46,8 +48,9 @@ export default function Home() {
   // Flow
   const [status, setStatus] = useState<string>("");
   const [spec, setSpec] = useState<any>(null);
-  const [imageUrl, setImageUrl] = useState<string>("");
-  const [imageBase64, setImageBase64] = useState<string>("");
+
+  // 預覽圖：用 data URL
+  const [previewSrc, setPreviewSrc] = useState<string>("");
 
   const generatorRef = useRef<HTMLElement | null>(null);
 
@@ -62,45 +65,34 @@ export default function Home() {
     }
   }, []);
 
-  /**
-   * ✅ 核心：把同一份參數「同時放在 root + payload」
-   * - 很多後端會寫：const {gender, styleId...} = req.body; if(!gender||!styleId) throw "Missing parameters"
-   * - 你之前送 { payload: {...} } 就會被判 missing
-   */
-  const payload = useMemo(() => {
+  // ✅ 後端真正需要的 body（root keys）
+  // /generate-outfit-spec 需要: gender, age, height, weight, style, temp, withBag/withHat/withCoat (styleVariant optional)
+  const apiBody = useMemo(() => {
     const safeAge = Number.isFinite(age) ? age : 25;
     const safeHeight = Number.isFinite(height) ? height : 165;
     const safeWeight = Number.isFinite(weight) ? weight : 55;
     const safeTemp = Number.isFinite(temp) ? temp : 22;
 
-    const base = {
+    return {
       gender,
       age: safeAge,
       height: safeHeight,
       weight: safeWeight,
-      temp: safeTemp,
-      temperature: safeTemp,
 
-      styleId,
-      paletteId,
+      // ✅ 後端吃 style，不吃 styleId
+      style: styleId,
+
+      // ✅ 後端吃 temp，不吃 temperature
+      temp: safeTemp,
+
       withBag,
       withHat,
       withCoat,
 
-      // snake_case (保險)
-      style_id: styleId,
-      palette_id: paletteId,
-      with_bag: withBag,
-      with_hat: withHat,
-      with_coat: withCoat,
-
-      // 有些後端會期待 style/palette 物件
-      style: { id: styleId },
-      palette: { id: paletteId },
+      // 可選：目前你 UI 沒給 variant，就先不送或送 undefined
+      // styleVariant: "brand-uniqlo" | ...
     };
-
-    return base;
-  }, [gender, age, height, weight, temp, styleId, paletteId, withBag, withHat, withCoat]);
+  }, [gender, age, height, weight, temp, styleId, withBag, withHat, withCoat]);
 
   async function refreshMe() {
     try {
@@ -132,13 +124,16 @@ export default function Home() {
 
   useEffect(() => {
     refreshMe();
+
     const { data } = supabaseBrowser.auth.onAuthStateChange(() => {
       refreshMe();
     });
+
     return () => data.subscription.unsubscribe();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
+  // Explore preview
   useEffect(() => {
     (async () => {
       setLoadingExplore(true);
@@ -155,6 +150,7 @@ export default function Home() {
     })();
   }, []);
 
+  // Close menus on outside click / Esc
   useEffect(() => {
     function onDocDown(e: MouseEvent) {
       const t = e.target as HTMLElement | null;
@@ -212,19 +208,6 @@ export default function Home() {
     generatorRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
   }
 
-  /**
-   * ✅ 自動 fallback：同一個 API 失敗（Missing parameters）就換另一種 body 再試一次
-   * 讓你不用先打開後端也能有最大成功率
-   */
-  async function postWithFallback<T>(url: string, bodyA: any, bodyB: any): Promise<T> {
-    const a = await apiPostJson<T>(url, bodyA);
-    if ((a as any)?.ok === false && String((a as any)?.error || "").includes("Missing parameters")) {
-      const b = await apiPostJson<T>(url, bodyB);
-      return b;
-    }
-    return a;
-  }
-
   async function handleGenerate() {
     if (!isAuthed) {
       setStatus("請先登入後才能生成。");
@@ -233,54 +216,45 @@ export default function Home() {
 
     setStatus("正在分析條件…");
     setSpec(null);
-    setImageUrl("");
-    setImageBase64("");
+    setPreviewSrc("");
 
     try {
-      // Body A：root + payload 同時存在（最大相容）
-      const bodyA = { ...payload, payload };
+      // 1) Spec：後端直接吃 root keys（gender/age/height/weight/style/temp...）
+      const specResp = await apiPostJson<SpecResp>("/api/generate-outfit-spec", apiBody);
+      if (!specResp || (specResp as any).error) throw new Error((specResp as any)?.error || "SPEC failed");
 
-      // Body B：只放 root（對某些後端更友善）
-      const bodyB = { ...payload };
+      // generate-outfit-spec 回傳形狀：{summary, items, credits_left, ...}
+      const s = {
+        summary: (specResp as any).summary || "",
+        items: Array.isArray((specResp as any).items) ? (specResp as any).items : [],
+      };
+      setSpec({ ...specResp, ...s });
 
-      // 1) Spec
-      const specResp = await postWithFallback<SpecResp>("/api/generate-outfit-spec", bodyA, bodyB);
-      if (!specResp || (specResp as any).ok === false) {
-        throw new Error((specResp as any)?.error || "SPEC failed");
-      }
-      const s = (specResp as any).spec ?? specResp;
-      setSpec(s);
-
-      // 2) Image
+      // 2) Image：後端要求 outfitSpec（且 outfitSpec.items 必須非空）
       setStatus("正在生成穿搭圖…");
+      const imgBody = {
+        ...apiBody,
+        outfitSpec: s,
+        // 可選：你後端支援這兩個
+        // aspectRatio: "9:16",
+        // imageSize: "1K",
+      };
 
-      // Image bodyA：root + payload + spec
-      const imgBodyA = { ...payload, payload, spec: s, spec_json: s };
+      const imgResp = await apiPostJson<ImgResp>("/api/generate-image", imgBody);
+      if (!imgResp || (imgResp as any).error) throw new Error((imgResp as any)?.error || "IMAGE failed");
 
-      // Image bodyB：只 root + spec
-      const imgBodyB = { ...payload, spec: s, spec_json: s };
+      // ✅ 後端回傳：{image, mime}
+      const b64 = (imgResp as any).image || "";
+      const mime = (imgResp as any).mime || "image/png";
+      if (!b64) throw new Error("No image returned");
 
-      const imgResp = await postWithFallback<ImgResp>("/api/generate-image", imgBodyA, imgBodyB);
-      if (!imgResp || (imgResp as any).ok === false) {
-        throw new Error((imgResp as any)?.error || "IMAGE failed");
-      }
-
-      const b64 = (imgResp as any).image_base64 || "";
-      const url = (imgResp as any).image_url || "";
-      if (url) setImageUrl(url);
-      if (b64) setImageBase64(b64);
+      setPreviewSrc(`data:${mime};base64,${b64}`);
 
       setStatus("完成 ✅");
     } catch (e: any) {
       setStatus("生成失敗：" + (e?.message || "Unknown error"));
     }
   }
-
-  const previewSrc = useMemo(() => {
-    if (imageUrl) return imageUrl;
-    if (imageBase64) return imageBase64;
-    return "";
-  }, [imageUrl, imageBase64]);
 
   const email = (me as any)?.user?.email || "";
   const avatarLetter = (email ? email[0] : "U").toUpperCase();
@@ -384,22 +358,16 @@ export default function Home() {
         )}
       </header>
 
-      {/* ✅ Hero 縮成「薄導覽列」：不再占很大 */}
+      {/* ✅ 左上縮小：變成薄導引列（不再占大卡） */}
       <section
         className={styles.hero}
         style={{
           gridTemplateColumns: "1fr",
-          paddingTop: 12,
-          paddingBottom: 8,
+          padding: "12px 18px 6px",
           gap: 10,
         }}
       >
-        <div
-          className={styles.heroLeft}
-          style={{
-            padding: 14,
-          }}
-        >
+        <div className={styles.heroLeft} style={{ padding: 14 }}>
           <h1 className={styles.h1} style={{ fontSize: 26, marginBottom: 8 }}>
             幫你找到最棒的穿搭
           </h1>
@@ -420,7 +388,7 @@ export default function Home() {
         </div>
       </section>
 
-      {/* ✅ 主工作區：2 欄（左=條件 / 右=預覽+狀態+debug(可選)） */}
+      {/* ✅ 主工作區：左=條件 / 右=預覽（sticky） */}
       <main className={styles.mainGrid} style={{ paddingTop: 8 }}>
         <section className={styles.panel} ref={generatorRef as any}>
           <div className={styles.panelTitle}>條件設定</div>
@@ -480,12 +448,15 @@ export default function Home() {
                 <option value="street">街頭</option>
                 <option value="casual">休閒</option>
                 <option value="minimal">極簡</option>
-                <option value="formal">正式</option>
+                <option value="formal">正式（目前後端未對應）</option>
               </select>
+              <div className={styles.smallHint}>
+                後端 styleMap 支援：casual / minimal / street / sporty / smart（formal 可能會回到預設 casual）。
+              </div>
             </label>
 
             <label className={styles.field}>
-              <div className={styles.label}>配色</div>
+              <div className={styles.label}>配色（目前後端未使用）</div>
               <select className={styles.select} value={paletteId} onChange={(e) => setPaletteId(e.target.value)}>
                 <option value="mono-dark">黑灰</option>
                 <option value="mono-light">白灰</option>
@@ -518,7 +489,6 @@ export default function Home() {
           </div>
         </section>
 
-        {/* 右欄：預覽卡（sticky） */}
         <section className={styles.panel} style={{ position: "sticky", top: 76, alignSelf: "start" }}>
           <div className={styles.panelTitle}>預覽</div>
 
@@ -538,16 +508,14 @@ export default function Home() {
             <b>狀態：</b> {status || "—"}
           </div>
 
-          {/* ✅ Debug 不影響版面：只有 ?debug=1 才出現，而且是折疊 */}
+          {/* ✅ Debug 不影響版面：只有 ?debug=1 才出現，而且折疊 */}
           {debugEnabled && (
             <details style={{ marginTop: 12 }}>
               <summary style={{ cursor: "pointer", fontWeight: 900 }}>Debug</summary>
-
               <div style={{ marginTop: 10 }}>
-                <div style={{ fontWeight: 900, marginBottom: 6 }}>payload (root)</div>
-                <pre className={styles.pre}>{JSON.stringify(payload, null, 2)}</pre>
+                <div style={{ fontWeight: 900, marginBottom: 6 }}>apiBody</div>
+                <pre className={styles.pre}>{JSON.stringify(apiBody, null, 2)}</pre>
               </div>
-
               <div style={{ marginTop: 10 }}>
                 <div style={{ fontWeight: 900, marginBottom: 6 }}>spec</div>
                 {spec ? <pre className={styles.pre}>{JSON.stringify(spec, null, 2)}</pre> : <div className={styles.muted}>—</div>}
@@ -557,7 +525,7 @@ export default function Home() {
         </section>
       </main>
 
-      {/* Explore 精選（不再塞在右下） */}
+      {/* Explore 精選 */}
       <section className={styles.panel} style={{ maxWidth: 1200, margin: "0 auto 28px" }}>
         <div className={styles.panelTitle}>公開穿搭精選</div>
 
