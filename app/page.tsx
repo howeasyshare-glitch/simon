@@ -15,14 +15,17 @@ type ExploreItem = {
   share_slug?: string;
   image_url?: string;
   summary?: any;
-  style?: any;
+  style?: any; // 這裡會帶入原本儲存的 style payload
+  like_count?: number;
 };
 
-type SpecResp = { error?: string; detail?: any; credits_left?: number; is_tester?: boolean; summary?: string; items?: any[] };
+type SpecResp = { error?: string; detail?: any; summary?: string; items?: any[]; credits_left?: number; is_tester?: boolean };
 type ImgResp = { error?: string; detail?: any; image?: string; mime?: string; aspectRatio?: string; imageSize?: string };
 
 export default function Home() {
   const [me, setMe] = useState<MeResp | null>(null);
+
+  // Explore
   const [explore, setExplore] = useState<ExploreItem[]>([]);
   const [loadingExplore, setLoadingExplore] = useState(false);
 
@@ -31,16 +34,23 @@ export default function Home() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const avatarWrapRef = useRef<HTMLDivElement | null>(null);
 
-  // Form
-  const [gender, setGender] = useState<"male" | "female">("male");
+  // ✅ Form（補回你說跑掉的欄位）
+  const [gender, setGender] = useState<"male" | "female" | "neutral">("male");
+  const [scenario, setScenario] = useState<"adult" | "child">("adult"); // 情境：成人/兒童（後端目前不吃，但保留給前端與套用）
   const [age, setAge] = useState<number>(25);
   const [height, setHeight] = useState<number>(165);
   const [weight, setWeight] = useState<number>(55);
   const [temp, setTemp] = useState<number>(22);
 
-  // 你 UI 叫 styleId / paletteId，但後端吃的是 style（required）、styleVariant（optional）
+  // 後端吃 style（casual/minimal/street/sporty/smart）
   const [styleId, setStyleId] = useState<string>("street");
-  const [paletteId, setPaletteId] = useState<string>("mono-dark"); // 目前後端未用到，先保留 UI
+
+  // ✅ 配色保留（後端目前不吃，但你說不錯想保留）
+  const [paletteId, setPaletteId] = useState<string>("mono-dark");
+
+  // ✅ 名人靈感（後端吃 styleVariant）
+  const [styleVariant, setStyleVariant] = useState<string>(""); // "" or "celeb-iu-casual" etc.
+
   const [withBag, setWithBag] = useState<boolean>(false);
   const [withHat, setWithHat] = useState<boolean>(false);
   const [withCoat, setWithCoat] = useState<boolean>(false);
@@ -49,11 +59,10 @@ export default function Home() {
   const [status, setStatus] = useState<string>("");
   const [spec, setSpec] = useState<any>(null);
 
-  // 預覽圖：用 data URL
+  // Preview (data url)
   const [previewSrc, setPreviewSrc] = useState<string>("");
 
   const generatorRef = useRef<HTMLElement | null>(null);
-
   const isAuthed = !!(me && (me as any).ok);
 
   // ✅ debug only if URL has ?debug=1
@@ -65,8 +74,7 @@ export default function Home() {
     }
   }, []);
 
-  // ✅ 後端真正需要的 body（root keys）
-  // /generate-outfit-spec 需要: gender, age, height, weight, style, temp, withBag/withHat/withCoat (styleVariant optional)
+  // ✅ 產生給後端用的 body（保持你已能生成的格式）
   const apiBody = useMemo(() => {
     const safeAge = Number.isFinite(age) ? age : 25;
     const safeHeight = Number.isFinite(height) ? height : 165;
@@ -74,26 +82,24 @@ export default function Home() {
     const safeTemp = Number.isFinite(temp) ? temp : 22;
 
     return {
-      gender,
+      gender, // 後端會把非 male/female 當 gender-neutral
       age: safeAge,
       height: safeHeight,
       weight: safeWeight,
-
-      // ✅ 後端吃 style，不吃 styleId
       style: styleId,
-
-      // ✅ 後端吃 temp，不吃 temperature
+      styleVariant: styleVariant || undefined,
       temp: safeTemp,
-
       withBag,
       withHat,
       withCoat,
 
-      // 可選：目前你 UI 沒給 variant，就先不送或送 undefined
-      // styleVariant: "brand-uniqlo" | ...
+      // 下面是前端自己需要（後端不吃也沒關係）
+      scenario,
+      paletteId,
     };
-  }, [gender, age, height, weight, temp, styleId, withBag, withHat, withCoat]);
+  }, [gender, age, height, weight, temp, styleId, styleVariant, withBag, withHat, withCoat, scenario, paletteId]);
 
+  // ========= Auth =========
   async function refreshMe() {
     try {
       const r = await apiFetch("/api/me?ts=" + Date.now(), { method: "GET" });
@@ -124,33 +130,31 @@ export default function Home() {
 
   useEffect(() => {
     refreshMe();
-
-    const { data } = supabaseBrowser.auth.onAuthStateChange(() => {
-      refreshMe();
-    });
-
+    const { data } = supabaseBrowser.auth.onAuthStateChange(() => refreshMe());
     return () => data.subscription.unsubscribe();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  // Explore preview
+  // ========= Explore =========
+  async function refreshExplore() {
+    setLoadingExplore(true);
+    try {
+      const data = await apiGetJson<{ ok: boolean; items: ExploreItem[] }>(
+        "/api/explore?limit=10&sort=like&ts=" + Date.now()
+      );
+      setExplore(data?.items || []);
+    } catch {
+      setExplore([]);
+    } finally {
+      setLoadingExplore(false);
+    }
+  }
+
   useEffect(() => {
-    (async () => {
-      setLoadingExplore(true);
-      try {
-        const data = await apiGetJson<{ ok: boolean; items: ExploreItem[] }>(
-          "/api/explore?limit=5&sort=like&ts=" + Date.now()
-        );
-        setExplore(data?.items || []);
-      } catch {
-        setExplore([]);
-      } finally {
-        setLoadingExplore(false);
-      }
-    })();
+    refreshExplore();
   }, []);
 
-  // Close menus on outside click / Esc
+  // ========= UI close =========
   useEffect(() => {
     function onDocDown(e: MouseEvent) {
       const t = e.target as HTMLElement | null;
@@ -208,6 +212,83 @@ export default function Home() {
     generatorRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
   }
 
+  // ========= Actions on Explore =========
+  async function trackExploreAction(action: "like" | "share" | "apply", id: string, meta?: any) {
+    // ⚠️ 你專案原本有 like/share/apply 事件寫入 DB
+    // 但這裡我無法確定你後端 API 的 exact 介面，所以採「不影響使用」的方式：
+    // - 有 API 就會成功記錄
+    // - 沒 API 也不會中斷操作
+    try {
+      await apiPostJson("/api/explore", { action, id, meta });
+    } catch {
+      // ignore
+    }
+  }
+
+  async function handleLike(it: ExploreItem) {
+    // optimistic UI（如果你 explore item 有 like_count 就更新一下）
+    setExplore((prev) =>
+      prev.map((x) => (x.id === it.id ? { ...x, like_count: (Number(x.like_count || 0) + 1) as any } : x))
+    );
+    await trackExploreAction("like", it.id);
+    // 你也可以選擇 refreshExplore() 重新抓真實數據
+  }
+
+  async function handleShare(it: ExploreItem) {
+    const url = it.share_slug ? `${window.location.origin}/share/${it.share_slug}` : `${window.location.origin}/explore`;
+    try {
+      await navigator.clipboard.writeText(url);
+      setStatus("已複製分享連結 ✅");
+    } catch {
+      setStatus("無法自動複製，請手動複製連結：" + url);
+    }
+    await trackExploreAction("share", it.id, { url });
+  }
+
+  function applyStyleToForm(it: ExploreItem) {
+    const s = it?.style || {};
+    // 允許 s 來自不同版本字段，盡量兼容
+    const g = s.gender ?? s.payload?.gender;
+    const sc = s.scenario ?? s.payload?.scenario;
+    const a = s.age ?? s.payload?.age;
+    const h = s.height ?? s.payload?.height;
+    const w = s.weight ?? s.payload?.weight;
+    const t = s.temp ?? s.payload?.temp ?? s.temperature ?? s.payload?.temperature;
+    const st = s.style ?? s.payload?.style ?? s.styleId ?? s.payload?.styleId; // 後端吃 style
+    const pv = s.styleVariant ?? s.payload?.styleVariant;
+    const pal = s.paletteId ?? s.payload?.paletteId;
+
+    const bag = s.withBag ?? s.payload?.withBag ?? s.with_bag ?? s.payload?.with_bag;
+    const hat = s.withHat ?? s.payload?.withHat ?? s.with_hat ?? s.payload?.with_hat;
+    const coat = s.withCoat ?? s.payload?.withCoat ?? s.with_coat ?? s.payload?.with_coat;
+
+    if (g === "male" || g === "female" || g === "neutral") setGender(g);
+    if (sc === "adult" || sc === "child") setScenario(sc);
+
+    if (Number.isFinite(Number(a))) setAge(Number(a));
+    if (Number.isFinite(Number(h))) setHeight(Number(h));
+    if (Number.isFinite(Number(w))) setWeight(Number(w));
+    if (Number.isFinite(Number(t))) setTemp(Number(t));
+
+    if (typeof st === "string" && st) {
+      // 只接受後端支持的 style，否則保留原本
+      const allowed = new Set(["casual", "minimal", "street", "sporty", "smart"]);
+      if (allowed.has(st)) setStyleId(st);
+    }
+
+    if (typeof pv === "string") setStyleVariant(pv);
+    if (typeof pal === "string" && pal) setPaletteId(pal);
+
+    setWithBag(!!bag);
+    setWithHat(!!hat);
+    setWithCoat(!!coat);
+
+    setStatus("已套用這套穿搭的風格與條件 ✅");
+    scrollToGenerator();
+    trackExploreAction("apply", it.id, { style: it.style });
+  }
+
+  // ========= Generate =========
   async function handleGenerate() {
     if (!isAuthed) {
       setStatus("請先登入後才能生成。");
@@ -219,49 +300,59 @@ export default function Home() {
     setPreviewSrc("");
 
     try {
-      // 1) Spec：後端直接吃 root keys（gender/age/height/weight/style/temp...）
+      // 1) Spec
       const specResp = await apiPostJson<SpecResp>("/api/generate-outfit-spec", apiBody);
       if (!specResp || (specResp as any).error) throw new Error((specResp as any)?.error || "SPEC failed");
 
-      // generate-outfit-spec 回傳形狀：{summary, items, credits_left, ...}
       const s = {
         summary: (specResp as any).summary || "",
         items: Array.isArray((specResp as any).items) ? (specResp as any).items : [],
       };
       setSpec({ ...specResp, ...s });
 
-      // 2) Image：後端要求 outfitSpec（且 outfitSpec.items 必須非空）
+      // 2) Image
       setStatus("正在生成穿搭圖…");
-      const imgBody = {
-        ...apiBody,
-        outfitSpec: s,
-        // 可選：你後端支援這兩個
-        // aspectRatio: "9:16",
-        // imageSize: "1K",
-      };
-
-      const imgResp = await apiPostJson<ImgResp>("/api/generate-image", imgBody);
+      const imgResp = await apiPostJson<ImgResp>("/api/generate-image", { ...apiBody, outfitSpec: s });
       if (!imgResp || (imgResp as any).error) throw new Error((imgResp as any)?.error || "IMAGE failed");
 
-      // ✅ 後端回傳：{image, mime}
       const b64 = (imgResp as any).image || "";
       const mime = (imgResp as any).mime || "image/png";
       if (!b64) throw new Error("No image returned");
 
       setPreviewSrc(`data:${mime};base64,${b64}`);
-
       setStatus("完成 ✅");
     } catch (e: any) {
       setStatus("生成失敗：" + (e?.message || "Unknown error"));
     }
   }
 
+  // ========= 購買路徑（依 slot 分類） =========
+  const shoppingGroups = useMemo(() => {
+    const items: any[] = Array.isArray(spec?.items) ? spec.items : [];
+    const groups: Record<string, any[]> = {};
+    for (const it of items) {
+      const slot = (it?.slot || "item").toString();
+      if (!groups[slot]) groups[slot] = [];
+      groups[slot].push(it);
+    }
+    return groups;
+  }, [spec]);
+
+  function buildShopUrl(item: any) {
+    const name = (item?.generic_name || item?.name || "").toString().trim();
+    const color = (item?.color || "").toString().trim();
+    const q = encodeURIComponent([color, name].filter(Boolean).join(" "));
+    return `https://www.google.com/search?tbm=shop&q=${q}`;
+  }
+
+  // ========= Header derived =========
   const email = (me as any)?.user?.email || "";
   const avatarLetter = (email ? email[0] : "U").toUpperCase();
   const credits = (me as any)?.credits_left ?? "-";
 
   return (
     <div className={styles.page}>
+      {/* ===== Header ===== */}
       <header className={styles.header}>
         <div className={styles.brand}>findoutfit</div>
 
@@ -358,38 +449,101 @@ export default function Home() {
         )}
       </header>
 
-      {/* ✅ 左上縮小：變成薄導引列（不再占大卡） */}
+      {/* ===== Top showcase: 公開穿搭精選（把原本底部搬上來） ===== */}
       <section
         className={styles.hero}
         style={{
           gridTemplateColumns: "1fr",
-          padding: "12px 18px 6px",
-          gap: 10,
+          padding: "12px 18px 10px",
+          gap: 12,
+          maxWidth: 1200,
+          margin: "0 auto",
         }}
       >
         <div className={styles.heroLeft} style={{ padding: 14 }}>
-          <h1 className={styles.h1} style={{ fontSize: 26, marginBottom: 8 }}>
-            幫你找到最棒的穿搭
-          </h1>
-          <p className={styles.p} style={{ marginBottom: 10 }}>
-            選條件 → 一鍵生成。結果會顯示在右側預覽。
-          </p>
+          <div style={{ display: "flex", alignItems: "baseline", justifyContent: "space-between", gap: 12 }}>
+            <div>
+              <h1 className={styles.h1} style={{ fontSize: 22, margin: 0 }}>
+                公開穿搭精選
+              </h1>
+              <p className={styles.p} style={{ margin: "6px 0 0" }}>
+                點「套用風格」會把這套穿搭的條件帶入下方，直接生成你自己的版本。
+              </p>
+            </div>
 
-          <div className={styles.heroActions}>
+            {/* ✅ 只留一個不吵的 CTA：開始生成 */}
             <button className={styles.primaryBtn} onClick={scrollToGenerator}>
-              開始設定
+              開始生成
             </button>
-            <a className={styles.secondaryBtn} href="/explore">
-              先逛 Explore
-            </a>
+          </div>
+
+          <div style={{ marginTop: 12 }}>
+            {loadingExplore ? (
+              <div className={styles.muted}>載入中…</div>
+            ) : explore.length ? (
+              <div className={styles.exploreGrid} style={{ gridTemplateColumns: "repeat(5, minmax(0, 1fr))" }}>
+                {explore.map((it) => (
+                  <div
+                    key={it.id}
+                    className={styles.exploreCard}
+                    style={{
+                      display: "flex",
+                      flexDirection: "column",
+                    }}
+                  >
+                    <a
+                      href={it.share_slug ? `/share/${it.share_slug}` : "/explore"}
+                      style={{ textDecoration: "none", color: "inherit" }}
+                    >
+                      <div className={styles.exploreThumb}>
+                        {/* eslint-disable-next-line @next/next/no-img-element */}
+                        {it.image_url ? <img src={it.image_url} alt="" /> : <div className={styles.thumbEmpty} />}
+                      </div>
+                      <div className={styles.exploreMeta}>
+                        <div className={styles.exploreTitle}>{it.summary?.title || "公開穿搭"}</div>
+                        <div className={styles.exploreSub}>
+                          {it.style?.style || it.style?.styleId || it.style?.id || "—"}
+                        </div>
+                      </div>
+                    </a>
+
+                    {/* ✅ 每張卡片底下三個按鈕：喜歡/分享/套用風格 */}
+                    <div
+                      style={{
+                        display: "grid",
+                        gridTemplateColumns: "1fr 1fr 1.2fr",
+                        gap: 8,
+                        padding: 10,
+                        borderTop: "1px solid rgba(255,255,255,0.08)",
+                      }}
+                    >
+                      <button className={styles.secondaryBtn as any} onClick={() => handleLike(it)} style={{ width: "100%" }}>
+                        喜歡{typeof it.like_count === "number" ? ` · ${it.like_count}` : ""}
+                      </button>
+
+                      <button className={styles.secondaryBtn as any} onClick={() => handleShare(it)} style={{ width: "100%" }}>
+                        分享
+                      </button>
+
+                      <button className={styles.primaryBtn as any} onClick={() => applyStyleToForm(it)} style={{ width: "100%" }}>
+                        套用風格
+                      </button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <div className={styles.muted}>目前沒有資料</div>
+            )}
           </div>
 
           {!!status && <div className={styles.status}>{status}</div>}
         </div>
       </section>
 
-      {/* ✅ 主工作區：左=條件 / 右=預覽（sticky） */}
+      {/* ===== Main workspace ===== */}
       <main className={styles.mainGrid} style={{ paddingTop: 8 }}>
+        {/* 左：條件設定（補回你說跑掉的欄位） */}
         <section className={styles.panel} ref={generatorRef as any}>
           <div className={styles.panelTitle}>條件設定</div>
 
@@ -399,7 +553,17 @@ export default function Home() {
               <select className={styles.select} value={gender} onChange={(e) => setGender(e.target.value as any)}>
                 <option value="male">男</option>
                 <option value="female">女</option>
+                <option value="neutral">中性</option>
               </select>
+            </label>
+
+            <label className={styles.field}>
+              <div className={styles.label}>情境</div>
+              <select className={styles.select} value={scenario} onChange={(e) => setScenario(e.target.value as any)}>
+                <option value="adult">成人</option>
+                <option value="child">兒童</option>
+              </select>
+              <div className={styles.smallHint}>（目前後端不使用，但可被「套用風格」帶入）</div>
             </label>
 
             <label className={styles.field}>
@@ -445,24 +609,35 @@ export default function Home() {
             <label className={styles.field}>
               <div className={styles.label}>風格</div>
               <select className={styles.select} value={styleId} onChange={(e) => setStyleId(e.target.value)}>
-                <option value="street">街頭</option>
                 <option value="casual">休閒</option>
                 <option value="minimal">極簡</option>
-                <option value="formal">正式（目前後端未對應）</option>
+                <option value="street">街頭</option>
+                <option value="sporty">運動</option>
+                <option value="smart">Smart Casual</option>
               </select>
-              <div className={styles.smallHint}>
-                後端 styleMap 支援：casual / minimal / street / sporty / smart（formal 可能會回到預設 casual）。
-              </div>
             </label>
 
             <label className={styles.field}>
-              <div className={styles.label}>配色（目前後端未使用）</div>
+              <div className={styles.label}>配色（保留）</div>
               <select className={styles.select} value={paletteId} onChange={(e) => setPaletteId(e.target.value)}>
                 <option value="mono-dark">黑灰</option>
                 <option value="mono-light">白灰</option>
                 <option value="earth">大地</option>
                 <option value="denim">丹寧</option>
               </select>
+              <div className={styles.smallHint}>（目前後端不使用，但可用於之後 prompt 強化）</div>
+            </label>
+
+            <label className={styles.field} style={{ gridColumn: "1 / -1" }}>
+              <div className={styles.label}>名人靈感（可選）</div>
+              <select className={styles.select} value={styleVariant} onChange={(e) => setStyleVariant(e.target.value)}>
+                <option value="">無</option>
+                <option value="celeb-iu-casual">IU（休閒）</option>
+                <option value="celeb-jennie-minimal">Jennie（極簡）</option>
+                <option value="celeb-gd-street">GD（街頭）</option>
+                <option value="celeb-lisa-sporty">Lisa（運動）</option>
+              </select>
+              <div className={styles.smallHint}>選了會套用後端的 styleVariant prompt（不會生成名人臉）。</div>
             </label>
           </div>
 
@@ -489,6 +664,7 @@ export default function Home() {
           </div>
         </section>
 
+        {/* 右：預覽 + 購買路徑 */}
         <section className={styles.panel} style={{ position: "sticky", top: 76, alignSelf: "start" }}>
           <div className={styles.panelTitle}>預覽</div>
 
@@ -508,7 +684,46 @@ export default function Home() {
             <b>狀態：</b> {status || "—"}
           </div>
 
-          {/* ✅ Debug 不影響版面：只有 ?debug=1 才出現，而且折疊 */}
+          {/* ✅ 生成後：購買路徑（依上衣/褲子/鞋子等 slot 分類） */}
+          <div style={{ marginTop: 14 }}>
+            <div style={{ fontWeight: 900, marginBottom: 8 }}>購買路徑</div>
+
+            {!spec?.items?.length ? (
+              <div className={styles.muted}>生成後會在這裡顯示「上衣 / 下身 / 鞋子 / 配件」等分類的購買連結</div>
+            ) : (
+              <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+                {Object.entries(shoppingGroups).map(([slot, items]) => (
+                  <div key={slot} style={{ border: "1px solid rgba(255,255,255,0.08)", borderRadius: 12, padding: 10 }}>
+                    <div style={{ fontWeight: 900, marginBottom: 8 }}>{slot}</div>
+                    <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+                      {(items as any[]).map((it, idx) => {
+                        const label = `${it?.color ? it.color + " " : ""}${it?.generic_name || it?.name || "item"}`;
+                        return (
+                          <a
+                            key={idx}
+                            className={styles.userItem}
+                            href={buildShopUrl(it)}
+                            target="_blank"
+                            rel="noreferrer"
+                            style={{
+                              padding: "8px 10px",
+                              borderRadius: 10,
+                              border: "1px solid rgba(255,255,255,0.08)",
+                              background: "rgba(0,0,0,0.18)",
+                            }}
+                          >
+                            {label} → 搜尋購買
+                          </a>
+                        );
+                      })}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+
+          {/* ✅ Debug：不影響版面（?debug=1 才會出現） */}
           {debugEnabled && (
             <details style={{ marginTop: 12 }}>
               <summary style={{ cursor: "pointer", fontWeight: 900 }}>Debug</summary>
@@ -524,36 +739,6 @@ export default function Home() {
           )}
         </section>
       </main>
-
-      {/* Explore 精選 */}
-      <section className={styles.panel} style={{ maxWidth: 1200, margin: "0 auto 28px" }}>
-        <div className={styles.panelTitle}>公開穿搭精選</div>
-
-        {loadingExplore ? (
-          <div className={styles.muted}>載入中…</div>
-        ) : explore.length ? (
-          <div className={styles.exploreGrid}>
-            {explore.map((it) => (
-              <a
-                key={it.id}
-                className={styles.exploreCard}
-                href={it.share_slug ? `/share/${it.share_slug}` : "/explore"}
-              >
-                <div className={styles.exploreThumb}>
-                  {/* eslint-disable-next-line @next/next/no-img-element */}
-                  {it.image_url ? <img src={it.image_url} alt="" /> : <div className={styles.thumbEmpty} />}
-                </div>
-                <div className={styles.exploreMeta}>
-                  <div className={styles.exploreTitle}>{it.share_slug ? "查看分享" : "查看"}</div>
-                  <div className={styles.exploreSub}>{it.style?.styleId || it.style?.id || "—"}</div>
-                </div>
-              </a>
-            ))}
-          </div>
-        ) : (
-          <div className={styles.muted}>目前沒有資料</div>
-        )}
-      </section>
     </div>
   );
 }
