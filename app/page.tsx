@@ -19,8 +19,11 @@ type ExploreItem = {
   like_count?: number;
 };
 
-type SpecResp = { error?: string; detail?: any; summary?: string; items?: any[]; credits_left?: number; is_tester?: boolean };
-type ImgResp = { error?: string; detail?: any; image?: string; mime?: string; aspectRatio?: string; imageSize?: string };
+type SpecResp = { error?: string; detail?: any; summary?: string; items?: any[] };
+type ImgResp = { error?: string; detail?: any; image?: string; mime?: string };
+
+type Gender = "male" | "female" | "neutral";
+type AgeGroup = "adult" | "child";
 
 const STYLE_OPTIONS = [
   { id: "casual", label: "休閒" },
@@ -35,15 +38,68 @@ const PALETTES = [
   { id: "mono-light", label: "白灰" },
   { id: "earth", label: "大地" },
   { id: "denim", label: "丹寧" },
-  { id: "cream-warm", label: "奶油暖" }, // index.html 常見
+  { id: "cream-warm", label: "奶油暖" },
   { id: "bright", label: "明亮" },
 ] as const;
 
-type UiStyleSource = "none" | "scene" | "celeb";
+/** === index.html 的 STYLE_SOURCES（對齊） === */
+const STYLE_SOURCES = {
+  scene: {
+    optionsByAgeGroup: {
+      adult: ["休閒", "上班 / 通勤", "約會", "運動", "旅行", "正式場合"],
+      kids: ["日常 / 上學", "戶外玩樂", "運動 / 體育課", "聚會 / 生日", "旅行", "正式場合"],
+    },
+    mapToPayload: (val: string) => {
+      const m: Record<string, { style: string; styleVariant: string }> = {
+        "休閒": { style: "casual", styleVariant: "" },
+        "上班 / 通勤": { style: "smart", styleVariant: "" },
+        "約會": { style: "minimal", styleVariant: "" },
+        "運動": { style: "sporty", styleVariant: "" },
+        "旅行": { style: "casual", styleVariant: "" },
+        "正式場合": { style: "smart", styleVariant: "" },
 
-function clamp(n: number, min: number, max: number) {
-  if (!Number.isFinite(n)) return min;
-  return Math.max(min, Math.min(max, n));
+        // kids 也走同一組 style（index.html 是這樣）
+        "日常 / 上學": { style: "casual", styleVariant: "" },
+        "戶外玩樂": { style: "casual", styleVariant: "" },
+        "運動 / 體育課": { style: "sporty", styleVariant: "" },
+        "聚會 / 生日": { style: "street", styleVariant: "" },
+      };
+      return m[val] || { style: "casual", styleVariant: "" };
+    },
+  },
+  celebrity: {
+    optionsByGender: {
+      male: ["GD", "BTS", "V", "Jungkook", "Jimin", "RM"],
+      female: ["Lisa", "IU", "Jennie", "Rosé", "Jisoo", "Karina"],
+      neutralPool: ["GD", "BTS", "V", "Jungkook", "Jimin", "RM", "Lisa", "IU", "Jennie", "Rosé", "Jisoo", "Karina"],
+    },
+    mapToPayload: (val: string) => {
+      const m: Record<string, { style: string; styleVariant: string }> = {
+        GD: { style: "street", styleVariant: "celeb-gd-street" },
+        BTS: { style: "street", styleVariant: "celeb-bts-street" },
+        Lisa: { style: "sporty", styleVariant: "celeb-lisa-sporty" },
+        IU: { style: "casual", styleVariant: "celeb-iu-casual" },
+        Jennie: { style: "minimal", styleVariant: "celeb-jennie-minimal" },
+      };
+      return m[val] || { style: "casual", styleVariant: "" };
+    },
+  },
+};
+
+function stableRandomPick<T>(arr: T[], k: number, seed: string) {
+  // 簡單穩定亂數：同一 seed 會固定結果（避免 neutral 每次 render 亂跳）
+  let h = 2166136261;
+  for (let i = 0; i < seed.length; i++) h = (h ^ seed.charCodeAt(i)) * 16777619;
+
+  const a = arr.slice();
+  for (let i = a.length - 1; i > 0; i--) {
+    h ^= h << 13;
+    h ^= h >> 17;
+    h ^= h << 5;
+    const j = Math.abs(h) % (i + 1);
+    [a[i], a[j]] = [a[j], a[i]];
+  }
+  return a.slice(0, Math.min(k, a.length));
 }
 
 export default function Home() {
@@ -52,39 +108,33 @@ export default function Home() {
   // Explore
   const [explore, setExplore] = useState<ExploreItem[]>([]);
   const [loadingExplore, setLoadingExplore] = useState(false);
-  const [exploreError, setExploreError] = useState<string>("");
+  const [exploreError, setExploreError] = useState("");
 
   // Header UI
   const [userMenuOpen, setUserMenuOpen] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const avatarWrapRef = useRef<HTMLDivElement | null>(null);
 
-  // ✅ Form (參考 index.html)
-  const [gender, setGender] = useState<"male" | "female" | "neutral">("female");
-  const [ageGroup, setAgeGroup] = useState<"adult" | "child">("adult");
+  // Form
+  const [gender, setGender] = useState<Gender>("female");
+  const [ageGroup, setAgeGroup] = useState<AgeGroup>("adult");
 
-  const [age, setAge] = useState<number>(25);
-  const [height, setHeight] = useState<number>(165);
-  const [weight, setWeight] = useState<number>(55);
-  const [temp, setTemp] = useState<number>(22);
+  const [age, setAge] = useState(25);
+  const [height, setHeight] = useState(165);
+  const [weight, setWeight] = useState(55);
+  const [temp, setTemp] = useState(22);
 
-  // style / palette / variant
-  const [styleId, setStyleId] = useState<string>("casual");
-  const [paletteId, setPaletteId] = useState<string>("mono-dark");
-  const [styleVariant, setStyleVariant] = useState<string>(""); // 名人/品牌靈感
-  const [uiStyleSource, setUiStyleSource] = useState<UiStyleSource>("none"); // scene/celeb
+  const [styleId, setStyleId] = useState("smart");
+  const [paletteId, setPaletteId] = useState("mono-dark");
+  const [styleVariant, setStyleVariant] = useState("");
 
-  // add-ons
-  const [withBag, setWithBag] = useState<boolean>(false);
-  const [withHat, setWithHat] = useState<boolean>(false);
-  const [withCoat, setWithCoat] = useState<boolean>(false);
+  const [withBag, setWithBag] = useState(false);
+  const [withHat, setWithHat] = useState(false);
+  const [withCoat, setWithCoat] = useState(false);
 
-  // Flow
-  const [status, setStatus] = useState<string>("");
-  const [loginError, setLoginError] = useState<string>("");
-
+  const [status, setStatus] = useState("");
   const [spec, setSpec] = useState<any>(null);
-  const [previewSrc, setPreviewSrc] = useState<string>("");
+  const [previewSrc, setPreviewSrc] = useState("");
 
   const generatorRef = useRef<HTMLElement | null>(null);
   const isAuthed = !!(me && (me as any).ok);
@@ -97,40 +147,41 @@ export default function Home() {
     }
   }, []);
 
-  // ✅ 成人/兒童 slider 範圍（參考 index.html 的邏輯）
   const ranges = useMemo(() => {
     if (ageGroup === "child") {
       return {
-        age: { min: 4, max: 16, step: 1, def: 10 },
-        height: { min: 95, max: 170, step: 1, def: 140 },
-        weight: { min: 12, max: 70, step: 1, def: 35 },
-        temp: { min: 0, max: 35, step: 1, def: 22 },
+        age: { min: 4, max: 16, step: 1 },
+        height: { min: 95, max: 170, step: 1 },
+        weight: { min: 12, max: 70, step: 1 },
+        temp: { min: 0, max: 35, step: 1 },
       };
     }
     return {
-      age: { min: 18, max: 60, step: 1, def: 28 },
-      height: { min: 145, max: 195, step: 1, def: 165 },
-      weight: { min: 40, max: 110, step: 1, def: 60 },
-      temp: { min: 0, max: 35, step: 1, def: 22 },
+      age: { min: 18, max: 60, step: 1 },
+      height: { min: 145, max: 195, step: 1 },
+      weight: { min: 40, max: 110, step: 1 },
+      temp: { min: 0, max: 35, step: 1 },
     };
   }, [ageGroup]);
 
-  // 切換成人/兒童時，自動把值拉回合理範圍
-  useEffect(() => {
-    setAge((v) => clamp(v, ranges.age.min, ranges.age.max));
-    setHeight((v) => clamp(v, ranges.height.min, ranges.height.max));
-    setWeight((v) => clamp(v, ranges.weight.min, ranges.weight.max));
-    setTemp((v) => clamp(v, ranges.temp.min, ranges.temp.max));
-
-    // 如果你希望切換時直接套預設值，改成下面這段即可：
-    // setAge(ranges.age.def); setHeight(ranges.height.def); setWeight(ranges.weight.def); setTemp(ranges.temp.def);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+  // === index.html: scene list differs between adult/kids
+  const sceneOptions = useMemo(() => {
+    const key = ageGroup === "child" ? "kids" : "adult";
+    return STYLE_SOURCES.scene.optionsByAgeGroup[key].slice();
   }, [ageGroup]);
 
-  // ✅ 後端要的 body（你前面已修好生成，我這裡延用）
+  // === index.html: celeb list differs by gender; neutral shows 4 random
+  const celebOptions = useMemo(() => {
+    if (gender === "male") return STYLE_SOURCES.celebrity.optionsByGender.male.slice();
+    if (gender === "female") return STYLE_SOURCES.celebrity.optionsByGender.female.slice();
+    // neutral: stable random 4
+    const seed = (me as any)?.user?.id || "anon-neutral";
+    return stableRandomPick(STYLE_SOURCES.celebrity.optionsByGender.neutralPool, 4, seed);
+  }, [gender, me]);
+
   const apiBody = useMemo(() => {
     return {
-      gender, // backend: male/female/other => neutral
+      gender,
       age,
       height,
       weight,
@@ -141,14 +192,12 @@ export default function Home() {
       withHat,
       withCoat,
 
-      // 前端輔助資料（後端忽略也沒關係）
+      // front-only
       ageGroup,
       paletteId,
-      uiStyleSource,
     };
-  }, [gender, age, height, weight, styleId, styleVariant, temp, withBag, withHat, withCoat, ageGroup, paletteId, uiStyleSource]);
+  }, [gender, age, height, weight, styleId, styleVariant, temp, withBag, withHat, withCoat, ageGroup, paletteId]);
 
-  // ====== Auth ======
   async function refreshMe() {
     try {
       const r = await apiFetch("/api/me?ts=" + Date.now(), { method: "GET" });
@@ -156,7 +205,6 @@ export default function Home() {
         setMe({ ok: false, error: "unauthorized" });
         return;
       }
-
       const text = await r.text();
       let j: any = null;
       try {
@@ -164,12 +212,10 @@ export default function Home() {
       } catch {
         j = null;
       }
-
       if (!r.ok) {
         setMe({ ok: false, error: j?.error || text || `HTTP ${r.status}` });
         return;
       }
-
       setMe(j);
     } catch (e: any) {
       setMe({ ok: false, error: e?.message || "me fetch failed" });
@@ -183,19 +229,17 @@ export default function Home() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  // ====== Explore (多重 fallback + 顯示錯誤) ======
   async function refreshExplore() {
     setLoadingExplore(true);
     setExploreError("");
     try {
-      // 依序嘗試（很多時候只是 query 不支援）
       const tries = [
         "/api/explore?limit=10&sort=like&ts=" + Date.now(),
         "/api/explore?limit=10&ts=" + Date.now(),
         "/api/explore?limit=5&sort=like&ts=" + Date.now(),
       ];
-
       let lastErr: any = null;
+
       for (const url of tries) {
         try {
           const data = await apiGetJson<any>(url);
@@ -211,7 +255,7 @@ export default function Home() {
       }
 
       setExplore([]);
-      setExploreError((lastErr as any)?.message || "Explore 載入失敗（未知原因）");
+      setExploreError(lastErr?.message || "Explore 載入失敗");
     } finally {
       setLoadingExplore(false);
     }
@@ -221,7 +265,6 @@ export default function Home() {
     refreshExplore();
   }, []);
 
-  // ====== Close menus ======
   useEffect(() => {
     function onDocDown(e: MouseEvent) {
       const t = e.target as HTMLElement | null;
@@ -253,9 +296,7 @@ export default function Home() {
     };
   }, [userMenuOpen, mobileMenuOpen]);
 
-  // ====== Login (把錯誤顯示出來) ======
   async function handleGoogleLogin() {
-    setLoginError("");
     setStatus("");
     try {
       const redirectTo = `${window.location.origin}/auth/callback`;
@@ -264,11 +305,8 @@ export default function Home() {
         options: { redirectTo },
       });
       if (error) throw error;
-      setStatus("正在跳轉到 Google 登入…");
     } catch (e: any) {
-      const msg = e?.message || "Google 登入失敗（Unknown error）";
-      setLoginError(msg);
-      setStatus("登入失敗：" + msg);
+      setStatus("登入失敗：" + (e?.message || "Unknown error"));
     }
   }
 
@@ -285,7 +323,6 @@ export default function Home() {
     generatorRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
   }
 
-  // ====== Explore actions（不阻斷 UI） ======
   async function trackExploreAction(action: "like" | "share" | "apply", id: string, meta?: any) {
     try {
       await apiPostJson("/api/explore", { action, id, meta });
@@ -307,31 +344,24 @@ export default function Home() {
       await navigator.clipboard.writeText(url);
       setStatus("已複製分享連結 ✅");
     } catch {
-      setStatus("無法自動複製，請手動複製連結：" + url);
+      setStatus("無法自動複製，請手動複製：" + url);
     }
     await trackExploreAction("share", it.id, { url });
   }
 
   function applyStyleToForm(it: ExploreItem) {
     const s = it?.style || {};
-
-    // 兼容舊資料結構：style 可能本身就是 payload，或 style.payload
     const p = s?.payload || s;
 
-    const g = p?.gender;
-    const ag = p?.ageGroup || p?.audienceKey?.split?.("-")?.[0];
-
-    if (g === "male" || g === "female" || g === "neutral") setGender(g);
-    if (ag === "adult" || ag === "child") setAgeGroup(ag);
+    if (p?.gender === "male" || p?.gender === "female" || p?.gender === "neutral") setGender(p.gender);
+    if (p?.ageGroup === "adult" || p?.ageGroup === "child") setAgeGroup(p.ageGroup);
 
     if (Number.isFinite(Number(p?.age))) setAge(Number(p.age));
     if (Number.isFinite(Number(p?.height))) setHeight(Number(p.height));
     if (Number.isFinite(Number(p?.weight))) setWeight(Number(p.weight));
     if (Number.isFinite(Number(p?.temp))) setTemp(Number(p.temp));
 
-    const st = p?.style || p?.styleId;
-    if (typeof st === "string") setStyleId(st);
-
+    if (typeof p?.style === "string") setStyleId(p.style);
     if (typeof p?.paletteId === "string") setPaletteId(p.paletteId);
     if (typeof p?.styleVariant === "string") setStyleVariant(p.styleVariant);
 
@@ -339,57 +369,26 @@ export default function Home() {
     setWithHat(!!p?.withHat);
     setWithCoat(!!p?.withCoat);
 
-    setUiStyleSource((p?.uiStyleSource as UiStyleSource) || "none");
-
     setStatus("已套用這套穿搭的條件 ✅");
     scrollToGenerator();
     trackExploreAction("apply", it.id, { style: it.style });
   }
 
-  // ====== index.html 風格 UI：情境 / 名人 ======
-  const scenePresets = useMemo(() => {
-    return [
-      { label: "日常通勤", style: "smart", styleVariant: "scene-commute", paletteId: "mono-dark", src: "scene" as const },
-      { label: "約會", style: "minimal", styleVariant: "scene-date", paletteId: "cream-warm", src: "scene" as const },
-      { label: "旅行", style: "casual", styleVariant: "scene-travel", paletteId: "earth", src: "scene" as const },
-      { label: "運動", style: "sporty", styleVariant: "scene-gym", paletteId: "bright", src: "scene" as const },
-      { label: "聚會", style: "street", styleVariant: "scene-party", paletteId: "denim", src: "scene" as const },
-      { label: "校園", style: "casual", styleVariant: "scene-campus", paletteId: "bright", src: "scene" as const },
-    ];
-  }, []);
-
-  const celebPresets = useMemo(() => {
-    // 這裡用你 index.html 常見的命名方式：celeb-xxx-style
-    const female = [
-      { label: "IU 日常", style: "casual", styleVariant: "celeb-iu-casual", paletteId: "cream-warm", src: "celeb" as const },
-      { label: "Jennie 極簡", style: "minimal", styleVariant: "celeb-jennie-minimal", paletteId: "mono-dark", src: "celeb" as const },
-      { label: "Lisa 運動", style: "sporty", styleVariant: "celeb-lisa-sporty", paletteId: "bright", src: "celeb" as const },
-    ];
-    const male = [
-      { label: "GD 街頭", style: "street", styleVariant: "celeb-gd-street", paletteId: "mono-dark", src: "celeb" as const },
-      { label: "乾淨 Smart", style: "smart", styleVariant: "celeb-smart-clean", paletteId: "mono-light", src: "celeb" as const },
-      { label: "機能運動", style: "sporty", styleVariant: "celeb-athleisure", paletteId: "bright", src: "celeb" as const },
-    ];
-    const neutral = [
-      { label: "中性極簡", style: "minimal", styleVariant: "brand-cos", paletteId: "mono-dark", src: "celeb" as const },
-      { label: "中性街頭", style: "street", styleVariant: "brand-ader-error", paletteId: "mono-dark", src: "celeb" as const },
-      { label: "中性日常", style: "casual", styleVariant: "", paletteId: "mono-dark", src: "celeb" as const },
-    ];
-
-    if (gender === "female") return female;
-    if (gender === "male") return male;
-    return neutral;
-  }, [gender]);
-
-  function applyPreset(p: { style: string; styleVariant: string; paletteId: string; src: UiStyleSource }) {
-    setStyleId(p.style);
-    setStyleVariant(p.styleVariant || "");
-    setPaletteId(p.paletteId || "mono-dark");
-    setUiStyleSource(p.src);
-    setStatus(`已套用：${p.src === "scene" ? "穿搭情境" : "名人靈感"} ✅`);
+  /** === 點選情境 / 名人：照 index.html mapToPayload === */
+  function pickScene(val: string) {
+    const out = STYLE_SOURCES.scene.mapToPayload(val);
+    setStyleId(out.style);
+    setStyleVariant(out.styleVariant);
+    setStatus(`已選：穿搭情境 / ${val} ✅`);
   }
 
-  // ====== Generate ======
+  function pickCeleb(val: string) {
+    const out = STYLE_SOURCES.celebrity.mapToPayload(val);
+    setStyleId(out.style);
+    setStyleVariant(out.styleVariant);
+    setStatus(`已選：名人靈感 / ${val} ✅`);
+  }
+
   async function handleGenerate() {
     if (!isAuthed) {
       setStatus("請先登入後才能生成。");
@@ -417,15 +416,14 @@ export default function Home() {
       const b64 = (imgResp as any).image || "";
       const mime = (imgResp as any).mime || "image/png";
       if (!b64) throw new Error("No image returned");
-      setPreviewSrc(`data:${mime};base64,${b64}`);
 
+      setPreviewSrc(`data:${mime};base64,${b64}`);
       setStatus("完成 ✅");
     } catch (e: any) {
       setStatus("生成失敗：" + (e?.message || "Unknown error"));
     }
   }
 
-  // ====== Shopping links ======
   const shoppingGroups = useMemo(() => {
     const items: any[] = Array.isArray(spec?.items) ? spec.items : [];
     const groups: Record<string, any[]> = {};
@@ -444,53 +442,9 @@ export default function Home() {
     return `https://www.google.com/search?tbm=shop&q=${q}`;
   }
 
-  // ====== Header derived ======
   const email = (me as any)?.user?.email || "";
   const avatarLetter = (email ? email[0] : "U").toUpperCase();
   const credits = (me as any)?.credits_left ?? "-";
-
-  // ====== UI helpers ======
-  function SegButton(props: { on: boolean; onClick: () => void; children: any }) {
-    return (
-      <button
-        type="button"
-        onClick={props.onClick}
-        style={{
-          flex: 1,
-          border: "1px solid rgba(255,255,255,0.12)",
-          background: props.on ? "#ffffff" : "rgba(255,255,255,0.06)",
-          color: props.on ? "#0b0d12" : "rgba(233,236,243,0.9)",
-          borderRadius: 12,
-          padding: "10px 10px",
-          fontWeight: 900,
-          cursor: "pointer",
-          whiteSpace: "nowrap",
-        }}
-      >
-        {props.children}
-      </button>
-    );
-  }
-
-  function SmallCard(props: { active?: boolean; title: string; sub: string; onClick: () => void }) {
-    return (
-      <button
-        type="button"
-        onClick={props.onClick}
-        style={{
-          textAlign: "left",
-          borderRadius: 14,
-          border: "1px solid rgba(255,255,255,0.10)",
-          background: props.active ? "rgba(255,255,255,0.14)" : "rgba(0,0,0,0.18)",
-          padding: 12,
-          cursor: "pointer",
-        }}
-      >
-        <div style={{ fontWeight: 900, fontSize: 13 }}>{props.title}</div>
-        <div style={{ marginTop: 6, fontSize: 12, opacity: 0.75, lineHeight: 1.35 }}>{props.sub}</div>
-      </button>
-    );
-  }
 
   return (
     <div className={styles.page}>
@@ -545,11 +499,6 @@ export default function Home() {
               <button className={styles.primaryBtn} onClick={handleGoogleLogin}>
                 Google 登入
               </button>
-              {!!loginError && (
-                <div style={{ marginTop: 8, fontSize: 12, color: "rgba(255,120,120,0.95)", maxWidth: 240, textAlign: "right" }}>
-                  {loginError}
-                </div>
-              )}
             </div>
           )}
         </div>
@@ -587,7 +536,7 @@ export default function Home() {
         )}
       </header>
 
-      {/* ===== 上方：公開穿搭精選（展示區） ===== */}
+      {/* ===== 公開穿搭精選 ===== */}
       <section className={styles.hero} style={{ gridTemplateColumns: "1fr", paddingTop: 12, paddingBottom: 8, gap: 10 }}>
         <div className={styles.heroLeft} style={{ padding: 14 }}>
           <div style={{ display: "flex", alignItems: "baseline", justifyContent: "space-between", gap: 12, flexWrap: "wrap" }}>
@@ -619,26 +568,12 @@ export default function Home() {
 
           <div style={{ marginTop: 12 }}>
             {loadingExplore ? (
-              <div className={styles.exploreGrid} style={{ gridTemplateColumns: "repeat(5, minmax(0, 1fr))" }}>
-                {Array.from({ length: 5 }).map((_, i) => (
-                  <div key={i} className={styles.exploreCard} style={{ padding: 10 }}>
-                    <div className={styles.exploreThumb} />
-                    <div style={{ padding: 10, opacity: 0.6 }}>載入中…</div>
-                  </div>
-                ))}
-              </div>
+              <div className={styles.muted}>載入中…</div>
             ) : explore.length ? (
               <div className={styles.exploreGrid} style={{ gridTemplateColumns: "repeat(5, minmax(0, 1fr))" }}>
                 {explore.map((it) => (
-                  <div
-                    key={it.id}
-                    className={styles.exploreCard}
-                    style={{ display: "flex", flexDirection: "column" }}
-                  >
-                    <a
-                      href={it.share_slug ? `/share/${it.share_slug}` : "/explore"}
-                      style={{ textDecoration: "none", color: "inherit" }}
-                    >
+                  <div key={it.id} className={styles.exploreCard} style={{ display: "flex", flexDirection: "column" }}>
+                    <a href={it.share_slug ? `/share/${it.share_slug}` : "/explore"} style={{ textDecoration: "none", color: "inherit" }}>
                       <div className={styles.exploreThumb}>
                         {/* eslint-disable-next-line @next/next/no-img-element */}
                         {it.image_url ? <img src={it.image_url} alt="" /> : <div className={styles.thumbEmpty} />}
@@ -649,15 +584,7 @@ export default function Home() {
                       </div>
                     </a>
 
-                    <div
-                      style={{
-                        display: "grid",
-                        gridTemplateColumns: "1fr 1fr 1.2fr",
-                        gap: 8,
-                        padding: 10,
-                        borderTop: "1px solid rgba(255,255,255,0.08)",
-                      }}
-                    >
+                    <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1.2fr", gap: 8, padding: 10, borderTop: "1px solid rgba(255,255,255,0.08)" }}>
                       <button className={styles.secondaryBtn as any} onClick={() => handleLike(it)} style={{ width: "100%" }}>
                         喜歡{typeof it.like_count === "number" ? ` · ${it.like_count}` : ""}
                       </button>
@@ -673,146 +600,130 @@ export default function Home() {
               </div>
             ) : (
               <div className={styles.muted} style={{ marginTop: 8 }}>
-                目前沒有資料（可能 API 回傳不是 items，或 /api/explore 暫時不可用）
+                目前沒有資料
               </div>
             )}
           </div>
         </div>
       </section>
 
-      {/* ===== 主區：條件設定（參考 index.html） + 預覽/購買路徑 ===== */}
+      {/* ===== 主區：條件設定 + 預覽/購買 ===== */}
       <main className={styles.mainGrid} style={{ paddingTop: 8 }}>
         <section className={styles.panel} ref={generatorRef as any}>
           <div className={styles.panelTitle}>穿搭條件</div>
 
-          {/* 性別 segmented */}
+          {/* 性別 */}
           <div style={{ marginBottom: 12 }}>
             <div className={styles.label} style={{ marginBottom: 8 }}>
               性別
             </div>
-            <div style={{ display: "flex", gap: 8 }}>
-              <SegButton on={gender === "female"} onClick={() => setGender("female")}>
+            <div className={styles.segmentedRow}>
+              <button className={`${styles.segBtn} ${gender === "female" ? styles.segOn : ""}`} onClick={() => setGender("female")}>
                 女
-              </SegButton>
-              <SegButton on={gender === "male"} onClick={() => setGender("male")}>
+              </button>
+              <button className={`${styles.segBtn} ${gender === "male" ? styles.segOn : ""}`} onClick={() => setGender("male")}>
                 男
-              </SegButton>
-              <SegButton on={gender === "neutral"} onClick={() => setGender("neutral")}>
+              </button>
+              <button className={`${styles.segBtn} ${gender === "neutral" ? styles.segOn : ""}`} onClick={() => setGender("neutral")}>
                 中性
-              </SegButton>
+              </button>
             </div>
           </div>
 
-          {/* 成人/兒童 segmented */}
+          {/* 類別 */}
           <div style={{ marginBottom: 12 }}>
             <div className={styles.label} style={{ marginBottom: 8 }}>
               類別
             </div>
-            <div style={{ display: "flex", gap: 8 }}>
-              <SegButton on={ageGroup === "adult"} onClick={() => setAgeGroup("adult")}>
+            <div className={styles.segmentedRow}>
+              <button className={`${styles.segBtn} ${ageGroup === "adult" ? styles.segOn : ""}`} onClick={() => setAgeGroup("adult")}>
                 成人
-              </SegButton>
-              <SegButton on={ageGroup === "child"} onClick={() => setAgeGroup("child")}>
+              </button>
+              <button className={`${styles.segBtn} ${ageGroup === "child" ? styles.segOn : ""}`} onClick={() => setAgeGroup("child")}>
                 兒童
-              </SegButton>
+              </button>
             </div>
           </div>
 
-          {/* sliders (age/height/weight/temp) */}
+          {/* sliders（改用 styles.range，顏色會吃 CSS 變數，不再藍色） */}
           <div className={styles.formGrid}>
             <div className={styles.field}>
               <div className={styles.label}>年齡：{age}</div>
-              <input
-                className={styles.input}
-                type="range"
-                min={ranges.age.min}
-                max={ranges.age.max}
-                step={ranges.age.step}
-                value={age}
-                onChange={(e) => setAge(parseInt(e.target.value, 10))}
-              />
+              <input className={styles.range} type="range" min={ranges.age.min} max={ranges.age.max} step={ranges.age.step} value={age} onChange={(e) => setAge(parseInt(e.target.value, 10))} />
             </div>
 
             <div className={styles.field}>
               <div className={styles.label}>身高（cm）：{height}</div>
-              <input
-                className={styles.input}
-                type="range"
-                min={ranges.height.min}
-                max={ranges.height.max}
-                step={ranges.height.step}
-                value={height}
-                onChange={(e) => setHeight(parseInt(e.target.value, 10))}
-              />
+              <input className={styles.range} type="range" min={ranges.height.min} max={ranges.height.max} step={ranges.height.step} value={height} onChange={(e) => setHeight(parseInt(e.target.value, 10))} />
             </div>
 
             <div className={styles.field}>
               <div className={styles.label}>體重（kg）：{weight}</div>
-              <input
-                className={styles.input}
-                type="range"
-                min={ranges.weight.min}
-                max={ranges.weight.max}
-                step={ranges.weight.step}
-                value={weight}
-                onChange={(e) => setWeight(parseInt(e.target.value, 10))}
-              />
+              <input className={styles.range} type="range" min={ranges.weight.min} max={ranges.weight.max} step={ranges.weight.step} value={weight} onChange={(e) => setWeight(parseInt(e.target.value, 10))} />
             </div>
 
             <div className={styles.field}>
               <div className={styles.label}>氣溫（°C）：{temp}</div>
-              <input
-                className={styles.input}
-                type="range"
-                min={ranges.temp.min}
-                max={ranges.temp.max}
-                step={ranges.temp.step}
-                value={temp}
-                onChange={(e) => setTemp(parseInt(e.target.value, 10))}
-              />
+              <input className={styles.range} type="range" min={ranges.temp.min} max={ranges.temp.max} step={ranges.temp.step} value={temp} onChange={(e) => setTemp(parseInt(e.target.value, 10))} />
             </div>
           </div>
 
-          {/* 穿搭情境 / 名人靈感（index.html 的核心） */}
+          {/* ✅ 穿搭情境（依 adult/child 變化，6 個） */}
           <div style={{ marginTop: 14 }}>
             <div className={styles.label} style={{ marginBottom: 10 }}>
               穿搭情境
             </div>
-            <div style={{ display: "grid", gridTemplateColumns: "repeat(3, minmax(0, 1fr))", gap: 10 }}>
-              {scenePresets.map((p) => (
-                <SmallCard
-                  key={p.label}
-                  active={uiStyleSource === "scene" && styleVariant === p.styleVariant && styleId === p.style}
-                  title={p.label}
-                  sub={`${p.style} · ${p.paletteId}`}
-                  onClick={() => applyPreset(p)}
-                />
-              ))}
+            <div className={styles.presetGrid}>
+              {sceneOptions.map((v) => {
+                const mapped = STYLE_SOURCES.scene.mapToPayload(v);
+                const active = styleId === mapped.style && (styleVariant || "") === (mapped.styleVariant || "");
+                return (
+                  <button
+                    key={v}
+                    type="button"
+                    className={`${styles.presetCard} ${active ? styles.presetCardActive : ""}`}
+                    onClick={() => pickScene(v)}
+                  >
+                    <div className={styles.presetTitle}>{v}</div>
+                    <div className={styles.presetSub}>{mapped.style}</div>
+                  </button>
+                );
+              })}
             </div>
           </div>
 
+          {/* ✅ 名人靈感（依性別變化；中性 4 個穩定隨機） */}
           <div style={{ marginTop: 14 }}>
             <div className={styles.label} style={{ marginBottom: 10 }}>
               名人靈感（風格靈感，不模仿臉）
             </div>
-            <div style={{ display: "grid", gridTemplateColumns: "repeat(3, minmax(0, 1fr))", gap: 10 }}>
-              {celebPresets.map((p) => (
-                <SmallCard
-                  key={p.label}
-                  active={uiStyleSource === "celeb" && styleVariant === p.styleVariant && styleId === p.style}
-                  title={p.label}
-                  sub={`${p.style} · ${p.paletteId}`}
-                  onClick={() => applyPreset(p)}
-                />
-              ))}
+            <div className={styles.presetGrid}>
+              {celebOptions.map((v) => {
+                const mapped = STYLE_SOURCES.celebrity.mapToPayload(v);
+                const active = styleId === mapped.style && (styleVariant || "") === (mapped.styleVariant || "");
+                return (
+                  <button
+                    key={v}
+                    type="button"
+                    className={`${styles.presetCard} ${active ? styles.presetCardActive : ""}`}
+                    onClick={() => pickCeleb(v)}
+                  >
+                    <div className={styles.presetTitle}>{v}</div>
+                    <div className={styles.presetSub}>
+                      {mapped.style}
+                      {mapped.styleVariant ? ` · ${mapped.styleVariant}` : ""}
+                    </div>
+                  </button>
+                );
+              })}
             </div>
           </div>
 
-          {/* 風格 + 配色（保留） */}
+          {/* 風格 / 配色 / 變體（保留你想要的手動調整） */}
           <div className={styles.formGrid} style={{ marginTop: 14 }}>
             <label className={styles.field}>
               <div className={styles.label}>風格</div>
-              <select className={styles.select} value={styleId} onChange={(e) => { setStyleId(e.target.value); setUiStyleSource("none"); }}>
+              <select className={styles.select} value={styleId} onChange={(e) => setStyleId(e.target.value)}>
                 {STYLE_OPTIONS.map((s) => (
                   <option key={s.id} value={s.id}>
                     {s.label}
@@ -834,17 +745,11 @@ export default function Home() {
 
             <label className={styles.field} style={{ gridColumn: "1 / -1" }}>
               <div className={styles.label}>風格變體（品牌 / 名人）</div>
-              <input
-                className={styles.input}
-                placeholder="例如：brand-uniqlo / celeb-iu-casual"
-                value={styleVariant}
-                onChange={(e) => { setStyleVariant(e.target.value); setUiStyleSource("none"); }}
-              />
-              <div className={styles.smallHint}>（通常由上面的情境/名人卡自動帶入）</div>
+              <input className={styles.input} value={styleVariant} onChange={(e) => setStyleVariant(e.target.value)} />
+              <div className={styles.smallHint}>（通常由上面情境/名人卡自動帶入）</div>
             </label>
           </div>
 
-          {/* 配件 toggle */}
           <div className={styles.toggles} style={{ marginTop: 12 }}>
             <label className={styles.toggle}>
               <input type="checkbox" checked={withBag} onChange={(e) => setWithBag(e.target.checked)} />
@@ -868,7 +773,7 @@ export default function Home() {
           </div>
         </section>
 
-        {/* 右：預覽 + 購買路徑 */}
+        {/* 右側：預覽 + 購買路徑 */}
         <section className={styles.panel} style={{ position: "sticky", top: 76, alignSelf: "start" }}>
           <div className={styles.panelTitle}>預覽</div>
 
@@ -891,7 +796,7 @@ export default function Home() {
           <div style={{ marginTop: 14 }}>
             <div style={{ fontWeight: 900, marginBottom: 8 }}>購買路徑</div>
             {!spec?.items?.length ? (
-              <div className={styles.muted}>生成後會顯示「上衣 / 下身 / 鞋子 / 配件」等分類的購買連結</div>
+              <div className={styles.muted}>生成後會顯示分類購買連結</div>
             ) : (
               <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
                 {Object.entries(shoppingGroups).map(([slot, items]) => (
