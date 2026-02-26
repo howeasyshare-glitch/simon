@@ -42,7 +42,7 @@ const PALETTES = [
   { id: "bright", label: "明亮" },
 ] as const;
 
-/** === index.html 的 STYLE_SOURCES（對齊） === */
+/** === 對齊 index.html 的 STYLE_SOURCES === */
 const STYLE_SOURCES = {
   scene: {
     optionsByAgeGroup: {
@@ -58,7 +58,6 @@ const STYLE_SOURCES = {
         "旅行": { style: "casual", styleVariant: "" },
         "正式場合": { style: "smart", styleVariant: "" },
 
-        // kids 也走同一組 style（index.html 是這樣）
         "日常 / 上學": { style: "casual", styleVariant: "" },
         "戶外玩樂": { style: "casual", styleVariant: "" },
         "運動 / 體育課": { style: "sporty", styleVariant: "" },
@@ -87,7 +86,6 @@ const STYLE_SOURCES = {
 };
 
 function stableRandomPick<T>(arr: T[], k: number, seed: string) {
-  // 簡單穩定亂數：同一 seed 會固定結果（避免 neutral 每次 render 亂跳）
   let h = 2166136261;
   for (let i = 0; i < seed.length; i++) h = (h ^ seed.charCodeAt(i)) * 16777619;
 
@@ -132,6 +130,11 @@ export default function Home() {
   const [withHat, setWithHat] = useState(false);
   const [withCoat, setWithCoat] = useState(false);
 
+  // ✅ 防止「多選」：用卡片本身的 key 做選取狀態
+  const [selectedScene, setSelectedScene] = useState<string>("");
+  const [selectedCeleb, setSelectedCeleb] = useState<string>("");
+
+  // Flow
   const [status, setStatus] = useState("");
   const [spec, setSpec] = useState<any>(null);
   const [previewSrc, setPreviewSrc] = useState("");
@@ -164,21 +167,19 @@ export default function Home() {
     };
   }, [ageGroup]);
 
-  // === index.html: scene list differs between adult/kids
   const sceneOptions = useMemo(() => {
     const key = ageGroup === "child" ? "kids" : "adult";
     return STYLE_SOURCES.scene.optionsByAgeGroup[key].slice();
   }, [ageGroup]);
 
-  // === index.html: celeb list differs by gender; neutral shows 4 random
   const celebOptions = useMemo(() => {
     if (gender === "male") return STYLE_SOURCES.celebrity.optionsByGender.male.slice();
     if (gender === "female") return STYLE_SOURCES.celebrity.optionsByGender.female.slice();
-    // neutral: stable random 4
     const seed = (me as any)?.user?.id || "anon-neutral";
     return stableRandomPick(STYLE_SOURCES.celebrity.optionsByGender.neutralPool, 4, seed);
   }, [gender, me]);
 
+  // ✅ 送 API 的 body（你目前 generate 已 OK，所以維持這個結構）
   const apiBody = useMemo(() => {
     return {
       gender,
@@ -198,24 +199,32 @@ export default function Home() {
     };
   }, [gender, age, height, weight, styleId, styleVariant, temp, withBag, withHat, withCoat, ageGroup, paletteId]);
 
+  // ✅ 更穩：先 getSession，再打 /api/me，401 重試一次（避免 OAuth/refresh 競態）
   async function refreshMe() {
     try {
+      const { data, error } = await supabaseBrowser.auth.getSession();
+      const token = data?.session?.access_token || "";
+
+      if (!token || error) {
+        setMe({ ok: false, error: "no_session" });
+        return;
+      }
+
       const r = await apiFetch("/api/me?ts=" + Date.now(), { method: "GET" });
+
       if (r.status === 401) {
-        setMe({ ok: false, error: "unauthorized" });
+        await new Promise((res) => setTimeout(res, 250));
+        const r2 = await apiFetch("/api/me?ts=" + Date.now(), { method: "GET" });
+        if (r2.status === 401) {
+          setMe({ ok: false, error: "unauthorized" });
+          return;
+        }
+        const j2 = await r2.json();
+        setMe(j2);
         return;
       }
-      const text = await r.text();
-      let j: any = null;
-      try {
-        j = JSON.parse(text);
-      } catch {
-        j = null;
-      }
-      if (!r.ok) {
-        setMe({ ok: false, error: j?.error || text || `HTTP ${r.status}` });
-        return;
-      }
+
+      const j = await r.json();
       setMe(j);
     } catch (e: any) {
       setMe({ ok: false, error: e?.message || "me fetch failed" });
@@ -265,6 +274,7 @@ export default function Home() {
     refreshExplore();
   }, []);
 
+  // Close menus on outside click / Esc
   useEffect(() => {
     function onDocDown(e: MouseEvent) {
       const t = e.target as HTMLElement | null;
@@ -369,20 +379,29 @@ export default function Home() {
     setWithHat(!!p?.withHat);
     setWithCoat(!!p?.withCoat);
 
+    // ✅ 套用時清掉情境/名人選取（避免 UI 認為你仍選著某卡）
+    setSelectedScene("");
+    setSelectedCeleb("");
+
     setStatus("已套用這套穿搭的條件 ✅");
     scrollToGenerator();
     trackExploreAction("apply", it.id, { style: it.style });
   }
 
-  /** === 點選情境 / 名人：照 index.html mapToPayload === */
+  /** ✅ 點選情境：只允許單選（不再多選） */
   function pickScene(val: string) {
+    setSelectedScene(val);
+    setSelectedCeleb(""); // （可選）點情境就清掉名人
     const out = STYLE_SOURCES.scene.mapToPayload(val);
     setStyleId(out.style);
     setStyleVariant(out.styleVariant);
     setStatus(`已選：穿搭情境 / ${val} ✅`);
   }
 
+  /** ✅ 點選名人：只允許單選（不再多選） */
   function pickCeleb(val: string) {
+    setSelectedCeleb(val);
+    setSelectedScene(""); // （可選）點名人就清掉情境
     const out = STYLE_SOURCES.celebrity.mapToPayload(val);
     setStyleId(out.style);
     setStyleVariant(out.styleVariant);
@@ -607,8 +626,8 @@ export default function Home() {
         </div>
       </section>
 
-      {/* ===== 主區：條件設定 + 預覽/購買 ===== */}
       <main className={styles.mainGrid} style={{ paddingTop: 8 }}>
+        {/* ===== 左：條件 ===== */}
         <section className={styles.panel} ref={generatorRef as any}>
           <div className={styles.panelTitle}>穿搭條件</div>
 
@@ -645,7 +664,7 @@ export default function Home() {
             </div>
           </div>
 
-          {/* sliders（改用 styles.range，顏色會吃 CSS 變數，不再藍色） */}
+          {/* sliders */}
           <div className={styles.formGrid}>
             <div className={styles.field}>
               <div className={styles.label}>年齡：{age}</div>
@@ -668,7 +687,7 @@ export default function Home() {
             </div>
           </div>
 
-          {/* ✅ 穿搭情境（依 adult/child 變化，6 個） */}
+          {/* 情境 */}
           <div style={{ marginTop: 14 }}>
             <div className={styles.label} style={{ marginBottom: 10 }}>
               穿搭情境
@@ -676,7 +695,7 @@ export default function Home() {
             <div className={styles.presetGrid}>
               {sceneOptions.map((v) => {
                 const mapped = STYLE_SOURCES.scene.mapToPayload(v);
-                const active = styleId === mapped.style && (styleVariant || "") === (mapped.styleVariant || "");
+                const active = selectedScene === v; // ✅ 單選判斷
                 return (
                   <button
                     key={v}
@@ -692,7 +711,7 @@ export default function Home() {
             </div>
           </div>
 
-          {/* ✅ 名人靈感（依性別變化；中性 4 個穩定隨機） */}
+          {/* 名人 */}
           <div style={{ marginTop: 14 }}>
             <div className={styles.label} style={{ marginBottom: 10 }}>
               名人靈感（風格靈感，不模仿臉）
@@ -700,7 +719,7 @@ export default function Home() {
             <div className={styles.presetGrid}>
               {celebOptions.map((v) => {
                 const mapped = STYLE_SOURCES.celebrity.mapToPayload(v);
-                const active = styleId === mapped.style && (styleVariant || "") === (mapped.styleVariant || "");
+                const active = selectedCeleb === v; // ✅ 單選判斷
                 return (
                   <button
                     key={v}
@@ -719,7 +738,7 @@ export default function Home() {
             </div>
           </div>
 
-          {/* 風格 / 配色 / 變體（保留你想要的手動調整） */}
+          {/* 風格 / 配色 / 變體 */}
           <div className={styles.formGrid} style={{ marginTop: 14 }}>
             <label className={styles.field}>
               <div className={styles.label}>風格</div>
@@ -773,7 +792,7 @@ export default function Home() {
           </div>
         </section>
 
-        {/* 右側：預覽 + 購買路徑 */}
+        {/* ===== 右：預覽 + 購買 ===== */}
         <section className={styles.panel} style={{ position: "sticky", top: 76, alignSelf: "start" }}>
           <div className={styles.panelTitle}>預覽</div>
 
