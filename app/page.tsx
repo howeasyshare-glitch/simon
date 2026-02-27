@@ -3,7 +3,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import styles from "./page.module.css";
 import { supabaseBrowser } from "../lib/supabaseBrowser";
-import { apiFetch, apiGetJson, apiPostJson } from "../lib/apiFetch";
+import { apiGetJson, apiPostJson } from "../lib/apiFetch";
 
 type MeResp =
   | { ok: true; user?: { id: string; email?: string }; credits_left?: number; is_tester?: boolean }
@@ -42,13 +42,13 @@ const PALETTES = [
   { id: "bright", label: "明亮" },
 ] as const;
 
-/** === 對齊 index.html 的 STYLE_SOURCES === */
+// === 模擬 index.html 的資料結構（你之後可用 index.html 真資料覆蓋） ===
 const STYLE_SOURCES = {
   scene: {
     optionsByAgeGroup: {
       adult: ["休閒", "上班 / 通勤", "約會", "運動", "旅行", "正式場合"],
       kids: ["日常 / 上學", "戶外玩樂", "運動 / 體育課", "聚會 / 生日", "旅行", "正式場合"],
-    },
+    } as const,
     mapToPayload: (val: string) => {
       const m: Record<string, { style: string; styleVariant: string }> = {
         "休閒": { style: "casual", styleVariant: "" },
@@ -68,10 +68,10 @@ const STYLE_SOURCES = {
   },
   celebrity: {
     optionsByGender: {
-      male: ["GD", "BTS", "V", "Jungkook", "Jimin", "RM"],
-      female: ["Lisa", "IU", "Jennie", "Rosé", "Jisoo", "Karina"],
-      neutralPool: ["GD", "BTS", "V", "Jungkook", "Jimin", "RM", "Lisa", "IU", "Jennie", "Rosé", "Jisoo", "Karina"],
-    },
+      male: ["GD", "BTS", "V", "Jungkook"],
+      female: ["Lisa", "IU", "Jennie", "Karina"],
+      neutralPool: ["GD", "BTS", "V", "Jungkook", "Lisa", "IU", "Jennie", "Karina"],
+    } as const,
     mapToPayload: (val: string) => {
       const m: Record<string, { style: string; styleVariant: string }> = {
         GD: { style: "street", styleVariant: "celeb-gd-street" },
@@ -79,6 +79,7 @@ const STYLE_SOURCES = {
         Lisa: { style: "sporty", styleVariant: "celeb-lisa-sporty" },
         IU: { style: "casual", styleVariant: "celeb-iu-casual" },
         Jennie: { style: "minimal", styleVariant: "celeb-jennie-minimal" },
+        Karina: { style: "smart", styleVariant: "celeb-karina-smart" },
       };
       return m[val] || { style: "casual", styleVariant: "" };
     },
@@ -101,6 +102,11 @@ function stableRandomPick<T>(arr: T[], k: number, seed: string) {
 }
 
 export default function Home() {
+  // ✅ 真正登入狀態以 supabase session 為準（不再被 /api/me 401 牽連）
+  const [session, setSession] = useState<any>(null);
+  const isAuthed = !!session?.access_token;
+
+  // 額外 user info（點數、email...），拿不到也不影響登入 UI
   const [me, setMe] = useState<MeResp | null>(null);
 
   // Explore
@@ -130,7 +136,7 @@ export default function Home() {
   const [withHat, setWithHat] = useState(false);
   const [withCoat, setWithCoat] = useState(false);
 
-  // ✅ 防止「多選」：用卡片本身的 key 做選取狀態
+  // ✅ 防止多選：用「卡片值」當選取狀態
   const [selectedScene, setSelectedScene] = useState<string>("");
   const [selectedCeleb, setSelectedCeleb] = useState<string>("");
 
@@ -140,16 +146,8 @@ export default function Home() {
   const [previewSrc, setPreviewSrc] = useState("");
 
   const generatorRef = useRef<HTMLElement | null>(null);
-  const isAuthed = !!(me && (me as any).ok);
 
-  const debugEnabled = useMemo(() => {
-    try {
-      return new URLSearchParams(window.location.search).get("debug") === "1";
-    } catch {
-      return false;
-    }
-  }, []);
-
+  // ranges
   const ranges = useMemo(() => {
     if (ageGroup === "child") {
       return {
@@ -175,11 +173,11 @@ export default function Home() {
   const celebOptions = useMemo(() => {
     if (gender === "male") return STYLE_SOURCES.celebrity.optionsByGender.male.slice();
     if (gender === "female") return STYLE_SOURCES.celebrity.optionsByGender.female.slice();
-    const seed = (me as any)?.user?.id || "anon-neutral";
+    const seed = session?.user?.id || "anon-neutral";
     return stableRandomPick(STYLE_SOURCES.celebrity.optionsByGender.neutralPool, 4, seed);
-  }, [gender, me]);
+  }, [gender, session]);
 
-  // ✅ 送 API 的 body（你目前 generate 已 OK，所以維持這個結構）
+  // ✅ 送 API body
   const apiBody = useMemo(() => {
     return {
       gender,
@@ -199,47 +197,70 @@ export default function Home() {
     };
   }, [gender, age, height, weight, styleId, styleVariant, temp, withBag, withHat, withCoat, ageGroup, paletteId]);
 
-  // ✅ 更穩：先 getSession，再打 /api/me，401 重試一次（避免 OAuth/refresh 競態）
-  async function refreshMe() {
-  try {
-    const { data } = await supabaseBrowser.auth.getSession();
-    const token = data?.session?.access_token;
+  // ✅ 初始化：同步 session + 監聽狀態變化
+  useEffect(() => {
+    let mounted = true;
 
-    if (!token) {
-      setMe({ ok: false, error: "no_session_token" });
-      return;
-    }
+    (async () => {
+      try {
+        const { data } = await supabaseBrowser.auth.getSession();
+        if (!mounted) return;
+        setSession(data.session || null);
+      } catch {
+        // ignore
+      }
+    })();
 
-    const r = await fetch("/api/me?ts=" + Date.now(), {
-      method: "GET",
-      headers: {
-        Authorization: `Bearer ${token}`,
-      },
+    const { data: sub } = supabaseBrowser.auth.onAuthStateChange((_evt, s) => {
+      setSession(s || null);
     });
 
-    const text = await r.text();
-    let j: any = null;
+    return () => {
+      mounted = false;
+      sub.subscription.unsubscribe();
+    };
+  }, []);
+
+  // ✅ /api/me：自己帶 Bearer（不依賴 apiFetch，直接排除 Missing bearer token）
+  async function refreshMe() {
     try {
-      j = JSON.parse(text);
-    } catch {}
+      const { data } = await supabaseBrowser.auth.getSession();
+      const token = data?.session?.access_token;
 
-    if (!r.ok) {
-      setMe({ ok: false, error: j?.error || text || `HTTP ${r.status}` });
-      return;
+      if (!token) {
+        setMe({ ok: false, error: "no_session_token" });
+        return;
+      }
+
+      const r = await fetch("/api/me?ts=" + Date.now(), {
+        method: "GET",
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
+
+      const text = await r.text();
+      let j: any = null;
+      try {
+        j = JSON.parse(text);
+      } catch {}
+
+      if (!r.ok) {
+        // ⚠️ 拿不到 me 也不代表未登入，僅代表 credits/email 讀不到
+        setMe({ ok: false, error: j?.error || text || `HTTP ${r.status}` });
+        return;
+      }
+
+      setMe(j);
+    } catch (e: any) {
+      setMe({ ok: false, error: e?.message || "me fetch failed" });
     }
-
-    setMe(j);
-  } catch (e: any) {
-    setMe({ ok: false, error: e?.message || "me fetch failed" });
   }
-}
 
   useEffect(() => {
-    refreshMe();
-    const { data } = supabaseBrowser.auth.onAuthStateChange(() => refreshMe());
-    return () => data.subscription.unsubscribe();
+    if (isAuthed) refreshMe();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [isAuthed]);
 
   async function refreshExplore() {
     setLoadingExplore(true);
@@ -326,6 +347,7 @@ export default function Home() {
   async function handleLogout() {
     await supabaseBrowser.auth.signOut();
     setMe({ ok: false, error: "signed out" });
+    setSession(null);
     setStatus("已登出");
     setUserMenuOpen(false);
   }
@@ -382,7 +404,6 @@ export default function Home() {
     setWithHat(!!p?.withHat);
     setWithCoat(!!p?.withCoat);
 
-    // ✅ 套用時清掉情境/名人選取（避免 UI 認為你仍選著某卡）
     setSelectedScene("");
     setSelectedCeleb("");
 
@@ -391,20 +412,18 @@ export default function Home() {
     trackExploreAction("apply", it.id, { style: it.style });
   }
 
-  /** ✅ 點選情境：只允許單選（不再多選） */
   function pickScene(val: string) {
     setSelectedScene(val);
-    setSelectedCeleb(""); // （可選）點情境就清掉名人
+    setSelectedCeleb("");
     const out = STYLE_SOURCES.scene.mapToPayload(val);
     setStyleId(out.style);
     setStyleVariant(out.styleVariant);
     setStatus(`已選：穿搭情境 / ${val} ✅`);
   }
 
-  /** ✅ 點選名人：只允許單選（不再多選） */
   function pickCeleb(val: string) {
     setSelectedCeleb(val);
-    setSelectedScene(""); // （可選）點名人就清掉情境
+    setSelectedScene("");
     const out = STYLE_SOURCES.celebrity.mapToPayload(val);
     setStyleId(out.style);
     setStyleVariant(out.styleVariant);
@@ -464,7 +483,7 @@ export default function Home() {
     return `https://www.google.com/search?tbm=shop&q=${q}`;
   }
 
-  const email = (me as any)?.user?.email || "";
+  const email = (me as any)?.user?.email || session?.user?.email || "";
   const avatarLetter = (email ? email[0] : "U").toUpperCase();
   const credits = (me as any)?.credits_left ?? "-";
 
@@ -698,7 +717,7 @@ export default function Home() {
             <div className={styles.presetGrid}>
               {sceneOptions.map((v) => {
                 const mapped = STYLE_SOURCES.scene.mapToPayload(v);
-                const active = selectedScene === v; // ✅ 單選判斷
+                const active = selectedScene === v;
                 return (
                   <button
                     key={v}
@@ -722,7 +741,7 @@ export default function Home() {
             <div className={styles.presetGrid}>
               {celebOptions.map((v) => {
                 const mapped = STYLE_SOURCES.celebrity.mapToPayload(v);
-                const active = selectedCeleb === v; // ✅ 單選判斷
+                const active = selectedCeleb === v;
                 return (
                   <button
                     key={v}
@@ -851,20 +870,6 @@ export default function Home() {
               </div>
             )}
           </div>
-
-          {debugEnabled && (
-            <details style={{ marginTop: 12 }}>
-              <summary style={{ cursor: "pointer", fontWeight: 900 }}>Debug</summary>
-              <div style={{ marginTop: 10 }}>
-                <div style={{ fontWeight: 900, marginBottom: 6 }}>apiBody</div>
-                <pre className={styles.pre}>{JSON.stringify(apiBody, null, 2)}</pre>
-              </div>
-              <div style={{ marginTop: 10 }}>
-                <div style={{ fontWeight: 900, marginBottom: 6 }}>spec</div>
-                {spec ? <pre className={styles.pre}>{JSON.stringify(spec, null, 2)}</pre> : <div className={styles.muted}>—</div>}
-              </div>
-            </details>
-          )}
         </section>
       </main>
     </div>
