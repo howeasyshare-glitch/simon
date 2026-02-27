@@ -1,6 +1,8 @@
 // lib/apiFetch.ts
 import { supabaseBrowser } from "./supabaseBrowser";
 
+const token = data.session?.access_token;
+console.log("[apiFetch] token?", !!token, url);
 
 export async function apiFetch(url: string, init?: RequestInit) {
   const { data } = await supabaseBrowser.auth.getSession();
