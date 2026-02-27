@@ -86,11 +86,14 @@ const STYLE_SOURCES = {
   },
 };
 
-function stableRandomPick<T>(arr: T[], k: number, seed: string) {
+function stableRandomPick<T>(arr: readonly T[], k: number, seed: string) {
   let h = 2166136261;
-  for (let i = 0; i < seed.length; i++) h = (h ^ seed.charCodeAt(i)) * 16777619;
+  for (let i = 0; i < seed.length; i++) {
+    h = (h ^ seed.charCodeAt(i)) * 16777619;
+  }
 
-  const a = arr.slice();
+  const a = [...arr]; // 複製成 mutable array
+
   for (let i = a.length - 1; i > 0; i--) {
     h ^= h << 13;
     h ^= h >> 17;
@@ -98,6 +101,7 @@ function stableRandomPick<T>(arr: T[], k: number, seed: string) {
     const j = Math.abs(h) % (i + 1);
     [a[i], a[j]] = [a[j], a[i]];
   }
+
   return a.slice(0, Math.min(k, a.length));
 }
 
