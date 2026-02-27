@@ -201,35 +201,38 @@ export default function Home() {
 
   // ✅ 更穩：先 getSession，再打 /api/me，401 重試一次（避免 OAuth/refresh 競態）
   async function refreshMe() {
-    try {
-      const { data, error } = await supabaseBrowser.auth.getSession();
-      const token = data?.session?.access_token || "";
+  try {
+    const { data } = await supabaseBrowser.auth.getSession();
+    const token = data?.session?.access_token;
 
-      if (!token || error) {
-        setMe({ ok: false, error: "no_session" });
-        return;
-      }
-
-      const r = await apiFetch("/api/me?ts=" + Date.now(), { method: "GET" });
-
-      if (r.status === 401) {
-        await new Promise((res) => setTimeout(res, 250));
-        const r2 = await apiFetch("/api/me?ts=" + Date.now(), { method: "GET" });
-        if (r2.status === 401) {
-          setMe({ ok: false, error: "unauthorized" });
-          return;
-        }
-        const j2 = await r2.json();
-        setMe(j2);
-        return;
-      }
-
-      const j = await r.json();
-      setMe(j);
-    } catch (e: any) {
-      setMe({ ok: false, error: e?.message || "me fetch failed" });
+    if (!token) {
+      setMe({ ok: false, error: "no_session_token" });
+      return;
     }
+
+    const r = await fetch("/api/me?ts=" + Date.now(), {
+      method: "GET",
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+    });
+
+    const text = await r.text();
+    let j: any = null;
+    try {
+      j = JSON.parse(text);
+    } catch {}
+
+    if (!r.ok) {
+      setMe({ ok: false, error: j?.error || text || `HTTP ${r.status}` });
+      return;
+    }
+
+    setMe(j);
+  } catch (e: any) {
+    setMe({ ok: false, error: e?.message || "me fetch failed" });
   }
+}
 
   useEffect(() => {
     refreshMe();
