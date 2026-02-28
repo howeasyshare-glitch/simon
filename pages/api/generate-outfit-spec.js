@@ -184,22 +184,51 @@ if (!isTester) {
 
 
     // === 3) 你的原本邏輯：讀參數 + Gemini 產生 spec ===
-    const {
-      gender,
-      age,
-      height,
-      weight,
-      style,
-      styleVariant,
-      temp,
-      withBag,
-      withHat,
-      withCoat
-    } = req.body || {};
+    // ✅ 支援兩種 body：
+// A) { gender, age, ... }（直接送）
+// B) { payload: { gender, age, ... } }（你現在前端送法）
+const body = (req.body && (req.body.payload || req.body)) || {};
 
-    if (!gender || !age || !height || !weight || !style || temp === undefined) {
-      return res.status(400).json({ error: "Missing parameters", credits_left: deduct.credits_left });
-    }
+// ✅ 兼容欄位命名（前端可能叫 styleId / temperature）
+const gender = body.gender;
+const age = body.age;
+const height = body.height;
+const weight = body.weight;
+
+// 後端原本叫 style；前端常會叫 styleId
+const style = body.style || body.styleId;
+
+// 後端叫 styleVariant；你可能用 celeb/brand 的 key
+const styleVariant = body.styleVariant || body.variant || body.celebrity || body.inspiration;
+
+// temp 必須允許 0（所以用 nullish coalescing）
+const temp = body.temp ?? body.temperature;
+
+// accessories
+const withBag = !!body.withBag;
+const withHat = !!body.withHat;
+const withCoat = !!body.withCoat;
+
+if (!gender || !age || !height || !weight || !style || temp === undefined || temp === null) {
+  return res.status(400).json({
+    error: "Missing parameters",
+    // ✅ 回傳扣點後的點數（你前面算好的）
+    credits_left: creditsLeftAfter,
+    // ✅ 額外附上 server 看到哪些欄位，方便 debug（不影響版面，只有 API response）
+    detail: {
+      hasPayloadWrapper: !!req.body?.payload,
+      receivedKeys: Object.keys(body || {}),
+      missing: {
+        gender: !gender,
+        age: !age,
+        height: !height,
+        weight: !weight,
+        style: !style,
+        temp: temp === undefined || temp === null,
+      },
+    },
+  });
+}
 
     const apiKey = process.env.GEMINI_API_KEY;
     if (!apiKey) throw new Error("GEMINI_API_KEY not set");
