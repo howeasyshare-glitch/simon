@@ -1,5 +1,5 @@
 // pages/api/generate-image.js
-// 使用 gemini-2.5-flash-image：依 Outfit Spec + styleVariant 畫完整穿搭圖
+// 使用 gemini-2.5-flash-image：依 Outfit Spec + styleVariant 畫完整穿搭圖 
 
 const variantPromptMap = {
   "brand-uniqlo": { desc: "Japanese everyday casual style similar to UNIQLO: simple basics, clean lines, comfortable fits, no visible logos." },
