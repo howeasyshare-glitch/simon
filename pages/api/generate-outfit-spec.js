@@ -286,10 +286,115 @@ Please design one complete outfit and return JSON only.
       }),
     });
 
-    if (!geminiResponse.ok) {
-      const errText = await geminiResponse.text();
-      return res.status(500).json({ error: "Gemini SPEC API error", detail: errText, credits_left: creditsLeftAfter });
+    const errText = !geminiResponse.ok ? await geminiResponse.text() : "";
+
+// ✅ Gemini error handling
+if (!geminiResponse.ok) {
+  // 嘗試解析出 429 retry 秒數
+  let retryAfterSeconds = 30;
+  try {
+    const ej = JSON.parse(errText);
+    const retry = ej?.error?.details?.find((d) => d?.["@type"]?.includes("RetryInfo"))?.retryDelay;
+    if (typeof retry === "string" && retry.endsWith("s")) {
+      const n = parseInt(retry.replace("s", ""), 10);
+      if (!Number.isNaN(n) && n > 0) retryAfterSeconds = n;
     }
+    const code = ej?.error?.code;
+    const status = ej?.error?.status;
+
+    // ✅ 429：回 429 給前端，不要當 500
+    if (code === 429 || status === "RESOURCE_EXHAUSTED") {
+      // ✅ Fallback：用規則產生 spec（讓產品可用）
+      const genderText = gender === "female" ? "female" : gender === "male" ? "male" : "unisex";
+      const baseStyle = (variantPromptMap[styleVariant]?.baseStyle || style) || "casual";
+
+      const fallbackItems = [
+        {
+          slot: "top",
+          generic_name: baseStyle === "minimal" ? "clean crew neck knit top" : "oversized cotton crew neck t-shirt",
+          display_name_zh: baseStyle === "minimal" ? "俐落圓領針織上衣" : "寬版棉質圓領上衣",
+          color: baseStyle === "minimal" ? "beige" : "white",
+          style: baseStyle,
+          gender: genderText === "female" ? "female" : genderText === "male" ? "male" : "unisex",
+          warmth: temp <= 12 ? "medium" : "light",
+        },
+        {
+          slot: "bottom",
+          generic_name: baseStyle === "sporty" ? "tapered jogger pants" : "straight leg jeans",
+          display_name_zh: baseStyle === "sporty" ? "錐形運動束口褲" : "直筒牛仔褲",
+          color: baseStyle === "minimal" ? "dark gray" : "mid blue",
+          style: baseStyle,
+          gender: genderText === "female" ? "female" : genderText === "male" ? "male" : "unisex",
+          warmth: "light",
+        },
+        {
+          slot: "shoes",
+          generic_name: "white low-top sneakers",
+          display_name_zh: "白色休閒鞋",
+          color: "white",
+          style: baseStyle,
+          gender: "unisex",
+          warmth: "light",
+        },
+      ];
+
+      // outer/bag/hat rules
+      if (withCoat || temp <= 20) {
+        fallbackItems.push({
+          slot: "outer",
+          generic_name: baseStyle === "street" ? "oversized denim jacket" : "lightweight jacket",
+          display_name_zh: baseStyle === "street" ? "寬版牛仔外套" : "輕薄外套",
+          color: baseStyle === "minimal" ? "camel" : "black",
+          style: baseStyle,
+          gender: genderText === "female" ? "female" : genderText === "male" ? "male" : "unisex",
+          warmth: temp <= 12 ? "warm" : "medium",
+        });
+      }
+      if (withBag) {
+        fallbackItems.push({
+          slot: "bag",
+          generic_name: "minimalist shoulder bag",
+          display_name_zh: "極簡側背包",
+          color: "black",
+          style: baseStyle,
+          gender: "unisex",
+          warmth: "light",
+        });
+      }
+      if (withHat) {
+        fallbackItems.push({
+          slot: "hat",
+          generic_name: "cotton baseball cap",
+          display_name_zh: "棉質棒球帽",
+          color: "black",
+          style: baseStyle,
+          gender: "unisex",
+          warmth: "light",
+        });
+      }
+
+      // ✅ 重點：429 時不要扣點（避免「點數被扣但沒拿到」）
+      return res.status(200).json({
+        credits_left: creditsLeftAfter, // 你目前已經先扣了點：如果你想完全不扣，要把扣點移到 gemini 成功後
+        is_tester: isTester,
+        summary: "（暫時使用快速生成）依條件搭配的基礎穿搭。",
+        items: fallbackItems,
+        _fallback: true,
+        _gemini_rate_limited: true,
+        retry_after_seconds: retryAfterSeconds,
+      });
+    }
+  } catch {
+    // ignore JSON parse
+  }
+
+  // 非 429 的錯誤：維持 500
+  return res.status(500).json({
+    error: "Gemini SPEC API error",
+    detail: errText,
+    credits_left: creditsLeftAfter,
+  });
+}
 
     const data = await geminiResponse.json();
     const text = data?.candidates?.[0]?.content?.parts?.[0]?.text || "";
