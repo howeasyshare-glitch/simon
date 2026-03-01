@@ -1,6 +1,5 @@
 // pages/api/generate-image.js
 // 使用 gemini-2.5-flash-image：依 Outfit Spec + styleVariant 畫完整穿搭圖
-// ✅ 支援 image aspect ratio（預設 9:16 直式）+ imageSize
 
 const variantPromptMap = {
   "brand-uniqlo": { desc: "Japanese everyday casual style similar to UNIQLO: simple basics, clean lines, comfortable fits, no visible logos." },
@@ -15,26 +14,17 @@ const variantPromptMap = {
   "celeb-lisa-sporty": { desc: "Outfit styling inspired by Lisa's dancer athleisure: sporty crop tops, jogger pants, hoodies or jackets, cap and sneakers. Do NOT copy her face or identity." }
 };
 
-// ✅ Gemini 支援的常見比例（不支援 9:14）
-// 你前端若傳 "9:14" 我們會自動轉成最接近的 "9:16"
 function normalizeAspectRatio(input) {
   if (!input) return "9:16";
-
   const s = String(input).trim();
   if (s === "9:14") return "9:16";
-
   const allowed = new Set(["1:1", "3:4", "4:3", "9:16", "16:9", "2:3", "3:2", "4:5", "5:4", "21:9"]);
   if (allowed.has(s)) return s;
-
-  // 容錯：如果傳 "portrait" / "landscape"
   if (s.toLowerCase() === "portrait") return "9:16";
   if (s.toLowerCase() === "landscape") return "16:9";
-
   return "9:16";
 }
 
-// ✅ 解析度控制：Gemini 2.5 Flash Image 常用 1K（預設）
-// 允許前端傳 "1K"/"2K"/"4K"（若模型不支援會報錯，你可先固定 1K）
 function normalizeImageSize(input) {
   if (!input) return "1K";
   const s = String(input).trim().toUpperCase();
@@ -43,28 +33,32 @@ function normalizeImageSize(input) {
 }
 
 export default async function handler(req, res) {
-  if (req.method !== "POST") {
-    return res.status(405).json({ error: "Method not allowed" });
-  }
+  if (req.method !== "POST") return res.status(405).json({ error: "Method not allowed" });
 
   try {
-    const {
-      gender,
-      age,
-      height,
-      weight,
-      style,
-      styleVariant,
-      temp,
-      withBag,
-      withHat,
-      withCoat,
-      outfitSpec,
+    const raw = req.body || {};
+    const payload = raw.payload || raw;
 
-      // ✅ 新增：前端可選傳入
-      aspectRatio,
-      imageSize
-    } = req.body || {};
+    // ✅ spec 兼容：你前端可能送 spec，也可能送 outfitSpec
+    const outfitSpec = raw.outfitSpec || raw.spec || payload.outfitSpec || payload.spec || null;
+
+    const gender = payload.gender;
+    const age = payload.age;
+    const height = payload.height;
+    const weight = payload.weight;
+
+    // ✅ style 兼容
+    const style = payload.style || payload.styleId;
+
+    const styleVariant = payload.styleVariant || payload.variant || payload.celebrity || payload.inspiration || "";
+    const temp = payload.temp ?? payload.temperature;
+
+    const withBag = !!payload.withBag;
+    const withHat = !!payload.withHat;
+    const withCoat = !!payload.withCoat;
+
+    const aspectRatio = raw.aspectRatio || payload.aspectRatio;
+    const imageSize = raw.imageSize || payload.imageSize;
 
     if (
       !gender ||
@@ -73,21 +67,31 @@ export default async function handler(req, res) {
       !weight ||
       !style ||
       temp === undefined ||
+      temp === null ||
       !outfitSpec ||
       !Array.isArray(outfitSpec.items) ||
       outfitSpec.items.length === 0
     ) {
-      return res.status(400).json({ error: "Missing parameters or outfitSpec" });
+      return res.status(400).json({
+        error: "Missing parameters or outfitSpec",
+        detail: {
+          hasPayloadWrapper: !!raw.payload,
+          payloadKeys: Object.keys(payload || {}),
+          hasOutfitSpec: !!outfitSpec,
+          outfitSpecKeys: outfitSpec ? Object.keys(outfitSpec) : null,
+        },
+      });
     }
 
     const apiKey = process.env.GEMINI_API_KEY;
     if (!apiKey) throw new Error("GEMINI_API_KEY not set");
 
-    const ar = normalizeAspectRatio(aspectRatio); // ✅ 預設 9:16
-    const size = normalizeImageSize(imageSize);  // ✅ 預設 1K
+    const ar = normalizeAspectRatio(aspectRatio);
+    const size = normalizeImageSize(imageSize);
 
-    const h = height / 100;
-    const bmi = weight / (h * h);
+    const h = Number(height) / 100;
+    const bmi = Number(weight) / (h * h);
+
     let bodyShape = "average body shape";
     if (bmi < 19) bodyShape = "slim body shape";
     else if (bmi < 25) bodyShape = "average body shape";
@@ -119,7 +123,6 @@ export default async function handler(req, res) {
     const variant = styleVariant && variantPromptMap[styleVariant];
     const variantHint = variant ? variant.desc : "";
 
-    // ✅ Prompt 強化：指定 portrait + head-to-toe + 留白避免裁切
     const prompt = `
 Generate a full-body outfit illustration of ${genderText}, around ${age} years old,
 with a ${bodyShape}, height about ${height} cm, weight about ${weight} kg.
@@ -156,18 +159,14 @@ Rendering requirements:
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
-        contents: [
-          { role: "user", parts: [{ text: prompt }] }
-        ],
-
-        // ✅ 關鍵：指定比例/解析度（沒有這段就會回到預設 1:1）
+        contents: [{ role: "user", parts: [{ text: prompt }] }],
         generationConfig: {
           imageConfig: {
             aspectRatio: ar,
-           
-          }
-        }
-      })
+            // 你目前沒有真正用到 size（模型支援度不一），先回傳即可
+          },
+        },
+      }),
     });
 
     const respText = await geminiResponse.text();
@@ -187,13 +186,14 @@ Rendering requirements:
       return res.status(500).json({ error: "No image returned from Gemini", raw: data });
     }
 
-    return res.status(200).json({
-      image: imagePart.inlineData.data,
-      mime: imagePart.inlineData.mimeType || "image/png",
+    const base64 = imagePart.inlineData.data;
 
-      // ✅ 回傳實際使用的比例，方便你 debug
+    return res.status(200).json({
+      image: base64,
+      image_base64: base64, // ✅ 前端常用這個
+      mime: imagePart.inlineData.mimeType || "image/png",
       aspectRatio: ar,
-      imageSize: size
+      imageSize: size,
     });
   } catch (err) {
     console.error("generate-image error:", err);
