@@ -174,9 +174,30 @@ Rendering requirements:
     try { data = JSON.parse(respText); } catch { data = { raw: respText }; }
 
     if (!geminiResponse.ok) {
-      console.error("Gemini IMAGE API error:", geminiResponse.status, respText);
-      return res.status(500).json({ error: "Gemini API error", detail: respText });
+  console.error("Gemini IMAGE API error:", geminiResponse.status, respText);
+
+  // ✅ 429：回 429，前端可提示稍後再試
+  try {
+    const ej = JSON.parse(respText);
+    const code = ej?.error?.code;
+    const status = ej?.error?.status;
+    if (code === 429 || status === "RESOURCE_EXHAUSTED") {
+      let retryAfterSeconds = 30;
+      const retry = ej?.error?.details?.find((d) => d?.["@type"]?.includes("RetryInfo"))?.retryDelay;
+      if (typeof retry === "string" && retry.endsWith("s")) {
+        const n = parseInt(retry.replace("s", ""), 10);
+        if (!Number.isNaN(n) && n > 0) retryAfterSeconds = n;
+      }
+      return res.status(429).json({
+        error: "Gemini rate limited",
+        retry_after_seconds: retryAfterSeconds,
+        detail: ej,
+      });
     }
+  } catch {}
+
+  return res.status(500).json({ error: "Gemini API error", detail: respText });
+}
 
     const parts = data?.candidates?.[0]?.content?.parts || [];
     const imagePart = parts.find((p) => p.inlineData && p.inlineData.data);
