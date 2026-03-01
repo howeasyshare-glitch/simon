@@ -20,8 +20,8 @@ async function getUserFromSupabase({ supabaseUrl, serviceKey, accessToken }) {
   const resp = await fetch(`${supabaseUrl}/auth/v1/user`, {
     headers: {
       apikey: serviceKey,
-      Authorization: `Bearer ${accessToken}`
-    }
+      Authorization: `Bearer ${accessToken}`,
+    },
   });
   if (!resp.ok) {
     const t = await resp.text();
@@ -35,10 +35,9 @@ async function getOrCreateProfile({ supabaseUrl, serviceKey, userId, email }) {
   const headers = {
     "Content-Type": "application/json",
     apikey: serviceKey,
-    Authorization: `Bearer ${serviceKey}`
+    Authorization: `Bearer ${serviceKey}`,
   };
 
-  // query existing (✅ credits_left)
   const q = await fetch(
     `${supabaseUrl}/rest/v1/profiles?id=eq.${encodeURIComponent(userId)}&select=id,email,credits_left,is_tester`,
     { headers }
@@ -52,16 +51,15 @@ async function getOrCreateProfile({ supabaseUrl, serviceKey, userId, email }) {
   const arr = await q.json();
   if (arr && arr[0]) return arr[0];
 
-  // create (✅ credits_left)
   const ins = await fetch(`${supabaseUrl}/rest/v1/profiles`, {
     method: "POST",
     headers: { ...headers, Prefer: "return=representation" },
     body: JSON.stringify({
       id: userId,
       email,
-      credits_left: 3, // 初始點數（你可改成 10）
-      updated_at: new Date().toISOString()
-    })
+      credits_left: 3,
+      updated_at: new Date().toISOString(),
+    }),
   });
 
   if (!ins.ok) {
@@ -73,35 +71,14 @@ async function getOrCreateProfile({ supabaseUrl, serviceKey, userId, email }) {
   return created?.[0] || { id: userId, email, credits_left: 3 };
 }
 
-/**
- * ✅ 更穩：用「原子扣點」避免併發/重整造成負數或重複扣
- * 這裡用 PostgREST 的 PATCH + filter：credits_left=gt.0
- * 並要求回傳 updated row；如果回傳空陣列代表點數不足
- */
 async function deductOneCreditAtomic({ supabaseUrl, serviceKey, userId }) {
-  const headers = {
-    "Content-Type": "application/json",
-    apikey: serviceKey,
-    Authorization: `Bearer ${serviceKey}`,
-    Prefer: "return=representation"
-  };
-
-  const url =
-    `${supabaseUrl}/rest/v1/profiles` +
-    `?id=eq.${encodeURIComponent(userId)}` +
-    `&credits_left=gt.0`;
-
-  // 這裡用 SQL 方式遞減做不到（PostgREST PATCH 是 set）
-  // 所以我們採「先讀後扣」也行，但會有 race condition。
-  // 最穩的方式是用 RPC (SQL function)；先給你可用版本：讀 -> 扣（保留原結構）
-  // ----
-  // 下面採「讀 -> 扣」並在 update 時再檢查 credits_left=eq.current，避免併發：
   const read = await fetch(
     `${supabaseUrl}/rest/v1/profiles?id=eq.${encodeURIComponent(userId)}&select=credits_left,is_tester`,
     { headers: { apikey: serviceKey, Authorization: `Bearer ${serviceKey}`, Accept: "application/json" } }
   );
   const readText = await read.text();
   if (!read.ok) throw new Error("profiles read failed: " + readText);
+
   const rows = JSON.parse(readText);
   const current = Number(rows?.[0]?.credits_left ?? 0);
   if (current <= 0) return { ok: false, credits_left: 0 };
@@ -112,8 +89,13 @@ async function deductOneCreditAtomic({ supabaseUrl, serviceKey, userId }) {
     `${supabaseUrl}/rest/v1/profiles?id=eq.${encodeURIComponent(userId)}&credits_left=eq.${current}`,
     {
       method: "PATCH",
-      headers,
-      body: JSON.stringify({ credits_left: newCredits, updated_at: new Date().toISOString() })
+      headers: {
+        "Content-Type": "application/json",
+        apikey: serviceKey,
+        Authorization: `Bearer ${serviceKey}`,
+        Prefer: "return=representation",
+      },
+      body: JSON.stringify({ credits_left: newCredits, updated_at: new Date().toISOString() }),
     }
   );
 
@@ -121,16 +103,9 @@ async function deductOneCreditAtomic({ supabaseUrl, serviceKey, userId }) {
   if (!upd.ok) throw new Error("profiles update failed: " + updText);
 
   const updatedRows = JSON.parse(updText);
-  if (!updatedRows?.[0]) {
-    // 代表在你扣點前有人改過 credits_left（併發），保守回「點數不足/請重試」
-    return { ok: false, credits_left: current };
-  }
+  if (!updatedRows?.[0]) return { ok: false, credits_left: current };
 
   return { ok: true, credits_left: updatedRows[0].credits_left };
-}
-// TEMP hotfix: prevent crash when deduct is missing
-async function deduct() {
-  return { ok: true, skipped: true };
 }
 
 export default async function handler(req, res) {
@@ -158,83 +133,68 @@ export default async function handler(req, res) {
     // === 1) 確保 profile 存在 ===
     const profile = await getOrCreateProfile({ supabaseUrl, serviceKey, userId, email: userEmail });
 
+    // === 2) 扣點（測試者不扣）===
+    const isTester = !!profile.is_tester;
+    let creditsLeftAfter = Number(profile.credits_left ?? 0);
 
-    // === 2) 扣 1 點（✅ credits_left）===
-    // === 2) 扣 1 點（測試者不扣）===
-const isTester = !!profile.is_tester;
+    if (!isTester) {
+      const d = await deductOneCreditAtomic({ supabaseUrl, serviceKey, userId });
+      if (!d.ok) {
+        return res.status(403).json({ error: "No credits left", credits_left: d.credits_left ?? 0 });
+      }
+      creditsLeftAfter = d.credits_left;
+    }
 
-let creditsLeftAfter = Number(profile.credits_left ?? 0);
+    // === 3) 讀參數（✅ 同時支援 body / body.payload / 欄位別名）===
+    const body = (req.body && (req.body.payload || req.body)) || {};
 
-if (!isTester) {
-  const deduct = await deductOneCreditAtomic({ supabaseUrl, serviceKey, userId });
+    const gender = body.gender;
+    const age = body.age;
+    const height = body.height;
+    const weight = body.weight;
 
-  if (!deduct.ok) {
-    return res.status(403).json({
-      error: "No credits left",
-      credits_left: deduct.credits_left ?? 0
-    });
-  }
+    // ✅ 前端常用 styleId
+    const style = body.style || body.styleId;
 
-  creditsLeftAfter = deduct.credits_left;
-} else {
-  // 🎯 測試者：不扣點
-  // 如果你想 UI 看起來是無限點數，可以改成：
-  // creditsLeftAfter = 9999;
-}
+    // ✅ styleVariant 別名（你前端可能叫 celebrity/variant）
+    const styleVariant = body.styleVariant || body.variant || body.celebrity || body.inspiration || "";
 
+    // ✅ temp 別名（允許 0）
+    const temp = body.temp ?? body.temperature;
 
-    // === 3) 你的原本邏輯：讀參數 + Gemini 產生 spec ===
-    // ✅ 支援兩種 body：
-// A) { gender, age, ... }（直接送）
-// B) { payload: { gender, age, ... } }（你現在前端送法）
-const body = (req.body && (req.body.payload || req.body)) || {};
+    const withBag = !!body.withBag;
+    const withHat = !!body.withHat;
+    const withCoat = !!body.withCoat;
 
-// ✅ 兼容欄位命名（前端可能叫 styleId / temperature）
-const gender = body.gender;
-const age = body.age;
-const height = body.height;
-const weight = body.weight;
-
-// 後端原本叫 style；前端常會叫 styleId
-const style = body.style || body.styleId;
-
-// 後端叫 styleVariant；你可能用 celeb/brand 的 key
-const styleVariant = body.styleVariant || body.variant || body.celebrity || body.inspiration;
-
-// temp 必須允許 0（所以用 nullish coalescing）
-const temp = body.temp ?? body.temperature;
-
-// accessories
-const withBag = !!body.withBag;
-const withHat = !!body.withHat;
-const withCoat = !!body.withCoat;
-
-if (!gender || !age || !height || !weight || !style || temp === undefined || temp === null) {
-  return res.status(400).json({
-    error: "Missing parameters",
-    // ✅ 回傳扣點後的點數（你前面算好的）
-    credits_left: creditsLeftAfter,
-    // ✅ 額外附上 server 看到哪些欄位，方便 debug（不影響版面，只有 API response）
-    detail: {
-      hasPayloadWrapper: !!req.body?.payload,
-      receivedKeys: Object.keys(body || {}),
-      missing: {
-        gender: !gender,
-        age: !age,
-        height: !height,
-        weight: !weight,
-        style: !style,
-        temp: temp === undefined || temp === null,
-      },
-    },
-  });
-}
+    if (!gender || !age || !height || !weight || !style || temp === undefined || temp === null) {
+      return res.status(400).json({
+        error: "Missing parameters",
+        credits_left: creditsLeftAfter,
+        detail: {
+          hasPayloadWrapper: !!req.body?.payload,
+          receivedKeys: Object.keys(body || {}),
+          receivedSample: {
+            gender,
+            age,
+            height,
+            weight,
+            style,
+            styleVariant,
+            temp,
+            withBag,
+            withHat,
+            withCoat,
+          },
+        },
+      });
+    }
 
     const apiKey = process.env.GEMINI_API_KEY;
     if (!apiKey) throw new Error("GEMINI_API_KEY not set");
 
-    const h = height / 100;
-    const bmi = weight / (h * h);
+    const h = Number(height) / 100;
+    const bmi = Number(weight) / (h * h);
+
     let bodyShape = "average body shape";
     if (bmi < 19) bodyShape = "slim body shape";
     else if (bmi < 25) bodyShape = "average body shape";
@@ -248,7 +208,7 @@ if (!gender || !age || !height || !weight || !style || temp === undefined || tem
       minimal: "minimal, clean office-casual style",
       street: "streetwear style",
       sporty: "sporty athleisure style",
-      smart: "smart casual style"
+      smart: "smart casual style",
     };
     const styleText = styleMap[style] || "casual style";
 
@@ -290,7 +250,7 @@ HARD rules (VERY IMPORTANT):
 - Colors should be realistic and easy to match.
 - Use gender-neutral items (gender:"unisex") if they fit both genders.
 - Return ONLY valid JSON, with no extra text, comments, or explanations.
-`;
+`.trim();
 
     const userInstruction = `
 User profile:
@@ -311,7 +271,7 @@ Style variant:
 - Additional styling hints: ${variantHint || "none"}
 
 Please design one complete outfit and return JSON only.
-`;
+`.trim();
 
     const endpoint =
       "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=" +
@@ -322,17 +282,13 @@ Please design one complete outfit and return JSON only.
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
         contents: [{ role: "user", parts: [{ text: systemInstruction }, { text: userInstruction }] }],
-        generationConfig: { temperature: 0.7, responseMimeType: "application/json" }
-      })
+        generationConfig: { temperature: 0.7, responseMimeType: "application/json" },
+      }),
     });
 
     if (!geminiResponse.ok) {
       const errText = await geminiResponse.text();
-      return res.status(500).json({
-        error: "Gemini SPEC API error",
-        detail: errText,
-        credits_left: deduct.credits_left
-      });
+      return res.status(500).json({ error: "Gemini SPEC API error", detail: errText, credits_left: creditsLeftAfter });
     }
 
     const data = await geminiResponse.json();
@@ -342,11 +298,7 @@ Please design one complete outfit and return JSON only.
     try {
       parsed = JSON.parse(text);
     } catch {
-      return res.status(500).json({
-        error: "Failed to parse JSON from Gemini",
-        raw: text,
-        credits_left: deduct.credits_left
-      });
+      return res.status(500).json({ error: "Failed to parse JSON from Gemini", raw: text, credits_left: creditsLeftAfter });
     }
 
     let items = Array.isArray(parsed.items) ? parsed.items : [];
@@ -363,7 +315,7 @@ Please design one complete outfit and return JSON only.
     const hasSlot = (slotName) => items.some((it) => it.slot === slotName);
     const pushIfMissing = (slotName, fallback) => { if (!hasSlot(slotName)) items.push(fallback); };
 
-    // fallback: top/bottom/shoes
+    // fallback
     pushIfMissing("top", {
       slot: "top",
       generic_name: "oversized cotton crew neck t-shirt",
@@ -371,7 +323,7 @@ Please design one complete outfit and return JSON only.
       color: "white",
       style: "casual",
       gender: genderText === "female" ? "female" : genderText === "male" ? "male" : "unisex",
-      warmth: "light"
+      warmth: "light",
     });
 
     pushIfMissing("bottom", {
@@ -381,7 +333,7 @@ Please design one complete outfit and return JSON only.
       color: "light blue",
       style: "casual",
       gender: genderText === "female" ? "female" : genderText === "male" ? "male" : "unisex",
-      warmth: "light"
+      warmth: "light",
     });
 
     pushIfMissing("shoes", {
@@ -391,102 +343,18 @@ Please design one complete outfit and return JSON only.
       color: "white",
       style: "casual",
       gender: "unisex",
-      warmth: "light"
+      warmth: "light",
     });
 
-    // 外套 fallback：依 style + 溫度
-    if (withCoat || temp <= 20) {
-      const isCold = temp <= 10;
-      const isCool = temp > 10 && temp <= 18;
-
-      let outerPreset;
-
-      if (style === "minimal") {
-        outerPreset = isCold
-          ? { generic_name: "long wool coat", display_name_zh: "長版羊毛大衣", color: "camel", style: "minimal", warmth: "warm" }
-          : isCool
-          ? { generic_name: "long belted trench coat", display_name_zh: "綁帶長版風衣外套", color: "beige", style: "minimal", warmth: "medium" }
-          : { generic_name: "lightweight open-front jacket", display_name_zh: "輕薄落肩外套", color: "light beige", style: "minimal", warmth: "light" };
-      } else if (style === "street") {
-        outerPreset = isCold
-          ? { generic_name: "oversized padded bomber jacket", display_name_zh: "寬版鋪棉飛行外套", color: "black", style: "street", warmth: "warm" }
-          : isCool
-          ? { generic_name: "oversized denim jacket", display_name_zh: "寬版牛仔外套", color: "mid blue", style: "street", warmth: "medium" }
-          : { generic_name: "lightweight coach jacket", display_name_zh: "薄款教練外套", color: "navy", style: "street", warmth: "light" };
-      } else if (style === "sporty") {
-        outerPreset = isCold
-          ? { generic_name: "padded hooded parka", display_name_zh: "鋪棉帽T外套", color: "dark gray", style: "sporty", warmth: "warm" }
-          : isCool
-          ? { generic_name: "zip-up track jacket", display_name_zh: "拉鍊運動外套", color: "black", style: "sporty", warmth: "medium" }
-          : { generic_name: "lightweight zip hoodie", display_name_zh: "輕薄連帽外套", color: "light gray", style: "sporty", warmth: "light" };
-      } else if (style === "smart") {
-        outerPreset = isCold
-          ? { generic_name: "tailored wool coat", display_name_zh: "修身羊毛大衣", color: "dark navy", style: "smart", warmth: "warm" }
-          : isCool
-          ? { generic_name: "short trench coat", display_name_zh: "短版風衣外套", color: "beige", style: "smart", warmth: "medium" }
-          : { generic_name: "unstructured blazer", display_name_zh: "輕薄休閒西裝外套", color: "dark gray", style: "smart", warmth: "light" };
-      } else {
-        // casual
-        outerPreset = isCold
-          ? { generic_name: "padded jacket", display_name_zh: "保暖外套", color: "beige", style: "casual", warmth: "warm" }
-          : isCool
-          ? { generic_name: "cotton parka jacket", display_name_zh: "棉質連帽外套", color: "khaki", style: "casual", warmth: "medium" }
-          : { generic_name: "lightweight utility jacket", display_name_zh: "輕薄機能外套", color: "olive", style: "casual", warmth: "light" };
-      }
-
-      pushIfMissing("outer", {
-        slot: "outer",
-        generic_name: outerPreset.generic_name,
-        display_name_zh: outerPreset.display_name_zh,
-        color: outerPreset.color,
-        style: outerPreset.style,
-        gender: genderText === "female" ? "female" : genderText === "male" ? "male" : "unisex",
-        warmth: outerPreset.warmth
-      });
-    } else {
-      items = items.filter((it) => it.slot !== "outer");
-    }
-
-    // 包包
-    if (withBag) {
-      pushIfMissing("bag", {
-        slot: "bag",
-        generic_name: "minimalist canvas shoulder bag",
-        display_name_zh: "極簡帆布側背包",
-        color: "beige",
-        style: "minimal",
-        gender: "unisex",
-        warmth: "light"
-      });
-    } else {
-      items = items.filter((it) => it.slot !== "bag");
-    }
-
-    // 帽子
-    if (withHat) {
-      pushIfMissing("hat", {
-        slot: "hat",
-        generic_name: "cotton baseball cap",
-        display_name_zh: "棉質棒球帽",
-        color: "beige",
-        style: "casual",
-        gender: "unisex",
-        warmth: "light"
-      });
-    } else {
-      items = items.filter((it) => it.slot !== "hat");
-    }
-
-    items = items.filter((it) => !!it.slot && !!it.generic_name);
-
-    // ✅ 回傳加上 credits_left
-   return res.status(200).json({
-  credits_left: creditsLeftAfter,
-  is_tester: isTester,
-  summary: parsed.summary || "",
-  items
-});
-
+    // ✅ 回傳（含 credits_left）
+    return res.status(200).json({
+      credits_left: creditsLeftAfter,
+      is_tester: isTester,
+      summary: parsed.summary || "",
+      items,
+      // ✅ 回傳一點點 debug：避免你再次對不到欄位（不影響畫面）
+      _echo: { gender, age, height, weight, style, styleVariant, temp, withBag, withHat, withCoat },
+    });
   } catch (err) {
     console.error("generate-outfit-spec error:", err);
     return res.status(500).json({ error: err.message || "Unknown error" });
