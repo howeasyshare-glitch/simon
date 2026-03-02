@@ -4,7 +4,7 @@
 //   A) { payload: {...}, spec: {...} }  (你 page.tsx 目前這種)
 //   B) { gender, age, ..., outfitSpec } (你 API 原始這種)
 
-const BUCKET = "outfits“; // 你 Supabase Storage 建的 public bucket
+const BUCKET = "outfits"; // 你 Supabase Storage 建的 public bucket
 
 const variantPromptMap = {
   "brand-uniqlo": { desc: "Japanese everyday casual style similar to UNIQLO: simple basics, clean lines, comfortable fits, no visible logos." },
