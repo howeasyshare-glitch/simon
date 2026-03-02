@@ -183,7 +183,7 @@ Rendering requirements:
 
     // ✅ 模型：你現在的 key 可用哪個就用哪個（先用你原本的 image 模型字串）
     // 若你已確認可用 Nano Banana 2，可換成：gemini-3.1-flash-image-preview
-    const modelName = "gemini-2.5-flash-preview-image";
+    const modelName = "gemini-3.1-flash-image-preview";
 
     const endpoint = `https://generativelanguage.googleapis.com/v1beta/models/${modelName}:generateContent`;
 
