@@ -20,7 +20,7 @@ type ExploreItem = {
 };
 
 type SpecResp = { ok?: boolean; spec?: any; error?: string; detail?: any };
-type ImgResp = { ok?: boolean; image_base64?: string; image_url?: string; error?: string; detail?: any };
+type ImgResp = { ok?: boolean; image_url?: string; mime?: string; error?: string; detail?: any };
 
 type Gender = "male" | "female" | "neutral";
 type AgeGroup = "adult" | "child";
@@ -402,10 +402,9 @@ export default function Home() {
       const imgResp = await apiPostJson<ImgResp>("/api/generate-image", { payload, spec: s });
       if (!imgResp || imgResp.ok === false) throw new Error(imgResp?.error || "IMAGE failed");
 
-      const b64 = (imgResp as any).image_base64 || "";
       const url = (imgResp as any).image_url || "";
-      if (url) setImageUrl(url);
-      if (b64) setImageBase64(b64);
+if (url) setImageUrl(url);
+setImageBase64(""); // ✅ 不再存 base64，避免任何後續 URL/分享炸掉
 
       setStatus("完成 ✅");
     } catch (e: any) {
@@ -414,10 +413,8 @@ export default function Home() {
   }
 
   const previewSrc = useMemo(() => {
-    if (imageUrl) return imageUrl;
-    if (imageBase64) return imageBase64; // 若後端回的是完整 dataurl，OK；若只回 base64，你後端先前已處理成 dataurl 也 OK
-    return "";
-  }, [imageUrl, imageBase64]);
+  return imageUrl || "";
+}, [imageUrl]);
 
   // ===== share/download (after generate) =====
   async function handleShareImage() {
