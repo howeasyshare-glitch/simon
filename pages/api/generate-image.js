@@ -1,5 +1,10 @@
 // pages/api/generate-image.js
-// 使用 gemini-2.5-flash-image：依 Outfit Spec + styleVariant 畫完整穿搭圖 
+// ✅ 生成圖片後上傳 Supabase Storage，只回傳 image_url（避免 base64 超大）
+// ✅ 相容兩種 body：
+//   A) { payload: {...}, spec: {...} }  (你 page.tsx 目前這種)
+//   B) { gender, age, ..., outfitSpec } (你 API 原始這種)
+
+const BUCKET = "generated"; // 你 Supabase Storage 建的 public bucket
 
 const variantPromptMap = {
   "brand-uniqlo": { desc: "Japanese everyday casual style similar to UNIQLO: simple basics, clean lines, comfortable fits, no visible logos." },
@@ -8,10 +13,10 @@ const variantPromptMap = {
   "brand-nike-tech": { desc: "Nike techwear inspired athleisure: technical fabrics, fitted joggers, hoodies or track jackets, sporty sneakers." },
   "brand-ader-error": { desc: "Korean streetwear similar to Ader Error: oversized fits, playful proportions, bold color accents, sometimes asymmetry." },
 
-  "celeb-iu-casual": { desc: "Outfit styling inspired by IU's Korean casual looks: soft pastel colors, neat knitwear or shirts, straight pants, light outerwear. Do NOT copy her face or identity." },
-  "celeb-jennie-minimal": { desc: "Outfit styling inspired by Jennie's minimal chic outfits: clean silhouettes, cropped tops or neat knits, high-waisted bottoms, neutral tones. Do NOT copy her face or identity." },
-  "celeb-gd-street": { desc: "Outfit styling inspired by G-Dragon's Korean street layering: bold layered pieces, interesting textures, statement shoes and accessories. Do NOT copy his face or identity." },
-  "celeb-lisa-sporty": { desc: "Outfit styling inspired by Lisa's dancer athleisure: sporty crop tops, jogger pants, hoodies or jackets, cap and sneakers. Do NOT copy her face or identity." }
+  "celeb-iu-casual": { desc: "Outfit styling inspired by IU's Korean casual looks. Do NOT copy her face or identity." },
+  "celeb-jennie-minimal": { desc: "Outfit styling inspired by Jennie's minimal chic outfits. Do NOT copy her face or identity." },
+  "celeb-gd-street": { desc: "Outfit styling inspired by G-Dragon's Korean street layering. Do NOT copy his face or identity." },
+  "celeb-lisa-sporty": { desc: "Outfit styling inspired by Lisa's dancer athleisure. Do NOT copy her face or identity." }
 };
 
 function normalizeAspectRatio(input) {
@@ -32,33 +37,74 @@ function normalizeImageSize(input) {
   return "1K";
 }
 
+function safeJsonParse(text) {
+  try { return JSON.parse(text); } catch { return null; }
+}
+
+async function uploadToSupabaseStorage({ supabaseUrl, serviceKey, bucket, path, bytes, contentType }) {
+  const url = `${supabaseUrl}/storage/v1/object/${encodeURI(bucket)}/${encodeURI(path)}`;
+
+  const up = await fetch(url, {
+    method: "POST",
+    headers: {
+      apikey: serviceKey,
+      Authorization: `Bearer ${serviceKey}`,
+      "Content-Type": contentType || "image/png",
+      "x-upsert": "true"
+    },
+    body: bytes
+  });
+
+  const t = await up.text();
+  if (!up.ok) {
+    throw new Error(`storage upload failed: ${up.status} ${t}`);
+  }
+
+  // public bucket URL
+  const publicUrl = `${supabaseUrl}/storage/v1/object/public/${encodeURI(bucket)}/${encodeURI(path)}`;
+  return publicUrl;
+}
+
+function base64ToUint8Array(b64) {
+  // Node.js Buffer 可用於 Vercel serverless
+  const buf = Buffer.from(b64, "base64");
+  return new Uint8Array(buf);
+}
+
 export default async function handler(req, res) {
-  if (req.method !== "POST") return res.status(405).json({ error: "Method not allowed" });
+  if (req.method !== "POST") {
+    return res.status(405).json({ error: "Method not allowed" });
+  }
 
   try {
-    const raw = req.body || {};
-    const payload = raw.payload || raw;
+    const apiKey = process.env.GEMINI_API_KEY;
+    if (!apiKey) throw new Error("GEMINI_API_KEY not set");
 
-    // ✅ spec 兼容：你前端可能送 spec，也可能送 outfitSpec
-    const outfitSpec = raw.outfitSpec || raw.spec || payload.outfitSpec || payload.spec || null;
+    const supabaseUrl = process.env.SUPABASE_URL;
+    const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+    if (!supabaseUrl || !serviceKey) {
+      return res.status(500).json({ error: "Supabase env not set (SUPABASE_URL / SUPABASE_SERVICE_ROLE_KEY)" });
+    }
+
+    // ✅ 相容 payload/spec 包裝
+    const body = req.body || {};
+    const payload = body.payload || body;
 
     const gender = payload.gender;
     const age = payload.age;
     const height = payload.height;
     const weight = payload.weight;
-
-    // ✅ style 兼容
-    const style = payload.style || payload.styleId;
-
-    const styleVariant = payload.styleVariant || payload.variant || payload.celebrity || payload.inspiration || "";
-    const temp = payload.temp ?? payload.temperature;
-
+    const style = payload.style || payload.styleId; // 兼容 styleId
+    const styleVariant = payload.styleVariant || payload.styleVariantId;
+    const temp = payload.temp;
     const withBag = !!payload.withBag;
     const withHat = !!payload.withHat;
     const withCoat = !!payload.withCoat;
 
-    const aspectRatio = raw.aspectRatio || payload.aspectRatio;
-    const imageSize = raw.imageSize || payload.imageSize;
+    const outfitSpec = body.outfitSpec || body.spec || payload.outfitSpec;
+
+    const aspectRatio = normalizeAspectRatio(body.aspectRatio || payload.aspectRatio);
+    const imageSize = normalizeImageSize(body.imageSize || payload.imageSize);
 
     if (
       !gender ||
@@ -67,31 +113,16 @@ export default async function handler(req, res) {
       !weight ||
       !style ||
       temp === undefined ||
-      temp === null ||
       !outfitSpec ||
       !Array.isArray(outfitSpec.items) ||
       outfitSpec.items.length === 0
     ) {
-      return res.status(400).json({
-        error: "Missing parameters or outfitSpec",
-        detail: {
-          hasPayloadWrapper: !!raw.payload,
-          payloadKeys: Object.keys(payload || {}),
-          hasOutfitSpec: !!outfitSpec,
-          outfitSpecKeys: outfitSpec ? Object.keys(outfitSpec) : null,
-        },
-      });
+      return res.status(400).json({ error: "Missing parameters or outfitSpec" });
     }
 
-    const apiKey = process.env.GEMINI_API_KEY;
-    if (!apiKey) throw new Error("GEMINI_API_KEY not set");
-
-    const ar = normalizeAspectRatio(aspectRatio);
-    const size = normalizeImageSize(imageSize);
-
-    const h = Number(height) / 100;
-    const bmi = Number(weight) / (h * h);
-
+    // 身形描述
+    const h = height / 100;
+    const bmi = weight / (h * h);
     let bodyShape = "average body shape";
     if (bmi < 19) bodyShape = "slim body shape";
     else if (bmi < 25) bodyShape = "average body shape";
@@ -128,7 +159,7 @@ Generate a full-body outfit illustration of ${genderText}, around ${age} years o
 with a ${bodyShape}, height about ${height} cm, weight about ${weight} kg.
 
 IMPORTANT composition:
-- Portrait orientation (${ar}).
+- Portrait orientation (${aspectRatio}).
 - Full body head-to-toe visible, centered.
 - Leave a small margin above head and below shoes so nothing is cropped.
 
@@ -146,79 +177,104 @@ Styling direction:
 
 Rendering requirements:
 - Clean, full-body illustration, standing pose, neutral background (light gray or off-white).
-- Show the entire outfit clearly (top, bottom, shoes, and any accessories listed).
 - No brand logos or text on clothing.
 - Character must not resemble any real person or celebrity.
 `.trim();
 
-   const endpoint =
-  "https://generativelanguage.googleapis.com/v1beta/models/gemini-3.1-flash-image-preview:generateContent?key=" +
-  encodeURIComponent(apiKey);
+    // ✅ 模型：你現在的 key 可用哪個就用哪個（先用你原本的 image 模型字串）
+    // 若你已確認可用 Nano Banana 2，可換成：gemini-3.1-flash-image-preview
+    const modelName = "gemini-2.5-flash-preview-image";
+
+    const endpoint = `https://generativelanguage.googleapis.com/v1beta/models/${modelName}:generateContent`;
 
     const geminiResponse = await fetch(endpoint, {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
+      headers: {
+        "Content-Type": "application/json",
+        "x-goog-api-key": apiKey
+      },
       body: JSON.stringify({
-  contents: [{ role: "user", parts: [{ text: prompt }] }],
-  generationConfig: {
-    responseModalities: ["Image"],
-    imageConfig: {
-      aspectRatio: ar,
-      imageSize: size, // 你前面 normalizeImageSize() 已經算好了
-    },
-  },
-})
+        contents: [{ role: "user", parts: [{ text: prompt }] }],
+        generationConfig: {
+          responseModalities: ["Image"],
+          imageConfig: {
+            aspectRatio,
+            imageSize
+          }
+        }
+      })
     });
 
     const respText = await geminiResponse.text();
-    let data;
-    try { data = JSON.parse(respText); } catch { data = { raw: respText }; }
+    const data = safeJsonParse(respText) || { raw: respText };
 
     if (!geminiResponse.ok) {
-  console.error("Gemini IMAGE API error:", geminiResponse.status, respText);
-
-  // ✅ 429：回 429，前端可提示稍後再試
-  try {
-    const ej = JSON.parse(respText);
-    const code = ej?.error?.code;
-    const status = ej?.error?.status;
-    if (code === 429 || status === "RESOURCE_EXHAUSTED") {
-      let retryAfterSeconds = 30;
-      const retry = ej?.error?.details?.find((d) => d?.["@type"]?.includes("RetryInfo"))?.retryDelay;
-      if (typeof retry === "string" && retry.endsWith("s")) {
-        const n = parseInt(retry.replace("s", ""), 10);
-        if (!Number.isNaN(n) && n > 0) retryAfterSeconds = n;
+      // 429/配額不足：直接回 429（前端可提示）
+      const code = data?.error?.code;
+      const status = data?.error?.status;
+      if (code === 429 || status === "RESOURCE_EXHAUSTED") {
+        let retryAfterSeconds = 30;
+        const retry = data?.error?.details?.find((d) => d?.["@type"]?.includes("RetryInfo"))?.retryDelay;
+        if (typeof retry === "string" && retry.endsWith("s")) {
+          const n = parseInt(retry.replace("s", ""), 10);
+          if (!Number.isNaN(n) && n > 0) retryAfterSeconds = n;
+        }
+        return res.status(429).json({
+          error: "Gemini rate limited",
+          retry_after_seconds: retryAfterSeconds,
+          detail: data
+        });
       }
-      return res.status(429).json({
-        error: "Gemini rate limited",
-        retry_after_seconds: retryAfterSeconds,
-        detail: ej,
+
+      return res.status(500).json({
+        error: "Gemini API error",
+        detail: data
       });
     }
-  } catch {}
-
-  return res.status(500).json({ error: "Gemini API error", detail: respText });
-}
 
     const parts = data?.candidates?.[0]?.content?.parts || [];
     const imagePart = parts.find((p) => p.inlineData && p.inlineData.data);
 
     if (!imagePart) {
-      console.error("No image part in Gemini IMAGE response:", JSON.stringify(data, null, 2));
       return res.status(500).json({ error: "No image returned from Gemini", raw: data });
     }
 
-    const base64 = imagePart.inlineData.data;
+    const b64 = imagePart.inlineData.data;
+    const mime = imagePart.inlineData.mimeType || "image/png";
 
-    return res.status(200).json({
-      image: base64,
-      image_base64: base64, // ✅ 前端常用這個
-      mime: imagePart.inlineData.mimeType || "image/png",
-      aspectRatio: ar,
-      imageSize: size,
+    // ✅ 上傳到 Storage
+    const bytes = base64ToUint8Array(b64);
+
+    const now = new Date();
+    const yyyy = now.getUTCFullYear();
+    const mm = String(now.getUTCMonth() + 1).padStart(2, "0");
+    const dd = String(now.getUTCDate()).padStart(2, "0");
+    const rand = Math.random().toString(36).slice(2, 10);
+
+    const ext = mime.includes("jpeg") ? "jpg" : "png";
+    const path = `outfits/${yyyy}/${mm}/${dd}/${Date.now()}-${rand}.${ext}`;
+
+    const image_url = await uploadToSupabaseStorage({
+      supabaseUrl,
+      serviceKey,
+      bucket: BUCKET,
+      path,
+      bytes,
+      contentType: mime
     });
+
+    // ✅ 回傳短短的 URL（不再回傳 base64）
+    return res.status(200).json({
+      ok: true,
+      image_url,
+      mime,
+      aspectRatio,
+      imageSize,
+      storage_path: path
+    });
+
   } catch (err) {
     console.error("generate-image error:", err);
-    return res.status(500).json({ error: err.message || "Unknown error" });
+    return res.status(500).json({ error: err?.message || "Unknown error" });
   }
 }
