@@ -151,22 +151,23 @@ Rendering requirements:
 - Character must not resemble any real person or celebrity.
 `.trim();
 
-    const endpoint =
-      "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-image:generateContent?key=" +
-      encodeURIComponent(apiKey);
+   const endpoint =
+  "https://generativelanguage.googleapis.com/v1beta/models/gemini-3.1-flash-image-preview:generateContent?key=" +
+  encodeURIComponent(apiKey);
 
     const geminiResponse = await fetch(endpoint, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
-        contents: [{ role: "user", parts: [{ text: prompt }] }],
-        generationConfig: {
-          imageConfig: {
-            aspectRatio: ar,
-            // 你目前沒有真正用到 size（模型支援度不一），先回傳即可
-          },
-        },
-      }),
+  contents: [{ role: "user", parts: [{ text: prompt }] }],
+  generationConfig: {
+    responseModalities: ["Image"],
+    imageConfig: {
+      aspectRatio: ar,
+      imageSize: size, // 你前面 normalizeImageSize() 已經算好了
+    },
+  },
+})
     });
 
     const respText = await geminiResponse.text();
