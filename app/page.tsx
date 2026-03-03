@@ -343,7 +343,7 @@ export default function Home() {
     loadExplore();
     loadRecent();
 
-    return { id, shareUrl };
+    return { outfitId, shareUrl };
   }
 
  async function handleGenerate() {
