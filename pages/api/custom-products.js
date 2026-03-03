@@ -1,11 +1,9 @@
 // api/custom-products.js
+// GET: debug query by tag
+// POST: generate products map by spec.items slots and write-ready structure
+
 export default async function handler(req, res) {
   try {
-    if (req.method !== "GET") {
-      return res.status(405).json({ error: "Method not allowed" });
-    }
-
-    // 1) 先檢查環境變數（避免 supabaseServer 在載入時就出事）
     const SUPABASE_URL = process.env.SUPABASE_URL;
     const SERVICE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY;
 
@@ -19,7 +17,7 @@ export default async function handler(req, res) {
       });
     }
 
-    // 2) 用動態 import，並且加上 .js（避免 module resolution crash）
+    // dynamic import (avoid module resolution crash)
     const mod = await import("../../lib/supabaseServer.js");
     const supabaseServer = mod.supabaseServer;
 
@@ -30,20 +28,90 @@ export default async function handler(req, res) {
       });
     }
 
-    const ITEM_TAG = "item_outerwear";
-const containsJson = JSON.stringify([ITEM_TAG]); // '["item_outerwear"]'
+    // -----------------------
+    // GET (debug)
+    // -----------------------
+    if (req.method === "GET") {
+      const tag = String(req.query?.tag || "item_outerwear");
+      const limit = Math.min(parseInt(String(req.query?.limit || "6"), 10) || 6, 20);
 
-const { data, error } = await supabaseServer
-  .from("custom_products")
-  .select("*")
-  .eq("is_active", true)
-  .filter("tags", "cs", containsJson) // 用 cs + 明確 JSON 字串，最穩
-  .limit(2);
+      const containsJson = JSON.stringify([tag]); // e.g. ["item_outerwear"]
 
+      const { data, error } = await supabaseServer
+        .from("custom_products")
+        .select("*")
+        .eq("is_active", true)
+        .filter("tags", "cs", containsJson)
+        .limit(limit);
 
-    return res.status(200).json({ items: data || [] });
+      if (error) return res.status(500).json({ error: "supabase query failed", detail: String(error?.message || error) });
+      return res.status(200).json({ items: data || [], tag, limit });
+    }
+
+    // -----------------------
+    // POST (real)
+    // body: { items: [{slot:"top"|"bottom"|...}] , limitPerSlot?: number }
+    // returns: { ok:true, products:{ top:[...], bottom:[...], ... } }
+    // -----------------------
+    if (req.method === "POST") {
+      const body = req.body || {};
+      const items = Array.isArray(body.items) ? body.items : [];
+      const limitPerSlot = Math.min(Number(body.limitPerSlot ?? 4) || 4, 12);
+
+      if (!items.length) return res.status(400).json({ error: "Missing items" });
+
+      // slot -> tag mapping (你可依你 DB tags 命名微調)
+      const slotToTag = {
+        top: "item_top",
+        bottom: "item_bottom",
+        shoes: "item_shoes",
+        outer: "item_outerwear",
+        bag: "item_bag",
+        hat: "item_hat",
+      };
+
+      // decide required slots from spec.items
+      const slots = Array.from(
+        new Set(
+          items
+            .map((it) => String(it?.slot || "").toLowerCase())
+            .filter((s) => ["top", "bottom", "shoes", "outer", "bag", "hat"].includes(s))
+        )
+      );
+
+      const products = {};
+
+      // query each slot
+      for (const slot of slots) {
+        const tag = slotToTag[slot];
+        if (!tag) continue;
+
+        const containsJson = JSON.stringify([tag]);
+
+        const { data, error } = await supabaseServer
+          .from("custom_products")
+          .select("*")
+          .eq("is_active", true)
+          .filter("tags", "cs", containsJson)
+          .limit(limitPerSlot);
+
+        if (error) {
+          return res.status(500).json({
+            error: "supabase query failed",
+            slot,
+            tag,
+            detail: String(error?.message || error),
+          });
+        }
+
+        products[slot] = data || [];
+      }
+
+      return res.status(200).json({ ok: true, products });
+    }
+
+    return res.status(405).json({ error: "Method not allowed" });
   } catch (e) {
-    // 這裡會把真正 crash 的原因吐出來（例如匯入失敗）
     return res.status(500).json({
       error: "Function crashed",
       detail: String(e?.message || e),
