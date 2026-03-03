@@ -311,40 +311,41 @@ export default function Home() {
     return shareUrl;
   }
 
-  async function persistGeneratedOutfitToDb({ image_url, specObj }: { image_url: string; specObj: any }) {
-    // 這裡用你的舊版 /api/outfits?op=create
-    // 會把它寫到 DB，之後 Explore / Share / Recent 就都有來源
-    const { bucket, path } = extractPublicStoragePath(image_url);
+ async function persistGeneratedOutfitToDb({ image_url, specObj }: { image_url: string; specObj: any }) {
+  // 這裡用你的舊版 /api/outfits?op=create
+  // 會把它寫到 DB，之後 Explore / Share / Recent 就都有來源
+  const { bucket, path } = extractPublicStoragePath(image_url);
 
-    const created = await apiPostJson<{ ok: boolean; item?: OutfitRow }>(`/api/outfits?op=create`, {
-      // 盡量提供多欄位，後端如果不吃也沒關係
-      image_url,
-      image_bucket: bucket || undefined,
-      image_path: path || undefined,
+  const created = await apiPostJson<{ ok: boolean; item?: OutfitRow }>(`/api/outfits?op=create`, {
+    // 盡量提供多欄位，後端如果不吃也沒關係
+    image_url,
+    image_bucket: bucket || undefined,
+    image_path: path || undefined,
 
-      is_public: false,
-      share_slug: null,
+    is_public: false,
+    share_slug: null,
 
-      style: payload,
-      spec: specObj,
-      summary: specObj?.summary || "",
-      products: specObj?.products || null,
-    });
+    style: payload,
+    spec: specObj,
+    summary: specObj?.summary || "",
+    products: specObj?.products || null,
+  });
 
-    const id = created?.item?.id;
-    if (!id) throw new Error("outfits create failed: missing id");
+  const id = created?.item?.id;
+  if (!id) throw new Error("outfits create failed: missing id");
 
-    const shareUrl = await ensurePublicShareForOutfit(id);
+  const shareUrl = await ensurePublicShareForOutfit(id);
 
-    setCurrentOutfitId(id);
-    setCurrentShareUrl(shareUrl);
+  setCurrentOutfitId(id);
+  setCurrentShareUrl(shareUrl);
 
-    // 重新載入展示
-    loadExplore();
-    loadRecent();
+  // 重新載入展示（不要 await，避免卡住主流程；但你要穩也可改成 await）
+  loadExplore();
+  loadRecent();
 
-    return { outfitId, shareUrl };
-  }
+  // ✅ 這裡原本是 return { outfitId, shareUrl }; 會爆（outfitId 未宣告）
+  return { outfitId: id, shareUrl };
+}
 
  async function handleGenerate() {
   if (!isAuthed) {
@@ -385,37 +386,37 @@ export default function Home() {
     if (!url) throw new Error("IMAGE failed: missing image_url");
     setImageUrl(url);
 
-    // 3) Persist（這裡務必拿到 outfitId）
+    // 3) Persist（要拿到 outfitId）
     setStatus("正在建立分享與公開牆…");
-
-    // ✅ 重要：讓 persist 回傳 outfitId（以及 share_url 若有）
-    // 你需要去改 persistGeneratedOutfitToDb 讓它 return { outfitId, shareUrl? }
     const persisted = await persistGeneratedOutfitToDb({ image_url: url, specObj });
 
-    const outfitId: string =
-      (persisted as any)?.outfitId ||
-      (persisted as any)?.id ||
-      (persisted as any)?.item?.id ||
-      "";
-
+    const outfitId: string = (persisted as any)?.outfitId || "";
     if (!outfitId) {
-      // 如果 persist 沒回傳 id，就先不要往下做 products update
       setStatus("完成 ✅（已生成，但未取得 outfitId，無法寫入購買路徑）");
       return;
     }
 
-    // 4) 取得購買路徑（依 spec.items）
-    setStatus("正在產生購買路徑…");
-    const prod = await apiPostJson<{ ok?: boolean; products?: any }>("/api/custom-products", {
-      items: specObj?.items || [],
-      limitPerSlot: 4,
-    });
+    // 4) 取得購買路徑 → 5) 寫回 outfits.products
+    // ✅ 這段不要影響主流程：custom-products / update 出錯，就跳過但仍算生成完成
+    try {
+      setStatus("正在產生購買路徑…");
 
-    // 5) 存回 DB（outfits.products）
-    if (prod?.products) {
-      await apiPostJson(`/api/outfits?op=update&id=${encodeURIComponent(outfitId)}`, {
-        products: prod.products,
+      // 你若已把 /api/custom-products 改成支援 POST（回傳 products），就走這裡
+      const prod = await apiPostJson<{ ok?: boolean; products?: any }>("/api/custom-products", {
+        items: specObj?.items || [],
+        limitPerSlot: 4,
       });
+
+      if (prod?.products) {
+        await apiPostJson(`/api/outfits?op=update&id=${encodeURIComponent(outfitId)}`, {
+          products: prod.products,
+        });
+      } else {
+        // 如果你目前 custom-products 還是 GET only（回 items），這裡先不寫入，避免寫錯結構
+        console.warn("[products] custom-products returned no products");
+      }
+    } catch (e) {
+      console.warn("[products] skipped:", e);
     }
 
     setStatus("完成 ✅");
