@@ -346,63 +346,83 @@ export default function Home() {
     return { id, shareUrl };
   }
 
-  async function handleGenerate() {
-    if (!isAuthed) {
-      setStatus("請先登入後才能生成。");
+ async function handleGenerate() {
+  if (!isAuthed) {
+    setStatus("請先登入後才能生成。");
+    return;
+  }
+
+  setStatus("正在分析條件…");
+  setSpec(null);
+  setImageUrl("");
+  setCurrentOutfitId("");
+  setCurrentShareUrl("");
+
+  try {
+    // 1) Spec（後端吃扁平欄位）
+    const specResp = await apiPostJson<SpecResp>("/api/generate-outfit-spec", payload);
+    if (!specResp || (specResp as any).ok === false) {
+      throw new Error((specResp as any)?.error || "SPEC failed");
+    }
+
+    const specObj: any = (specResp as any).spec || specResp;
+    setSpec(specObj);
+
+    // 2) Image
+    setStatus("正在生成穿搭圖…");
+    const imgResp = await apiPostJson<ImgResp>("/api/generate-image", {
+      ...payload,
+      outfitSpec: { items: specObj?.items || [], summary: specObj?.summary || "" },
+      aspectRatio: "9:16",
+      imageSize: "1K",
+    });
+
+    if (!imgResp || (imgResp as any).ok === false) {
+      throw new Error((imgResp as any)?.error || "IMAGE failed");
+    }
+
+    const url = (imgResp as any).image_url || "";
+    if (!url) throw new Error("IMAGE failed: missing image_url");
+    setImageUrl(url);
+
+    // 3) Persist（這裡務必拿到 outfitId）
+    setStatus("正在建立分享與公開牆…");
+
+    // ✅ 重要：讓 persist 回傳 outfitId（以及 share_url 若有）
+    // 你需要去改 persistGeneratedOutfitToDb 讓它 return { outfitId, shareUrl? }
+    const persisted = await persistGeneratedOutfitToDb({ image_url: url, specObj });
+
+    const outfitId: string =
+      (persisted as any)?.outfitId ||
+      (persisted as any)?.id ||
+      (persisted as any)?.item?.id ||
+      "";
+
+    if (!outfitId) {
+      // 如果 persist 沒回傳 id，就先不要往下做 products update
+      setStatus("完成 ✅（已生成，但未取得 outfitId，無法寫入購買路徑）");
       return;
     }
 
-    setStatus("正在分析條件…");
-    setSpec(null);
-    setImageUrl("");
-    setCurrentOutfitId("");
-    setCurrentShareUrl("");
+    // 4) 取得購買路徑（依 spec.items）
+    setStatus("正在產生購買路徑…");
+    const prod = await apiPostJson<{ ok?: boolean; products?: any }>("/api/custom-products", {
+      items: specObj?.items || [],
+      limitPerSlot: 4,
+    });
 
-    try {
-      // 1) Spec（你後端目前吃的是扁平欄位，不要包 payload）
-      const specResp = await apiPostJson<SpecResp>("/api/generate-outfit-spec", payload);
-      if (!specResp || (specResp as any).ok === false) throw new Error((specResp as any)?.error || "SPEC failed");
-
-      // 後端回傳可能是 {items, summary, credits_left...} 或 {spec:{...}}
-      const specObj = (specResp as any).spec || specResp;
-      setSpec(specObj);
-
-      // 2) Image（同樣用扁平欄位，並帶 outfitSpec）
-      setStatus("正在生成穿搭圖…");
-      const imgResp = await apiPostJson<ImgResp>("/api/generate-image", {
-        ...payload,
-        outfitSpec: { items: specObj?.items || [], summary: specObj?.summary || "" },
-        aspectRatio: "9:16",
-        imageSize: "1K",
+    // 5) 存回 DB（outfits.products）
+    if (prod?.products) {
+      await apiPostJson(`/api/outfits?op=update&id=${encodeURIComponent(outfitId)}`, {
+        products: prod.products,
       });
-
-      if (!imgResp || (imgResp as any).ok === false) throw new Error((imgResp as any)?.error || "IMAGE failed");
-      const url = (imgResp as any).image_url || "";
-      if (!url) throw new Error("IMAGE failed: missing image_url");
-
-      setImageUrl(url);
-
-      // 3) Persist → 讓 Explore/Share/Recent 都有資料
-      setStatus("正在建立分享與公開牆…");
-      await persistGeneratedOutfitToDb({ image_url: url, specObj });
-
-      setStatus("完成 ✅");
-    } catch (e: any) {
-      setStatus("生成失敗：" + (e?.message || "Unknown error"));
     }
-    // ④ 取得購買路徑（依 spec.items）
-const prod = await apiPostJson<{ ok?: boolean; products?: any }>("/api/custom-products", {
-  items: specObj.items,
-  limitPerSlot: 4,
-});
 
-// ⑤ 存回 DB（outfits.products）
-if (prod?.products) {
-  await apiPostJson(`/api/outfits?op=update&id=${encodeURIComponent(outfitId)}`, {
-    products: prod.products,
-  });
-}
+    setStatus("完成 ✅");
+  } catch (e: any) {
+    setStatus("生成失敗：" + (e?.message || "Unknown error"));
   }
+}
 
   async function handleApplyStyleFromItem(item: ExploreItem | OutfitRow) {
     // 會把 style 內容帶入（你說套用會將所有屬性帶入）
