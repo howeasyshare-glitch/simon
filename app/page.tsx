@@ -392,7 +392,7 @@ export default function Home() {
     }
     // ④ 取得購買路徑（依 spec.items）
 const prod = await apiPostJson<{ ok?: boolean; products?: any }>("/api/custom-products", {
-  items: s.items,
+  items: specObj.items,
   limitPerSlot: 4,
 });
 
