@@ -390,6 +390,18 @@ export default function Home() {
     } catch (e: any) {
       setStatus("生成失敗：" + (e?.message || "Unknown error"));
     }
+    // ④ 取得購買路徑（依 spec.items）
+const prod = await apiPostJson<{ ok?: boolean; products?: any }>("/api/custom-products", {
+  items: s.items,
+  limitPerSlot: 4,
+});
+
+// ⑤ 存回 DB（outfits.products）
+if (prod?.products) {
+  await apiPostJson(`/api/outfits?op=update&id=${encodeURIComponent(outfitId)}`, {
+    products: prod.products,
+  });
+}
   }
 
   async function handleApplyStyleFromItem(item: ExploreItem | OutfitRow) {
