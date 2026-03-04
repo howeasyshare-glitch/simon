@@ -1,202 +1,264 @@
 // pages/api/outfits.js
+// ops:
+// - list (GET)            : 我的穿搭（需要登入）
+// - favorites (GET)       : 我的最愛（需要登入）
+// - create (POST)         : 建立一筆 outfit（需要登入）
+// - update (POST/PATCH)   : 更新一筆 outfit（需要登入 + owner）
+// - delete (DELETE)       : 刪除一筆 outfit（需要登入 + owner）
 
-function randSlug(len = 12) {
-  const chars = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789-_";
-  let s = "";
-  for (let i = 0; i < len; i++) s += chars[(Math.random() * chars.length) | 0];
-  return s;
+function json(res, code, body) {
+  return res.status(code).json(body);
 }
 
-async function getUserFromSupabase({ supabaseUrl, serviceKey, accessToken }) {
-  const resp = await fetch(`${supabaseUrl}/auth/v1/user`, {
-    headers: { apikey: serviceKey, Authorization: `Bearer ${accessToken}` },
-  });
-  const text = await resp.text();
-  if (!resp.ok) return { ok: false, detail: text };
-  try {
-    return { ok: true, user: JSON.parse(text) };
-  } catch {
-    return { ok: false, detail: text };
-  }
+function base64Url(bytes) {
+  return Buffer.from(bytes)
+    .toString("base64")
+    .replace(/\+/g, "-")
+    .replace(/\//g, "_")
+    .replace(/=+$/g, "");
 }
 
-function getEnv(res) {
-  const SUPABASE_URL = process.env.SUPABASE_URL;
-  const SERVICE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY;
-  if (!SUPABASE_URL || !SERVICE_KEY) {
-    res.status(500).json({
-      error: "Supabase env not set",
-      missing: { SUPABASE_URL: !SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY: !SERVICE_KEY },
-    });
-    return null;
-  }
-  return { SUPABASE_URL, SERVICE_KEY };
-}
-
-async function restFetch({ SUPABASE_URL, SERVICE_KEY, path, method = "GET", body }) {
-  const resp = await fetch(`${SUPABASE_URL}${path}`, {
-    method,
-    headers: {
-      apikey: SERVICE_KEY,
-      Authorization: `Bearer ${SERVICE_KEY}`,
-      "Content-Type": "application/json",
-      Accept: "application/json",
-      Prefer: "return=representation",
-    },
-    body: body ? JSON.stringify(body) : undefined,
-  });
-  const text = await resp.text();
-  let json = null;
-  try { json = text ? JSON.parse(text) : null; } catch { json = { raw: text }; }
-  return { ok: resp.ok, status: resp.status, json, text };
+function makeSlug() {
+  // 10~12 chars 的短 slug
+  const crypto = require("crypto");
+  return base64Url(crypto.randomBytes(9));
 }
 
 export default async function handler(req, res) {
-  const env = getEnv(res);
-  if (!env) return;
-  const { SUPABASE_URL, SERVICE_KEY } = env;
-
-  const { op } = req.query;
-
-  // ---- auth for all ops below ----
-  const auth = req.headers.authorization || "";
-  const accessToken = auth.startsWith("Bearer ") ? auth.slice(7) : null;
-  if (!accessToken) return res.status(401).json({ error: "Missing bearer token" });
-
-  const userRes = await getUserFromSupabase({ supabaseUrl: SUPABASE_URL, serviceKey: SERVICE_KEY, accessToken });
-  if (!userRes.ok) return res.status(401).json({ error: "Invalid token", detail: userRes.detail });
-
-  const userId = userRes.user?.id;
-  if (!userId) return res.status(401).json({ error: "Invalid user" });
-
   try {
-    // =========================
-    // CREATE (private)
-    // POST /api/outfits?op=create
-    // =========================
-    if (req.method === "POST" && op === "create") {
-      const b = req.body || {};
-      const row = {
-        user_id: userId,
-        created_at: new Date().toISOString(),
-        image_url: b.image_url ?? null,
-        image_bucket: b.image_bucket ?? null,
-        image_path: b.image_path ?? null,
-        style: b.style ?? null,
-        spec: b.spec ?? null,
-        summary: b.summary ?? "",
-        products: b.products ?? null,
-        is_public: false,
-        share_slug: null,
-        like_count: 0,
-        share_count: 0,
-        apply_count: 0,
+    const SUPABASE_URL = process.env.SUPABASE_URL;
+    const SERVICE_ROLE = process.env.SUPABASE_SERVICE_ROLE_KEY;
+    if (!SUPABASE_URL || !SERVICE_ROLE) {
+      return json(res, 500, { error: "Supabase env not set" });
+    }
+
+    const op = String(req.query.op || "").toLowerCase();
+    if (!op) return json(res, 400, { error: "Missing op" });
+
+    // ====== Auth (all ops in this file require login) ======
+    const auth = req.headers.authorization || "";
+    const m = auth.match(/^Bearer\s+(.+)$/i);
+    const accessToken = m?.[1];
+    if (!accessToken) return json(res, 401, { error: "Missing bearer token" });
+
+    // verify token -> user
+    const userResp = await fetch(`${SUPABASE_URL}/auth/v1/user`, {
+      headers: { apikey: SERVICE_ROLE, Authorization: `Bearer ${accessToken}` },
+    });
+    const userText = await userResp.text();
+    if (!userResp.ok) return json(res, 401, { error: "Invalid token", detail: userText });
+
+    const user = JSON.parse(userText);
+    const userId = user?.id;
+    if (!userId) return json(res, 401, { error: "Invalid user payload" });
+
+    // helper: DB fetch with service role
+    async function dbFetch(url, init = {}) {
+      const r = await fetch(url, {
+        ...init,
+        headers: {
+          apikey: SERVICE_ROLE,
+          Authorization: `Bearer ${SERVICE_ROLE}`,
+          Accept: "application/json",
+          ...(init.headers || {}),
+        },
+      });
+      const text = await r.text();
+      return { ok: r.ok, status: r.status, text };
+    }
+
+    function toRowWithUrls(row) {
+      return {
+        ...row,
+        image_url: row?.image_path
+          ? `${SUPABASE_URL}/storage/v1/object/public/outfits/${row.image_path}`
+          : "",
+        share_url: row?.share_slug ? `/share/${row.share_slug}` : "",
       };
-
-      const r = await restFetch({
-        SUPABASE_URL,
-        SERVICE_KEY,
-        path: "/rest/v1/outfits",
-        method: "POST",
-        body: row,
-      });
-
-      if (!r.ok) return res.status(500).json({ error: "create failed", status: r.status, detail: r.text });
-      return res.status(200).json({ ok: true, item: Array.isArray(r.json) ? r.json[0] : r.json });
     }
 
-    // =========================
-    // PUBLISH (share)
-    // POST /api/outfits?op=publish&id=...
-    // =========================
-    if (req.method === "POST" && op === "publish") {
-      const id = String(req.query.id || "");
-      if (!id) return res.status(400).json({ error: "Missing id" });
+    // ===== LIST (my recent) =====
+    if (op === "list") {
+      if (req.method !== "GET") return json(res, 405, { error: "Method not allowed" });
 
-      // 先查這筆是不是你的
-      const q = await restFetch({
-        SUPABASE_URL,
-        SERVICE_KEY,
-        path: `/rest/v1/outfits?id=eq.${encodeURIComponent(id)}&user_id=eq.${encodeURIComponent(userId)}&select=id,share_slug,is_public`,
-      });
-      if (!q.ok) return res.status(500).json({ error: "query failed", detail: q.text });
-      const row = (q.json && q.json[0]) || null;
-      if (!row) return res.status(404).json({ error: "Not found" });
+      const limit = Math.min(parseInt(req.query.limit || "24", 10) || 24, 100);
+      const offset = Math.max(parseInt(req.query.offset || "0", 10) || 0, 0);
 
-      const shareSlug = row.share_slug || randSlug(12);
+      const url =
+        `${SUPABASE_URL}/rest/v1/outfits` +
+        `?user_id=eq.${encodeURIComponent(userId)}` +
+        `&select=id,created_at,is_public,share_slug,image_path,style,summary,products,spec` +
+        `&order=created_at.desc` +
+        `&limit=${limit}&offset=${offset}`;
 
-      const upd = await restFetch({
-        SUPABASE_URL,
-        SERVICE_KEY,
-        path: `/rest/v1/outfits?id=eq.${encodeURIComponent(id)}&user_id=eq.${encodeURIComponent(userId)}`,
-        method: "PATCH",
-        body: { is_public: true, share_slug: shareSlug },
-      });
-      if (!upd.ok) return res.status(500).json({ error: "publish failed", detail: upd.text });
+      const r = await dbFetch(url);
+      if (!r.ok) return json(res, 500, { error: "Query failed", status: r.status, detail: r.text });
 
-      return res.status(200).json({
-        ok: true,
-        outfit_id: id,
-        share_slug: shareSlug,
-        share_url: `/share/${shareSlug}`,
-      });
+      const rows = JSON.parse(r.text || "[]");
+      return json(res, 200, { ok: true, items: rows.map(toRowWithUrls), limit, offset });
     }
 
-    // =========================
-    // UPDATE products
-    // POST /api/outfits?op=update&id=...
-    // =========================
-    if (req.method === "POST" && op === "update") {
-      const id = String(req.query.id || "");
-      if (!id) return res.status(400).json({ error: "Missing id" });
+    // ===== FAVORITES =====
+    // 支援兩種 schema：
+    // A) outfits 有 boolean 欄位 is_favorite
+    // B) 有 join table outfit_favorites(user_id, outfit_id)
+    if (op === "favorites") {
+      if (req.method !== "GET") return json(res, 405, { error: "Method not allowed" });
 
-      const b = req.body || {};
-      const patch = {};
-      if (b.products !== undefined) patch.products = b.products;
-
-      if (!Object.keys(patch).length) return res.status(400).json({ error: "Nothing to update" });
-
-      const upd = await restFetch({
-        SUPABASE_URL,
-        SERVICE_KEY,
-        path: `/rest/v1/outfits?id=eq.${encodeURIComponent(id)}&user_id=eq.${encodeURIComponent(userId)}`,
-        method: "PATCH",
-        body: patch,
-      });
-      if (!upd.ok) return res.status(500).json({ error: "update failed", detail: upd.text });
-
-      return res.status(200).json({ ok: true, item: Array.isArray(upd.json) ? upd.json[0] : upd.json });
-    }
-
-    // =========================
-    // RECENT 10 (private)
-    // GET /api/outfits?op=recent&limit=10
-    // =========================
-    if (req.method === "GET" && op === "recent") {
       const limit = Math.min(parseInt(req.query.limit || "10", 10) || 10, 50);
 
-      const r = await restFetch({
-        SUPABASE_URL,
-        SERVICE_KEY,
-        path:
-          `/rest/v1/outfits?user_id=eq.${encodeURIComponent(userId)}` +
-          `&select=id,created_at,image_path,share_slug,is_public,summary,products,style,spec` +
-          `&order=created_at.desc&limit=${limit}`,
-      });
+      // 先試 A) outfits.is_favorite
+      {
+        const urlA =
+          `${SUPABASE_URL}/rest/v1/outfits` +
+          `?user_id=eq.${encodeURIComponent(userId)}` +
+          `&is_favorite=eq.true` +
+          `&select=id,created_at,is_public,share_slug,image_path,style,summary,products,spec` +
+          `&order=created_at.desc` +
+          `&limit=${limit}`;
 
-      if (!r.ok) return res.status(500).json({ error: "recent failed", detail: r.text });
+        const rA = await dbFetch(urlA);
+        if (rA.ok) {
+          const rowsA = JSON.parse(rA.text || "[]");
+          return json(res, 200, { ok: true, items: rowsA.map(toRowWithUrls), limit });
+        }
+      }
 
-      const items = (r.json || []).map((row) => ({
-        ...row,
-        image_url: row.image_path ? `${SUPABASE_URL}/storage/v1/object/public/outfits/${row.image_path}` : "",
-        share_url: row.share_slug ? `/share/${row.share_slug}` : "",
-      }));
+      // 再試 B) join table outfit_favorites
+      {
+        const urlB =
+          `${SUPABASE_URL}/rest/v1/outfit_favorites` +
+          `?user_id=eq.${encodeURIComponent(userId)}` +
+          `&select=outfit:outfits(id,created_at,is_public,share_slug,image_path,style,summary,products,spec)` +
+          `&order=created_at.desc` +
+          `&limit=${limit}`;
 
-      return res.status(200).json({ ok: true, items });
+        const rB = await dbFetch(urlB);
+        if (!rB.ok) {
+          return json(res, 500, {
+            error: "Favorites not supported by DB schema",
+            detail: rB.text,
+            hint: "Need outfits.is_favorite OR outfit_favorites(user_id,outfit_id).",
+          });
+        }
+
+        const rowsB = JSON.parse(rB.text || "[]");
+        const items = rowsB.map((x) => x.outfit).filter(Boolean).map(toRowWithUrls);
+        return json(res, 200, { ok: true, items, limit });
+      }
     }
 
-    return res.status(405).json({ error: "Method not allowed" });
+    // ===== CREATE =====
+    if (op === "create") {
+      if (req.method !== "POST") return json(res, 405, { error: "Method not allowed" });
+
+      const body = req.body || {};
+      const share_slug = String(body.share_slug || "").trim() || makeSlug();
+
+      // 你 DB 可能有 not-null 欄位（例如 is_public / image_path），這裡保守處理
+      const payload = {
+        user_id: userId,
+        image_path: body.image_path || null,
+        is_public: typeof body.is_public === "boolean" ? body.is_public : true, // 生成後預設公開，才會進 explore
+        share_slug,
+        style: body.style || null,
+        spec: body.spec || null,
+        summary: body.summary || null,
+        products: body.products || null,
+      };
+
+      const url =
+        `${SUPABASE_URL}/rest/v1/outfits` +
+        `?select=id,created_at,is_public,share_slug,image_path`;
+
+      const r = await dbFetch(url, {
+        method: "POST",
+        headers: { "Content-Type": "application/json", Prefer: "return=representation" },
+        body: JSON.stringify(payload),
+      });
+
+      if (!r.ok) {
+        return json(res, 500, { error: "Create failed", status: r.status, detail: r.text, payload });
+      }
+
+      const item = JSON.parse(r.text || "[]")?.[0];
+      return json(res, 200, { ok: true, item: toRowWithUrls(item) });
+    }
+
+    // ===== UPDATE / DELETE need id & owner =====
+    const id = String(req.query.id || "").trim();
+    if (!id) return json(res, 400, { error: "Missing id" });
+
+    // fetch row to verify owner
+    const getUrl =
+      `${SUPABASE_URL}/rest/v1/outfits` +
+      `?id=eq.${encodeURIComponent(id)}` +
+      `&select=id,user_id,image_path,is_public,share_slug` +
+      `&limit=1`;
+
+    const got = await dbFetch(getUrl);
+    if (!got.ok) return json(res, 500, { error: "Fetch failed", status: got.status, detail: got.text });
+
+    const row = JSON.parse(got.text || "[]")?.[0];
+    if (!row) return json(res, 404, { error: "Not found" });
+    if (row.user_id !== userId) return json(res, 403, { error: "Forbidden" });
+
+    // ===== UPDATE =====
+    if (op === "update") {
+      // ✅ 你前端現在用 POST，這裡允許 POST/PATCH 兩種
+      if (!["POST", "PATCH"].includes(req.method)) return json(res, 405, { error: "Method not allowed" });
+
+      const body = req.body || {};
+      const patch = {};
+
+      // 允許更新 products / summary / spec / style / is_public / share_slug
+      if (typeof body.is_public === "boolean") patch.is_public = body.is_public;
+      if (typeof body.share_slug === "string") patch.share_slug = body.share_slug;
+      if (body.products !== undefined) patch.products = body.products;
+      if (body.summary !== undefined) patch.summary = body.summary;
+      if (body.spec !== undefined) patch.spec = body.spec;
+      if (body.style !== undefined) patch.style = body.style;
+
+      if (Object.keys(patch).length === 0) return json(res, 400, { error: "Nothing to update" });
+
+      const updUrl =
+        `${SUPABASE_URL}/rest/v1/outfits` +
+        `?id=eq.${encodeURIComponent(id)}` +
+        `&select=id,is_public,share_slug,image_path,created_at,products,summary,style`;
+
+      const r = await dbFetch(updUrl, {
+        method: "PATCH", // 對 Supabase 一律用 PATCH
+        headers: { "Content-Type": "application/json", Prefer: "return=representation" },
+        body: JSON.stringify(patch),
+      });
+
+      if (!r.ok) return json(res, 500, { error: "Update failed", status: r.status, detail: r.text });
+
+      const item = JSON.parse(r.text || "[]")?.[0];
+      return json(res, 200, { ok: true, item: toRowWithUrls(item) });
+    }
+
+    // ===== DELETE =====
+    if (op === "delete") {
+      if (req.method !== "DELETE") return json(res, 405, { error: "Method not allowed" });
+
+      // delete storage (best-effort)
+      if (row.image_path) {
+        await fetch(`${SUPABASE_URL}/storage/v1/object/outfits/${encodeURIComponent(row.image_path)}`, {
+          method: "DELETE",
+          headers: { apikey: SERVICE_ROLE, Authorization: `Bearer ${SERVICE_ROLE}` },
+        }).catch(() => {});
+      }
+
+      const delUrl = `${SUPABASE_URL}/rest/v1/outfits?id=eq.${encodeURIComponent(id)}`;
+      const r = await dbFetch(delUrl, { method: "DELETE" });
+      if (!r.ok) return json(res, 500, { error: "Delete failed", status: r.status, detail: r.text });
+
+      return json(res, 200, { ok: true });
+    }
+
+    return json(res, 400, { error: "Unknown op" });
   } catch (e) {
-    return res.status(500).json({ error: "Outfits API crashed", detail: String(e?.message || e) });
+    return res.status(500).json({ error: "Unhandled", detail: String(e?.message || e) });
   }
 }
