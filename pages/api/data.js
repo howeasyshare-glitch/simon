@@ -310,25 +310,40 @@ async function handleOutfitsRecent(req, res) {
  * - table: outfit_favorites (user_id, outfit_id, created_at)
  * If you already have a table, change FAVORITES_TABLE below.
  */
-const FAVORITES_TABLE = "outfit_favorites"; // <-- adjust if your table name differs
+const FAVORITES_TABLE = "outfit_likes"; // <-- adjust if your table name differs
 
 async function handleOutfitsFavorites(req, res) {
   const env = getEnv();
   if (!env.ok) return json(res, 500, { error: env.error });
   const { SUPABASE_URL, SERVICE_ROLE } = env;
 
-  const accessToken = getBearer(req);
-  if (!accessToken) return json(res, 401, { error: "Missing bearer token" });
-
-  const u = await getUserFromAccessToken({ SUPABASE_URL, SERVICE_ROLE, accessToken });
-  if (!u.ok) return json(res, 401, { error: "Invalid token", detail: u.detail });
-
   const limit = Math.min(parseInt(req.query.limit || "10", 10) || 10, 50);
+  const anonId = String(req.query.anon_id || "").trim();
 
-  // 1) read favorites ids
+  let userId = null;
+  const accessToken = getBearer(req);
+
+  // Bearer 可有可無：有就查 user_id，沒有就只能查 anon_id
+  if (accessToken) {
+    const u = await getUserFromAccessToken({ SUPABASE_URL, SERVICE_ROLE, accessToken });
+    if (u.ok) userId = u.user?.id || null;
+  }
+
+  if (!userId && !anonId) {
+    return json(res, 200, { ok: true, items: [], limit });
+  }
+
+  let filter = "";
+  if (userId) {
+    filter = `user_id=eq.${encodeURIComponent(userId)}`;
+  } else {
+    filter = `anon_id=eq.${encodeURIComponent(anonId)}`;
+  }
+
+  // 1) read favorites ids from outfit_likes
   const favUrl =
     `${SUPABASE_URL}/rest/v1/${FAVORITES_TABLE}` +
-    `?user_id=eq.${encodeURIComponent(u.user.id)}` +
+    `?${filter}` +
     `&select=outfit_id,created_at` +
     `&order=created_at.desc` +
     `&limit=${limit}`;
@@ -343,16 +358,20 @@ async function handleOutfitsFavorites(req, res) {
 
   const favText = await fr.text();
   if (!fr.ok) {
-    // If your project does not have this table, you'll see it here.
-    return json(res, 500, { error: "Favorites query failed", status: fr.status, detail: favText, hint: `Check table ${FAVORITES_TABLE}` });
+    return json(res, 500, {
+      error: "Favorites query failed",
+      status: fr.status,
+      detail: favText,
+      hint: `Check table ${FAVORITES_TABLE}`,
+    });
   }
 
   const favRows = JSON.parse(favText || "[]");
   const ids = favRows.map((x) => x.outfit_id).filter(Boolean);
+
   if (!ids.length) return json(res, 200, { ok: true, items: [], limit });
 
   // 2) fetch outfits by ids
-  // PostgREST "in" syntax: id=in.(a,b,c)
   const inList = ids.map((id) => encodeURIComponent(id)).join(",");
   const outfitsUrl =
     `${SUPABASE_URL}/rest/v1/outfits` +
@@ -368,10 +387,17 @@ async function handleOutfitsFavorites(req, res) {
   });
 
   const oText = await or.text();
-  if (!or.ok) return json(res, 500, { error: "Outfits query failed", status: or.status, detail: oText });
+  if (!or.ok) {
+    return json(res, 500, {
+      error: "Outfits query failed",
+      status: or.status,
+      detail: oText,
+    });
+  }
 
   const outfitRows = JSON.parse(oText || "[]");
   const map = new Map(outfitRows.map((x) => [x.id, x]));
+
   const items = ids
     .map((id) => map.get(id))
     .filter(Boolean)
