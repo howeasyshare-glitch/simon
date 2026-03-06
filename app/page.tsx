@@ -230,19 +230,25 @@ export default function Home() {
   }
 
   async function loadFavorites() {
-    if (!isAuthed) return;
-    setLoadingFav(true);
-    try {
-      const data = await apiGetJson<{ ok: boolean; items: OutfitRow[] }>(
-        "/api/data?op=outfits.favorites&limit=10&ts=" + Date.now()
-      );
-      setFavorites(data?.items || []);
-    } catch {
-      setFavorites([]);
-    } finally {
-      setLoadingFav(false);
+  setLoadingFav(true);
+  try {
+    let anonId = localStorage.getItem("findoutfit_anon_id");
+    if (!anonId) {
+      anonId = crypto.randomUUID();
+      localStorage.setItem("findoutfit_anon_id", anonId);
     }
+
+    const data = await apiGetJson<{ ok: boolean; items: OutfitRow[] }>(
+      `/api/data?op=outfits.favorites&limit=10&anon_id=${encodeURIComponent(anonId)}&ts=${Date.now()}`
+    );
+
+    setFavorites(data?.items || []);
+  } catch {
+    setFavorites([]);
+  } finally {
+    setLoadingFav(false);
   }
+}
 
   useEffect(() => {
     refreshMe();
