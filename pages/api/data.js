@@ -1,6 +1,5 @@
 // pages/api/data.js
-// One unified API router to reduce Serverless Functions count.
-// Supports: explore / share / outfits (create/update/recent/favorites) / products(custom-products style)
+// Unified API router
 
 async function json(res, status, obj) {
   res.status(status).json(obj);
@@ -15,7 +14,6 @@ function getEnv() {
   return { ok: true, SUPABASE_URL, SERVICE_ROLE };
 }
 
-// Validate user from Supabase access token (Bearer from client)
 async function getUserFromAccessToken({ SUPABASE_URL, SERVICE_ROLE, accessToken }) {
   const r = await fetch(`${SUPABASE_URL}/auth/v1/user`, {
     headers: {
@@ -43,8 +41,11 @@ function buildPublicImageUrl(SUPABASE_URL, image_path) {
   return image_path ? `${SUPABASE_URL}/storage/v1/object/public/outfits/${image_path}` : "";
 }
 
-/** ---- Handlers ---- **/
+function makeShareSlug() {
+  return Math.random().toString(36).slice(2, 10) + Math.random().toString(36).slice(2, 6);
+}
 
+/** ===================== Explore ===================== */
 async function handleExplore(req, res) {
   const env = getEnv();
   if (!env.ok) return json(res, 500, { error: env.error });
@@ -56,9 +57,11 @@ async function handleExplore(req, res) {
   const sort = String(req.query.sort || "like").toLowerCase();
 
   const order =
-    sort === "share" ? "share_count.desc" :
-    sort === "apply" ? "apply_count.desc" :
-    "like_count.desc";
+    sort === "share"
+      ? "share_count.desc"
+      : sort === "apply"
+      ? "apply_count.desc"
+      : "like_count.desc";
 
   const url =
     `${SUPABASE_URL}/rest/v1/outfits` +
@@ -89,6 +92,7 @@ async function handleExplore(req, res) {
   return json(res, 200, { ok: true, items, limit, offset });
 }
 
+/** ===================== Share ===================== */
 async function handleShare(req, res) {
   const env = getEnv();
   if (!env.ok) return json(res, 500, { error: env.error });
@@ -124,10 +128,7 @@ async function handleShare(req, res) {
   return json(res, 200, { ok: true, outfit: { ...row, image_url } });
 }
 
-// ---- Outfits ops ----
-// NOTE: I assume table "outfits" has at least: id (uuid), user_id, created_at, image_path, share_slug, is_public, spec, style, summary, products.
-// If your schema differs, adjust the inserted/selected fields here.
-
+/** ===================== Outfits: Create ===================== */
 async function handleOutfitsCreate(req, res) {
   const env = getEnv();
   if (!env.ok) return json(res, 500, { error: env.error });
@@ -142,18 +143,21 @@ async function handleOutfitsCreate(req, res) {
   const body = req.body || {};
   const image_path = body.image_path || "";
   const image_url = body.image_url || "";
-  const share_slug = body.share_slug || null;
+  let share_slug = body.share_slug || null;
   const is_public = body.is_public ?? true;
 
-  // spec/style/summary/products can be JSON
   const spec = body.spec ?? body.specObj ?? null;
   const style = body.style ?? null;
   const summary = body.summary ?? null;
   const products = body.products ?? null;
 
-  // You can decide to store only image_path (recommended) — image_url should be derived.
-  // If your client only has image_url, you should pass image_path from your storage upload step.
-  if (!image_path && !image_url) return json(res, 400, { error: "Missing image_path (or image_url)" });
+  if (!image_path && !image_url) {
+    return json(res, 400, { error: "Missing image_path (or image_url)" });
+  }
+
+  if (!share_slug) {
+    share_slug = makeShareSlug();
+  }
 
   const insertRow = {
     user_id: u.user.id,
@@ -195,6 +199,7 @@ async function handleOutfitsCreate(req, res) {
   });
 }
 
+/** ===================== Outfits: Update ===================== */
 async function handleOutfitsUpdate(req, res) {
   const env = getEnv();
   if (!env.ok) return json(res, 500, { error: env.error });
@@ -209,24 +214,18 @@ async function handleOutfitsUpdate(req, res) {
   const id = String(req.query.id || "").trim();
   if (!id) return json(res, 400, { error: "Missing id" });
 
-  // Only allow update of a few fields from client:
   const body = req.body || {};
   const patch = {
     updated_at: new Date().toISOString(),
   };
 
-  // allow these JSON fields
   if ("products" in body) patch.products = body.products;
   if ("spec" in body) patch.spec = body.spec;
   if ("style" in body) patch.style = body.style;
   if ("summary" in body) patch.summary = body.summary;
-
-  // allow public/share changes
   if ("is_public" in body) patch.is_public = !!body.is_public;
   if ("share_slug" in body) patch.share_slug = body.share_slug || null;
 
-  // IMPORTANT: You may want to enforce ownership: user_id == current user.
-  // We'll enforce that in query filters:
   const url =
     `${SUPABASE_URL}/rest/v1/outfits` +
     `?id=eq.${encodeURIComponent(id)}` +
@@ -260,6 +259,7 @@ async function handleOutfitsUpdate(req, res) {
   });
 }
 
+/** ===================== Outfits: Recent ===================== */
 async function handleOutfitsRecent(req, res) {
   const env = getEnv();
   if (!env.ok) return json(res, 500, { error: env.error });
@@ -301,16 +301,8 @@ async function handleOutfitsRecent(req, res) {
   return json(res, 200, { ok: true, items, limit });
 }
 
-/**
- * Favorites:
- * You reported: /api/outfits?op=favorites returns 405.
- * I don't know your exact favorites schema.
- *
- * Common option:
- * - table: outfit_favorites (user_id, outfit_id, created_at)
- * If you already have a table, change FAVORITES_TABLE below.
- */
-const FAVORITES_TABLE = "outfit_likes"; // <-- adjust if your table name differs
+/** ===================== Outfits: Favorites ===================== */
+const FAVORITES_TABLE = "outfit_likes";
 
 async function handleOutfitsFavorites(req, res) {
   const env = getEnv();
@@ -323,7 +315,6 @@ async function handleOutfitsFavorites(req, res) {
   let userId = null;
   const accessToken = getBearer(req);
 
-  // Bearer 可有可無：有就查 user_id，沒有就只能查 anon_id
   if (accessToken) {
     const u = await getUserFromAccessToken({ SUPABASE_URL, SERVICE_ROLE, accessToken });
     if (u.ok) userId = u.user?.id || null;
@@ -333,14 +324,10 @@ async function handleOutfitsFavorites(req, res) {
     return json(res, 200, { ok: true, items: [], limit });
   }
 
-  let filter = "";
-  if (userId) {
-    filter = `user_id=eq.${encodeURIComponent(userId)}`;
-  } else {
-    filter = `anon_id=eq.${encodeURIComponent(anonId)}`;
-  }
+  const filter = userId
+    ? `user_id=eq.${encodeURIComponent(userId)}`
+    : `anon_id=eq.${encodeURIComponent(anonId)}`;
 
-  // 1) read favorites ids from outfit_likes
   const favUrl =
     `${SUPABASE_URL}/rest/v1/${FAVORITES_TABLE}` +
     `?${filter}` +
@@ -371,7 +358,6 @@ async function handleOutfitsFavorites(req, res) {
 
   if (!ids.length) return json(res, 200, { ok: true, items: [], limit });
 
-  // 2) fetch outfits by ids
   const inList = ids.map((id) => encodeURIComponent(id)).join(",");
   const outfitsUrl =
     `${SUPABASE_URL}/rest/v1/outfits` +
@@ -410,35 +396,26 @@ async function handleOutfitsFavorites(req, res) {
   return json(res, 200, { ok: true, items, limit });
 }
 
-/**
- * Products (購買路徑)
- * Your old custom-products.js was GET and filtered by tags.
- * Now we make it POST so it can accept spec.items and return grouped products.
- * If you already have a working logic, paste it here.
- */
+/** ===================== Products ===================== */
 async function handleProducts(req, res) {
-  const env = getEnv();
-  if (!env.ok) return json(res, 500, { error: env.error });
-  const { SUPABASE_URL, SERVICE_ROLE } = env;
-
-  // optional auth (if you need to restrict, enforce bearer here)
   const body = req.body || {};
   const items = Array.isArray(body.items) ? body.items : [];
   const limitPerSlot = Math.min(parseInt(body.limitPerSlot || "4", 10) || 4, 12);
 
-  // Minimal: just return empty if you haven't wired your custom_products tags mapping yet.
-  // Replace this block with your existing query logic when ready.
-  return json(res, 200, { ok: true, products: null, hint: "Wire products mapping here", received_slots: items.map((x) => x.slot), limitPerSlot });
+  // 暫時先保留空結果；等你把 custom_products 的 tags 對應清楚後再補。
+  return json(res, 200, {
+    ok: true,
+    products: null,
+    hint: "Wire products mapping from custom_products here",
+    received_slots: items.map((x) => x.slot),
+    limitPerSlot,
+  });
 }
 
+/** ===================== Router ===================== */
 export default async function handler(req, res) {
   try {
     const op = String(req.query.op || "").trim();
-
-    // normalize body for POST in Next pages/api
-    if (req.method === "POST" && !req.body) {
-      // Next usually parses JSON automatically. This is just a safety net.
-    }
 
     if (op === "explore") {
       if (req.method !== "GET") return json(res, 405, { error: "Method not allowed" });
