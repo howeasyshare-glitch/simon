@@ -45,6 +45,24 @@ function makeShareSlug() {
   return Math.random().toString(36).slice(2, 10) + Math.random().toString(36).slice(2, 6);
 }
 
+async function dbFetch(url, init = {}) {
+  const env = getEnv();
+  if (!env.ok) throw new Error(env.error);
+  const { SERVICE_ROLE } = env;
+
+  const r = await fetch(url, {
+    ...init,
+    headers: {
+      apikey: SERVICE_ROLE,
+      Authorization: `Bearer ${SERVICE_ROLE}`,
+      Accept: "application/json",
+      ...(init.headers || {}),
+    },
+  });
+  const text = await r.text();
+  return { ok: r.ok, status: r.status, text };
+}
+
 /** ===================== Explore ===================== */
 async function handleExplore(req, res) {
   const env = getEnv();
@@ -67,6 +85,7 @@ async function handleExplore(req, res) {
     `${SUPABASE_URL}/rest/v1/outfits` +
     `?is_public=eq.true` +
     `&share_slug=not.is.null` +
+    `&image_path=not.is.null` +
     `&select=id,created_at,share_slug,image_path,style,spec,summary,products,like_count,share_count,apply_count` +
     `&order=${order},created_at.desc` +
     `&limit=${limit}&offset=${offset}`;
@@ -141,7 +160,7 @@ async function handleOutfitsCreate(req, res) {
   if (!u.ok) return json(res, 401, { error: "Invalid token", detail: u.detail });
 
   const body = req.body || {};
-  const image_path = body.image_path || "";
+  const image_path = body.image_path || body.storage_path || "";
   const image_url = body.image_url || "";
   let share_slug = body.share_slug || null;
   const is_public = body.is_public ?? true;
@@ -225,6 +244,7 @@ async function handleOutfitsUpdate(req, res) {
   if ("summary" in body) patch.summary = body.summary;
   if ("is_public" in body) patch.is_public = !!body.is_public;
   if ("share_slug" in body) patch.share_slug = body.share_slug || null;
+  if ("image_path" in body) patch.image_path = body.image_path || null;
 
   const url =
     `${SUPABASE_URL}/rest/v1/outfits` +
@@ -396,13 +416,128 @@ async function handleOutfitsFavorites(req, res) {
   return json(res, 200, { ok: true, items, limit });
 }
 
+/** ===================== Outfits: Like ===================== */
+async function handleOutfitsLike(req, res) {
+  const env = getEnv();
+  if (!env.ok) return json(res, 500, { error: env.error });
+  const { SUPABASE_URL, SERVICE_ROLE } = env;
+
+  const body = req.body || {};
+  const outfitId = String(body.outfit_id || "").trim();
+  const anonId = String(body.anon_id || "").trim();
+
+  if (!outfitId) {
+    return json(res, 400, { error: "Missing outfit_id" });
+  }
+
+  let userId = null;
+  const accessToken = getBearer(req);
+  if (accessToken) {
+    const u = await getUserFromAccessToken({ SUPABASE_URL, SERVICE_ROLE, accessToken });
+    if (u.ok) userId = u.user?.id || null;
+  }
+
+  if (!userId && !anonId) {
+    return json(res, 400, { error: "Need user or anon_id" });
+  }
+
+  const outfitCheckUrl =
+    `${SUPABASE_URL}/rest/v1/outfits` +
+    `?id=eq.${encodeURIComponent(outfitId)}` +
+    `&select=id,like_count` +
+    `&limit=1`;
+
+  const check = await fetch(outfitCheckUrl, {
+    headers: {
+      apikey: SERVICE_ROLE,
+      Authorization: `Bearer ${SERVICE_ROLE}`,
+      Accept: "application/json",
+    },
+  });
+
+  const checkText = await check.text();
+  if (!check.ok) {
+    return json(res, 500, { error: "Outfit check failed", status: check.status, detail: checkText });
+  }
+
+  const checkRows = JSON.parse(checkText || "[]");
+  const outfitRow = checkRows?.[0];
+  if (!outfitRow) return json(res, 404, { error: "Outfit not found" });
+
+  const existingFilter = userId
+    ? `outfit_id=eq.${encodeURIComponent(outfitId)}&user_id=eq.${encodeURIComponent(userId)}`
+    : `outfit_id=eq.${encodeURIComponent(outfitId)}&anon_id=eq.${encodeURIComponent(anonId)}`;
+
+  const existingUrl = `${SUPABASE_URL}/rest/v1/${FAVORITES_TABLE}?${existingFilter}&select=id&limit=1`;
+  const existing = await fetch(existingUrl, {
+    headers: {
+      apikey: SERVICE_ROLE,
+      Authorization: `Bearer ${SERVICE_ROLE}`,
+      Accept: "application/json",
+    },
+  });
+
+  const existingText = await existing.text();
+  if (!existing.ok) {
+    return json(res, 500, { error: "Like check failed", status: existing.status, detail: existingText });
+  }
+
+  const existingRows = JSON.parse(existingText || "[]");
+  if (existingRows?.length) {
+    return json(res, 200, { ok: true, liked: false, already_exists: true });
+  }
+
+  const insertPayload = {
+    outfit_id: outfitId,
+    user_id: userId || null,
+    anon_id: userId ? null : anonId || null,
+  };
+
+  const insert = await fetch(`${SUPABASE_URL}/rest/v1/${FAVORITES_TABLE}`, {
+    method: "POST",
+    headers: {
+      apikey: SERVICE_ROLE,
+      Authorization: `Bearer ${SERVICE_ROLE}`,
+      "Content-Type": "application/json",
+      Prefer: "return=representation",
+    },
+    body: JSON.stringify(insertPayload),
+  });
+
+  const insertText = await insert.text();
+  if (!insert.ok) {
+    return json(res, 500, { error: "Like insert failed", status: insert.status, detail: insertText });
+  }
+
+  const nextLikeCount = Math.max(0, Number(outfitRow.like_count || 0) + 1);
+  const upd = await fetch(`${SUPABASE_URL}/rest/v1/outfits?id=eq.${encodeURIComponent(outfitId)}`, {
+    method: "PATCH",
+    headers: {
+      apikey: SERVICE_ROLE,
+      Authorization: `Bearer ${SERVICE_ROLE}`,
+      "Content-Type": "application/json",
+      Prefer: "return=minimal",
+    },
+    body: JSON.stringify({
+      like_count: nextLikeCount,
+      updated_at: new Date().toISOString(),
+    }),
+  });
+
+  const updText = await upd.text();
+  if (!upd.ok) {
+    return json(res, 500, { error: "Like count update failed", status: upd.status, detail: updText });
+  }
+
+  return json(res, 200, { ok: true, liked: true, like_count: nextLikeCount });
+}
+
 /** ===================== Products ===================== */
 async function handleProducts(req, res) {
   const body = req.body || {};
   const items = Array.isArray(body.items) ? body.items : [];
   const limitPerSlot = Math.min(parseInt(body.limitPerSlot || "4", 10) || 4, 12);
 
-  // 暫時先保留空結果；等你把 custom_products 的 tags 對應清楚後再補。
   return json(res, 200, {
     ok: true,
     products: null,
@@ -447,6 +582,11 @@ export default async function handler(req, res) {
       return await handleOutfitsFavorites(req, res);
     }
 
+    if (op === "outfits.like") {
+      if (req.method !== "POST") return json(res, 405, { error: "Method not allowed" });
+      return await handleOutfitsLike(req, res);
+    }
+
     if (op === "products") {
       if (req.method !== "POST") return json(res, 405, { error: "Method not allowed" });
       return await handleProducts(req, res);
@@ -461,6 +601,7 @@ export default async function handler(req, res) {
         "outfits.update",
         "outfits.recent",
         "outfits.favorites",
+        "outfits.like",
         "products",
       ],
     });
