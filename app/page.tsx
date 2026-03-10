@@ -23,6 +23,7 @@ type OutfitRow = {
   share_count?: number;
   apply_count?: number;
   share_url?: string;
+  is_public?: boolean;
 };
 
 type ImgResp = {
@@ -361,7 +362,7 @@ export default function Home() {
   }
 
   async function persistGeneratedOutfitToDb(args: { image_url?: string; image_path?: string; specObj: any }) {
-    const created = await apiPostJson<{ ok: boolean; outfit?: OutfitRow }>(`/api/data?op=outfits.create`, {
+    const created = await apiPostJson<{ ok: boolean; item?: OutfitRow }>(`/api/data?op=outfits.create`, {
       image_url: args.image_url || "",
       image_path: args.image_path || "",
       is_public: true,
@@ -371,10 +372,10 @@ export default function Home() {
       products: null,
     });
 
-    const outfitId = created?.outfit?.id || "";
+    const outfitId = created?.item?.id || "";
     setCurrentOutfitId(outfitId);
 
-    const shareSlug = created?.outfit?.share_slug || "";
+    const shareSlug = created?.item?.share_slug || "";
     const shareUrl = shareSlug ? `${window.location.origin}/share/${shareSlug}` : "";
     setCurrentShareUrl(shareUrl);
 
@@ -442,6 +443,63 @@ export default function Home() {
     } catch (e: any) {
       setStatus("加入最愛失敗：" + (e?.message || "Unknown error"));
     }
+  }
+
+  async function handleExploreLike(outfitId: string) {
+    try {
+      let anonId = localStorage.getItem("findoutfit_anon_id");
+      if (!anonId) {
+        anonId = crypto.randomUUID();
+        localStorage.setItem("findoutfit_anon_id", anonId);
+      }
+
+      const result = await apiPostJson<{ ok?: boolean; liked?: boolean }>(`/api/data?op=outfits.like`, {
+        outfit_id: outfitId,
+        anon_id: anonId,
+      });
+
+      if (result?.ok) {
+        setStatus(result?.liked ? "已加入最愛 ✅" : "已在最愛中");
+        await loadFavorites();
+        await loadExplore();
+      } else {
+        setStatus("加入最愛失敗");
+      }
+    } catch (e: any) {
+      setStatus("加入最愛失敗：" + (e?.message || "Unknown error"));
+    }
+  }
+
+  async function handleExploreShare(it: OutfitRow) {
+    try {
+      if (!it?.id) {
+        setStatus("分享失敗：缺少 outfit id");
+        return;
+      }
+
+      if (!it?.is_public || !it?.share_slug) {
+        setStatus("這筆穿搭尚未公開，不能分享");
+        return;
+      }
+
+      await apiPostJson(`/api/data?op=outfits.share`, {
+        outfit_id: it.id,
+      });
+
+      const shareUrl = `${window.location.origin}/share/${it.share_slug}`;
+      await navigator.clipboard.writeText(shareUrl);
+      setStatus("已複製分享連結 ✅");
+      await loadExplore();
+    } catch (e: any) {
+      setStatus("分享失敗：" + (e?.message || "Unknown error"));
+    }
+  }
+
+  function getRecentHref(it: OutfitRow) {
+    if (it?.is_public && it?.share_slug) {
+      return `/share/${it.share_slug}`;
+    }
+    return "/my";
   }
 
   async function handleGenerate() {
@@ -670,10 +728,16 @@ export default function Home() {
                       <div className={styles.exploreActions}>
                         <a
                           className={styles.smallBtn}
-                          href={it.share_slug ? `/share/${it.share_slug}` : "/explore"}
+                          href={it.is_public && it.share_slug ? `/share/${it.share_slug}` : "/explore"}
                         >
                           查看
                         </a>
+                        <button className={styles.smallBtn} onClick={() => handleExploreLike(it.id)}>
+                          Like
+                        </button>
+                        <button className={styles.smallBtn} onClick={() => handleExploreShare(it)}>
+                          分享
+                        </button>
                         <button
                           className={styles.smallBtnPrimary}
                           onClick={() =>
@@ -1073,13 +1137,15 @@ export default function Home() {
           ) : recent.length ? (
             <div className={styles.shelfGrid}>
               {recent.map((it) => (
-                <a key={it.id} className={styles.miniCard} href={it.share_slug ? `/share/${it.share_slug}` : "/my"}>
+                <a key={it.id} className={styles.miniCard} href={getRecentHref(it)}>
                   <div className={styles.miniThumb}>
                     {it.image_url ? <img src={it.image_url} alt="" /> : <div className={styles.thumbEmpty} />}
                   </div>
                   <div className={styles.miniMeta}>
                     <div className={styles.miniTitle}>{it.style?.style || it.style?.styleId || "Outfit"}</div>
-                    <div className={styles.miniSub}>{formatDate(it.created_at)}</div>
+                    <div className={styles.miniSub}>
+                      {formatDate(it.created_at)} · {it.is_public && it.share_slug ? "已公開" : "未公開"}
+                    </div>
                   </div>
                 </a>
               ))}
