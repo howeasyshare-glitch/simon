@@ -1,7 +1,9 @@
 // pages/api/share.js
 export default async function handler(req, res) {
   try {
-    if (req.method !== "GET") return res.status(405).json({ error: "Method not allowed" });
+    if (req.method !== "GET") {
+      return res.status(405).json({ error: "Method not allowed" });
+    }
 
     const SUPABASE_URL = process.env.SUPABASE_URL;
     const SERVICE_ROLE = process.env.SUPABASE_SERVICE_ROLE_KEY;
@@ -10,13 +12,16 @@ export default async function handler(req, res) {
     }
 
     const slug = String(req.query.slug || "").trim();
-    if (!slug) return res.status(400).json({ error: "Missing slug" });
+    if (!slug) {
+      return res.status(400).json({ error: "Missing slug" });
+    }
 
     const url =
       `${SUPABASE_URL}/rest/v1/outfits` +
       `?share_slug=eq.${encodeURIComponent(slug)}` +
       `&is_public=eq.true` +
-      `&select=id,created_at,spec,style,summary,products,image_path,share_slug,like_count,share_count,apply_count`;
+      `&select=id,created_at,spec,style,summary,products,image_path,share_slug,like_count,share_count,apply_count,is_public` +
+      `&limit=1`;
 
     const resp = await fetch(url, {
       headers: {
@@ -33,19 +38,15 @@ export default async function handler(req, res) {
 
     const rows = JSON.parse(text || "[]");
     const row = rows?.[0];
-    if (!row) return res.status(404).json({ error: "Not found" });
+    if (!row) {
+      return res.status(404).json({ error: "Not found", hint: "slug not found or outfit is not public" });
+    }
 
     const imageUrl = row.image_path
       ? `${SUPABASE_URL}/storage/v1/object/public/outfits/${row.image_path}`
       : "";
 
-    return res.status(200).json({
-      ok: true,
-      outfit: {
-        ...row,
-        image_url: imageUrl,
-      },
-    });
+    return res.status(200).json({ ok: true, outfit: { ...row, image_url: imageUrl } });
   } catch (e) {
     return res.status(500).json({ error: "Unhandled", detail: String(e?.message || e) });
   }
