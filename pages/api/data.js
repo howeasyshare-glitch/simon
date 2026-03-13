@@ -1,5 +1,4 @@
 // pages/api/data.js
-// Unified API router
 
 async function json(res, status, obj) {
   res.status(status).json(obj);
@@ -12,6 +11,12 @@ function getEnv() {
     return { ok: false, error: "Supabase env not set (SUPABASE_URL / SUPABASE_SERVICE_ROLE_KEY)" };
   }
   return { ok: true, SUPABASE_URL, SERVICE_ROLE };
+}
+
+function getBearer(req) {
+  const auth = req.headers.authorization || "";
+  if (!auth.startsWith("Bearer ")) return null;
+  return auth.slice(7);
 }
 
 async function getUserFromAccessToken({ SUPABASE_URL, SERVICE_ROLE, accessToken }) {
@@ -31,12 +36,6 @@ async function getUserFromAccessToken({ SUPABASE_URL, SERVICE_ROLE, accessToken 
   }
 }
 
-function getBearer(req) {
-  const auth = req.headers.authorization || "";
-  if (!auth.startsWith("Bearer ")) return null;
-  return auth.slice(7);
-}
-
 function buildPublicImageUrl(SUPABASE_URL, image_path) {
   return image_path ? `${SUPABASE_URL}/storage/v1/object/public/outfits/${image_path}` : "";
 }
@@ -45,23 +44,7 @@ function makeShareSlug() {
   return Math.random().toString(36).slice(2, 10) + Math.random().toString(36).slice(2, 6);
 }
 
-async function dbFetch(url, init = {}) {
-  const env = getEnv();
-  if (!env.ok) throw new Error(env.error);
-  const { SERVICE_ROLE } = env;
-
-  const r = await fetch(url, {
-    ...init,
-    headers: {
-      apikey: SERVICE_ROLE,
-      Authorization: `Bearer ${SERVICE_ROLE}`,
-      Accept: "application/json",
-      ...(init.headers || {}),
-    },
-  });
-  const text = await r.text();
-  return { ok: r.ok, status: r.status, text };
-}
+const FAVORITES_TABLE = "outfit_likes";
 
 /** ===================== Explore ===================== */
 async function handleExplore(req, res) {
@@ -85,6 +68,7 @@ async function handleExplore(req, res) {
     `${SUPABASE_URL}/rest/v1/outfits` +
     `?is_public=eq.true` +
     `&share_slug=not.is.null` +
+    `&image_path=not.is.null` +
     `&select=id,created_at,share_slug,image_path,style,spec,summary,products,like_count,share_count,apply_count,is_public` +
     `&order=${order},created_at.desc` +
     `&limit=${limit}&offset=${offset}`;
@@ -116,7 +100,6 @@ async function handleShare(req, res) {
   if (!env.ok) return json(res, 500, { error: env.error });
 
   const { SUPABASE_URL, SERVICE_ROLE } = env;
-
   const slug = String(req.query.slug || "").trim();
   if (!slug) return json(res, 400, { error: "Missing slug" });
 
@@ -124,7 +107,7 @@ async function handleShare(req, res) {
     `${SUPABASE_URL}/rest/v1/outfits` +
     `?share_slug=eq.${encodeURIComponent(slug)}` +
     `&is_public=eq.true` +
-    `&select=id,created_at,spec,style,summary,products,image_path,share_slug,like_count,share_count,apply_count` +
+    `&select=id,created_at,spec,style,summary,products,image_path,share_slug,like_count,share_count,apply_count,is_public` +
     `&limit=1`;
 
   const resp = await fetch(url, {
@@ -140,10 +123,20 @@ async function handleShare(req, res) {
 
   const rows = JSON.parse(text || "[]");
   const row = rows?.[0];
-  if (!row) return json(res, 404, { error: "Not found" });
+  if (!row) {
+    return json(res, 404, {
+      error: "Not found",
+      hint: "slug not found or outfit is not public",
+    });
+  }
 
-  const image_url = buildPublicImageUrl(SUPABASE_URL, row.image_path);
-  return json(res, 200, { ok: true, outfit: { ...row, image_url } });
+  return json(res, 200, {
+    ok: true,
+    outfit: {
+      ...row,
+      image_url: buildPublicImageUrl(SUPABASE_URL, row.image_path),
+    },
+  });
 }
 
 /** ===================== Outfits: Create ===================== */
@@ -159,27 +152,21 @@ async function handleOutfitsCreate(req, res) {
   if (!u.ok) return json(res, 401, { error: "Invalid token", detail: u.detail });
 
   const body = req.body || {};
-  const image_path = body.image_path || "";
-  const image_url = body.image_url || "";
-  let share_slug = body.share_slug || null;
-  const is_public = body.is_public ?? true;
-
+  const image_path = body.image_path || body.storage_path || "";
+  const is_public = typeof body.is_public === "boolean" ? body.is_public : true;
   const spec = body.spec ?? body.specObj ?? null;
   const style = body.style ?? null;
   const summary = body.summary ?? null;
   const products = body.products ?? null;
+  const share_slug = body.share_slug || makeShareSlug();
 
-  if (!image_path && !image_url) {
-    return json(res, 400, { error: "Missing image_path (or image_url)" });
-  }
-
-  if (!share_slug) {
-    share_slug = makeShareSlug();
+  if (!image_path) {
+    return json(res, 400, { error: "Missing image_path (or storage_path)" });
   }
 
   const insertRow = {
     user_id: u.user.id,
-    image_path: image_path || null,
+    image_path,
     share_slug,
     is_public,
     spec,
@@ -243,6 +230,7 @@ async function handleOutfitsUpdate(req, res) {
   if ("summary" in body) patch.summary = body.summary;
   if ("is_public" in body) patch.is_public = !!body.is_public;
   if ("share_slug" in body) patch.share_slug = body.share_slug || null;
+  if ("image_path" in body) patch.image_path = body.image_path || null;
 
   const url =
     `${SUPABASE_URL}/rest/v1/outfits` +
@@ -320,8 +308,6 @@ async function handleOutfitsRecent(req, res) {
 }
 
 /** ===================== Outfits: Favorites ===================== */
-const FAVORITES_TABLE = "outfit_likes";
-
 async function handleOutfitsFavorites(req, res) {
   const env = getEnv();
   if (!env.ok) return json(res, 500, { error: env.error });
@@ -332,7 +318,6 @@ async function handleOutfitsFavorites(req, res) {
 
   let userId = null;
   const accessToken = getBearer(req);
-
   if (accessToken) {
     const u = await getUserFromAccessToken({ SUPABASE_URL, SERVICE_ROLE, accessToken });
     if (u.ok) userId = u.user?.id || null;
@@ -392,11 +377,7 @@ async function handleOutfitsFavorites(req, res) {
 
   const oText = await or.text();
   if (!or.ok) {
-    return json(res, 500, {
-      error: "Outfits query failed",
-      status: or.status,
-      detail: oText,
-    });
+    return json(res, 500, { error: "Outfits query failed", status: or.status, detail: oText });
   }
 
   const outfitRows = JSON.parse(oText || "[]");
@@ -412,6 +393,122 @@ async function handleOutfitsFavorites(req, res) {
     }));
 
   return json(res, 200, { ok: true, items, limit });
+}
+
+/** ===================== Outfits: Like ===================== */
+async function handleOutfitsLike(req, res) {
+  const env = getEnv();
+  if (!env.ok) return json(res, 500, { error: env.error });
+  const { SUPABASE_URL, SERVICE_ROLE } = env;
+
+  const body = req.body || {};
+  const outfitId = String(body.outfit_id || "").trim();
+  const anonId = String(body.anon_id || "").trim();
+
+  if (!outfitId) {
+    return json(res, 400, { error: "Missing outfit_id" });
+  }
+
+  let userId = null;
+  const accessToken = getBearer(req);
+  if (accessToken) {
+    const u = await getUserFromAccessToken({ SUPABASE_URL, SERVICE_ROLE, accessToken });
+    if (u.ok) userId = u.user?.id || null;
+  }
+
+  if (!userId && !anonId) {
+    return json(res, 400, { error: "Need user or anon_id" });
+  }
+
+  const outfitCheckUrl =
+    `${SUPABASE_URL}/rest/v1/outfits` +
+    `?id=eq.${encodeURIComponent(outfitId)}` +
+    `&select=id,like_count` +
+    `&limit=1`;
+
+  const check = await fetch(outfitCheckUrl, {
+    headers: {
+      apikey: SERVICE_ROLE,
+      Authorization: `Bearer ${SERVICE_ROLE}`,
+      Accept: "application/json",
+    },
+  });
+
+  const checkText = await check.text();
+  if (!check.ok) {
+    return json(res, 500, { error: "Outfit check failed", status: check.status, detail: checkText });
+  }
+
+  const checkRows = JSON.parse(checkText || "[]");
+  const outfitRow = checkRows?.[0];
+  if (!outfitRow) return json(res, 404, { error: "Outfit not found" });
+
+  const existingFilter = userId
+    ? `outfit_id=eq.${encodeURIComponent(outfitId)}&user_id=eq.${encodeURIComponent(userId)}`
+    : `outfit_id=eq.${encodeURIComponent(outfitId)}&anon_id=eq.${encodeURIComponent(anonId)}`;
+
+  const existingUrl = `${SUPABASE_URL}/rest/v1/${FAVORITES_TABLE}?${existingFilter}&select=id&limit=1`;
+  const existing = await fetch(existingUrl, {
+    headers: {
+      apikey: SERVICE_ROLE,
+      Authorization: `Bearer ${SERVICE_ROLE}`,
+      Accept: "application/json",
+    },
+  });
+
+  const existingText = await existing.text();
+  if (!existing.ok) {
+    return json(res, 500, { error: "Like check failed", status: existing.status, detail: existingText });
+  }
+
+  const existingRows = JSON.parse(existingText || "[]");
+  if (existingRows?.length) {
+    return json(res, 200, { ok: true, liked: false, already_exists: true });
+  }
+
+  const insertPayload = {
+    outfit_id: outfitId,
+    user_id: userId || null,
+    anon_id: userId ? null : anonId || null,
+  };
+
+  const insert = await fetch(`${SUPABASE_URL}/rest/v1/${FAVORITES_TABLE}`, {
+    method: "POST",
+    headers: {
+      apikey: SERVICE_ROLE,
+      Authorization: `Bearer ${SERVICE_ROLE}`,
+      "Content-Type": "application/json",
+      Prefer: "return=representation",
+    },
+    body: JSON.stringify(insertPayload),
+  });
+
+  const insertText = await insert.text();
+  if (!insert.ok) {
+    return json(res, 500, { error: "Like insert failed", status: insert.status, detail: insertText });
+  }
+
+  const nextLikeCount = Math.max(0, Number(outfitRow.like_count || 0) + 1);
+  const upd = await fetch(`${SUPABASE_URL}/rest/v1/outfits?id=eq.${encodeURIComponent(outfitId)}`, {
+    method: "PATCH",
+    headers: {
+      apikey: SERVICE_ROLE,
+      Authorization: `Bearer ${SERVICE_ROLE}`,
+      "Content-Type": "application/json",
+      Prefer: "return=minimal",
+    },
+    body: JSON.stringify({
+      like_count: nextLikeCount,
+      updated_at: new Date().toISOString(),
+    }),
+  });
+
+  const updText = await upd.text();
+  if (!upd.ok) {
+    return json(res, 500, { error: "Like count update failed", status: upd.status, detail: updText });
+  }
+
+  return json(res, 200, { ok: true, liked: true, like_count: nextLikeCount });
 }
 
 /** ===================== Outfits: Share ===================== */
@@ -485,7 +582,6 @@ async function handleProducts(req, res) {
   const items = Array.isArray(body.items) ? body.items : [];
   const limitPerSlot = Math.min(parseInt(body.limitPerSlot || "4", 10) || 4, 12);
 
-  // 暫時先保留空結果；等你把 custom_products 的 tags 對應清楚後再補。
   return json(res, 200, {
     ok: true,
     products: null,
@@ -530,6 +626,16 @@ export default async function handler(req, res) {
       return await handleOutfitsFavorites(req, res);
     }
 
+    if (op === "outfits.like") {
+      if (req.method !== "POST") return json(res, 405, { error: "Method not allowed" });
+      return await handleOutfitsLike(req, res);
+    }
+
+    if (op === "outfits.share") {
+      if (req.method !== "POST") return json(res, 405, { error: "Method not allowed" });
+      return await handleOutfitsShare(req, res);
+    }
+
     if (op === "products") {
       if (req.method !== "POST") return json(res, 405, { error: "Method not allowed" });
       return await handleProducts(req, res);
@@ -544,6 +650,8 @@ export default async function handler(req, res) {
         "outfits.update",
         "outfits.recent",
         "outfits.favorites",
+        "outfits.like",
+        "outfits.share",
         "products",
       ],
     });
