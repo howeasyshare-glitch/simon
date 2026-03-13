@@ -29,8 +29,7 @@ async function getUserFromAccessToken({ SUPABASE_URL, SERVICE_ROLE, accessToken 
   const text = await r.text();
   if (!r.ok) return { ok: false, status: r.status, detail: text };
   try {
-    const user = JSON.parse(text);
-    return { ok: true, user };
+    return { ok: true, user: JSON.parse(text) };
   } catch {
     return { ok: false, status: 500, detail: "Failed to parse auth user JSON" };
   }
@@ -46,22 +45,30 @@ function makeShareSlug() {
 
 const FAVORITES_TABLE = "outfit_likes";
 
-/** ===================== Explore ===================== */
-async function handleExplore(req, res) {
-  const env = getEnv();
-  if (!env.ok) return json(res, 500, { error: env.error });
+async function fetchOutfitById({ SUPABASE_URL, SERVICE_ROLE, outfitId, select = "id,like_count,share_count,apply_count,share_slug,is_public,image_path" }) {
+  const url = `${SUPABASE_URL}/rest/v1/outfits?id=eq.${encodeURIComponent(outfitId)}&select=${select}&limit=1`;
+  const r = await fetch(url, {
+    headers: {
+      apikey: SERVICE_ROLE,
+      Authorization: `Bearer ${SERVICE_ROLE}`,
+      Accept: "application/json",
+    },
+  });
+  const text = await r.text();
+  if (!r.ok) return { ok: false, status: r.status, detail: text };
+  const rows = JSON.parse(text || "[]");
+  return { ok: true, row: rows?.[0] || null };
+}
 
-  const { SUPABASE_URL, SERVICE_ROLE } = env;
-
-  const limit = Math.min(parseInt(req.query.limit || "30", 10) || 30, 100);
-  const offset = Math.max(parseInt(req.query.offset || "0", 10) || 0, 0);
-  const sort = String(req.query.sort || "like").toLowerCase();
-
+/** ===================== Explore / Featured ===================== */
+async function queryExploreRows({ SUPABASE_URL, SERVICE_ROLE, limit, offset, sort }) {
   const order =
     sort === "share"
       ? "share_count.desc"
       : sort === "apply"
       ? "apply_count.desc"
+      : sort === "recent"
+      ? "created_at.desc"
       : "like_count.desc";
 
   const url =
@@ -80,18 +87,58 @@ async function handleExplore(req, res) {
       Accept: "application/json",
     },
   });
-
   const text = await r.text();
-  if (!r.ok) return json(res, 500, { error: "Query failed", status: r.status, detail: text });
+  if (!r.ok) return { ok: false, status: r.status, detail: text };
+  return { ok: true, rows: JSON.parse(text || "[]") };
+}
 
-  const rows = JSON.parse(text || "[]");
-  const items = rows.map((row) => ({
+async function handleExplore(req, res) {
+  const env = getEnv();
+  if (!env.ok) return json(res, 500, { error: env.error });
+  const { SUPABASE_URL, SERVICE_ROLE } = env;
+
+  const limit = Math.min(parseInt(req.query.limit || "30", 10) || 30, 100);
+  const offset = Math.max(parseInt(req.query.offset || "0", 10) || 0, 0);
+  const sort = String(req.query.sort || "like").toLowerCase();
+
+  const q = await queryExploreRows({ SUPABASE_URL, SERVICE_ROLE, limit, offset, sort });
+  if (!q.ok) return json(res, 500, { error: "Query failed", status: q.status, detail: q.detail });
+
+  const items = q.rows.map((row) => ({
     ...row,
     image_url: buildPublicImageUrl(SUPABASE_URL, row.image_path),
     share_url: row.share_slug ? `/share/${row.share_slug}` : "",
   }));
 
-  return json(res, 200, { ok: true, items, limit, offset });
+  return json(res, 200, { ok: true, items, limit, offset, sort });
+}
+
+async function handleFeatured(req, res) {
+  const env = getEnv();
+  if (!env.ok) return json(res, 500, { error: env.error });
+  const { SUPABASE_URL, SERVICE_ROLE } = env;
+
+  const limit = Math.min(parseInt(req.query.limit || "10", 10) || 10, 20);
+  const q = await queryExploreRows({ SUPABASE_URL, SERVICE_ROLE, limit: 100, offset: 0, sort: "recent" });
+  if (!q.ok) return json(res, 500, { error: "Query failed", status: q.status, detail: q.detail });
+
+  const now = Date.now();
+  const items = q.rows
+    .map((row) => {
+      const hours = Math.max((now - new Date(row.created_at).getTime()) / 3600000, 0);
+      const recency = 1 / (hours + 2);
+      const score = Number(row.like_count || 0) * 3 + Number(row.share_count || 0) * 2 + Number(row.apply_count || 0) * 2 + recency;
+      return {
+        ...row,
+        score,
+        image_url: buildPublicImageUrl(SUPABASE_URL, row.image_path),
+        share_url: row.share_slug ? `/share/${row.share_slug}` : "",
+      };
+    })
+    .sort((a, b) => b.score - a.score)
+    .slice(0, limit);
+
+  return json(res, 200, { ok: true, items, limit });
 }
 
 /** ===================== Share ===================== */
@@ -124,10 +171,7 @@ async function handleShare(req, res) {
   const rows = JSON.parse(text || "[]");
   const row = rows?.[0];
   if (!row) {
-    return json(res, 404, {
-      error: "Not found",
-      hint: "slug not found or outfit is not public",
-    });
+    return json(res, 404, { error: "Not found", hint: "slug not found or outfit is not public" });
   }
 
   return json(res, 200, {
@@ -220,9 +264,7 @@ async function handleOutfitsUpdate(req, res) {
   if (!id) return json(res, 400, { error: "Missing id" });
 
   const body = req.body || {};
-  const patch = {
-    updated_at: new Date().toISOString(),
-  };
+  const patch = { updated_at: new Date().toISOString() };
 
   if ("products" in body) patch.products = body.products;
   if ("spec" in body) patch.spec = body.spec;
@@ -232,11 +274,7 @@ async function handleOutfitsUpdate(req, res) {
   if ("share_slug" in body) patch.share_slug = body.share_slug || null;
   if ("image_path" in body) patch.image_path = body.image_path || null;
 
-  const url =
-    `${SUPABASE_URL}/rest/v1/outfits` +
-    `?id=eq.${encodeURIComponent(id)}` +
-    `&user_id=eq.${encodeURIComponent(u.user.id)}`;
-
+  const url = `${SUPABASE_URL}/rest/v1/outfits?id=eq.${encodeURIComponent(id)}&user_id=eq.${encodeURIComponent(u.user.id)}`;
   const r = await fetch(url, {
     method: "PATCH",
     headers: {
@@ -323,21 +361,11 @@ async function handleOutfitsFavorites(req, res) {
     if (u.ok) userId = u.user?.id || null;
   }
 
-  if (!userId && !anonId) {
-    return json(res, 200, { ok: true, items: [], limit });
-  }
+  if (!userId && !anonId) return json(res, 200, { ok: true, items: [], limit });
 
-  const filter = userId
-    ? `user_id=eq.${encodeURIComponent(userId)}`
-    : `anon_id=eq.${encodeURIComponent(anonId)}`;
+  const filter = userId ? `user_id=eq.${encodeURIComponent(userId)}` : `anon_id=eq.${encodeURIComponent(anonId)}`;
 
-  const favUrl =
-    `${SUPABASE_URL}/rest/v1/${FAVORITES_TABLE}` +
-    `?${filter}` +
-    `&select=outfit_id,created_at` +
-    `&order=created_at.desc` +
-    `&limit=${limit}`;
-
+  const favUrl = `${SUPABASE_URL}/rest/v1/${FAVORITES_TABLE}?${filter}&select=outfit_id,created_at&order=created_at.desc&limit=${limit}`;
   const fr = await fetch(favUrl, {
     headers: {
       apikey: SERVICE_ROLE,
@@ -358,15 +386,10 @@ async function handleOutfitsFavorites(req, res) {
 
   const favRows = JSON.parse(favText || "[]");
   const ids = favRows.map((x) => x.outfit_id).filter(Boolean);
-
   if (!ids.length) return json(res, 200, { ok: true, items: [], limit });
 
   const inList = ids.map((id) => encodeURIComponent(id)).join(",");
-  const outfitsUrl =
-    `${SUPABASE_URL}/rest/v1/outfits` +
-    `?id=in.(${inList})` +
-    `&select=id,created_at,share_slug,image_path,style,spec,summary,products,like_count,share_count,apply_count,is_public`;
-
+  const outfitsUrl = `${SUPABASE_URL}/rest/v1/outfits?id=in.(${inList})&select=id,created_at,share_slug,image_path,style,spec,summary,products,like_count,share_count,apply_count,is_public`;
   const or = await fetch(outfitsUrl, {
     headers: {
       apikey: SERVICE_ROLE,
@@ -376,13 +399,10 @@ async function handleOutfitsFavorites(req, res) {
   });
 
   const oText = await or.text();
-  if (!or.ok) {
-    return json(res, 500, { error: "Outfits query failed", status: or.status, detail: oText });
-  }
+  if (!or.ok) return json(res, 500, { error: "Outfits query failed", status: or.status, detail: oText });
 
   const outfitRows = JSON.parse(oText || "[]");
   const map = new Map(outfitRows.map((x) => [x.id, x]));
-
   const items = ids
     .map((id) => map.get(id))
     .filter(Boolean)
@@ -404,10 +424,7 @@ async function handleOutfitsLike(req, res) {
   const body = req.body || {};
   const outfitId = String(body.outfit_id || "").trim();
   const anonId = String(body.anon_id || "").trim();
-
-  if (!outfitId) {
-    return json(res, 400, { error: "Missing outfit_id" });
-  }
+  if (!outfitId) return json(res, 400, { error: "Missing outfit_id" });
 
   let userId = null;
   const accessToken = getBearer(req);
@@ -415,33 +432,11 @@ async function handleOutfitsLike(req, res) {
     const u = await getUserFromAccessToken({ SUPABASE_URL, SERVICE_ROLE, accessToken });
     if (u.ok) userId = u.user?.id || null;
   }
+  if (!userId && !anonId) return json(res, 400, { error: "Need user or anon_id" });
 
-  if (!userId && !anonId) {
-    return json(res, 400, { error: "Need user or anon_id" });
-  }
-
-  const outfitCheckUrl =
-    `${SUPABASE_URL}/rest/v1/outfits` +
-    `?id=eq.${encodeURIComponent(outfitId)}` +
-    `&select=id,like_count` +
-    `&limit=1`;
-
-  const check = await fetch(outfitCheckUrl, {
-    headers: {
-      apikey: SERVICE_ROLE,
-      Authorization: `Bearer ${SERVICE_ROLE}`,
-      Accept: "application/json",
-    },
-  });
-
-  const checkText = await check.text();
-  if (!check.ok) {
-    return json(res, 500, { error: "Outfit check failed", status: check.status, detail: checkText });
-  }
-
-  const checkRows = JSON.parse(checkText || "[]");
-  const outfitRow = checkRows?.[0];
-  if (!outfitRow) return json(res, 404, { error: "Outfit not found" });
+  const checked = await fetchOutfitById({ SUPABASE_URL, SERVICE_ROLE, outfitId, select: "id,like_count" });
+  if (!checked.ok) return json(res, 500, { error: "Outfit check failed", status: checked.status, detail: checked.detail });
+  if (!checked.row) return json(res, 404, { error: "Outfit not found" });
 
   const existingFilter = userId
     ? `outfit_id=eq.${encodeURIComponent(outfitId)}&user_id=eq.${encodeURIComponent(userId)}`
@@ -455,23 +450,13 @@ async function handleOutfitsLike(req, res) {
       Accept: "application/json",
     },
   });
-
   const existingText = await existing.text();
-  if (!existing.ok) {
-    return json(res, 500, { error: "Like check failed", status: existing.status, detail: existingText });
-  }
+  if (!existing.ok) return json(res, 500, { error: "Like check failed", status: existing.status, detail: existingText });
 
   const existingRows = JSON.parse(existingText || "[]");
-  if (existingRows?.length) {
-    return json(res, 200, { ok: true, liked: false, already_exists: true });
-  }
+  if (existingRows?.length) return json(res, 200, { ok: true, liked: false, already_exists: true, like_count: Number(checked.row.like_count || 0) });
 
-  const insertPayload = {
-    outfit_id: outfitId,
-    user_id: userId || null,
-    anon_id: userId ? null : anonId || null,
-  };
-
+  const insertPayload = { outfit_id: outfitId, user_id: userId || null, anon_id: userId ? null : anonId || null };
   const insert = await fetch(`${SUPABASE_URL}/rest/v1/${FAVORITES_TABLE}`, {
     method: "POST",
     headers: {
@@ -482,13 +467,10 @@ async function handleOutfitsLike(req, res) {
     },
     body: JSON.stringify(insertPayload),
   });
-
   const insertText = await insert.text();
-  if (!insert.ok) {
-    return json(res, 500, { error: "Like insert failed", status: insert.status, detail: insertText });
-  }
+  if (!insert.ok) return json(res, 500, { error: "Like insert failed", status: insert.status, detail: insertText });
 
-  const nextLikeCount = Math.max(0, Number(outfitRow.like_count || 0) + 1);
+  const nextLikeCount = Math.max(0, Number(checked.row.like_count || 0) + 1);
   const upd = await fetch(`${SUPABASE_URL}/rest/v1/outfits?id=eq.${encodeURIComponent(outfitId)}`, {
     method: "PATCH",
     headers: {
@@ -497,16 +479,10 @@ async function handleOutfitsLike(req, res) {
       "Content-Type": "application/json",
       Prefer: "return=minimal",
     },
-    body: JSON.stringify({
-      like_count: nextLikeCount,
-      updated_at: new Date().toISOString(),
-    }),
+    body: JSON.stringify({ like_count: nextLikeCount, updated_at: new Date().toISOString() }),
   });
-
   const updText = await upd.text();
-  if (!upd.ok) {
-    return json(res, 500, { error: "Like count update failed", status: upd.status, detail: updText });
-  }
+  if (!upd.ok) return json(res, 500, { error: "Like count update failed", status: upd.status, detail: updText });
 
   return json(res, 200, { ok: true, liked: true, like_count: nextLikeCount });
 }
@@ -519,35 +495,13 @@ async function handleOutfitsShare(req, res) {
 
   const body = req.body || {};
   const outfitId = String(body.outfit_id || "").trim();
-  if (!outfitId) {
-    return json(res, 400, { error: "Missing outfit_id" });
-  }
+  if (!outfitId) return json(res, 400, { error: "Missing outfit_id" });
 
-  const getUrl =
-    `${SUPABASE_URL}/rest/v1/outfits` +
-    `?id=eq.${encodeURIComponent(outfitId)}` +
-    `&select=id,share_count,share_slug,is_public` +
-    `&limit=1`;
+  const checked = await fetchOutfitById({ SUPABASE_URL, SERVICE_ROLE, outfitId, select: "id,share_count,share_slug,is_public" });
+  if (!checked.ok) return json(res, 500, { error: "Fetch failed", status: checked.status, detail: checked.detail });
+  if (!checked.row) return json(res, 404, { error: "Outfit not found" });
 
-  const got = await fetch(getUrl, {
-    headers: {
-      apikey: SERVICE_ROLE,
-      Authorization: `Bearer ${SERVICE_ROLE}`,
-      Accept: "application/json",
-    },
-  });
-
-  const gotText = await got.text();
-  if (!got.ok) {
-    return json(res, 500, { error: "Fetch failed", status: got.status, detail: gotText });
-  }
-
-  const rows = JSON.parse(gotText || "[]");
-  const row = rows?.[0];
-  if (!row) return json(res, 404, { error: "Outfit not found" });
-
-  const nextShareCount = Math.max(0, Number(row.share_count || 0) + 1);
-
+  const nextShareCount = Math.max(0, Number(checked.row.share_count || 0) + 1);
   const upd = await fetch(`${SUPABASE_URL}/rest/v1/outfits?id=eq.${encodeURIComponent(outfitId)}`, {
     method: "PATCH",
     headers: {
@@ -556,24 +510,49 @@ async function handleOutfitsShare(req, res) {
       "Content-Type": "application/json",
       Prefer: "return=representation",
     },
-    body: JSON.stringify({
-      share_count: nextShareCount,
-      updated_at: new Date().toISOString(),
-    }),
+    body: JSON.stringify({ share_count: nextShareCount, updated_at: new Date().toISOString() }),
   });
-
   const updText = await upd.text();
-  if (!upd.ok) {
-    return json(res, 500, { error: "Share count update failed", status: upd.status, detail: updText });
-  }
+  if (!upd.ok) return json(res, 500, { error: "Share count update failed", status: upd.status, detail: updText });
 
   return json(res, 200, {
     ok: true,
     share_count: nextShareCount,
-    share_slug: row.share_slug || null,
-    is_public: !!row.is_public,
-    share_url: row.share_slug ? `/share/${row.share_slug}` : "",
+    share_slug: checked.row.share_slug || null,
+    is_public: !!checked.row.is_public,
+    share_url: checked.row.share_slug ? `/share/${checked.row.share_slug}` : "",
   });
+}
+
+/** ===================== Outfits: Apply ===================== */
+async function handleOutfitsApply(req, res) {
+  const env = getEnv();
+  if (!env.ok) return json(res, 500, { error: env.error });
+  const { SUPABASE_URL, SERVICE_ROLE } = env;
+
+  const body = req.body || {};
+  const outfitId = String(body.outfit_id || "").trim();
+  if (!outfitId) return json(res, 400, { error: "Missing outfit_id" });
+
+  const checked = await fetchOutfitById({ SUPABASE_URL, SERVICE_ROLE, outfitId, select: "id,apply_count,style" });
+  if (!checked.ok) return json(res, 500, { error: "Fetch failed", status: checked.status, detail: checked.detail });
+  if (!checked.row) return json(res, 404, { error: "Outfit not found" });
+
+  const nextApplyCount = Math.max(0, Number(checked.row.apply_count || 0) + 1);
+  const upd = await fetch(`${SUPABASE_URL}/rest/v1/outfits?id=eq.${encodeURIComponent(outfitId)}`, {
+    method: "PATCH",
+    headers: {
+      apikey: SERVICE_ROLE,
+      Authorization: `Bearer ${SERVICE_ROLE}`,
+      "Content-Type": "application/json",
+      Prefer: "return=representation",
+    },
+    body: JSON.stringify({ apply_count: nextApplyCount, updated_at: new Date().toISOString() }),
+  });
+  const updText = await upd.text();
+  if (!upd.ok) return json(res, 500, { error: "Apply count update failed", status: upd.status, detail: updText });
+
+  return json(res, 200, { ok: true, apply_count: nextApplyCount, style: checked.row.style || null });
 }
 
 /** ===================== Products ===================== */
@@ -600,42 +579,42 @@ export default async function handler(req, res) {
       if (req.method !== "GET") return json(res, 405, { error: "Method not allowed" });
       return await handleExplore(req, res);
     }
-
+    if (op === "featured") {
+      if (req.method !== "GET") return json(res, 405, { error: "Method not allowed" });
+      return await handleFeatured(req, res);
+    }
     if (op === "share") {
       if (req.method !== "GET") return json(res, 405, { error: "Method not allowed" });
       return await handleShare(req, res);
     }
-
     if (op === "outfits.create") {
       if (req.method !== "POST") return json(res, 405, { error: "Method not allowed" });
       return await handleOutfitsCreate(req, res);
     }
-
     if (op === "outfits.update") {
       if (req.method !== "POST") return json(res, 405, { error: "Method not allowed" });
       return await handleOutfitsUpdate(req, res);
     }
-
     if (op === "outfits.recent") {
       if (req.method !== "GET") return json(res, 405, { error: "Method not allowed" });
       return await handleOutfitsRecent(req, res);
     }
-
     if (op === "outfits.favorites") {
       if (req.method !== "GET") return json(res, 405, { error: "Method not allowed" });
       return await handleOutfitsFavorites(req, res);
     }
-
     if (op === "outfits.like") {
       if (req.method !== "POST") return json(res, 405, { error: "Method not allowed" });
       return await handleOutfitsLike(req, res);
     }
-
     if (op === "outfits.share") {
       if (req.method !== "POST") return json(res, 405, { error: "Method not allowed" });
       return await handleOutfitsShare(req, res);
     }
-
+    if (op === "outfits.apply") {
+      if (req.method !== "POST") return json(res, 405, { error: "Method not allowed" });
+      return await handleOutfitsApply(req, res);
+    }
     if (op === "products") {
       if (req.method !== "POST") return json(res, 405, { error: "Method not allowed" });
       return await handleProducts(req, res);
@@ -645,6 +624,7 @@ export default async function handler(req, res) {
       error: "Unknown op",
       allowed: [
         "explore",
+        "featured",
         "share",
         "outfits.create",
         "outfits.update",
@@ -652,6 +632,7 @@ export default async function handler(req, res) {
         "outfits.favorites",
         "outfits.like",
         "outfits.share",
+        "outfits.apply",
         "products",
       ],
     });
