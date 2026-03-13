@@ -23,7 +23,6 @@ type OutfitRow = {
   share_count?: number;
   apply_count?: number;
   share_url?: string;
-  is_public?: boolean;
 };
 
 type ImgResp = {
@@ -31,7 +30,6 @@ type ImgResp = {
   image_base64?: string;
   image_url?: string;
   image_path?: string;
-  storage_path?: string;
   error?: string;
   detail?: any;
 };
@@ -158,7 +156,6 @@ export default function Home() {
   const [imagePath, setImagePath] = useState<string>("");
   const [currentOutfitId, setCurrentOutfitId] = useState<string>("");
   const [currentShareUrl, setCurrentShareUrl] = useState<string>("");
-  const [isFavoritedCurrent, setIsFavoritedCurrent] = useState(false);
 
   const [zoomOpen, setZoomOpen] = useState(false);
 
@@ -397,109 +394,8 @@ export default function Home() {
       setProducts(null);
     }
 
-    await loadExplore();
-    await loadRecent();
-  }
-
-  async function handleCopyShare() {
-    if (!currentShareUrl) {
-      setStatus("尚未建立分享連結");
-      return;
-    }
-    try {
-      await navigator.clipboard.writeText(currentShareUrl);
-      setStatus("已複製分享連結 ✅");
-    } catch {
-      setStatus("複製失敗（瀏覽器限制）");
-    }
-  }
-
-  async function handleFavoriteCurrent() {
-    if (!currentOutfitId) {
-      setStatus("尚未建立 outfit，不能加入最愛");
-      return;
-    }
-
-    try {
-      let anonId = localStorage.getItem("findoutfit_anon_id");
-      if (!anonId) {
-        anonId = crypto.randomUUID();
-        localStorage.setItem("findoutfit_anon_id", anonId);
-      }
-
-      const result = await apiPostJson<{ ok?: boolean; liked?: boolean }>(`/api/data?op=outfits.like`, {
-        outfit_id: currentOutfitId,
-        anon_id: anonId,
-      });
-
-      if (result?.ok) {
-        setIsFavoritedCurrent(!!result.liked);
-        setStatus(result?.liked ? "已加入最愛 ✅" : "已在最愛中");
-        await loadFavorites();
-        await loadExplore();
-      } else {
-        setStatus("加入最愛失敗");
-      }
-    } catch (e: any) {
-      setStatus("加入最愛失敗：" + (e?.message || "Unknown error"));
-    }
-  }
-
-  async function handleExploreLike(outfitId: string) {
-    try {
-      let anonId = localStorage.getItem("findoutfit_anon_id");
-      if (!anonId) {
-        anonId = crypto.randomUUID();
-        localStorage.setItem("findoutfit_anon_id", anonId);
-      }
-
-      const result = await apiPostJson<{ ok?: boolean; liked?: boolean }>(`/api/data?op=outfits.like`, {
-        outfit_id: outfitId,
-        anon_id: anonId,
-      });
-
-      if (result?.ok) {
-        setStatus(result?.liked ? "已加入最愛 ✅" : "已在最愛中");
-        await loadFavorites();
-        await loadExplore();
-      } else {
-        setStatus("加入最愛失敗");
-      }
-    } catch (e: any) {
-      setStatus("加入最愛失敗：" + (e?.message || "Unknown error"));
-    }
-  }
-
-  async function handleExploreShare(it: OutfitRow) {
-    try {
-      if (!it?.id) {
-        setStatus("分享失敗：缺少 outfit id");
-        return;
-      }
-
-      if (!it?.is_public || !it?.share_slug) {
-        setStatus("這筆穿搭尚未公開，不能分享");
-        return;
-      }
-
-      await apiPostJson(`/api/data?op=outfits.share`, {
-        outfit_id: it.id,
-      });
-
-      const shareUrl = `${window.location.origin}/share/${it.share_slug}`;
-      await navigator.clipboard.writeText(shareUrl);
-      setStatus("已複製分享連結 ✅");
-      await loadExplore();
-    } catch (e: any) {
-      setStatus("分享失敗：" + (e?.message || "Unknown error"));
-    }
-  }
-
-  function getRecentHref(it: OutfitRow) {
-    if (it?.is_public && it?.share_slug) {
-      return `/share/${it.share_slug}`;
-    }
-    return "/my";
+    loadExplore();
+    loadRecent();
   }
 
   async function handleGenerate() {
@@ -515,7 +411,6 @@ export default function Home() {
     setImagePath("");
     setCurrentOutfitId("");
     setCurrentShareUrl("");
-    setIsFavoritedCurrent(false);
 
     try {
       const specResp = await apiPostJson<any>("/api/generate-outfit-spec", {
@@ -552,8 +447,8 @@ export default function Home() {
       });
 
       const url = (imgResp as any).image_url || "";
-      const path = (imgResp as any).image_path || (imgResp as any).storage_path || "";
-      if (!url && !path) throw new Error("IMAGE failed: missing image_url/storage_path");
+      const path = (imgResp as any).image_path || "";
+      if (!url && !path) throw new Error("IMAGE failed: missing image_url/image_path");
 
       if (url) setImageUrl(url);
       if (path) setImagePath(path);
@@ -728,16 +623,10 @@ export default function Home() {
                       <div className={styles.exploreActions}>
                         <a
                           className={styles.smallBtn}
-                          href={it.is_public && it.share_slug ? `/share/${it.share_slug}` : "/explore"}
+                          href={it.share_slug ? `/share/${it.share_slug}` : "/explore"}
                         >
                           查看
                         </a>
-                        <button className={styles.smallBtn} onClick={() => handleExploreLike(it.id)}>
-                          Like
-                        </button>
-                        <button className={styles.smallBtn} onClick={() => handleExploreShare(it)}>
-                          分享
-                        </button>
                         <button
                           className={styles.smallBtnPrimary}
                           onClick={() =>
@@ -816,19 +705,20 @@ export default function Home() {
                   )}
 
                   {currentShareUrl ? (
-                    <button className={styles.ghostBtn} onClick={handleCopyShare}>
+                    <button
+                      className={styles.ghostBtn}
+                      onClick={async () => {
+                        try {
+                          await navigator.clipboard.writeText(currentShareUrl);
+                          setStatus("已複製分享連結 ✅");
+                        } catch {
+                          setStatus("複製失敗（瀏覽器限制）");
+                        }
+                      }}
+                    >
                       複製連結
                     </button>
                   ) : null}
-
-                  <button
-                    className={styles.secondaryBtn}
-                    onClick={handleFavoriteCurrent}
-                    disabled={!currentOutfitId || isFavoritedCurrent}
-                    title={isFavoritedCurrent ? "已加入最愛" : "加入最愛"}
-                  >
-                    {isFavoritedCurrent ? "已加入最愛" : "加到最愛"}
-                  </button>
 
                   <button className={styles.secondaryBtn} onClick={handleGenerate}>
                     重新生成
@@ -1137,15 +1027,13 @@ export default function Home() {
           ) : recent.length ? (
             <div className={styles.shelfGrid}>
               {recent.map((it) => (
-                <a key={it.id} className={styles.miniCard} href={getRecentHref(it)}>
+                <a key={it.id} className={styles.miniCard} href={it.share_slug ? `/share/${it.share_slug}` : "/my"}>
                   <div className={styles.miniThumb}>
                     {it.image_url ? <img src={it.image_url} alt="" /> : <div className={styles.thumbEmpty} />}
                   </div>
                   <div className={styles.miniMeta}>
                     <div className={styles.miniTitle}>{it.style?.style || it.style?.styleId || "Outfit"}</div>
-                    <div className={styles.miniSub}>
-                      {formatDate(it.created_at)} · {it.is_public && it.share_slug ? "已公開" : "未公開"}
-                    </div>
+                    <div className={styles.miniSub}>{formatDate(it.created_at)}</div>
                   </div>
                 </a>
               ))}
