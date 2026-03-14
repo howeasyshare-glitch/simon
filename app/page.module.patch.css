@@ -1,0 +1,47 @@
+/* Stronger text contrast patch */
+:root {
+  --text-strong: rgba(255, 255, 255, 0.96);
+  --text-main: rgba(255, 255, 255, 0.9);
+  --text-sub: rgba(255, 255, 255, 0.82);
+  --text-muted: rgba(255, 255, 255, 0.72);
+}
+
+.muted,
+.featuredSub,
+.previewSub,
+.sectionSub,
+.label,
+.authHint,
+.debugLabel,
+.exploreSub,
+.miniSub,
+.choiceSub,
+.previewEmptyDesc {
+  color: var(--text-sub);
+}
+
+.navLink,
+.userItem,
+.userItemBtn,
+.mobileItem,
+.mobileItemBtn {
+  color: var(--text-main);
+}
+
+.summaryLabel {
+  color: var(--text-sub);
+}
+
+.summaryValue,
+.featuredTitle,
+.previewTitle,
+.panelTitle,
+.sideTitle,
+.h1,
+.blockTitle,
+.choiceTitle,
+.exploreTitle,
+.miniTitle,
+.previewEmptyTitle {
+  color: var(--text-strong);
+}
