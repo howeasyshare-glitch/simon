@@ -1,226 +1,203 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useState } from "react";
 
 type Outfit = {
   id: string;
   created_at?: string;
   share_slug?: string | null;
   image_url?: string;
-  image_path?: string | null;
   summary?: string | null;
-  spec?: any;
   style?: any;
-  products?: any;
   like_count?: number;
   share_count?: number;
   apply_count?: number;
-  share_url?: string;
   is_public?: boolean;
 };
 
-type SortKey = "like" | "share" | "recent";
-
-function fmtDate(v?: string) {
-  if (!v) return "";
-  const d = new Date(v);
-  if (Number.isNaN(d.getTime())) return "";
+function likedKey(outfitId: string) {
+  return `liked_outfit_${outfitId}`;
+}
+function sharedKey(outfitId: string) {
+  return `shared_outfit_${outfitId}`;
+}
+function fmtDate(ts?: string) {
+  if (!ts) return "剛剛";
+  const d = new Date(ts);
+  if (Number.isNaN(d.getTime())) return "剛剛";
   return d.toLocaleDateString("zh-TW", { month: "short", day: "numeric" });
 }
 
+const btnStyle = {
+  padding: "9px 10px",
+  borderRadius: 10,
+  border: "1px solid rgba(255,255,255,0.14)",
+  background: "transparent",
+  color: "rgba(255,255,255,0.92)",
+  fontWeight: 800,
+  cursor: "pointer",
+} as const;
+
+const primaryBtnStyle = {
+  ...btnStyle,
+  background: "rgba(255,255,255,0.96)",
+  color: "#111",
+} as const;
+
 export default function Page() {
   const [items, setItems] = useState<Outfit[]>([]);
+  const [sort, setSort] = useState("like");
   const [loading, setLoading] = useState(true);
   const [status, setStatus] = useState("");
-  const [sort, setSort] = useState<SortKey>("like");
-  const [zoomItem, setZoomItem] = useState<Outfit | null>(null);
+  const [zoomSrc, setZoomSrc] = useState("");
 
-  useEffect(() => {
-    let on = true;
-    async function load() {
-      try {
-        setLoading(true);
-        const r = await fetch(`/api/data?op=explore&limit=60&sort=${sort}&ts=${Date.now()}`, { cache: "no-store" });
-        const data = await r.json();
-        if (!r.ok || !data?.ok) throw new Error(data?.error || `HTTP ${r.status}`);
-        if (on) setItems(data.items || []);
-      } catch (e: any) {
-        if (on) setStatus(`讀取失敗：${e?.message || "Unknown error"}`);
-      } finally {
-        if (on) setLoading(false);
-      }
-    }
-    load();
-    return () => {
-      on = false;
-    };
-  }, [sort]);
-
-  const summary = useMemo(() => {
-    if (loading) return "載入中…";
-    return `共 ${items.length} 筆公開穿搭`;
-  }, [loading, items.length]);
-
-  async function refreshCurrent() {
-    const r = await fetch(`/api/data?op=explore&limit=60&sort=${sort}&ts=${Date.now()}`, { cache: "no-store" });
-    const data = await r.json();
-    if (r.ok && data?.ok) setItems(data.items || []);
-  }
-
-  async function likeItem(item: Outfit) {
+  async function load() {
+    setLoading(true);
     try {
-      let anonId = localStorage.getItem("findoutfit_anon_id");
-      if (!anonId) {
-        anonId = crypto.randomUUID();
-        localStorage.setItem("findoutfit_anon_id", anonId);
-      }
-
-      const r = await fetch(`/api/data?op=outfits.like`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ outfit_id: item.id, anon_id: anonId }),
+      const r = await fetch(`/api/data?op=explore&limit=60&sort=${encodeURIComponent(sort)}&ts=${Date.now()}`, {
+        cache: "no-store",
       });
       const data = await r.json();
-      if (!r.ok || !data?.ok) throw new Error(data?.error || `HTTP ${r.status}`);
-
-      setItems((prev) =>
-        prev.map((x) => (x.id === item.id ? { ...x, like_count: data.like_count ?? x.like_count } : x))
-      );
-      setStatus(data?.liked ? "已加入最愛 ✅" : "已在最愛中");
+      if (!r.ok || !data?.ok) throw new Error(data?.error || "Load failed");
+      setItems(data.items || []);
     } catch (e: any) {
-      setStatus(`Like 失敗：${e?.message || "Unknown error"}`);
+      setItems([]);
+      setStatus(e?.message || "載入失敗");
+    } finally {
+      setLoading(false);
     }
   }
 
-  async function shareItem(item: Outfit) {
-    try {
+  useEffect(() => {
+    load();
+  }, [sort]);
+
+  async function toggleLike(it: Outfit) {
+    let anonId = localStorage.getItem("findoutfit_anon_id");
+    if (!anonId) {
+      anonId = crypto.randomUUID();
+      localStorage.setItem("findoutfit_anon_id", anonId);
+    }
+    const alreadyLiked = localStorage.getItem(likedKey(it.id)) === "1";
+    const op = alreadyLiked ? "outfits.unlike" : "outfits.like";
+
+    const r = await fetch(`/api/data?op=${op}`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ outfit_id: it.id, anon_id: anonId }),
+    });
+    const data = await r.json();
+    if (!r.ok || !data?.ok) throw new Error(data?.error || "Like failed");
+
+    if (alreadyLiked) localStorage.removeItem(likedKey(it.id));
+    else localStorage.setItem(likedKey(it.id), "1");
+
+    setItems((prev) => prev.map((x) => x.id === it.id ? { ...x, like_count: data.like_count ?? x.like_count } : x));
+  }
+
+  async function shareOnce(it: Outfit) {
+    if (!it.share_slug) return;
+    const key = sharedKey(it.id);
+    if (localStorage.getItem(key) !== "1") {
       const r = await fetch(`/api/data?op=outfits.share`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ outfit_id: item.id }),
+        body: JSON.stringify({ outfit_id: it.id }),
       });
       const data = await r.json();
-      if (!r.ok || !data?.ok) throw new Error(data?.error || `HTTP ${r.status}`);
-
-      const shareUrl = `${window.location.origin}/share/${item.share_slug}`;
-      await navigator.clipboard.writeText(shareUrl);
-      setItems((prev) =>
-        prev.map((x) => (x.id === item.id ? { ...x, share_count: data.share_count ?? x.share_count } : x))
-      );
-      setStatus("已複製分享連結 ✅");
-    } catch (e: any) {
-      setStatus(`分享失敗：${e?.message || "Unknown error"}`);
+      if (!r.ok || !data?.ok) throw new Error(data?.error || "Share failed");
+      localStorage.setItem(key, "1");
+      setItems((prev) => prev.map((x) => x.id === it.id ? { ...x, share_count: data.share_count ?? x.share_count } : x));
     }
+    await navigator.clipboard.writeText(`${window.location.origin}/share/${it.share_slug}`);
+    setStatus("已複製分享連結 ✅");
   }
 
-  async function applyItem(item: Outfit) {
-    try {
-      const st = item.style || {};
-      localStorage.setItem(
-        "findoutfit_apply_preset",
-        JSON.stringify({
-          style: st.style || st.styleId || "casual",
-          palette: st.palette || "mono-dark",
-          styleVariant: st.styleVariant || "",
-        })
-      );
-
-      const r = await fetch(`/api/data?op=outfits.apply`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ outfit_id: item.id }),
-      });
-      const data = await r.json();
-      if (!r.ok || !data?.ok) throw new Error(data?.error || `HTTP ${r.status}`);
-
-      setItems((prev) =>
-        prev.map((x) => (x.id === item.id ? { ...x, apply_count: data.apply_count ?? x.apply_count } : x))
-      );
-      window.location.href = "/";
-    } catch (e: any) {
-      setStatus(`套用失敗：${e?.message || "Unknown error"}`);
-    }
+  function applyPresetAndGoHome(it: Outfit) {
+    localStorage.setItem(
+      "findoutfit_apply_preset",
+      JSON.stringify({
+        style: it.style?.style || "casual",
+        palette: it.style?.palette || "mono-dark",
+        styleVariant: it.style?.styleVariant || "",
+        label: it.summary || it.style?.style || "Explore preset",
+        ts: Date.now(),
+      })
+    );
+    window.location.href = "/";
   }
+
+  const titleStyle = { color: "rgba(255,255,255,0.96)" } as const;
+  const subStyle = { color: "rgba(255,255,255,0.82)" } as const;
 
   return (
-    <main style={{ maxWidth: 1200, margin: "0 auto", padding: 24, color: "#e9ecf3" }}>
-      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "end", gap: 16, marginBottom: 16, flexWrap: "wrap" }}>
+    <main style={{ maxWidth: 1180, margin: "0 auto", padding: 24, color: "rgba(255,255,255,0.92)" }}>
+      <div style={{ display: "flex", justifyContent: "space-between", gap: 12, alignItems: "center", marginBottom: 18, flexWrap: "wrap" }}>
         <div>
-          <h1 style={{ margin: 0, fontSize: 28 }}>Explore</h1>
-          <div style={{ opacity: 0.7, marginTop: 6 }}>{summary}</div>
+          <h1 style={{ margin: 0, ...titleStyle }}>Explore</h1>
+          <p style={{ marginTop: 8, ...subStyle }}>查看全部公開穿搭，支援 like / 分享 / 套用 / 放大與排序。</p>
         </div>
-
         <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
-          {[
-            ["like", "依 Like"],
-            ["share", "依 分享"],
-            ["recent", "依 時間"],
-          ].map(([key, label]) => (
+          {["like", "share", "time"].map((s) => (
             <button
-              key={key}
-              onClick={() => setSort(key as SortKey)}
+              key={s}
+              onClick={() => setSort(s)}
               style={{
                 padding: "10px 12px",
                 borderRadius: 12,
-                border: "1px solid rgba(255,255,255,0.12)",
-                background: sort === key ? "#fff" : "rgba(255,255,255,0.06)",
-                color: sort === key ? "#0b0d12" : "#e9ecf3",
+                border: "1px solid rgba(255,255,255,0.14)",
+                background: sort === s ? "rgba(255,255,255,0.96)" : "transparent",
+                color: sort === s ? "#111" : "rgba(255,255,255,0.92)",
                 fontWeight: 800,
                 cursor: "pointer",
               }}
             >
-              {label}
+              {s === "like" ? "Like 排序" : s === "share" ? "分享排序" : "時間排序"}
             </button>
           ))}
         </div>
       </div>
 
-      {!!status && <div style={{ marginBottom: 14 }}>{status}</div>}
-
-      {loading ? (
-        <div>載入中…</div>
-      ) : (
-        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(220px, 1fr))", gap: 16 }}>
-          {items.map((item) => {
-            const st = item.style || {};
-            const title = st.style || st.styleId || "Outfit";
+      {!!status && <div style={{ marginBottom: 12, ...subStyle }}>{status}</div>}
+      {loading ? <div style={subStyle}>載入中…</div> : (
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(220px,1fr))", gap: 16 }}>
+          {items.map((it) => {
+            const alreadyLiked = typeof window !== "undefined" && localStorage.getItem(likedKey(it.id)) === "1";
             return (
               <div
-                key={item.id}
+                key={it.id}
                 style={{
-                  border: "1px solid rgba(255,255,255,0.08)",
-                  background: "rgba(255,255,255,0.03)",
+                  border: "1px solid rgba(255,255,255,0.10)",
                   borderRadius: 16,
                   overflow: "hidden",
+                  background: "rgba(255,255,255,0.03)",
                 }}
               >
                 <button
-                  onClick={() => setZoomItem(item)}
-                  style={{ display: "block", width: "100%", padding: 0, border: 0, background: "transparent", cursor: "zoom-in" }}
+                  onClick={() => it.image_url && setZoomSrc(it.image_url)}
+                  style={{ border: 0, background: "transparent", padding: 0, width: "100%", cursor: "zoom-in" }}
                 >
-                  {item.image_url ? (
-                    <img src={item.image_url} alt={title} style={{ width: "100%", aspectRatio: "4 / 5", objectFit: "cover", display: "block" }} />
+                  {it.image_url ? (
+                    <img src={it.image_url} alt="" style={{ width: "100%", aspectRatio: "1 / 1", objectFit: "cover" as const, display: "block" }} />
                   ) : (
-                    <div style={{ width: "100%", aspectRatio: "4 / 5", background: "rgba(255,255,255,0.06)" }} />
+                    <div style={{ width: "100%", aspectRatio: "1 / 1", background: "rgba(255,255,255,0.08)" }} />
                   )}
                 </button>
 
                 <div style={{ padding: 12 }}>
-                  <div style={{ fontWeight: 900 }}>{title}</div>
-                  <div style={{ fontSize: 12, opacity: 0.7, marginTop: 4 }}>{fmtDate(item.created_at)}</div>
-                  <div style={{ fontSize: 12, opacity: 0.78, marginTop: 8, minHeight: 36 }}>
-                    {item.summary || "—"}
+                  <div style={{ fontWeight: 800, ...titleStyle }}>{it.style?.style || "Outfit"}</div>
+                  <div style={{ fontSize: 12, marginTop: 6, lineHeight: 1.5, ...subStyle }}>
+                    {it.summary || `${fmtDate(it.created_at)} · 公開穿搭`}
                   </div>
-
-                  <div style={{ fontSize: 12, opacity: 0.82, marginTop: 10 }}>
-                    ❤️ {item.like_count || 0} · 🔁 {item.share_count || 0} · ✨ {item.apply_count || 0}
+                  <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 8, marginTop: 12 }}>
+                    <button onClick={() => toggleLike(it)} style={btnStyle}>{alreadyLiked ? "取消讚" : "Like"}</button>
+                    <button onClick={() => shareOnce(it)} style={btnStyle}>分享</button>
+                    <button onClick={() => applyPresetAndGoHome(it)} style={primaryBtnStyle}>套用</button>
+                    <a href={it.share_slug ? `/share/${it.share_slug}` : "/explore"} style={{ ...btnStyle, textDecoration: "none", textAlign: "center" }}>查看</a>
                   </div>
-
-                  <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8, marginTop: 12 }}>
-                    <button onClick={() => likeItem(item)} style={btnStyle}>Like</button>
-                    <button onClick={() => shareItem(item)} style={btnStyle}>分享</button>
-                    <button onClick={() => applyItem(item)} style={btnPrimaryStyle}>套用</button>
-                    <a href={item.share_slug ? `/share/${item.share_slug}` : "/explore"} style={{ ...btnStyle, textDecoration: "none", textAlign: "center", display: "inline-flex", alignItems: "center", justifyContent: "center" }}>查看</a>
+                  <div style={{ display: "flex", gap: 12, marginTop: 10, fontSize: 12, ...subStyle }}>
+                    <span>♥ {it.like_count || 0}</span>
+                    <span>↗ {it.share_count || 0}</span>
                   </div>
                 </div>
               </div>
@@ -229,29 +206,22 @@ export default function Page() {
         </div>
       )}
 
-      {zoomItem && (
-        <div onClick={() => setZoomItem(null)} style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.72)", display: "grid", placeItems: "center", padding: 24, zIndex: 1000 }}>
-          <div onClick={(e) => e.stopPropagation()} style={{ maxWidth: 460, width: "100%" }}>
-            <img src={zoomItem.image_url} alt="zoom" style={{ width: "100%", height: "auto", display: "block", borderRadius: 16, objectFit: "contain" }} />
-          </div>
+      {zoomSrc ? (
+        <div
+          onClick={() => setZoomSrc("")}
+          style={{
+            position: "fixed",
+            inset: 0,
+            background: "rgba(0,0,0,0.74)",
+            display: "grid",
+            placeItems: "center",
+            zIndex: 1000,
+            padding: 20,
+          }}
+        >
+          <img src={zoomSrc} alt="" style={{ maxWidth: "92vw", maxHeight: "88vh", objectFit: "contain" as const, borderRadius: 16 }} />
         </div>
-      )}
+      ) : null}
     </main>
   );
 }
-
-const btnStyle = {
-  padding: "10px 12px",
-  borderRadius: 12,
-  border: "1px solid rgba(255,255,255,0.12)",
-  background: "rgba(255,255,255,0.06)",
-  color: "#e9ecf3",
-  fontWeight: 800,
-  cursor: "pointer",
-};
-
-const btnPrimaryStyle = {
-  ...btnStyle,
-  background: "#fff",
-  color: "#0b0d12",
-};
