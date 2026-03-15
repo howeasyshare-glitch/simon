@@ -1,45 +1,74 @@
-
-:root{
-  --bg-main:#0b0d12;
-  --card-bg:rgba(255,255,255,0.03);
-  --card-border:rgba(255,255,255,0.08);
-  --text-strong:rgba(255,255,255,0.96);
-  --text-main:rgba(255,255,255,0.9);
-  --text-sub:rgba(255,255,255,0.82);
+.page {
+  background: #0b0d12;
+  color: rgba(255,255,255,0.9);
+  min-height: 100vh;
 }
 
-.page{
-  background:var(--bg-main);
-  color:var(--text-main);
-  min-height:100vh;
+/* 卡片 */
+.card {
+  background: rgba(255,255,255,0.03);
+  border: 1px solid rgba(255,255,255,0.08);
+  border-radius: 16px;
 }
 
-.card{
-  background:var(--card-bg);
-  border:1px solid var(--card-border);
-  border-radius:16px;
+/* 主標題 */
+.h1,
+.blockTitle,
+.panelTitle,
+.sideTitle,
+.featuredTitle,
+.previewTitle,
+.choiceTitle,
+.exploreTitle,
+.miniTitle,
+.previewEmptyTitle,
+.summaryValue {
+  color: rgba(255,255,255,0.96);
+  font-weight: 800;
 }
 
-.title{
-  color:var(--text-strong);
-  font-weight:800;
+/* 次標 */
+.muted,
+.featuredSub,
+.previewSub,
+.sectionSub,
+.label,
+.authHint,
+.debugLabel,
+.exploreSub,
+.miniSub,
+.choiceSub,
+.previewEmptyDesc,
+.summaryLabel {
+  color: rgba(255,255,255,0.82);
 }
 
-.sub{
-  color:var(--text-sub);
+/* 導覽文字 */
+.navLink,
+.userItem,
+.userItemBtn,
+.mobileItem,
+.mobileItemBtn {
+  color: rgba(255,255,255,0.9);
 }
 
-.btn{
-  padding:10px 12px;
-  border-radius:12px;
-  border:1px solid var(--card-border);
-  background:transparent;
-  color:var(--text-main);
-  cursor:pointer;
-  font-weight:700;
+/* 按鈕 */
+.btn {
+  padding: 10px 14px;
+  border-radius: 12px;
+  border: 1px solid rgba(255,255,255,0.1);
+  background: transparent;
+  color: rgba(255,255,255,0.9);
+  cursor: pointer;
+  font-weight: 700;
 }
 
-.btnPrimary{
-  background:white;
-  color:black;
+.btn:hover {
+  background: rgba(255,255,255,0.08);
+}
+
+.btnPrimary {
+  background: white;
+  color: black;
+  border: none;
 }
