@@ -1,59 +1,19 @@
 
-"use client"
-
-import {useEffect,useState} from "react"
-
+"use client";
+import { useEffect, useState } from "react";
+import styles from "../../page.module.css";
+type ShareOutfit={id:string;share_slug?:string;image_url?:string;summary?:string|null;style?:any;like_count?:number;share_count?:number};
+const likedKey=(id:string)=>`liked_outfit_${id}`;
+const sharedKey=(id:string)=>`shared_outfit_${id}`;
 export default function Page({params}:{params:{slug:string}}){
-
-  const [data,setData]=useState<any>(null)
-
-  useEffect(()=>{
-    load()
-  },[])
-
-  async function load(){
-    const r=await fetch("/api/share?slug="+params.slug)
-    const j=await r.json()
-    setData(j.outfit)
-  }
-
-  function apply(){
-
-    localStorage.setItem("findoutfit_apply_preset",JSON.stringify({
-      style:data.style?.style,
-      palette:data.style?.palette,
-      styleVariant:data.style?.styleVariant,
-      label:data.summary
-    }))
-
-    window.location.href="/"
-  }
-
-  if(!data) return <main style={{background:"#0b0d12",minHeight:"100vh",padding:40,color:"white"}}>loading...</main>
-
-  return(
-    <main style={{background:"#0b0d12",minHeight:"100vh",padding:40,color:"white"}}>
-
-      <h1 style={{fontWeight:800,fontSize:30}}>公開穿搭分享</h1>
-
-      <img src={data.image_url} style={{maxWidth:400,marginTop:20}}/>
-
-      <div style={{marginTop:20}}>
-        {data.summary}
-      </div>
-
-      <div style={{display:"flex",gap:12,marginTop:20}}>
-
-        <button onClick={()=>navigator.clipboard.writeText(location.href)}>
-          分享
-        </button>
-
-        <button onClick={apply}>
-          套用
-        </button>
-
-      </div>
-
-    </main>
-  )
+ const [outfit,setOutfit]=useState<ShareOutfit|null>(null); const [loading,setLoading]=useState(true); const [status,setStatus]=useState(""); const [error,setError]=useState(""); const [zoomOpen,setZoomOpen]=useState(false);
+ useEffect(()=>{load()},[params.slug]);
+ async function load(){try{setLoading(true);const r=await fetch(`/api/share?slug=${encodeURIComponent(params.slug)}`,{method:"GET",cache:"no-store"}); const j=await r.json(); if(!r.ok||!j?.ok||!j?.outfit) throw new Error(j?.error||"讀取失敗"); setOutfit(j.outfit)}catch(e:any){setError(e?.message||"讀取失敗")}finally{setLoading(false)}}
+ async function handleLike(){if(!outfit?.id)return; let anonId=localStorage.getItem("findoutfit_anon_id"); if(!anonId){anonId=crypto.randomUUID();localStorage.setItem("findoutfit_anon_id",anonId)} const already=localStorage.getItem(likedKey(outfit.id))==="1"; const op=already?"outfits.unlike":"outfits.like"; const r=await fetch(`/api/data?op=${op}`,{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({outfit_id:outfit.id,anon_id:anonId})}); const j=await r.json(); if(!r.ok||!j?.ok){setStatus(j?.error||"收藏失敗");return} if(already)localStorage.removeItem(likedKey(outfit.id)); else localStorage.setItem(likedKey(outfit.id),"1"); setOutfit(prev=>prev?{...prev,like_count:j.like_count??prev.like_count}:prev); setStatus(already?"已取消最愛":"已加入最愛 ✅")}
+ async function handleShare(){if(!outfit?.id||!outfit?.share_slug)return; const key=sharedKey(outfit.id); if(localStorage.getItem(key)!=="1"){const r=await fetch(`/api/data?op=outfits.share`,{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({outfit_id:outfit.id})}); const j=await r.json(); if(!r.ok||!j?.ok){setStatus(j?.error||"分享失敗");return} localStorage.setItem(key,"1"); setOutfit(prev=>prev?{...prev,share_count:j.share_count??prev.share_count}:prev)} await navigator.clipboard.writeText(`${window.location.origin}/share/${outfit.share_slug}`); setStatus("已複製分享連結 ✅")}
+ function handleApply(){if(!outfit)return; localStorage.setItem("findoutfit_apply_preset",JSON.stringify({style:outfit.style?.style||"casual",palette:outfit.style?.palette||"mono-dark",styleVariant:outfit.style?.styleVariant||"",label:outfit.summary||outfit.style?.style||"Share preset",ts:Date.now()})); window.location.href="/"}
+ if(loading) return <main className={styles.pageShell}><div className={styles.pageWrap}><div className={styles.pageSub}>載入中…</div></div></main>;
+ if(error||!outfit) return <main className={styles.pageShell}><div className={styles.pageWrap}><div className={styles.pageSub}>錯誤：{error||"找不到分享資料"}</div></div></main>;
+ const liked=typeof window!=="undefined"&&localStorage.getItem(likedKey(outfit.id))==="1";
+ return <main className={styles.pageShell}><div className={styles.pageWrap} style={{maxWidth:980}}><h1 className={styles.pageTitle}>公開穿搭分享</h1><p className={styles.pageSub}>{outfit.summary||"沒有摘要"}</p>{outfit.image_url?<button className={styles.cardThumbBtn} style={{maxWidth:420,marginTop:12}} onClick={()=>setZoomOpen(true)}><img src={outfit.image_url} alt="" style={{width:"100%",display:"block",borderRadius:18,objectFit:"contain"}}/></button>:null}<div className={styles.actionRow} style={{marginTop:18,maxWidth:620}}><button onClick={handleLike} className={styles.actionBtn}>{liked?`取消讚 (${outfit.like_count||0})`:`Like (${outfit.like_count||0})`}</button><button onClick={handleShare} className={styles.actionBtn}>分享 ({outfit.share_count||0})</button><button onClick={handleApply} className={styles.actionBtnPrimary}>套用</button></div>{!!status&&<div className={styles.pageStatus}>{status}</div>}{zoomOpen&&outfit.image_url?<div className={styles.modalBackdrop} onClick={()=>setZoomOpen(false)}><img src={outfit.image_url} alt="" className={styles.modalImg}/></div>:null}</div></main>
 }
