@@ -1105,3 +1105,40 @@
 .mobileItemBtn {
   color: rgba(255, 255, 255, 0.9) !important;
 }
+
+
+/* append to app/page.module.css */
+.pageShell{min-height:100vh;background:#0b0d12;color:rgba(255,255,255,.92)}
+.pageWrap{max-width:1180px;margin:0 auto;padding:24px}
+.pageTitle{margin:0;color:rgba(255,255,255,.96);font-size:32px;font-weight:800;line-height:1.2}
+.pageSub{margin:8px 0 0;color:rgba(255,255,255,.82);line-height:1.6}
+.pageStatus{margin-top:12px;color:rgba(255,255,255,.86)}
+.cardGrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(240px,1fr));gap:16px}
+.outfitCard{overflow:hidden;border-radius:18px;border:1px solid rgba(255,255,255,.08);background:rgba(255,255,255,.03)}
+.cardThumbBtn{width:100%;border:0;padding:0;background:transparent;cursor:zoom-in;display:block}
+.cardThumbImg{width:100%;aspect-ratio:1/1;object-fit:cover;display:block}
+.cardThumbEmpty{width:100%;aspect-ratio:1/1;background:rgba(255,255,255,.06)}
+.cardBody{padding:14px}
+.cardTitle{color:rgba(255,255,255,.96);font-size:18px;font-weight:800;line-height:1.25}
+.cardText{margin-top:8px;color:rgba(255,255,255,.82);line-height:1.6;font-size:14px}
+.cardMeta{margin-top:10px;display:flex;gap:12px;color:rgba(255,255,255,.76);font-size:12px}
+.actionRow{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px;margin-top:14px}
+.actionBtn,.actionBtnPrimary,.actionLink{min-height:48px;padding:10px 14px;border-radius:14px;border:1px solid rgba(255,255,255,.12);background:transparent;color:rgba(255,255,255,.92);font-weight:700;font-size:15px;line-height:1;display:inline-flex;align-items:center;justify-content:center;text-decoration:none;cursor:pointer;white-space:nowrap;word-break:keep-all;overflow:hidden;text-overflow:ellipsis}
+.actionBtn:hover,.actionLink:hover{background:rgba(255,255,255,.06)}
+.actionBtnPrimary{background:rgba(255,255,255,.96);color:#111}
+.actionBtnPrimary:hover{background:rgba(255,255,255,.88)}
+.sortRow{display:flex;gap:8px;flex-wrap:wrap}
+.sortBtn,.sortBtnActive{min-height:48px;padding:10px 14px;border-radius:14px;border:1px solid rgba(255,255,255,.12);background:transparent;color:rgba(255,255,255,.92);font-weight:700;cursor:pointer;white-space:nowrap}
+.sortBtnActive{background:rgba(255,255,255,.96);color:#111}
+.modalBackdrop{position:fixed;inset:0;background:rgba(0,0,0,.74);display:grid;place-items:center;z-index:1000;padding:20px}
+.modalImg{max-width:92vw;max-height:88vh;object-fit:contain;border-radius:18px;display:block}
+.presetGrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(170px,1fr));gap:10px}
+.presetBtn{border:1px solid rgba(255,255,255,.12);border-radius:14px;background:rgba(255,255,255,.03);color:rgba(255,255,255,.94);padding:12px;text-align:left;cursor:pointer}
+.presetBtn:hover{background:rgba(255,255,255,.06)}
+.presetTitle{font-weight:800;color:rgba(255,255,255,.96)}
+.presetSub{margin-top:4px;font-size:13px;color:rgba(255,255,255,.76)}
+.appliedBox{margin-top:10px;color:rgba(255,255,255,.86)}
+.muted,.featuredSub,.previewSub,.sectionSub,.label,.authHint,.debugLabel,.exploreSub,.miniSub,.choiceSub,.previewEmptyDesc{color:rgba(255,255,255,.82)!important}
+.summaryLabel{color:rgba(255,255,255,.82)!important}
+.summaryValue,.featuredTitle,.previewTitle,.panelTitle,.sideTitle,.h1,.blockTitle,.choiceTitle,.exploreTitle,.miniTitle,.previewEmptyTitle{color:rgba(255,255,255,.96)!important}
+.navLink,.userItem,.userItemBtn,.mobileItem,.mobileItemBtn{color:rgba(255,255,255,.9)!important}
