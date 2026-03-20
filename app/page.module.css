@@ -1,134 +1,58 @@
-/* ⭐ 首頁專用（完全隔離） */
 
-.home_page {
-  background: #060b12;
-  min-height: 100vh;
-  color: white;
-}
-
-.home_wrap {
-  max-width: 1200px;
-  margin: auto;
-  padding: 20px;
-}
-
-/* ================= HERO ================= */
-
-.home_hero {
-  margin-bottom: 40px;
-}
-
-.home_carousel {
-  position: relative;
-  height: 420px;
-  display: flex;
-  justify-content: center;
-  align-items: center;
-}
-
-.home_card {
-  position: absolute;
-  width: 260px;
-  height: 360px;
-  border-radius: 20px;
-  overflow: hidden;
-  transition: all 0.35s ease;
-  cursor: pointer;
-}
-
-.home_image {
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-}
-
-/* 中間 */
-.home_active {
-  transform: translateX(0) scale(1);
-  z-index: 3;
-  opacity: 1;
-}
-
-/* 左 */
-.home_prev {
-  transform: translateX(-180px) scale(0.85);
-  z-index: 2;
-  opacity: 0.6;
-}
-
-/* 右 */
-.home_next {
-  transform: translateX(180px) scale(0.85);
-  z-index: 2;
-  opacity: 0.6;
-}
-
-.home_hidden {
-  opacity: 0;
-  pointer-events: none;
-}
-
-.home_controls {
-  margin-top: 10px;
-  text-align: center;
-}
-
-/* ================= GENERATOR ================= */
-
-.home_generator {
-  margin-top: 30px;
-}
-
-.home_sliders label {
-  display: block;
-  margin-bottom: 10px;
-}
-
-/* ⭐ CTA */
-.home_ctaWrap {
-  display: flex;
-  justify-content: center;
-  margin-top: 20px;
-}
-
-.home_cta {
-  height: 64px;
-  min-width: 280px;
-  border-radius: 20px;
-  border: none;
-  font-size: 18px;
-  font-weight: 900;
-  background: linear-gradient(135deg, #ffffff, #bde3ff);
-  color: #000;
-  box-shadow: 0 20px 40px rgba(0, 153, 255, 0.3);
-  cursor: pointer;
-  transition: 0.2s;
-}
-
-.home_cta:hover {
-  transform: translateY(-3px);
-}
-
-/* ================= LIST ================= */
-
-.home_list {
-  display: flex;
-  gap: 10px;
-  overflow-x: auto;
-  margin-top: 30px;
-}
-
-/* ================= MODAL ================= */
-
-.home_modal {
-  position: fixed;
-  inset: 0;
-  background: rgba(0,0,0,0.8);
-  display: flex;
-  justify-content: center;
-  align-items: center;
-}
-
-.home_modal img {
-  max-height: 80%;
-}
+.topbarWrap{position:sticky;top:0;z-index:30;background:rgba(6,11,18,0.86);backdrop-filter:blur(12px);border-bottom:1px solid rgba(255,255,255,0.06)}
+.topbar{max-width:1200px;margin:0 auto;padding:16px 20px;display:flex;align-items:center;justify-content:space-between;gap:16px}
+.brand{color:#fff;text-decoration:none;font-size:28px;font-weight:800;letter-spacing:-0.03em}
+.nav{display:flex;gap:10px;flex-wrap:wrap}
+.navItem{color:rgba(255,255,255,0.84);text-decoration:none;padding:10px 14px;border-radius:999px;border:1px solid rgba(255,255,255,0.08);background:rgba(255,255,255,0.03)}
+.navItemActive{background:#fff;color:#000}
+.home_page{background:radial-gradient(circle at top, rgba(39,85,151,0.16), transparent 30%), #060b12;min-height:100vh;color:white}
+.home_wrap{max-width:1200px;margin:0 auto;padding:22px 20px 60px}
+.homeHeroBlock{margin-bottom:40px}
+.homeHeroHead{display:flex;justify-content:space-between;align-items:flex-end;gap:18px;margin-bottom:18px}
+.homeEyebrow{color:rgba(255,255,255,0.58);text-transform:uppercase;font-size:12px;letter-spacing:0.12em;margin-bottom:6px}
+.homeHeroTitle{margin:0;font-size:42px;line-height:1.02;letter-spacing:-0.04em}
+.homeHeroText{margin:10px 0 0;color:rgba(255,255,255,0.76);line-height:1.65;max-width:700px}
+.homeHeroActions{display:flex;gap:10px}
+.homeArrowBtn{width:48px;height:48px;border:1px solid rgba(255,255,255,0.12);border-radius:16px;background:rgba(255,255,255,0.04);color:#fff;cursor:pointer;transition:transform .18s ease, background .18s ease, border-color .18s ease}
+.homeArrowBtn span{font-size:20px;font-weight:700}
+.homeArrowBtn:hover{transform:translateY(-1px);background:rgba(255,255,255,0.08);border-color:rgba(255,255,255,0.2)}
+.home_carousel{position:relative;height:430px;display:flex;justify-content:center;align-items:center}
+.home_card{position:absolute;width:280px;height:380px;border-radius:28px;overflow:hidden;transition:transform .36s ease, opacity .36s ease, filter .36s ease;cursor:pointer;box-shadow:0 18px 40px rgba(0,0,0,0.18)}
+.home_image,.home_imageFallback{width:100%;height:100%;object-fit:cover;display:block}
+.home_imageFallback{background:linear-gradient(180deg,#efefef 0 42%,#d7cfbf 42% 100%)}
+.home_active{transform:translateX(0) scale(1);z-index:3;opacity:1}
+.home_prev{transform:translateX(-200px) scale(0.88);z-index:2;opacity:0.48;filter:blur(1.2px)}
+.home_next{transform:translateX(200px) scale(0.88);z-index:2;opacity:0.48;filter:blur(1.2px)}
+.home_hidden{opacity:0;pointer-events:none;transform:scale(0.78)}
+.homeDots{display:flex;justify-content:center;gap:8px;margin-top:12px}
+.homeDot,.homeDotActive{width:9px;height:9px;border-radius:999px;border:0;background:rgba(255,255,255,0.24)}
+.homeDotActive{background:#fff}
+.homeBuilderSection{display:grid;grid-template-columns:1.2fr .8fr;gap:18px;align-items:start;margin-top:10px}
+.homeBuilderMain{display:grid;gap:16px}
+.homeBuilderSide{position:sticky;top:92px}
+.homePanel,.homeActionCard{background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.08);border-radius:24px;padding:18px;backdrop-filter:blur(10px)}
+.homePanelTitle{font-size:18px;font-weight:800;margin-bottom:14px}
+.homeSliderGrid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}
+.homeSliderCard{display:block;background:rgba(0,0,0,0.18);border:1px solid rgba(255,255,255,0.08);border-radius:18px;padding:14px}
+.homeSliderCard span{display:inline-block;margin-bottom:10px;color:rgba(255,255,255,0.82)}
+.homeSliderCard input[type='range']{width:100%}
+.homeSliderCard b{display:inline-block;margin-top:8px;font-size:15px}
+.homeSegmentWrap{margin-top:14px;display:grid;gap:10px}
+.homeSegmentRow,.homePillRow,.homeCelebWrap{display:flex;gap:10px;flex-wrap:wrap}
+.homePill,.homePillActive{min-height:42px;padding:0 16px;border-radius:999px;border:1px solid rgba(255,255,255,0.14);background:transparent;color:#fff;font-weight:700;cursor:pointer}
+.homePillActive{background:#fff;color:#000;border-color:#fff}
+.homeCelebWrap{margin-top:14px;padding-top:14px;border-top:1px dashed rgba(255,255,255,0.1)}
+.homeActionCard{box-shadow:0 18px 40px rgba(0,0,0,0.18)}
+.homeActionKicker{color:rgba(255,255,255,0.58);text-transform:uppercase;font-size:12px;letter-spacing:.12em;margin-bottom:8px}
+.homeActionTitle{font-size:28px;font-weight:900;line-height:1.06}
+.homeActionText{margin-top:10px;color:rgba(255,255,255,0.76);line-height:1.6}
+.home_cta{width:100%;min-height:64px;margin-top:18px;border-radius:22px;border:0;font-size:18px;font-weight:900;background:linear-gradient(135deg,#ffffff,#cbe8ff);color:#08111a;box-shadow:0 18px 38px rgba(86,175,255,0.26);cursor:pointer;transition:transform .18s ease, box-shadow .18s ease}
+.home_cta:hover{transform:translateY(-2px);box-shadow:0 24px 44px rgba(86,175,255,0.32)}
+.homeSecondaryCta{width:100%;min-height:50px;margin-top:10px;border-radius:18px;border:1px solid rgba(255,255,255,0.12);background:rgba(255,255,255,0.03);color:#fff;cursor:pointer}
+.homeBottomSection{margin-top:34px}
+.homeSectionHeader h3{margin:0 0 12px;font-size:24px}
+.home_list{display:flex;gap:12px;overflow-x:auto;padding-bottom:4px}
+.home_modal{position:fixed;inset:0;background:rgba(0,0,0,0.84);display:flex;justify-content:center;align-items:center;z-index:1200;padding:20px}
+.home_modal img{max-width:92vw;max-height:86vh;border-radius:18px}
+@media (max-width:1024px){.homeBuilderSection{grid-template-columns:1fr}.homeBuilderSide{position:static}}
+@media (max-width:720px){.topbar{flex-direction:column;align-items:flex-start}.homeHeroHead{flex-direction:column;align-items:flex-start}.homeHeroTitle{font-size:34px}.homeSliderGrid{grid-template-columns:1fr}.home_carousel{height:360px}.home_card{width:220px;height:300px}.home_prev{transform:translateX(-120px) scale(0.86)}.home_next{transform:translateX(120px) scale(0.86)}}
