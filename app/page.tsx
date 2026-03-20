@@ -1,15 +1,13 @@
 "use client";
 
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useState } from "react";
 import styles from "./page.module.css";
 import NavBar from "../components/NavBar";
-import { apiGetJson, apiPostJson } from "../lib/apiFetch";
+import { apiGetJson } from "../lib/apiFetch";
 import OutfitCard from "../components/OutfitCard";
 
-type OutfitItem = any;
-
 export default function Page() {
-  const [featured, setFeatured] = useState<OutfitItem[]>([]);
+  const [featured, setFeatured] = useState<any[]>([]);
   const [active, setActive] = useState(0);
   const [zoomSrc, setZoomSrc] = useState("");
 
@@ -23,68 +21,53 @@ export default function Page() {
   }, []);
 
   async function load() {
-    try {
-      const data = await apiGetJson<any>(
-        `/api/data?op=explore&limit=8&sort=like&ts=${Date.now()}`
-      );
-      setFeatured(data?.items || []);
-    } catch {}
+    const data = await apiGetJson<any>(
+      `/api/data?op=explore&limit=8&sort=like&ts=${Date.now()}`
+    );
+    setFeatured(data?.items || []);
   }
 
-  // =============================
-  // ⭐ HERO 卡片位置計算（重點）
-  // =============================
   function getPos(i: number) {
-    if (i === active) return "active";
-    if (i === active - 1) return "prev";
-    if (i === active + 1) return "next";
-    return "hidden";
+    if (i === active) return "home_active";
+    if (i === active - 1) return "home_prev";
+    if (i === active + 1) return "home_next";
+    return "home_hidden";
   }
 
   function move(dir: number) {
-    setActive((prev) => {
-      const next = prev + dir;
-      if (next < 0) return 0;
-      if (next >= featured.length) return featured.length - 1;
-      return next;
-    });
+    setActive((prev) => Math.max(0, Math.min(prev + dir, featured.length - 1)));
   }
 
   return (
-    <main className={styles.page}>
+    <main className={styles.home_page}>
       <NavBar />
 
-      <section className={styles.wrap}>
-        {/* ================= HERO ================= */}
-        <section className={styles.hero}>
-          <div className={styles.carousel}>
-            {featured.map((item, i) => {
-              const pos = getPos(i);
-
-              return (
-                <div
-                  key={item.id}
-                  className={`${styles.card} ${styles[pos]}`}
-                  onClick={() => setActive(i)}
-                >
-                  <img src={item.image_url} className={styles.image} />
-                </div>
-              );
-            })}
+      <div className={styles.home_wrap}>
+        {/* HERO */}
+        <div className={styles.home_hero}>
+          <div className={styles.home_carousel}>
+            {featured.map((item, i) => (
+              <div
+                key={item.id}
+                className={`${styles.home_card} ${styles[getPos(i)]}`}
+                onClick={() => setActive(i)}
+              >
+                <img src={item.image_url} className={styles.home_image} />
+              </div>
+            ))}
           </div>
 
-          {/* 控制 */}
-          <div className={styles.controls}>
+          <div className={styles.home_controls}>
             <button onClick={() => move(-1)}>←</button>
             <button onClick={() => move(1)}>→</button>
           </div>
-        </section>
+        </div>
 
-        {/* ================= GENERATOR ================= */}
-        <section className={styles.generator}>
+        {/* GENERATOR */}
+        <div className={styles.home_generator}>
           <h2>穿搭生成器</h2>
 
-          <div className={styles.sliders}>
+          <div className={styles.home_sliders}>
             <label>
               年齡 {age}
               <input type="range" min="5" max="60" value={age} onChange={(e) => setAge(Number(e.target.value))} />
@@ -106,16 +89,15 @@ export default function Page() {
             </label>
           </div>
 
-          {/* ⭐ 主 CTA */}
-          <div className={styles.ctaWrap}>
-            <button className={styles.cta}>
+          <div className={styles.home_ctaWrap}>
+            <button className={styles.home_cta}>
               ✨ 生成穿搭
             </button>
           </div>
-        </section>
+        </div>
 
-        {/* ================= LIST ================= */}
-        <section className={styles.list}>
+        {/* LIST */}
+        <div className={styles.home_list}>
           {featured.map((item) => (
             <OutfitCard
               key={item.id}
@@ -124,12 +106,11 @@ export default function Page() {
               onOpen={() => setZoomSrc(item.image_url)}
             />
           ))}
-        </section>
-      </section>
+        </div>
+      </div>
 
-      {/* ⭐ 只保留 modal，不再插入頁面 */}
       {zoomSrc && (
-        <div className={styles.modal} onClick={() => setZoomSrc("")}>
+        <div className={styles.home_modal} onClick={() => setZoomSrc("")}>
           <img src={zoomSrc} />
         </div>
       )}
