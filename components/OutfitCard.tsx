@@ -20,6 +20,7 @@ export type OutfitItem = {
 type Props = {
   item: OutfitItem;
   liked?: boolean;
+  shared?: boolean;
   compact?: boolean;
   onLike?: () => void;
   onShare?: () => void;
@@ -27,7 +28,16 @@ type Props = {
   onOpen?: () => void;
 };
 
-export default function OutfitCard({ item, liked = false, compact = false, onLike, onShare, onApply, onOpen }: Props) {
+export default function OutfitCard({
+  item,
+  liked = false,
+  shared = false,
+  compact = false,
+  onLike,
+  onShare,
+  onApply,
+  onOpen,
+}: Props) {
   const title = item.style?.style || "Outfit";
   const href = item.share_slug ? `/share/${item.share_slug}` : "/explore";
 
@@ -55,15 +65,29 @@ export default function OutfitCard({ item, liked = false, compact = false, onLik
           <div className={styles.cardImageFallback} />
         )}
       </button>
+
       <div className={styles.cardBody}>
         <div className={styles.cardTitle}>{title}</div>
         <div className={styles.cardText}>{item.summary || "AI 穿搭靈感"}</div>
+
         <div className={styles.cardActions}>
-          <button type="button" className={styles.ghostBtn} onClick={onLike}>{liked ? "取消讚" : "Like"}</button>
-          <button type="button" className={styles.ghostBtn} onClick={onShare}>分享</button>
-          <button type="button" className={styles.primaryBtn} onClick={onApply}>套用</button>
-          <Link href={href} className={styles.linkBtn}>查看</Link>
+          <button type="button" className={liked ? styles.activeGhostBtn : styles.ghostBtn} onClick={onLike}>
+            {liked ? "已讚" : "Like"}
+          </button>
+
+          <button type="button" className={shared ? styles.activeGhostBtn : styles.ghostBtn} onClick={onShare}>
+            {shared ? "已分享" : "分享"}
+          </button>
+
+          <button type="button" className={styles.primaryBtn} onClick={onApply}>
+            套用
+          </button>
+
+          <Link href={href} className={styles.linkBtn}>
+            查看
+          </Link>
         </div>
+
         <div className={styles.cardMeta}>
           <span>♥ {item.like_count || 0}</span>
           <span>↗ {item.share_count || 0}</span>
