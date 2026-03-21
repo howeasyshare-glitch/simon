@@ -19,9 +19,16 @@ export default function NavBar() {
         <Link href="/" className={styles.brand}>FindOutfit</Link>
         <nav className={styles.nav}>
           {items.map((item) => {
-            const active = item.href === "/" ? pathname === "/" : pathname === item.href || pathname?.startsWith(item.href + "/");
+            const active =
+              item.href === "/"
+                ? pathname === "/"
+                : pathname === item.href || pathname?.startsWith(item.href + "/");
             return (
-              <Link key={item.href} href={item.href} className={`${styles.navItem} ${active ? styles.navItemActive : ""}`}>
+              <Link
+                key={item.href}
+                href={item.href}
+                className={`${styles.navItem} ${active ? styles.navItemActive : ""}`}
+              >
                 {item.label}
               </Link>
             );
