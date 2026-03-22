@@ -1,492 +1,72 @@
 .page {
+  background: #060b12;
+  color: white;
   min-height: 100vh;
-  background: radial-gradient(circle at top, rgba(39,85,151,0.18), transparent 32%), #060b12;
-  color: #f5f7fb;
-  font-family: Inter, Arial, sans-serif;
 }
 
-.topbarWrap {
-  position: sticky;
-  top: 0;
-  z-index: 50;
-  backdrop-filter: blur(12px);
-  background: rgba(6,11,18,0.82);
-  border-bottom: 1px solid rgba(255,255,255,0.06);
+/* toast */
+.toast {
+  position: fixed;
+  right: 20px;
+  bottom: 20px;
+  background: #111;
+  padding: 12px 16px;
+  border-radius: 12px;
+  border: 1px solid #333;
 }
 
-.topbar {
-  max-width: 1320px;
-  margin: 0 auto;
-  height: 72px;
-  padding: 0 28px;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 16px;
-}
-
-.brand {
-  color: #fff;
-  text-decoration: none;
-  font-size: 26px;
-  font-weight: 800;
-  letter-spacing: -0.03em;
-}
-
-.nav {
-  display: flex;
-  gap: 10px;
-  flex-wrap: wrap;
-}
-
-.navItem {
-  color: rgba(255,255,255,0.84);
-  padding: 10px 14px;
-  border-radius: 999px;
-  background: rgba(255,255,255,0.04);
-  border: 1px solid rgba(255,255,255,0.08);
-  text-decoration: none;
-}
-
-.navItemActive {
-  background: #fff;
-  color: #000;
-}
-
-.contentWrap {
-  max-width: 1320px;
-  margin: 0 auto;
-  padding: 22px 28px 60px;
-}
-
-.kicker {
-  color: rgba(255,255,255,0.62);
-  font-size: 12px;
-  text-transform: uppercase;
-  letter-spacing: 0.12em;
-  margin-bottom: 6px;
-}
-
-.heroHeader,
-.sectionHead {
-  display: flex;
-  justify-content: space-between;
-  align-items: flex-end;
-  gap: 16px;
-  margin-bottom: 18px;
-}
-
-.heroTitle,
-.sectionTitle {
-  margin: 0;
-  font-size: 36px;
-  line-height: 1.05;
-  letter-spacing: -0.03em;
-}
-
-.heroSub,
-.cardText,
-.statusBar,
-.emptyText {
-  color: rgba(255,255,255,0.76);
-  line-height: 1.65;
-}
-
-.heroControls,
-.pillRow,
-.celebPanel,
-.generateRow,
-.segmentRow,
-.heroCardActions,
-.cardActions {
-  display: flex;
-  gap: 10px;
-  flex-wrap: wrap;
-}
-
-.arrowBtn,
+/* 按鈕 */
 .pill,
 .activePill,
 .ghostBtn,
-.primaryBtn,
-.secondaryBtn,
-.linkBtn {
-  min-height: 44px;
-  padding: 0 16px;
+.activeGhostBtn,
+.primaryBtn {
+  padding: 10px 16px;
   border-radius: 999px;
-  border: 1px solid rgba(255,255,255,0.14);
-  background: transparent;
-  color: #fff;
-  font-weight: 700;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  white-space: nowrap;
+  border: 1px solid #333;
   cursor: pointer;
-  text-decoration: none;
+  white-space: nowrap;
 }
 
 .activePill,
-.primaryBtn {
-  background: #fff;
-  color: #000;
-  border-color: #fff;
+.primaryBtn,
+.activeGhostBtn {
+  background: white;
+  color: black;
 }
 
-.badge {
-  min-height: 44px;
-  padding: 0 14px;
-  border-radius: 999px;
-  background: rgba(255,255,255,0.04);
-  border: 1px solid rgba(255,255,255,0.08);
-  color: rgba(255,255,255,0.82);
-  display: inline-flex;
-  align-items: center;
-}
-
+/* hero */
 .heroSection {
-  margin-bottom: 48px;
-}
-
-.heroViewport {
-  overflow: hidden;
-  margin: 0 -8px;
+  padding: 24px;
 }
 
 .heroRail {
   display: flex;
-  gap: 18px;
+  gap: 16px;
   overflow-x: auto;
-  scroll-snap-type: x mandatory;
-  padding: 4px 8px 14px;
-  scrollbar-width: none;
-}
-
-.heroRail::-webkit-scrollbar,
-.smallRow::-webkit-scrollbar {
-  display: none;
 }
 
 .heroCard {
-  flex: 0 0 min(46vw,430px);
-  scroll-snap-align: center;
-  border-radius: 28px;
-  overflow: hidden;
-  background: rgba(255,255,255,0.04);
-  border: 1px solid rgba(255,255,255,0.08);
-  opacity: 0.72;
-  transform: scale(0.96);
-  transition: transform .25s ease, opacity .25s ease, box-shadow .25s ease;
+  min-width: 320px;
+  opacity: 0.5;
+  transform: scale(0.95);
+  transition: 0.3s;
 }
 
 .heroCardActive {
   opacity: 1;
   transform: scale(1);
-  box-shadow: 0 24px 60px rgba(0,0,0,0.36);
 }
 
-.heroImageFrame {
-  position: relative;
-  width: 100%;
-  height: min(68vh,560px);
-  background: rgba(255,255,255,0.03);
-  overflow: hidden;
-}
-
-.heroImageBg {
-  position: absolute;
-  inset: 0;
-  background-size: cover;
-  background-position: center;
-  filter: blur(24px);
-  transform: scale(1.08);
-  opacity: 0.38;
-}
-
-.heroImage {
-  position: absolute;
-  inset: 0;
-  width: 100%;
-  height: 100%;
-  object-fit: contain;
-}
-
-.heroImageFallback {
-  position: absolute;
-  inset: 0;
-  background: linear-gradient(180deg,#efefef 0 42%,#d7cfbf 42% 100%);
-}
-
-.heroInfo {
-  padding: 18px;
-}
-
-.heroCardTitle,
-.historyTitle,
-.cardTitle {
-  font-size: 22px;
-  font-weight: 800;
-}
-
-.heroCardText {
-  margin-top: 8px;
-}
-
-.generatorSection,
-.historySection,
-.listSection {
-  margin-top: 34px;
-}
-
-.card,
-.historyBlock,
-.sharePanel {
-  background: rgba(255,255,255,0.04);
-  border: 1px solid rgba(255,255,255,0.08);
-  border-radius: 22px;
-  padding: 18px;
-}
-
-.card {
-  overflow: hidden;
-  backdrop-filter: blur(8px);
-}
-
-.blockTitle {
-  font-size: 16px;
-  font-weight: 700;
-  margin-bottom: 14px;
-}
-
-.sliderGrid {
-  display: grid;
-  grid-template-columns: repeat(2,minmax(0,1fr));
-  gap: 12px;
-}
-
-.sliderCard {
-  background: rgba(0,0,0,0.18);
-  border: 1px solid rgba(255,255,255,0.08);
-  border-radius: 18px;
-  padding: 14px;
-}
-
-.sliderLabel {
-  display: inline-block;
-  color: rgba(255,255,255,0.82);
-  margin-bottom: 8px;
-}
-
-.sliderCard input[type=range] {
-  width: 100%;
-}
-
-.sliderValue {
-  display: inline-block;
-  margin-top: 8px;
-  color: #fff;
-  font-weight: 700;
-}
-
-.segmentRow {
-  margin-top: 12px;
-}
-
-.celebPanel {
-  margin-top: 14px;
-  padding-top: 14px;
-  border-top: 1px dashed rgba(255,255,255,0.1);
-}
-
-.generateBtn {
-  min-height: 58px;
-  min-width: 240px;
-  padding: 0 24px;
-  border-radius: 18px;
-  border: 0;
-  background: linear-gradient(135deg,#ffffff 0%,#d7ecff 100%);
-  color: #07111d;
-  font-size: 17px;
-  font-weight: 900;
-  letter-spacing: 0.01em;
-  box-shadow: 0 14px 30px rgba(138,198,255,0.18);
-  cursor: pointer;
-}
-
-.cardImageBtn,
-.shareImageBtn {
-  width: 100%;
-  border: 0;
-  padding: 0;
-  cursor: zoom-in;
-  background: transparent;
-  display: block;
-}
-
-.cardTile {
-  background: rgba(255,255,255,0.04);
-  border: 1px solid rgba(255,255,255,0.08);
-  border-radius: 22px;
-  padding: 18px;
-}
-
-.cardImage,
-.shareImage {
-  width: 100%;
-  aspect-ratio: 3/4;
-  object-fit: cover;
-  display: block;
-  border-radius: 18px;
-}
-
-.cardImageFallback,
-.smallCardImageFallback {
-  width: 100%;
-  aspect-ratio: 3/4;
-  background: linear-gradient(180deg,#efefef 0 42%,#d7cfbf 42% 100%);
-  border-radius: 18px;
-}
-
-.cardBody {
-  padding-top: 14px;
-}
-
-.cardActions {
-  display: grid;
-  grid-template-columns: repeat(4,minmax(0,1fr));
-  gap: 10px;
-  margin-top: 14px;
-}
-
-.cardMeta,
-.compactMeta {
-  display: flex;
-  gap: 14px;
-  margin-top: 12px;
-  color: rgba(255,255,255,0.7);
-  font-size: 13px;
-}
-
-.exploreGrid {
-  display: grid;
-  grid-template-columns: repeat(auto-fill,minmax(280px,1fr));
-  gap: 16px;
-}
-
-.historyBlock + .historyBlock {
-  margin-top: 14px;
-}
-
-.historyTitle {
-  font-size: 18px;
-  margin-bottom: 12px;
-}
-
-.smallRow {
-  display: flex;
-  gap: 10px;
-  overflow-x: auto;
-  padding-bottom: 4px;
-  scrollbar-width: none;
-}
-
-.smallCard {
-  min-width: 110px;
-  width: 110px;
-  border-radius: 16px;
-  overflow: hidden;
-  background: rgba(255,255,255,0.04);
-  border: 1px solid rgba(255,255,255,0.08);
-}
-
-.smallCardImage {
-  width: 100%;
-  aspect-ratio: 4/5;
-  object-fit: cover;
-  display: block;
-}
-
-.shareStage {
-  display: grid;
-  grid-template-columns: minmax(0,0.95fr) minmax(320px,0.8fr);
-  gap: 20px;
-  align-items: start;
-}
-
-.statusBar {
-  margin-top: 14px;
-}
-
-.modalBackdrop {
-  position: fixed;
-  inset: 0;
-  background: rgba(0,0,0,0.74);
-  display: grid;
-  place-items: center;
-  z-index: 1000;
+/* generator */
+.generator {
   padding: 20px;
 }
 
-.modalImg {
-  max-width: 92vw;
-  max-height: 88vh;
-  object-fit: contain;
-  border-radius: 18px;
-  display: block;
-}
-
-@media (max-width: 900px) {
-  .heroCard {
-    flex-basis: 72vw;
-  }
-
-  .heroImageFrame {
-    height: min(58vh,480px);
-  }
-
-  .shareStage,
-  .sliderGrid {
-    grid-template-columns: 1fr;
-  }
-}
-
-@media (max-width: 720px) {
-  .topbar {
-    height: auto;
-    padding: 18px 16px;
-    align-items: flex-start;
-    flex-direction: column;
-  }
-
-  .contentWrap {
-    padding: 0 16px 40px;
-  }
-
-  .heroHeader,
-  .sectionHead {
-    align-items: flex-start;
-    flex-direction: column;
-  }
-
-  .heroTitle,
-  .sectionTitle {
-    font-size: 30px;
-  }
-
-  .heroCard {
-    flex-basis: 86vw;
-  }
-
-  .heroImageFrame {
-    height: min(54vh,420px);
-  }
-
-  .sliderGrid,
-  .exploreGrid {
-    grid-template-columns: 1fr;
-  }
-
-  .cardActions {
-    grid-template-columns: repeat(2,minmax(0,1fr));
-  }
+.generateBtn {
+  padding: 16px 24px;
+  font-size: 18px;
+  background: white;
+  color: black;
+  border-radius: 16px;
 }
