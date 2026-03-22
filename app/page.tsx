@@ -14,6 +14,11 @@ type ImgResp = {
   storage_path?: string;
 };
 
+type ListResp = {
+  ok?: boolean;
+  items?: OutfitItem[];
+};
+
 type PresetPayload = {
   style?: string;
   palette?: string;
@@ -42,18 +47,13 @@ const celebs = [
 ];
 
 function Toast({ text }: { text: string }) {
-  return (
-    <div className={styles.toast}>
-      {text}
-    </div>
-  );
+  return <div className={styles.toast}>{text}</div>;
 }
 
 export default function Page() {
   const [featured, setFeatured] = useState<OutfitItem[]>([]);
   const [recent, setRecent] = useState<OutfitItem[]>([]);
   const [favorites, setFavorites] = useState<OutfitItem[]>([]);
-
   const [stage, setStage] = useState<"featured" | "generated">("featured");
   const [zoomSrc, setZoomSrc] = useState("");
 
@@ -80,6 +80,9 @@ export default function Page() {
     loadFavorites();
     loadRecent();
     tryApplyPresetFromStorage();
+    return () => {
+      if (toastTimer.current) window.clearTimeout(toastTimer.current);
+    };
   }, []);
 
   function pushToast(text: string) {
@@ -89,12 +92,12 @@ export default function Page() {
   }
 
   async function loadFeatured() {
-    const data = await apiGetJson(`/api/data?op=explore&limit=8&sort=like`);
+    const data = await apiGetJson<ListResp>(`/api/data?op=explore&limit=8&sort=like`);
     setFeatured(data?.items || []);
   }
 
   async function loadRecent() {
-    const data = await apiGetJson(`/api/data?op=outfits.recent&limit=8`);
+    const data = await apiGetJson<ListResp>(`/api/data?op=outfits.recent&limit=8`);
     setRecent(data?.items || []);
   }
 
@@ -105,7 +108,7 @@ export default function Page() {
       localStorage.setItem("findoutfit_anon_id", anonId);
     }
 
-    const data = await apiGetJson(
+    const data = await apiGetJson<ListResp>(
       `/api/data?op=outfits.favorites&limit=8&anon_id=${anonId}`
     );
 
@@ -140,9 +143,11 @@ export default function Page() {
 
     localStorage.setItem(key, "1");
 
-    await navigator.clipboard.writeText(
-      `${window.location.origin}/share/${item.share_slug}`
-    );
+    if (item.share_slug) {
+      await navigator.clipboard.writeText(
+        `${window.location.origin}/share/${item.share_slug}`
+      );
+    }
 
     pushToast(already ? "已複製連結" : "已分享並複製連結");
   }
@@ -207,11 +212,20 @@ export default function Page() {
       if (!imgResp?.image_url) throw new Error();
 
       setGeneratedImageUrl(imgResp.image_url);
+      if (imgResp.image_path || imgResp.storage_path) {
+        setGeneratedSummary("生成完成");
+      }
+
       pushToast("完成");
     } catch {
       pushToast("生成失敗");
     }
   }
+
+  const activeLabel = useMemo(() => {
+    if (selectedCeleb) return celebs.find((c) => c.id === selectedCeleb)?.label || "";
+    return scenes.find((s) => s.id === selectedScene)?.label || "";
+  }, [selectedScene, selectedCeleb]);
 
   return (
     <main className={styles.page}>
@@ -233,12 +247,19 @@ export default function Page() {
       />
 
       <section className={styles.generator}>
+        <div className={styles.badge}>已選：{activeLabel || "未選擇"}</div>
         <button className={styles.generateBtn} onClick={handleGenerate}>
           生成穿搭
         </button>
       </section>
 
       {toast && <Toast text={toast} />}
+
+      {zoomSrc ? (
+        <div className={styles.modalBackdrop} onClick={() => setZoomSrc("")}>
+          <img src={zoomSrc} alt="" className={styles.modalImg} />
+        </div>
+      ) : null}
     </main>
   );
 }
