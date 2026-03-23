@@ -73,10 +73,22 @@
   color: #000;
 }
 
-.contentWrap {
+.contentWrap,
+.generatorSection,
+.historySection {
   max-width: 1320px;
   margin: 0 auto;
-  padding: 22px 28px 60px;
+  padding-left: 28px;
+  padding-right: 28px;
+}
+
+.contentWrap {
+  padding-top: 22px;
+}
+
+.generatorSection,
+.historySection {
+  margin-top: 34px;
 }
 
 .kicker {
@@ -96,6 +108,10 @@
   margin-bottom: 18px;
 }
 
+.heroHeadCopy {
+  padding-left: 2px;
+}
+
 .heroTitle,
 .sectionTitle {
   margin: 0;
@@ -106,7 +122,6 @@
 
 .heroSub,
 .cardText,
-.statusBar,
 .emptyText {
   color: rgba(255, 255, 255, 0.76);
   line-height: 1.65;
@@ -176,12 +191,12 @@
 }
 
 .heroSection {
+  --hero-card-width: min(46vw, 430px);
   margin-bottom: 48px;
 }
 
 .heroViewport {
   overflow: hidden;
-  margin: 0 -8px;
 }
 
 .heroRail {
@@ -189,8 +204,8 @@
   gap: 18px;
   overflow-x: auto;
   scroll-snap-type: x mandatory;
-  padding: 4px 8px 14px;
   scrollbar-width: none;
+  padding-bottom: 14px;
 }
 
 .heroRail::-webkit-scrollbar,
@@ -198,8 +213,12 @@
   display: none;
 }
 
+.heroSpacer {
+  flex: 0 0 calc((100% - var(--hero-card-width)) / 2);
+}
+
 .heroCard {
-  flex: 0 0 min(46vw, 430px);
+  flex: 0 0 var(--hero-card-width);
   scroll-snap-align: center;
   border-radius: 28px;
   overflow: hidden;
@@ -263,18 +282,14 @@
   margin-top: 8px;
 }
 
-.generator,
-.generatorSection,
-.historySection,
-.listSection {
-  max-width: 1320px;
-  margin: 34px auto 0;
-  padding: 0 28px;
+.heroGeneratedLinkRow {
+  margin-top: 16px;
+  display: flex;
+  justify-content: center;
 }
 
 .card,
 .historyBlock,
-.sharePanel,
 .cardTile {
   background: rgba(255, 255, 255, 0.04);
   border: 1px solid rgba(255, 255, 255, 0.08);
@@ -354,8 +369,7 @@
   transform: translateY(-1px);
 }
 
-.cardImageBtn,
-.shareImageBtn {
+.cardImageBtn {
   width: 100%;
   border: 0;
   padding: 0;
@@ -364,8 +378,7 @@
   display: block;
 }
 
-.cardImage,
-.shareImage {
+.cardImage {
   width: 100%;
   aspect-ratio: 3 / 4;
   object-fit: cover;
@@ -399,12 +412,6 @@
   margin-top: 12px;
   color: rgba(255, 255, 255, 0.7);
   font-size: 13px;
-}
-
-.exploreGrid {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
-  gap: 16px;
 }
 
 .historyBlock + .historyBlock {
@@ -441,13 +448,6 @@
   display: block;
 }
 
-.shareStage {
-  display: grid;
-  grid-template-columns: minmax(0, 0.95fr) minmax(320px, 0.8fr);
-  gap: 20px;
-  align-items: start;
-}
-
 .modalBackdrop {
   position: fixed;
   inset: 0;
@@ -467,15 +467,14 @@
 }
 
 @media (max-width: 900px) {
-  .heroCard {
-    flex-basis: 72vw;
+  .heroSection {
+    --hero-card-width: 72vw;
   }
 
   .heroImageFrame {
     height: min(58vh, 480px);
   }
 
-  .shareStage,
   .sliderGrid {
     grid-template-columns: 1fr;
   }
@@ -490,10 +489,8 @@
   }
 
   .contentWrap,
-  .generator,
   .generatorSection,
-  .historySection,
-  .listSection {
+  .historySection {
     padding-left: 16px;
     padding-right: 16px;
   }
@@ -509,17 +506,12 @@
     font-size: 30px;
   }
 
-  .heroCard {
-    flex-basis: 86vw;
+  .heroSection {
+    --hero-card-width: 86vw;
   }
 
   .heroImageFrame {
     height: min(54vh, 420px);
-  }
-
-  .sliderGrid,
-  .exploreGrid {
-    grid-template-columns: 1fr;
   }
 
   .cardActions {
