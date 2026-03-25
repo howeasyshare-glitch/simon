@@ -3,7 +3,6 @@
 import { useEffect, useState } from "react";
 import styles from "../page.module.css";
 import NavBar from "../../components/NavBar";
-import HeroCarousel from "../../components/HeroCarousel";
 import OutfitCard, { type OutfitItem } from "../../components/OutfitCard";
 import { apiGetJson } from "../../lib/apiFetch";
 
@@ -30,15 +29,13 @@ export default function Page() {
       <NavBar />
 
       <section className={styles.contentWrap}>
-        <HeroCarousel
-          items={items}
-          generatedItems={[]}
-          stage="featured"
-          setStage={() => {}}
-        />
-      </section>
+        <div className={styles.sectionHead}>
+          <div>
+            <div className={styles.kicker}>Explore</div>
+            <h1 className={styles.sectionTitle}>全部公開穿搭</h1>
+          </div>
+        </div>
 
-      <section className={styles.contentWrap}>
         <div className={styles.exploreGrid}>
           {items.map((item) => (
             <OutfitCard
@@ -50,11 +47,11 @@ export default function Page() {
         </div>
       </section>
 
-      {zoomSrc && (
+      {zoomSrc ? (
         <div className={styles.modalBackdrop} onClick={() => setZoomSrc("")}>
           <img src={zoomSrc} className={styles.modalImg} alt="" />
         </div>
-      )}
+      ) : null}
     </main>
   );
 }
