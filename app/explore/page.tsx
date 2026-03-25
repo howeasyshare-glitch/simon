@@ -1,15 +1,19 @@
-// OVERWRITE: app/explore/page.tsx
 "use client";
 
 import { useEffect, useState } from "react";
 import styles from "../page.module.css";
 import NavBar from "../../components/NavBar";
 import HeroCarousel from "../../components/HeroCarousel";
-import OutfitCard from "../../components/OutfitCard";
+import OutfitCard, { type OutfitItem } from "../../components/OutfitCard";
 import { apiGetJson } from "../../lib/apiFetch";
 
+type ListResp = {
+  ok?: boolean;
+  items?: OutfitItem[];
+};
+
 export default function Page() {
-  const [items, setItems] = useState([]);
+  const [items, setItems] = useState<OutfitItem[]>([]);
   const [zoomSrc, setZoomSrc] = useState("");
 
   useEffect(() => {
@@ -17,7 +21,7 @@ export default function Page() {
   }, []);
 
   async function load() {
-    const data = await apiGetJson(`/api/data?op=explore&limit=60`);
+    const data = await apiGetJson<ListResp>(`/api/data?op=explore&limit=60`);
     setItems(data?.items || []);
   }
 
@@ -36,7 +40,7 @@ export default function Page() {
 
       <section className={styles.contentWrap}>
         <div className={styles.exploreGrid}>
-          {items.map((item: any) => (
+          {items.map((item) => (
             <OutfitCard
               key={item.id}
               item={item}
@@ -48,7 +52,7 @@ export default function Page() {
 
       {zoomSrc && (
         <div className={styles.modalBackdrop} onClick={() => setZoomSrc("")}>
-          <img src={zoomSrc} className={styles.modalImg} />
+          <img src={zoomSrc} className={styles.modalImg} alt="" />
         </div>
       )}
     </main>
