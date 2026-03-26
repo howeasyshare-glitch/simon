@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import styles from "../app/page.module.css";
 import type { OutfitItem } from "./OutfitCard";
 
@@ -36,9 +36,14 @@ export default function HeroCarousel({
   isShared,
 }: Props) {
   const railRef = useRef<HTMLDivElement | null>(null);
+  const scrollEndTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const rafRef = useRef<number | null>(null);
   const [activeIdx, setActiveIdx] = useState(0);
 
-  const currentItems = stage === "generated" ? generatedItems : items;
+  const currentItems = useMemo(
+    () => (stage === "generated" ? generatedItems : items),
+    [stage, generatedItems, items]
+  );
 
   useEffect(() => {
     setActiveIdx(0);
@@ -47,34 +52,68 @@ export default function HeroCarousel({
     }
   }, [stage, currentItems.length]);
 
-  const syncActiveFromScroll = () => {
-    const el = railRef.current;
-    if (!el || el.children.length < 3) return;
+  useEffect(() => {
+    return () => {
+      if (scrollEndTimer.current) clearTimeout(scrollEndTimer.current);
+      if (rafRef.current) cancelAnimationFrame(rafRef.current);
+    };
+  }, []);
 
-    const center = el.scrollLeft + el.clientWidth / 2;
+  const getRealCards = () => {
+    const rail = railRef.current;
+    if (!rail) return [] as HTMLElement[];
+
+    return Array.from(rail.querySelectorAll<HTMLElement>(`[data-hero-card="true"]`));
+  };
+
+  const findClosestIndex = () => {
+    const rail = railRef.current;
+    const cards = getRealCards();
+    if (!rail || !cards.length) return 0;
+
+    const railCenter = rail.scrollLeft + rail.clientWidth / 2;
     let closest = 0;
-    let minDist = Infinity;
+    let minDist = Number.POSITIVE_INFINITY;
 
-    Array.from(el.children).forEach((child, i) => {
-      const c = child as HTMLElement;
-      const childCenter = c.offsetLeft + c.offsetWidth / 2;
-      const dist = Math.abs(center - childCenter);
+    cards.forEach((card, idx) => {
+      const cardCenter = card.offsetLeft + card.offsetWidth / 2;
+      const dist = Math.abs(cardCenter - railCenter);
       if (dist < minDist) {
         minDist = dist;
-        closest = i - 1;
+        closest = idx;
       }
     });
 
-    setActiveIdx(Math.max(0, Math.min(currentItems.length - 1, closest)));
+    return closest;
   };
 
-  const scrollToIndex = (index: number) => {
-    const el = railRef.current;
-    if (!el || el.children.length < 3) return;
-    const firstCard = el.children[1] as HTMLElement;
-    const step = firstCard.offsetWidth + 24;
-    el.scrollTo({ left: index * step, behavior: "smooth" });
-    setActiveIdx(index);
+  const scrollToIndex = (index: number, behavior: ScrollBehavior = "smooth") => {
+    const rail = railRef.current;
+    const cards = getRealCards();
+    const safeIndex = Math.max(0, Math.min(cards.length - 1, index));
+    const target = cards[safeIndex];
+    if (!rail || !target) return;
+
+    const targetLeft = target.offsetLeft - (rail.clientWidth - target.offsetWidth) / 2;
+    rail.scrollTo({ left: Math.max(0, targetLeft), behavior });
+    setActiveIdx(safeIndex);
+  };
+
+  const finalizeSnap = () => {
+    const nextIndex = findClosestIndex();
+    setActiveIdx(nextIndex);
+    scrollToIndex(nextIndex, "smooth");
+  };
+
+  const handleScroll = () => {
+    if (rafRef.current) cancelAnimationFrame(rafRef.current);
+
+    rafRef.current = requestAnimationFrame(() => {
+      setActiveIdx(findClosestIndex());
+    });
+
+    if (scrollEndTimer.current) clearTimeout(scrollEndTimer.current);
+    scrollEndTimer.current = setTimeout(finalizeSnap, 90);
   };
 
   return (
@@ -108,14 +147,16 @@ export default function HeroCarousel({
           <button
             type="button"
             className={styles.arrowBtn}
-            onClick={() => scrollToIndex(Math.max(0, activeIdx - 1))}
+            onClick={() => scrollToIndex(activeIdx - 1)}
+            aria-label="Previous outfit"
           >
             ‹
           </button>
           <button
             type="button"
             className={styles.arrowBtn}
-            onClick={() => scrollToIndex(Math.min(currentItems.length - 1, activeIdx + 1))}
+            onClick={() => scrollToIndex(activeIdx + 1)}
+            aria-label="Next outfit"
           >
             ›
           </button>
@@ -123,68 +164,62 @@ export default function HeroCarousel({
       </div>
 
       <div className={styles.heroViewport}>
-        <div className={styles.heroRail} ref={railRef} onScroll={syncActiveFromScroll}>
-          <div className={styles.heroSpacer} />
-          {currentItems.map((card, idx) => (
-            <article
-              key={`${stage}-${card.id}`}
-              className={`${styles.heroCard} ${idx === activeIdx ? styles.heroCardActive : ""}`}
-            >
-              <button
-                type="button"
-                className={styles.heroImageButton}
-                onClick={() => card.image_url && onOpen?.(card.image_url)}
+        <div className={styles.heroRail} ref={railRef} onScroll={handleScroll}>
+          <div className={styles.heroSpacer} aria-hidden="true" />
+          {currentItems.map((card, idx) => {
+            const imgSrc = card.image_url || (generatedImageUrl && idx === 0 ? generatedImageUrl : undefined);
+
+            return (
+              <article
+                key={`${stage}-${card.id}`}
+                data-hero-card="true"
+                className={`${styles.heroCard} ${idx === activeIdx ? styles.heroCardActive : ""}`}
               >
-                <div className={styles.heroImageFrame}>
-                  {card.image_url ? (
-                    <>
-                      <div
-                        className={styles.heroImageBg}
-                        style={{ backgroundImage: `url(${card.image_url})` }}
-                      />
-                      <img src={card.image_url} alt={card.summary || "hero"} className={styles.heroImage} />
-                    </>
-                  ) : generatedImageUrl && idx === 0 ? (
-                    <>
-                      <div
-                        className={styles.heroImageBg}
-                        style={{ backgroundImage: `url(${generatedImageUrl})` }}
-                      />
-                      <img src={generatedImageUrl} alt="" className={styles.heroImage} />
-                    </>
-                  ) : (
-                    <div className={styles.heroImageFallback} />
-                  )}
-                </div>
-              </button>
+                <button
+                  type="button"
+                  className={styles.heroImageButton}
+                  onClick={() => imgSrc && onOpen?.(imgSrc)}
+                >
+                  <div className={styles.heroImageFrame}>
+                    {imgSrc ? (
+                      <>
+                        <div className={styles.heroImageBg} style={{ backgroundImage: `url(${imgSrc})` }} />
+                        <img src={imgSrc} alt={card.summary || "hero"} className={styles.heroImage} />
+                      </>
+                    ) : (
+                      <div className={styles.heroImageFallback} />
+                    )}
+                  </div>
+                </button>
 
-              <div className={styles.heroInfo}>
-                <div className={styles.heroCardTitle}>{card.style?.style || "Outfit"}</div>
-                <div className={styles.heroCardText}>{card.summary || "穿搭靈感"}</div>
+                <div className={styles.heroInfo}>
+                  <div className={styles.heroCardTitle}>{card.style?.style || "Outfit"}</div>
+                  <div className={styles.heroCardText}>{card.summary || "穿搭靈感"}</div>
 
-                <div className={styles.heroCardActions}>
-                  <button
-                    type="button"
-                    className={isLiked?.(card.id) ? styles.activeGhostBtn : styles.ghostBtn}
-                    onClick={() => onLike?.(card)}
-                  >
-                    {isLiked?.(card.id) ? "已讚" : "Like"}
-                  </button>
-                  <button
-                    type="button"
-                    className={isShared?.(card.id) ? styles.activeGhostBtn : styles.ghostBtn}
-                    onClick={() => onShare?.(card)}
-                  >
-                    {isShared?.(card.id) ? "已分享" : "Share"}
-                  </button>
-                  <button type="button" className={styles.primaryBtn} onClick={() => onApply?.(card)}>
-                    套用
-                  </button>
+                  <div className={styles.heroCardActions}>
+                    <button
+                      type="button"
+                      className={isLiked?.(card.id) ? styles.activeGhostBtn : styles.ghostBtn}
+                      onClick={() => onLike?.(card)}
+                    >
+                      {isLiked?.(card.id) ? "已讚" : "Like"}
+                    </button>
+                    <button
+                      type="button"
+                      className={isShared?.(card.id) ? styles.activeGhostBtn : styles.ghostBtn}
+                      onClick={() => onShare?.(card)}
+                    >
+                      {isShared?.(card.id) ? "已分享" : "Share"}
+                    </button>
+                    <button type="button" className={styles.primaryBtn} onClick={() => onApply?.(card)}>
+                      套用
+                    </button>
+                  </div>
                 </div>
-              </div>
-            </article>
-          ))}
-          <div className={styles.heroSpacer} />
+              </article>
+            );
+          })}
+          <div className={styles.heroSpacer} aria-hidden="true" />
         </div>
 
         {stage === "generated" && generatedShareUrl ? (
