@@ -195,7 +195,7 @@
 }
 
 .heroSection {
-  --hero-card-width: min(62vw, 720px);
+  --hero-card-width: min(720px, 62vw);
   margin-bottom: 48px;
 }
 
@@ -212,6 +212,7 @@
   padding-bottom: 14px;
   -webkit-overflow-scrolling: touch;
   scroll-behavior: smooth;
+  align-items: stretch;
 }
 
 .heroRail::-webkit-scrollbar,
