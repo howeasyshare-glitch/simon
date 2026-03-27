@@ -4,7 +4,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import styles from "./page.module.css";
 import NavBar from "../components/NavBar";
 import HeroCarousel from "../components/HeroCarousel";
-import OutfitCard, { type OutfitItem } from "../components/OutfitCard";
+import type { OutfitItem } from "../components/OutfitCard";
 import { apiGetJson, apiPostJson } from "../lib/apiFetch";
 
 type ImgResp = {
@@ -32,22 +32,100 @@ type PresetPayload = {
   temp?: number | string;
 };
 
-const scenes = [
-  { id: "date", label: "約會" },
-  { id: "commute", label: "通勤" },
-  { id: "party", label: "聚會" },
-  { id: "outdoor", label: "戶外" },
-];
+type QuickScene = {
+  id: string;
+  label: string;
+  hint: string;
+};
 
-const celebs = [
+const baseCelebs = [
   { id: "jennie", label: "Jennie" },
   { id: "iu", label: "IU" },
   { id: "gd", label: "G-Dragon" },
   { id: "hailey", label: "Hailey" },
 ];
 
+const quickSceneMap: Record<string, QuickScene[]> = {
+  "女性-成人": [
+    { id: "date", label: "約會", hint: "柔和、精緻、好感度高" },
+    { id: "commute", label: "通勤", hint: "俐落、耐看、可久坐" },
+    { id: "party", label: "聚會", hint: "有亮點、適合拍照" },
+    { id: "shopping", label: "逛街", hint: "自在、輕鬆、好搭配" },
+  ],
+  "男性-成人": [
+    { id: "commute", label: "通勤", hint: "乾淨、俐落、日常實穿" },
+    { id: "date", label: "約會", hint: "成熟、有層次、不用力" },
+    { id: "outdoor", label: "戶外", hint: "舒適、防曬、好活動" },
+    { id: "coffee", label: "咖啡店", hint: "簡約、有品味、好看不拘束" },
+  ],
+  "中性-成人": [
+    { id: "minimal", label: "極簡日常", hint: "乾淨線條、低彩度" },
+    { id: "creative", label: "創意工作", hint: "有態度、保有機能性" },
+    { id: "travel", label: "輕旅行", hint: "方便走動、層次分明" },
+    { id: "weekend", label: "週末休閒", hint: "放鬆但不隨便" },
+  ],
+  "女性-兒童": [
+    { id: "school", label: "上學", hint: "活潑、舒適、方便活動" },
+    { id: "park", label: "公園", hint: "耐髒、輕盈、好奔跑" },
+    { id: "birthday", label: "生日會", hint: "可愛、有亮點、好拍" },
+    { id: "family", label: "家庭出遊", hint: "溫柔、童趣、好穿脫" },
+  ],
+  "男性-兒童": [
+    { id: "school", label: "上學", hint: "舒適、耐穿、清爽" },
+    { id: "outdoor", label: "戶外玩樂", hint: "好動、透氣、機能感" },
+    { id: "birthday", label: "生日會", hint: "精神、有重點、不厚重" },
+    { id: "family", label: "家庭出遊", hint: "方便活動、易搭配" },
+  ],
+  "中性-兒童": [
+    { id: "school", label: "上學", hint: "乾淨、舒服、好整理" },
+    { id: "play", label: "遊戲日", hint: "輕鬆、童趣、可活動" },
+    { id: "outing", label: "出門散步", hint: "溫和色系、舒適感" },
+    { id: "photo", label: "拍照日", hint: "可愛、有記憶點" },
+  ],
+};
+
 function Toast({ text }: { text: string }) {
   return <div className={styles.toast}>{text}</div>;
+}
+
+function ActivityMiniCard({
+  item,
+  onOpen,
+  onApply,
+  onShare,
+}: {
+  item: OutfitItem;
+  onOpen: () => void;
+  onApply: () => void;
+  onShare: () => void;
+}) {
+  return (
+    <article className={styles.activityCard}>
+      <button type="button" className={styles.activityImageBtn} onClick={onOpen}>
+        {item.image_url ? (
+          <img src={item.image_url} alt={item.summary || "outfit"} className={styles.activityImage} />
+        ) : (
+          <div className={styles.activityImageFallback} />
+        )}
+      </button>
+      <div className={styles.activityBody}>
+        <div className={styles.activityTitleRow}>
+          <div className={styles.activityTitle}>{item.style?.style || "Outfit"}</div>
+          <button type="button" className={styles.activityChipBtn} onClick={onApply}>
+            套用
+          </button>
+        </div>
+        <div className={styles.activityText}>{item.summary || "穿搭靈感"}</div>
+        <div className={styles.activityMetaRow}>
+          <span>♥ {item.like_count || 0}</span>
+          <span>↗ {item.share_count || 0}</span>
+          <button type="button" className={styles.activityLinkBtn} onClick={onShare}>
+            分享
+          </button>
+        </div>
+      </div>
+    </article>
+  );
 }
 
 export default function Page() {
@@ -82,6 +160,18 @@ export default function Page() {
       if (toastTimer.current) window.clearTimeout(toastTimer.current);
     };
   }, []);
+
+  const quickScenes = useMemo(() => {
+    return quickSceneMap[`${gender}-${audience}`] || quickSceneMap["中性-成人"];
+  }, [gender, audience]);
+
+  useEffect(() => {
+    if (!quickScenes.some((scene) => scene.id === selectedScene)) {
+      setSelectedScene(quickScenes[0]?.id || "date");
+      setSelectedCeleb("");
+      setShowCelebs(false);
+    }
+  }, [quickScenes, selectedScene]);
 
   async function loadAll() {
     await Promise.all([loadFeatured(), loadRecent(), loadFavorites()]);
@@ -243,9 +333,10 @@ export default function Page() {
       setStage("generated");
       pushToast("生成中...");
 
+      const selectedSceneLabel = quickScenes.find((s) => s.id === selectedScene)?.label || "";
       const promptContext = selectedCeleb
-        ? `名人靈感：${celebs.find((c) => c.id === selectedCeleb)?.label || ""}`
-        : `情境：${scenes.find((s) => s.id === selectedScene)?.label || ""}`;
+        ? `名人靈感：${baseCelebs.find((c) => c.id === selectedCeleb)?.label || ""}`
+        : `情境：${selectedSceneLabel}`;
 
       const specResp = await apiPostJson<any>("/api/generate-outfit-spec", {
         age,
@@ -309,9 +400,14 @@ export default function Page() {
   }
 
   const activeLabel = useMemo(() => {
-    if (selectedCeleb) return celebs.find((c) => c.id === selectedCeleb)?.label || "";
-    return scenes.find((s) => s.id === selectedScene)?.label || "";
-  }, [selectedScene, selectedCeleb]);
+    if (selectedCeleb) return baseCelebs.find((c) => c.id === selectedCeleb)?.label || "";
+    return quickScenes.find((s) => s.id === selectedScene)?.label || "";
+  }, [selectedScene, selectedCeleb, quickScenes]);
+
+  const activeSceneHint = useMemo(() => {
+    if (selectedCeleb) return "以名人穿搭氣質為靈感，自動轉成適合你條件的版本。";
+    return quickScenes.find((s) => s.id === selectedScene)?.hint || "";
+  }, [selectedScene, selectedCeleb, quickScenes]);
 
   return (
     <main className={styles.page}>
@@ -344,99 +440,130 @@ export default function Page() {
           <div className={styles.badge}>已選：{activeLabel || "未選擇"}</div>
         </div>
 
-        <div className={styles.card}>
-          <div className={styles.blockTitle}>主要條件</div>
-
-          <div className={styles.sliderGrid}>
-            <label className={styles.sliderCard}>
-              <span className={styles.sliderLabel}>年齡</span>
-              <input type="range" min="5" max="60" value={age} onChange={(e) => setAge(Number(e.target.value))} />
-              <span className={styles.sliderValue}>{age}</span>
-            </label>
-
-            <label className={styles.sliderCard}>
-              <span className={styles.sliderLabel}>身高</span>
-              <input type="range" min="120" max="200" value={height} onChange={(e) => setHeight(Number(e.target.value))} />
-              <span className={styles.sliderValue}>{height} cm</span>
-            </label>
-
-            <label className={styles.sliderCard}>
-              <span className={styles.sliderLabel}>體重</span>
-              <input type="range" min="30" max="120" value={weight} onChange={(e) => setWeight(Number(e.target.value))} />
-              <span className={styles.sliderValue}>{weight} kg</span>
-            </label>
-
-            <label className={styles.sliderCard}>
-              <span className={styles.sliderLabel}>氣溫</span>
-              <input type="range" min="0" max="35" value={temp} onChange={(e) => setTemp(Number(e.target.value))} />
-              <span className={styles.sliderValue}>{temp}°C</span>
-            </label>
-          </div>
-
-          <div className={styles.segmentRow}>
-            {["女性", "男性", "中性"].map((v) => (
-              <button key={v} className={gender === v ? styles.activePill : styles.pill} onClick={() => setGender(v)}>
-                {v}
-              </button>
-            ))}
-          </div>
-
-          <div className={styles.segmentRow}>
-            {["成人", "兒童"].map((v) => (
-              <button key={v} className={audience === v ? styles.activePill : styles.pill} onClick={() => setAudience(v)}>
-                {v}
-              </button>
-            ))}
-          </div>
-        </div>
-
-        <div className={styles.card}>
-          <div className={styles.blockTitle}>快速情境</div>
-
-          <div className={styles.pillRow}>
-            {scenes.map((scene) => (
-              <button
-                key={scene.id}
-                className={selectedScene === scene.id && !selectedCeleb ? styles.activePill : styles.pill}
-                onClick={() => {
-                  setSelectedScene(scene.id);
-                  setSelectedCeleb("");
-                  setShowCelebs(false);
-                }}
-              >
-                {scene.label}
-              </button>
-            ))}
-
-            <button className={showCelebs ? styles.activePill : styles.pill} onClick={() => setShowCelebs((v) => !v)}>
-              名人靈感
-            </button>
-          </div>
-
-          {showCelebs ? (
-            <div className={styles.celebPanel}>
-              {celebs.map((celeb) => (
-                <button
-                  key={celeb.id}
-                  className={selectedCeleb === celeb.id ? styles.activePill : styles.pill}
-                  onClick={() => setSelectedCeleb(celeb.id)}
-                >
-                  {celeb.label}
-                </button>
-              ))}
+        <div className={styles.generatorShell}>
+          <aside className={styles.generatorLeadCard}>
+            <div className={styles.generatorLeadTop}>
+              <div>
+                <div className={styles.blockTitle}>本次設定</div>
+                <div className={styles.generatorLeadValue}>{gender} · {audience}</div>
+              </div>
+              <div className={styles.generatorTempBadge}>{temp}°C</div>
             </div>
-          ) : null}
-        </div>
 
-        <div className={styles.generateRow}>
-          <button className={styles.generateBtn} onClick={handleGenerate}>
-            生成穿搭
-          </button>
-          {generatedShareUrl ? (
-            <a href={generatedShareUrl} className={styles.secondaryBtn}>
-              查看分享頁
-            </a>
-          ) : null}
+            <div className={styles.generatorHintText}>{activeSceneHint || "先選情境，再用條件微調會更準。"}</div>
+
+            <div className={styles.generatorStats}>
+              <div className={styles.generatorStat}>
+                <span className={styles.generatorStatLabel}>年齡</span>
+                <strong>{age}</strong>
+              </div>
+              <div className={styles.generatorStat}>
+                <span className={styles.generatorStatLabel}>身高</span>
+                <strong>{height} cm</strong>
+              </div>
+              <div className={styles.generatorStat}>
+                <span className={styles.generatorStatLabel}>體重</span>
+                <strong>{weight} kg</strong>
+              </div>
+            </div>
+
+            <div className={styles.generateRow}>
+              <button className={styles.generateBtn} onClick={handleGenerate}>
+                生成穿搭
+              </button>
+              {generatedShareUrl ? (
+                <a href={generatedShareUrl} className={styles.secondaryBtn}>
+                  查看分享頁
+                </a>
+              ) : null}
+            </div>
+          </aside>
+
+          <div className={styles.generatorMain}>
+            <div className={styles.card}>
+              <div className={styles.blockTitle}>基本輪廓</div>
+              <div className={styles.segmentRow}>
+                {["女性", "男性", "中性"].map((v) => (
+                  <button key={v} className={gender === v ? styles.activePill : styles.pill} onClick={() => setGender(v)}>
+                    {v}
+                  </button>
+                ))}
+              </div>
+
+              <div className={styles.segmentRow}>
+                {["成人", "兒童"].map((v) => (
+                  <button key={v} className={audience === v ? styles.activePill : styles.pill} onClick={() => setAudience(v)}>
+                    {v}
+                  </button>
+                ))}
+              </div>
+
+              <div className={styles.sliderGrid}>
+                <label className={styles.sliderCard}>
+                  <span className={styles.sliderTop}><span className={styles.sliderLabel}>年齡</span><span className={styles.sliderValue}>{age}</span></span>
+                  <input type="range" min="5" max="60" value={age} onChange={(e) => setAge(Number(e.target.value))} />
+                </label>
+
+                <label className={styles.sliderCard}>
+                  <span className={styles.sliderTop}><span className={styles.sliderLabel}>身高</span><span className={styles.sliderValue}>{height} cm</span></span>
+                  <input type="range" min="120" max="200" value={height} onChange={(e) => setHeight(Number(e.target.value))} />
+                </label>
+
+                <label className={styles.sliderCard}>
+                  <span className={styles.sliderTop}><span className={styles.sliderLabel}>體重</span><span className={styles.sliderValue}>{weight} kg</span></span>
+                  <input type="range" min="30" max="120" value={weight} onChange={(e) => setWeight(Number(e.target.value))} />
+                </label>
+
+                <label className={styles.sliderCard}>
+                  <span className={styles.sliderTop}><span className={styles.sliderLabel}>氣溫</span><span className={styles.sliderValue}>{temp}°C</span></span>
+                  <input type="range" min="0" max="35" value={temp} onChange={(e) => setTemp(Number(e.target.value))} />
+                </label>
+              </div>
+            </div>
+
+            <div className={styles.card}>
+              <div className={styles.generatorSceneHead}>
+                <div>
+                  <div className={styles.blockTitle}>快速情境</div>
+                  <div className={styles.generatorSceneSub}>依照性別與成人 / 兒童自動切換更合理的情境選項。</div>
+                </div>
+                <button className={showCelebs ? styles.activePill : styles.pill} onClick={() => setShowCelebs((v) => !v)}>
+                  名人靈感
+                </button>
+              </div>
+
+              {!showCelebs ? (
+                <div className={styles.sceneGrid}>
+                  {quickScenes.map((scene) => (
+                    <button
+                      key={scene.id}
+                      className={selectedScene === scene.id && !selectedCeleb ? styles.sceneCardActive : styles.sceneCard}
+                      onClick={() => {
+                        setSelectedScene(scene.id);
+                        setSelectedCeleb("");
+                      }}
+                    >
+                      <span className={styles.sceneCardTitle}>{scene.label}</span>
+                      <span className={styles.sceneCardHint}>{scene.hint}</span>
+                    </button>
+                  ))}
+                </div>
+              ) : (
+                <div className={styles.celebGrid}>
+                  {baseCelebs.map((celeb) => (
+                    <button
+                      key={celeb.id}
+                      className={selectedCeleb === celeb.id ? styles.sceneCardActive : styles.sceneCard}
+                      onClick={() => setSelectedCeleb(celeb.id)}
+                    >
+                      <span className={styles.sceneCardTitle}>{celeb.label}</span>
+                      <span className={styles.sceneCardHint}>用其風格輪廓轉化成你的版本</span>
+                    </button>
+                  ))}
+                </div>
+              )}
+            </div>
+          </div>
         </div>
       </section>
 
@@ -448,30 +575,50 @@ export default function Page() {
           </div>
         </div>
 
-        <div className={styles.historyBlock}>
-          <div className={styles.historyTitle}>最近生成</div>
-          {recent.length ? (
-            <div className={styles.smallRow}>
-              {recent.map((item) => (
-                <OutfitCard key={item.id} item={item} compact onOpen={() => item.image_url && setZoomSrc(item.image_url)} />
-              ))}
+        <div className={styles.activityGrid}>
+          <div className={styles.historyBlock}>
+            <div className={styles.historyTitleRow}>
+              <div className={styles.historyTitle}>最近生成</div>
+              <div className={styles.historyCount}>{recent.length} 筆</div>
             </div>
-          ) : (
-            <div className={styles.emptyText}>目前沒有最近生成資料。</div>
-          )}
-        </div>
+            {recent.length ? (
+              <div className={styles.activityList}>
+                {recent.slice(0, 6).map((item) => (
+                  <ActivityMiniCard
+                    key={item.id}
+                    item={item}
+                    onOpen={() => item.image_url && setZoomSrc(item.image_url)}
+                    onApply={() => applyPreset(item)}
+                    onShare={() => shareItem(item)}
+                  />
+                ))}
+              </div>
+            ) : (
+              <div className={styles.emptyText}>目前沒有最近生成資料。</div>
+            )}
+          </div>
 
-        <div className={styles.historyBlock}>
-          <div className={styles.historyTitle}>我的最愛</div>
-          {favorites.length ? (
-            <div className={styles.smallRow}>
-              {favorites.map((item) => (
-                <OutfitCard key={item.id} item={item} compact onOpen={() => item.image_url && setZoomSrc(item.image_url)} />
-              ))}
+          <div className={styles.historyBlock}>
+            <div className={styles.historyTitleRow}>
+              <div className={styles.historyTitle}>我的最愛</div>
+              <div className={styles.historyCount}>{favorites.length} 筆</div>
             </div>
-          ) : (
-            <div className={styles.emptyText}>目前沒有收藏資料。</div>
-          )}
+            {favorites.length ? (
+              <div className={styles.activityList}>
+                {favorites.slice(0, 6).map((item) => (
+                  <ActivityMiniCard
+                    key={item.id}
+                    item={item}
+                    onOpen={() => item.image_url && setZoomSrc(item.image_url)}
+                    onApply={() => applyPreset(item)}
+                    onShare={() => shareItem(item)}
+                  />
+                ))}
+              </div>
+            ) : (
+              <div className={styles.emptyText}>目前沒有收藏資料。</div>
+            )}
+          </div>
         </div>
       </section>
 
