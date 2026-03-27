@@ -110,7 +110,6 @@
 
 .heroHeadCopy {
   padding-left: 8px;
-  max-width: 720px;
 }
 
 .heroTitle,
@@ -142,7 +141,6 @@
 
 .heroControls {
   padding-right: 8px;
-  align-items: center;
 }
 
 .arrowBtn,
@@ -197,8 +195,7 @@
 }
 
 .heroSection {
-  --hero-card-width: clamp(280px, 30vw, 420px);
-  --hero-card-gap: 16px;
+  --hero-card-width: min(62vw, 720px);
   margin-bottom: 48px;
 }
 
@@ -208,14 +205,13 @@
 
 .heroRail {
   display: flex;
-  gap: var(--hero-card-gap);
+  gap: 24px;
   overflow-x: auto;
   scroll-snap-type: x mandatory;
   scrollbar-width: none;
-  padding: 6px 0 18px;
+  padding-bottom: 14px;
   -webkit-overflow-scrolling: touch;
   scroll-behavior: smooth;
-  overscroll-behavior-x: contain;
 }
 
 .heroRail::-webkit-scrollbar,
@@ -224,7 +220,7 @@
 }
 
 .heroSpacer {
-  flex: 0 0 max(20px, calc((100% - var(--hero-card-width)) / 2));
+  flex: 0 0 calc((100% - var(--hero-card-width)) / 2);
 }
 
 .heroCard {
@@ -232,22 +228,17 @@
   scroll-snap-align: center;
   border-radius: 28px;
   overflow: hidden;
-  background: linear-gradient(180deg, rgba(255, 255, 255, 0.06), rgba(255, 255, 255, 0.03));
+  background: rgba(255, 255, 255, 0.04);
   border: 1px solid rgba(255, 255, 255, 0.08);
-  opacity: 0.34;
-  transform: scale(0.88);
-  filter: blur(1px);
-  transform-origin: center center;
-  transition: transform 0.32s ease, opacity 0.32s ease, box-shadow 0.32s ease, filter 0.32s ease,
-    border-color 0.32s ease;
+  opacity: 0.45;
+  transform: scale(0.92);
+  transition: transform 0.25s ease, opacity 0.25s ease, box-shadow 0.25s ease;
 }
 
 .heroCardActive {
   opacity: 1;
   transform: scale(1);
-  filter: blur(0);
-  border-color: rgba(255, 255, 255, 0.14);
-  box-shadow: 0 24px 60px rgba(0, 0, 0, 0.34);
+  box-shadow: 0 24px 60px rgba(0, 0, 0, 0.36);
 }
 
 .heroImageButton {
@@ -263,9 +254,7 @@
 .heroImageFrame {
   position: relative;
   width: 100%;
-  aspect-ratio: 3 / 4;
-  min-height: 440px;
-  max-height: min(72vh, 700px);
+  height: min(62vh, 620px);
   background: rgba(255, 255, 255, 0.03);
   overflow: hidden;
 }
@@ -275,9 +264,9 @@
   inset: 0;
   background-size: cover;
   background-position: center;
-  filter: blur(30px);
-  transform: scale(1.12);
-  opacity: 0.3;
+  filter: blur(28px);
+  transform: scale(1.08);
+  opacity: 0.32;
 }
 
 .heroImage {
@@ -330,39 +319,202 @@
   backdrop-filter: blur(8px);
 }
 
-@media (max-width: 1024px) {
-  .heroSection {
-    --hero-card-width: clamp(280px, 42vw, 380px);
-  }
+.blockTitle {
+  font-size: 16px;
+  font-weight: 700;
+  margin-bottom: 14px;
 }
 
-@media (max-width: 768px) {
-  .heroHeader,
-  .sectionHead {
-    align-items: stretch;
-    flex-direction: column;
-  }
+.sliderGrid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+}
 
-  .heroHeadCopy,
-  .heroControls {
-    padding-left: 0;
-    padding-right: 0;
-  }
+.sliderCard {
+  background: rgba(0, 0, 0, 0.18);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 18px;
+  padding: 14px;
+}
 
+.sliderLabel {
+  display: inline-block;
+  color: rgba(255, 255, 255, 0.82);
+  margin-bottom: 8px;
+}
+
+.sliderCard input[type="range"] {
+  width: 100%;
+}
+
+.sliderValue {
+  display: inline-block;
+  margin-top: 8px;
+  color: #fff;
+  font-weight: 700;
+}
+
+.segmentRow {
+  margin-top: 12px;
+}
+
+.celebPanel {
+  margin-top: 14px;
+  padding-top: 14px;
+  border-top: 1px dashed rgba(255, 255, 255, 0.1);
+}
+
+.generateBtn {
+  min-height: 58px;
+  min-width: 240px;
+  padding: 0 24px;
+  border-radius: 18px;
+  border: 0;
+  background: linear-gradient(135deg, #ffffff 0%, #d7ecff 100%);
+  color: #07111d;
+  font-size: 17px;
+  font-weight: 900;
+  letter-spacing: 0.01em;
+  box-shadow: 0 14px 30px rgba(138, 198, 255, 0.18);
+  cursor: pointer;
+  transition: 0.2s ease;
+}
+
+.generateBtn:hover {
+  transform: translateY(-1px);
+}
+
+.cardImageBtn {
+  width: 100%;
+  border: 0;
+  padding: 0;
+  cursor: zoom-in;
+  background: transparent;
+  display: block;
+}
+
+.cardImage {
+  width: 100%;
+  aspect-ratio: 3 / 4;
+  object-fit: cover;
+  display: block;
+  border-radius: 18px;
+}
+
+.cardImageFallback,
+.smallCardImageFallback {
+  width: 100%;
+  aspect-ratio: 3 / 4;
+  background: linear-gradient(180deg, #efefef 0 42%, #d7cfbf 42% 100%);
+  border-radius: 18px;
+}
+
+.cardBody {
+  padding-top: 14px;
+}
+
+.cardActions {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 10px;
+  margin-top: 14px;
+}
+
+.cardMeta,
+.compactMeta {
+  display: flex;
+  gap: 14px;
+  margin-top: 12px;
+  color: rgba(255, 255, 255, 0.7);
+  font-size: 13px;
+}
+
+.historyBlock + .historyBlock {
+  margin-top: 14px;
+}
+
+.historyTitle {
+  font-size: 18px;
+  margin-bottom: 12px;
+}
+
+.smallRow {
+  display: flex;
+  gap: 10px;
+  overflow-x: auto;
+  padding-bottom: 4px;
+  scrollbar-width: none;
+}
+
+.smallCard {
+  min-width: 110px;
+  width: 110px;
+  border-radius: 16px;
+  overflow: hidden;
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  padding: 0;
+}
+
+.smallCardImage {
+  width: 100%;
+  aspect-ratio: 4 / 5;
+  object-fit: cover;
+  display: block;
+}
+
+.modalBackdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.74);
+  display: grid;
+  place-items: center;
+  z-index: 1000;
+  padding: 20px;
+}
+
+.modalImg {
+  max-width: 92vw;
+  max-height: 88vh;
+  object-fit: contain;
+  border-radius: 18px;
+  display: block;
+}
+
+@media (max-width: 900px) {
   .heroSection {
-    --hero-card-width: min(78vw, 340px);
-    --hero-card-gap: 14px;
+    --hero-card-width: 78vw;
   }
 
   .heroImageFrame {
-    min-height: 380px;
+    height: min(56vh, 520px);
+  }
+
+  .sliderGrid {
+    grid-template-columns: 1fr;
   }
 }
 
-@media (max-width: 520px) {
-  .heroSection {
-    --hero-card-width: min(82vw, 320px);
-    --hero-card-gap: 12px;
+@media (max-width: 720px) {
+  .topbar {
+    height: auto;
+    padding: 18px 16px;
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
+  .contentWrap,
+  .generatorSection,
+  .historySection {
+    padding-left: 16px;
+    padding-right: 16px;
+  }
+
+  .heroHeader,
+  .sectionHead {
+    align-items: flex-start;
+    flex-direction: column;
   }
 
   .heroTitle,
@@ -370,11 +522,333 @@
     font-size: 30px;
   }
 
-  .heroImageFrame {
-    min-height: 340px;
+  .heroSection {
+    --hero-card-width: 88vw;
   }
 
-  .heroInfo {
-    padding: 16px 16px 18px;
+  .heroImageFrame {
+    height: min(52vh, 430px);
+  }
+
+  .cardActions {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+
+.heroInfo {
+  padding: 18px 20px 22px;
+}
+
+.heroCardTitle {
+  font-size: 18px;
+  line-height: 1.15;
+}
+
+.heroCardText {
+  margin-top: 10px;
+  font-size: 14px;
+  line-height: 1.6;
+  color: rgba(255,255,255,0.72);
+}
+
+.heroCardActions {
+  margin-top: 16px;
+}
+
+.generatorShell {
+  display: grid;
+  grid-template-columns: 320px minmax(0, 1fr);
+  gap: 18px;
+  align-items: start;
+}
+
+.generatorLeadCard {
+  position: sticky;
+  top: 92px;
+  background: linear-gradient(180deg, rgba(255,255,255,0.06), rgba(255,255,255,0.03));
+  border: 1px solid rgba(255,255,255,0.08);
+  border-radius: 24px;
+  padding: 20px;
+  backdrop-filter: blur(10px);
+}
+
+.generatorLeadTop {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.generatorLeadValue {
+  font-size: 22px;
+  font-weight: 800;
+  line-height: 1.2;
+}
+
+.generatorTempBadge {
+  min-width: 64px;
+  min-height: 44px;
+  padding: 0 14px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 999px;
+  background: rgba(255,255,255,0.92);
+  color: #06101c;
+  font-weight: 800;
+}
+
+.generatorHintText {
+  margin-top: 14px;
+  color: rgba(255,255,255,0.78);
+  line-height: 1.65;
+  font-size: 14px;
+}
+
+.generatorStats {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 10px;
+  margin-top: 18px;
+}
+
+.generatorStat {
+  padding: 12px;
+  border-radius: 16px;
+  background: rgba(0,0,0,0.2);
+  border: 1px solid rgba(255,255,255,0.06);
+}
+
+.generatorStatLabel {
+  display: block;
+  font-size: 12px;
+  color: rgba(255,255,255,0.62);
+  margin-bottom: 6px;
+}
+
+.generatorMain {
+  display: grid;
+  gap: 18px;
+}
+
+.sliderTop {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  margin-bottom: 10px;
+}
+
+.sliderCard {
+  padding: 16px;
+}
+
+.sliderValue {
+  margin-top: 0;
+  font-size: 14px;
+}
+
+.generatorSceneHead {
+  display: flex;
+  justify-content: space-between;
+  gap: 14px;
+  align-items: flex-start;
+  margin-bottom: 14px;
+}
+
+.generatorSceneSub {
+  color: rgba(255,255,255,0.68);
+  font-size: 14px;
+  line-height: 1.55;
+}
+
+.sceneGrid,
+.celebGrid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.sceneCard,
+.sceneCardActive {
+  text-align: left;
+  padding: 16px;
+  border-radius: 18px;
+  border: 1px solid rgba(255,255,255,0.08);
+  background: rgba(0,0,0,0.18);
+  color: #fff;
+  cursor: pointer;
+  transition: 0.2s ease;
+}
+
+.sceneCard:hover {
+  background: rgba(255,255,255,0.06);
+}
+
+.sceneCardActive {
+  background: rgba(255,255,255,0.1);
+  border-color: rgba(255,255,255,0.24);
+  box-shadow: inset 0 0 0 1px rgba(255,255,255,0.08);
+}
+
+.sceneCardTitle {
+  display: block;
+  font-size: 16px;
+  font-weight: 800;
+}
+
+.sceneCardHint {
+  display: block;
+  margin-top: 8px;
+  font-size: 13px;
+  line-height: 1.5;
+  color: rgba(255,255,255,0.7);
+}
+
+.activityGrid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 16px;
+}
+
+.historyTitleRow {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 12px;
+}
+
+.historyCount {
+  min-height: 32px;
+  padding: 0 12px;
+  display: inline-flex;
+  align-items: center;
+  border-radius: 999px;
+  font-size: 12px;
+  color: rgba(255,255,255,0.72);
+  background: rgba(255,255,255,0.05);
+  border: 1px solid rgba(255,255,255,0.08);
+}
+
+.activityList {
+  display: grid;
+  gap: 12px;
+}
+
+.activityCard {
+  display: grid;
+  grid-template-columns: 88px minmax(0, 1fr);
+  gap: 12px;
+  align-items: start;
+  padding: 10px;
+  border-radius: 18px;
+  background: rgba(0,0,0,0.18);
+  border: 1px solid rgba(255,255,255,0.06);
+}
+
+.activityImageBtn {
+  border: 0;
+  padding: 0;
+  margin: 0;
+  background: transparent;
+  cursor: zoom-in;
+}
+
+.activityImage,
+.activityImageFallback {
+  width: 88px;
+  aspect-ratio: 3 / 4;
+  border-radius: 14px;
+  display: block;
+  object-fit: cover;
+}
+
+.activityImageFallback {
+  background: linear-gradient(180deg, #efefef 0 42%, #d7cfbf 42% 100%);
+}
+
+.activityBody {
+  min-width: 0;
+}
+
+.activityTitleRow {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.activityTitle {
+  font-size: 16px;
+  font-weight: 800;
+  line-height: 1.3;
+}
+
+.activityChipBtn,
+.activityLinkBtn {
+  border: 0;
+  background: transparent;
+  color: rgba(255,255,255,0.88);
+  font-weight: 700;
+  cursor: pointer;
+  padding: 0;
+}
+
+.activityText {
+  margin-top: 8px;
+  font-size: 13px;
+  line-height: 1.55;
+  color: rgba(255,255,255,0.68);
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.activityMetaRow {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+  flex-wrap: wrap;
+  margin-top: 10px;
+  color: rgba(255,255,255,0.62);
+  font-size: 12px;
+}
+
+@media (max-width: 1080px) {
+  .generatorShell {
+    grid-template-columns: 1fr;
+  }
+
+  .generatorLeadCard {
+    position: static;
+  }
+
+  .activityGrid {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 900px) {
+  .sceneGrid,
+  .celebGrid {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 720px) {
+  .generatorStats {
+    grid-template-columns: 1fr;
+  }
+
+  .activityCard {
+    grid-template-columns: 76px minmax(0, 1fr);
+  }
+
+  .activityImage,
+  .activityImageFallback {
+    width: 76px;
   }
 }
