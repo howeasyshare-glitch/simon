@@ -484,7 +484,7 @@
 
 @media (max-width: 900px) {
   .heroSection {
-    --hero-card-width: 78vw;
+    --hero-card-width: clamp(260px, 28vw, 320px);
   }
 
   .heroImageFrame {
@@ -523,7 +523,7 @@
   }
 
   .heroSection {
-    --hero-card-width: 88vw;
+    --hero-card-width: clamp(260px, 28vw, 320px);
   }
 
   .heroImageFrame {
