@@ -195,8 +195,8 @@
 }
 
 .heroSection {
-  --hero-card-width: min(62vw, 720px);
-  margin-bottom: 48px;
+  --hero-card-width: clamp(260px, 28vw, 320px);
+  margin-bottom: 24px;
 }
 
 .heroViewport {
