@@ -358,19 +358,28 @@ export default function Page() {
       });
       const specObj = specResp?.spec || specResp;
 
+      const safeItems = Array.isArray(specObj?.items) ? specObj.items : [];
+      if (!safeItems.length) throw new Error("outfitSpec items empty");
+
       const imgResp = await apiPostJson<ImgResp>("/api/generate-image", {
-        age,
-        height,
-        weight,
-        temp,
-        gender,
-        audience,
-        outfitSpec: {
-          items: specObj?.items || [],
-          summary: specObj?.summary || promptContext,
+        payload: {
+          age,
+          height,
+          weight,
+          temp,
+          gender: safeGender,
+          audience: safeAudience,
+          styleVariant: selectedCeleb || safeScene,
+          style: selectedCeleb ? "celeb-inspired" : "scene",
+          palette: "auto",
+          withBag: false,
+          outfitSpec: {
+            items: safeItems,
+            summary: specObj?.summary || promptContext,
+          },
+          aspectRatio: "3:4",
+          imageSize: "1K",
         },
-        aspectRatio: "3:4",
-        imageSize: "1K",
       });
 
       if (!imgResp?.image_url) throw new Error("圖片生成失敗");
