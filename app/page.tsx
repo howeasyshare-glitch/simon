@@ -333,21 +333,24 @@ export default function Page() {
       setStage("generated");
       pushToast("生成中...");
 
-      const safeGender = normalizeGender(gender);
-      const safeAudience = normalizeAudience(audience);
       const safeScene = selectedScene || "date";
       const promptContext = selectedCeleb
-        ? `celeb:`
-        : `scene:`;
+        ? `celeb:${selectedCeleb}`
+        : `scene:${safeScene}`;
+
+      const safeGender = normalizeGender(gender);
+      const safeAudience = normalizeAudience(audience);
 
       const specResp = await apiPostJson<any>("/api/generate-outfit-spec", {
-        age,
-        height,
-        weight,
-        temp,
-        gender: safeGender,
-        audience: safeAudience,
-        promptContext,
+        payload: {
+          age,
+          height,
+          weight,
+          temp,
+          gender: safeGender,
+          audience: safeAudience,
+          promptContext,
+        },
       });
       const specObj = specResp?.spec || specResp;
 
