@@ -333,18 +333,20 @@ export default function Page() {
       setStage("generated");
       pushToast("生成中...");
 
-      const selectedSceneLabel = quickScenes.find((s) => s.id === selectedScene)?.label || "";
+      const safeGender = normalizeGender(gender);
+      const safeAudience = normalizeAudience(audience);
+      const safeScene = selectedScene || "date";
       const promptContext = selectedCeleb
-        ? `名人靈感：${baseCelebs.find((c) => c.id === selectedCeleb)?.label || ""}`
-        : `情境：${selectedSceneLabel}`;
+        ? `celeb:`
+        : `scene:`;
 
       const specResp = await apiPostJson<any>("/api/generate-outfit-spec", {
         age,
         height,
         weight,
         temp,
-        gender,
-        audience,
+        gender: safeGender,
+        audience: safeAudience,
         promptContext,
       });
       const specObj = specResp?.spec || specResp;
