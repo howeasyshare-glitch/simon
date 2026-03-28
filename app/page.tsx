@@ -341,6 +341,8 @@ export default function Page() {
       const safeGender = normalizeGender(gender);
       const safeAudience = normalizeAudience(audience);
 
+      const safeScene = selectedScene || "date";
+
       const specResp = await apiPostJson<any>("/api/generate-outfit-spec", {
         payload: {
           age,
@@ -349,6 +351,10 @@ export default function Page() {
           temp,
           gender: safeGender,
           audience: safeAudience,
+          styleVariant: selectedCeleb || safeScene,
+          style: selectedCeleb ? "celeb-inspired" : "scene",
+          palette: "auto",
+          withBag: false,
           promptContext,
         },
       });
