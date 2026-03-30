@@ -852,3 +852,60 @@
     width: 76px;
   }
 }
+
+/* ===== Settings / System ===== */
+
+.card {
+  background: #111;
+  border-radius: 16px;
+  padding: 16px;
+  margin-top: 16px;
+}
+
+.blockTitle {
+  font-size: 14px;
+  margin-bottom: 12px;
+  opacity: 0.7;
+}
+
+.segmentRow {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.pill {
+  padding: 6px 12px;
+  border-radius: 999px;
+  background: #222;
+  border: 1px solid #333;
+  font-size: 13px;
+}
+
+.activePill {
+  padding: 6px 12px;
+  border-radius: 999px;
+  background: white;
+  color: black;
+  font-size: 13px;
+}
+
+.sliderCard {
+  margin-top: 12px;
+  display: block;
+}
+
+.sliderTop {
+  display: flex;
+  justify-content: space-between;
+  font-size: 13px;
+  margin-bottom: 4px;
+}
+
+.sliderLabel {
+  opacity: 0.7;
+}
+
+.sliderValue {
+  font-weight: 600;
+}
