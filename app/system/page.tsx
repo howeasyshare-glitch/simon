@@ -2,12 +2,36 @@
 
 import styles from "../page.module.css";
 import NavBar from "../../components/NavBar";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 
 export default function SystemPage() {
   const [temperature, setTemperature] = useState(0.7);
   const [creativity, setCreativity] = useState(0.5);
   const [withBag, setWithBag] = useState(false);
+
+  // 👉 初始化（讀 localStorage）
+  useEffect(() => {
+    try {
+      const raw = localStorage.getItem("findoutfit_system");
+      if (!raw) return;
+      const data = JSON.parse(raw);
+      setTemperature(data.temperature ?? 0.7);
+      setCreativity(data.creativity ?? 0.5);
+      setWithBag(data.withBag ?? false);
+    } catch {}
+  }, []);
+
+  // 👉 每次變更就存
+  useEffect(() => {
+    localStorage.setItem(
+      "findoutfit_system",
+      JSON.stringify({
+        temperature,
+        creativity,
+        withBag,
+      })
+    );
+  }, [temperature, creativity, withBag]);
 
   return (
     <main className={styles.page}>
