@@ -329,6 +329,18 @@ export default function Page() {
   }
 
   async function handleGenerate() {
+    // 👉 讀 system 設定
+let system = {
+  temperature: 0.7,
+  creativity: 0.5,
+  withBag: false,
+};
+
+try {
+  const raw = localStorage.getItem("findoutfit_system");
+  if (raw) system = JSON.parse(raw);
+} catch {}
+    
     try {
       setStage("generated");
       pushToast("生成中...");
@@ -352,8 +364,8 @@ export default function Page() {
           styleVariant: selectedCeleb || safeScene,
           style: selectedCeleb ? "celeb-inspired" : "scene",
           palette: "auto",
-          withBag: false,
-          promptContext,
+          withBag: system.withBag,
+          promptContext: `${promptContext} | style:${system.temperature} creativity:${system.creativity}`,
         },
       });
       const specObj = specResp?.spec || specResp;
@@ -372,7 +384,7 @@ export default function Page() {
           styleVariant: selectedCeleb || safeScene,
           style: selectedCeleb ? "celeb-inspired" : "scene",
           palette: "auto",
-          withBag: false,
+          withBag: system.withBag,
           outfitSpec: {
             items: safeItems,
             summary: specObj?.summary || promptContext,
