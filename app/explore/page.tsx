@@ -3,8 +3,7 @@
 import { useEffect, useState } from "react";
 import styles from "../page.module.css";
 import NavBar from "../../components/NavBar";
-import HeroCarousel from "../../components/HeroCarousel";
-import type { OutfitItem } from "../../components/OutfitCard";
+import OutfitCard, { type OutfitItem } from "../../components/OutfitCard";
 import { apiGetJson } from "../../lib/apiFetch";
 
 function Toast({ text }: { text: string }) {
@@ -37,7 +36,7 @@ export default function Page() {
   const [toast, setToast] = useState("");
 
   useEffect(() => {
-    void load();
+    load();
   }, [sort]);
 
   function pushToast(text: string) {
@@ -58,11 +57,10 @@ export default function Page() {
   }
 
   function isLiked(id: string) {
-    return typeof window !== "undefined" && localStorage.getItem(`liked_outfit_${id}`) === "1";
-  }
-
-  function isShared(id: string) {
-    return typeof window !== "undefined" && localStorage.getItem(`shared_outfit_${id}`) === "1";
+    return (
+      typeof window !== "undefined" &&
+      localStorage.getItem(`liked_outfit_${id}`) === "1"
+    );
   }
 
   async function toggleLike(item: OutfitItem) {
@@ -71,27 +69,40 @@ export default function Page() {
       anonId = crypto.randomUUID();
       localStorage.setItem("findoutfit_anon_id", anonId);
     }
+
     const alreadyLiked = isLiked(item.id);
     const op = alreadyLiked ? "outfits.unlike" : "outfits.like";
+
     const r = await fetch(`/api/data?op=${op}`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ outfit_id: item.id, anon_id: anonId }),
     });
+
     const j = await r.json();
     if (!r.ok || !j?.ok) return;
-    if (alreadyLiked) localStorage.removeItem(`liked_outfit_${item.id}`);
-    else localStorage.setItem(`liked_outfit_${item.id}`, "1");
+
+    if (alreadyLiked) {
+      localStorage.removeItem(`liked_outfit_${item.id}`);
+    } else {
+      localStorage.setItem(`liked_outfit_${item.id}`, "1");
+    }
+
     setItems((prev) =>
-      prev.map((x) => (x.id === item.id ? { ...x, like_count: j.like_count ?? x.like_count } : x))
+      prev.map((x) =>
+        x.id === item.id ? { ...x, like_count: j.like_count ?? x.like_count } : x
+      )
     );
+
     pushToast(alreadyLiked ? "已取消最愛" : "已加入最愛 ✅");
   }
 
   async function shareItem(item: OutfitItem) {
     if (!item.share_slug) return;
+
     const key = `shared_outfit_${item.id}`;
     const alreadyShared = localStorage.getItem(key) === "1";
+
     if (!alreadyShared) {
       const r = await fetch(`/api/data?op=outfits.share`, {
         method: "POST",
@@ -99,20 +110,33 @@ export default function Page() {
         body: JSON.stringify({ outfit_id: item.id }),
       });
       const j = await r.json();
+
       if (r.ok && j?.ok) {
         localStorage.setItem(key, "1");
         setItems((prev) =>
-          prev.map((x) => (x.id === item.id ? { ...x, share_count: j.share_count ?? x.share_count } : x))
+          prev.map((x) =>
+            x.id === item.id ? { ...x, share_count: j.share_count ?? x.share_count } : x
+          )
         );
       }
     }
-    await navigator.clipboard.writeText(`${window.location.origin}/share/${item.share_slug}`);
-    pushToast(alreadyShared ? "已複製分享連結（本裝置已記錄過分享，不重複計數）" : "已複製分享連結，並記錄分享次數 ✅");
+
+    await navigator.clipboard.writeText(
+      `${window.location.origin}/share/${item.share_slug}`
+    );
+
+    pushToast(
+      alreadyShared
+        ? "已複製分享連結（本裝置已記錄過分享，不重複計數）"
+        : "已複製分享連結，並記錄分享次數 ✅"
+    );
   }
 
   function applyPreset(item: OutfitItem) {
     const anyItem: any = item;
-    const echo = anyItem?.style?._echo || anyItem?.style?.echo || anyItem?.spec?._echo || {};
+    const echo =
+      anyItem?.style?._echo || anyItem?.style?.echo || anyItem?.spec?._echo || {};
+
     localStorage.setItem(
       "findoutfit_apply_preset",
       JSON.stringify({
@@ -128,42 +152,40 @@ export default function Page() {
         temp: echo.temp,
       })
     );
+
     window.location.href = "/";
   }
 
   return (
     <main className={styles.page}>
       <NavBar />
+
       <section className={styles.contentWrap}>
-       
-          <div>
-            <div className={styles.kicker}>Explore</div>
-            <h1 className={styles.sectionTitle}>全部公開穿搭</h1>
-          </div>
-          <div className={styles.pillRow}>
-            {["like", "share", "time"].map((s) => (
-              <button key={s} className={sort === s ? styles.activePill : styles.pill} onClick={() => setSort(s)}>
-                {s === "like" ? "Like 排序" : s === "share" ? "分享排序" : "時間排序"}
-              </button>
-            ))}
-          </div>
+        <div className={styles.pillRow} style={{ marginBottom: 18 }}>
+          {["like", "share", "time"].map((s) => (
+            <button
+              key={s}
+              className={sort === s ? styles.activePill : styles.pill}
+              onClick={() => setSort(s)}
+            >
+              {s === "like" ? "Like 排序" : s === "share" ? "分享排序" : "時間排序"}
+            </button>
+          ))}
         </div>
 
-        <HeroCarousel
-          mode="simple"
-          kicker="Explore"
-          title="全部公開穿搭"
-          items={items}
-          generatedItems={[]}
-          stage="featured"
-          setStage={() => {}}
-          onOpen={(src) => setZoomSrc(src)}
-          onLike={toggleLike}
-          onShare={shareItem}
-          onApply={applyPreset}
-          isLiked={isLiked}
-          isShared={isShared}
-        />
+        <div className={styles.exploreGrid}>
+          {items.map((item) => (
+            <OutfitCard
+              key={item.id}
+              item={item}
+              liked={isLiked(item.id)}
+              onOpen={() => item.image_url && setZoomSrc(item.image_url)}
+              onLike={() => toggleLike(item)}
+              onShare={() => shareItem(item)}
+              onApply={() => applyPreset(item)}
+            />
+          ))}
+        </div>
       </section>
 
       {zoomSrc ? (
@@ -171,6 +193,7 @@ export default function Page() {
           <img src={zoomSrc} alt="" className={styles.modalImg} />
         </div>
       ) : null}
+
       {toast ? <Toast text={toast} /> : null}
     </main>
   );
