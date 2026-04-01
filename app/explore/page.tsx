@@ -3,41 +3,70 @@
 import { useEffect, useState } from "react";
 import styles from "../page.module.css";
 import NavBar from "../../components/NavBar";
-import OutfitCard, { type OutfitItem } from "../../components/OutfitCard";
+import HeroCarousel from "../../components/HeroCarousel";
+import type { OutfitItem } from "../../components/OutfitCard";
 import { apiGetJson } from "../../lib/apiFetch";
 
+type ListResp = {
+  ok?: boolean;
+  items?: OutfitItem[];
+};
+
 function Toast({ text }: { text: string }) {
+  return <div className={styles.toast}>{text}</div>;
+}
+
+function ActivityMiniCard({
+  item,
+  onOpen,
+  onApply,
+  onShare,
+}: {
+  item: OutfitItem;
+  onOpen: () => void;
+  onApply: () => void;
+  onShare: () => void;
+}) {
   return (
-    <div
-      style={{
-        position: "fixed",
-        right: 20,
-        bottom: 20,
-        zIndex: 1200,
-        background: "rgba(15,18,27,0.95)",
-        color: "#fff",
-        padding: "12px 14px",
-        borderRadius: 14,
-        border: "1px solid rgba(255,255,255,0.12)",
-        boxShadow: "0 16px 40px rgba(0,0,0,0.35)",
-        maxWidth: 360,
-        lineHeight: 1.45,
-      }}
-    >
-      {text}
-    </div>
+    <article className={styles.activityCard}>
+      <button type="button" className={styles.activityImageBtn} onClick={onOpen}>
+        {item.image_url ? (
+          <img src={item.image_url} alt={item.summary || "outfit"} className={styles.activityImage} />
+        ) : (
+          <div className={styles.activityImageFallback} />
+        )}
+      </button>
+
+      <div className={styles.activityBody}>
+        <div className={styles.activityTitleRow}>
+          <div className={styles.activityTitle}>{item.style?.style || "Outfit"}</div>
+          <button type="button" className={styles.activityChipBtn} onClick={onApply}>
+            套用
+          </button>
+        </div>
+
+        <div className={styles.activityText}>{item.summary || "穿搭靈感"}</div>
+
+        <div className={styles.activityMetaRow}>
+          <span>♥ {item.like_count || 0}</span>
+          <span>↗ {item.share_count || 0}</span>
+          <button type="button" className={styles.activityLinkBtn} onClick={onShare}>
+            分享
+          </button>
+        </div>
+      </div>
+    </article>
   );
 }
 
 export default function Page() {
   const [items, setItems] = useState<OutfitItem[]>([]);
-  const [sort, setSort] = useState("like");
   const [zoomSrc, setZoomSrc] = useState("");
   const [toast, setToast] = useState("");
 
   useEffect(() => {
     load();
-  }, [sort]);
+  }, []);
 
   function pushToast(text: string) {
     setToast(text);
@@ -46,8 +75,8 @@ export default function Page() {
 
   async function load() {
     try {
-      const data = await apiGetJson<{ ok: boolean; items: OutfitItem[] }>(
-        `/api/data?op=explore&limit=60&sort=${sort}&ts=${Date.now()}`
+      const data = await apiGetJson<ListResp>(
+        `/api/data?op=explore&limit=24&sort=like&ts=${Date.now()}`
       );
       setItems(data?.items || []);
     } catch {
@@ -57,10 +86,11 @@ export default function Page() {
   }
 
   function isLiked(id: string) {
-    return (
-      typeof window !== "undefined" &&
-      localStorage.getItem(`liked_outfit_${id}`) === "1"
-    );
+    return typeof window !== "undefined" && localStorage.getItem(`liked_${id}`) === "1";
+  }
+
+  function isShared(id: string) {
+    return typeof window !== "undefined" && localStorage.getItem(`shared_${id}`) === "1";
   }
 
   async function toggleLike(item: OutfitItem) {
@@ -70,72 +100,53 @@ export default function Page() {
       localStorage.setItem("findoutfit_anon_id", anonId);
     }
 
-    const alreadyLiked = isLiked(item.id);
-    const op = alreadyLiked ? "outfits.unlike" : "outfits.like";
+    const liked = isLiked(item.id);
+    const op = liked ? "outfits.unlike" : "outfits.like";
 
-    const r = await fetch(`/api/data?op=${op}`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ outfit_id: item.id, anon_id: anonId }),
-    });
+    try {
+      await fetch(`/api/data?op=${op}`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ outfit_id: item.id, anon_id: anonId }),
+      });
+    } catch {}
 
-    const j = await r.json();
-    if (!r.ok || !j?.ok) return;
-
-    if (alreadyLiked) {
-      localStorage.removeItem(`liked_outfit_${item.id}`);
+    if (liked) {
+      localStorage.removeItem(`liked_${item.id}`);
+      pushToast("已取消最愛");
     } else {
-      localStorage.setItem(`liked_outfit_${item.id}`, "1");
+      localStorage.setItem(`liked_${item.id}`, "1");
+      pushToast("已加入最愛");
     }
 
-    setItems((prev) =>
-      prev.map((x) =>
-        x.id === item.id ? { ...x, like_count: j.like_count ?? x.like_count } : x
-      )
-    );
-
-    pushToast(alreadyLiked ? "已取消最愛" : "已加入最愛 ✅");
+    setItems((prev) => [...prev]);
   }
 
   async function shareItem(item: OutfitItem) {
-    if (!item.share_slug) return;
+    const key = `shared_${item.id}`;
+    const already = localStorage.getItem(key) === "1";
 
-    const key = `shared_outfit_${item.id}`;
-    const alreadyShared = localStorage.getItem(key) === "1";
-
-    if (!alreadyShared) {
-      const r = await fetch(`/api/data?op=outfits.share`, {
+    try {
+      await fetch(`/api/data?op=outfits.share`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ outfit_id: item.id }),
       });
-      const j = await r.json();
+    } catch {}
 
-      if (r.ok && j?.ok) {
-        localStorage.setItem(key, "1");
-        setItems((prev) =>
-          prev.map((x) =>
-            x.id === item.id ? { ...x, share_count: j.share_count ?? x.share_count } : x
-          )
-        );
-      }
+    localStorage.setItem(key, "1");
+
+    if (item.share_slug) {
+      await navigator.clipboard.writeText(`${window.location.origin}/share/${item.share_slug}`);
     }
 
-    await navigator.clipboard.writeText(
-      `${window.location.origin}/share/${item.share_slug}`
-    );
-
-    pushToast(
-      alreadyShared
-        ? "已複製分享連結（本裝置已記錄過分享，不重複計數）"
-        : "已複製分享連結，並記錄分享次數 ✅"
-    );
+    pushToast(already ? "已複製連結" : "已分享並複製連結");
+    setItems((prev) => [...prev]);
   }
 
   function applyPreset(item: OutfitItem) {
     const anyItem: any = item;
-    const echo =
-      anyItem?.style?._echo || anyItem?.style?.echo || anyItem?.spec?._echo || {};
+    const echo = anyItem?.style?._echo || anyItem?.style?.echo || anyItem?.spec?._echo || {};
 
     localStorage.setItem(
       "findoutfit_apply_preset",
@@ -161,30 +172,52 @@ export default function Page() {
       <NavBar />
 
       <section className={styles.contentWrap}>
-        <div className={styles.pillRow} style={{ marginBottom: 18 }}>
-          {["like", "share", "time"].map((s) => (
-            <button
-              key={s}
-              className={sort === s ? styles.activePill : styles.pill}
-              onClick={() => setSort(s)}
-            >
-              {s === "like" ? "Like 排序" : s === "share" ? "分享排序" : "時間排序"}
-            </button>
-          ))}
+        <div className={styles.pageHeroHead}>
+          <div className={styles.pageHeroKicker}>Explore</div>
+          <h1 className={styles.pageHeroTitle}>Public Outfits</h1>
+          <div className={styles.pageHeroSub}>公開穿搭</div>
         </div>
 
-        <div className={styles.exploreGrid}>
-          {items.map((item) => (
-            <OutfitCard
-              key={item.id}
-              item={item}
-              liked={isLiked(item.id)}
-              onOpen={() => item.image_url && setZoomSrc(item.image_url)}
-              onLike={() => toggleLike(item)}
-              onShare={() => shareItem(item)}
-              onApply={() => applyPreset(item)}
-            />
-          ))}
+        <HeroCarousel
+          items={items}
+          generatedItems={items}
+          stage="featured"
+          setStage={() => {}}
+          generatedImageUrl=""
+          generatedSummary=""
+          generatedShareUrl=""
+          onOpen={(src) => setZoomSrc(src)}
+          onLike={toggleLike}
+          onShare={shareItem}
+          onApply={applyPreset}
+          isLiked={isLiked}
+          isShared={isShared}
+          mode="simple"
+        />
+      </section>
+
+      <section className={styles.historySection}>
+        <div className={styles.historyBlock}>
+          <div className={styles.historyTitleRow}>
+            <div className={styles.historyTitle}>Explore Feed</div>
+            <div className={styles.historyCount}>{items.length} 筆</div>
+          </div>
+
+          {items.length ? (
+            <div className={styles.activityList}>
+              {items.slice(0, 8).map((item) => (
+                <ActivityMiniCard
+                  key={item.id}
+                  item={item}
+                  onOpen={() => item.image_url && setZoomSrc(item.image_url)}
+                  onApply={() => applyPreset(item)}
+                  onShare={() => shareItem(item)}
+                />
+              ))}
+            </div>
+          ) : (
+            <div className={styles.emptyText}>目前沒有公開穿搭資料。</div>
+          )}
         </div>
       </section>
 
