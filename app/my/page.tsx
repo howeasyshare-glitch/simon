@@ -133,7 +133,7 @@ export default function Page() {
       <NavBar />
 
       <section className={styles.contentWrap}>
-        <div className={styles.sectionHead}>
+      
           <div>
             <div className={styles.kicker}>My</div>
             <h1 className={styles.sectionTitle}>我的內容</h1>
