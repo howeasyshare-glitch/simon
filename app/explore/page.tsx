@@ -135,7 +135,7 @@ export default function Page() {
     <main className={styles.page}>
       <NavBar />
       <section className={styles.contentWrap}>
-        <div className={styles.sectionHead}>
+       
           <div>
             <div className={styles.kicker}>Explore</div>
             <h1 className={styles.sectionTitle}>全部公開穿搭</h1>
