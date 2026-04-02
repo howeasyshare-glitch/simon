@@ -94,7 +94,16 @@ export default function HeroCarousel({
   };
 
   const showHomeControls = mode === "home";
-
+if (!items?.length && !generatedItems?.length) {
+  return (
+    <div className={styles.heroEmpty}>
+      <div>目前沒有資料</div>
+      <div className={styles.heroEmptySub}>
+        先生成一套穿搭或到 Explore 看看
+      </div>
+    </div>
+  );
+}
   return (
     <section className={styles.heroSection}>
       <div className={styles.heroHeader}>
