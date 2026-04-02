@@ -154,12 +154,23 @@ export default function Page() {
   const toastTimer = useRef<number | null>(null);
 
   useEffect(() => {
-    loadAll();
-    tryApplyPresetFromStorage();
-    return () => {
-      if (toastTimer.current) window.clearTimeout(toastTimer.current);
-    };
-  }, []);
+  loadAll();
+  tryApplyPresetFromStorage();
+
+  // 👉 套用 settings（加在這裡）
+  try {
+    const raw = localStorage.getItem("findoutfit_settings");
+    if (raw) {
+      const s = JSON.parse(raw);
+      if (s.gender) setGender(s.gender);
+      if (s.audience) setAudience(s.audience);
+    }
+  } catch {}
+
+  return () => {
+    if (toastTimer.current) window.clearTimeout(toastTimer.current);
+  };
+}, []);
 
   const quickScenes = useMemo(() => {
     return quickSceneMap[`${gender}-${audience}`] || quickSceneMap["中性-成人"];
