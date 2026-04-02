@@ -1060,3 +1060,23 @@
   font-size: 15px;
   color: rgba(255, 255, 255, 0.6);
 }
+
+.heroEmpty {
+  height: 260px;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  opacity: 0.6;
+}
+
+.heroEmptySub {
+  font-size: 13px;
+  margin-top: 6px;
+}
+
+.generatorBadge {
+  font-size: 11px;
+  opacity: 0.5;
+  margin-bottom: 8px;
+}
