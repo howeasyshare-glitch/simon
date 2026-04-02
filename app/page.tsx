@@ -397,7 +397,12 @@ try {
       if (!imgResp?.image_url) throw new Error("圖片生成失敗");
 
       setGeneratedImageUrl(imgResp.image_url);
-      setGeneratedSummary(specObj?.summary || "生成完成");
+      setGeneratedSummary(
+  `${specObj?.summary || "生成完成"} 
+  · 風格:${system.temperature} 
+  · 創意:${system.creativity} 
+  · 包包:${system.withBag ? "有" : "無"}`
+);
 
       try {
         const created = await apiPostJson<any>("/api/data?op=outfits.create", {
