@@ -2,7 +2,6 @@
 
 import styles from "../page.module.css";
 import NavBar from "../../components/NavBar";
-import AuthGate from "../../components/AuthGate";
 
 export default function MyPage() {
   return (
