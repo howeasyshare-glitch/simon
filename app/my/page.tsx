@@ -7,7 +7,6 @@ export default function MyPage() {
   return (
     <main className={styles.page}>
       <NavBar />
-      <AuthGate>
         <section className={styles.contentWrap}>
           <div className={styles.pageHeroHead}>
             <div className={styles.pageHeroKicker}>My</div>
@@ -22,7 +21,6 @@ export default function MyPage() {
             </div>
           </div>
         </section>
-      </AuthGate>
     </main>
   );
 }
