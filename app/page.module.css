@@ -233,6 +233,7 @@
   opacity: 0.45;
   transform: scale(0.92);
   transition: transform 0.25s ease, opacity 0.25s ease, box-shadow 0.25s ease;
+  max-width: 320px;
 }
 
 .heroCardActive {
