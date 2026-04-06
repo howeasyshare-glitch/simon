@@ -1,34 +1,1079 @@
-/* ===== Phase 3 patch ===== */
-
-.heroSection {
-  --hero-card-width: clamp(280px, 28vw, 360px);
-  margin-bottom: 24px;
+.page { 
+  min-height: 100vh;
+  background: radial-gradient(circle at top, rgba(39, 85, 151, 0.18), transparent 32%), #060b12;
+  color: #f5f7fb;
+  font-family: Inter, Arial, sans-serif;
 }
 
-.heroRail {
+.toast {
+  position: fixed;
+  right: 20px;
+  bottom: 20px;
+  z-index: 1200;
+  background: rgba(15, 18, 27, 0.95);
+  color: #fff;
+  padding: 12px 14px;
+  border-radius: 14px;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  box-shadow: 0 16px 40px rgba(0, 0, 0, 0.35);
+  max-width: 360px;
+  line-height: 1.45;
+}
+
+.topbarWrap {
+  position: sticky;
+  top: 0;
+  z-index: 50;
+  backdrop-filter: blur(12px);
+  background: rgba(6, 11, 18, 0.82);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+}
+
+.topbar {
+  max-width: 1320px;
+  margin: 0 auto;
+  height: 72px;
+  padding: 0 28px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
   gap: 16px;
 }
 
-.heroSimpleControls {
+.brand {
+  color: #fff;
+  text-decoration: none;
+  font-size: 26px;
+  font-weight: 800;
+  letter-spacing: -0.03em;
+}
+
+.nav {
   display: flex;
-  justify-content: flex-end;
   gap: 10px;
-  margin-bottom: 14px;
+  flex-wrap: wrap;
+}
+
+.navItem {
+  color: rgba(255, 255, 255, 0.84);
+  padding: 10px 14px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  text-decoration: none;
+  transition: 0.2s ease;
+}
+
+.navItem:hover {
+  background: rgba(255, 255, 255, 0.08);
+}
+
+.navItemActive {
+  background: #fff;
+  color: #000;
+}
+
+.contentWrap,
+.generatorSection,
+.historySection {
+  max-width: 1320px;
+  margin: 0 auto;
+  padding-left: 28px;
+  padding-right: 28px;
+}
+
+.contentWrap {
+  padding-top: 22px;
+}
+
+.generatorSection,
+.historySection {
+  margin-top: 34px;
+}
+
+.kicker {
+  color: rgba(255, 255, 255, 0.62);
+  font-size: 12px;
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+  margin-bottom: 6px;
+}
+
+.heroHeader,
+.sectionHead {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-end;
+  gap: 16px;
+  margin-bottom: 18px;
+}
+
+.heroHeadCopy {
+  padding-left: 8px;
+}
+
+.heroTitle,
+.sectionTitle {
+  margin: 0;
+  font-size: 36px;
+  line-height: 1.05;
+  letter-spacing: -0.03em;
+}
+
+.heroSub,
+.cardText,
+.emptyText {
+  color: rgba(255, 255, 255, 0.76);
+  line-height: 1.65;
+}
+
+.heroControls,
+.pillRow,
+.celebPanel,
+.generateRow,
+.segmentRow,
+.heroCardActions,
+.cardActions {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.heroControls {
+  padding-right: 8px;
+}
+
+.arrowBtn,
+.pill,
+.activePill,
+.ghostBtn,
+.primaryBtn,
+.secondaryBtn,
+.linkBtn,
+.activeGhostBtn {
+  min-height: 44px;
+  padding: 0 16px;
+  border-radius: 999px;
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  background: transparent;
+  color: #fff;
+  font-weight: 700;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  white-space: nowrap;
+  cursor: pointer;
+  text-decoration: none;
+  transition: 0.2s ease;
+}
+
+.arrowBtn:hover,
+.pill:hover,
+.ghostBtn:hover,
+.secondaryBtn:hover,
+.linkBtn:hover {
+  background: rgba(255, 255, 255, 0.08);
+}
+
+.activePill,
+.primaryBtn,
+.activeGhostBtn {
+  background: #fff;
+  color: #000;
+  border-color: #fff;
+}
+
+.badge {
+  min-height: 44px;
+  padding: 0 14px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  color: rgba(255, 255, 255, 0.82);
+  display: inline-flex;
+  align-items: center;
+}
+
+.heroSection {
+  --hero-card-width: clamp(360px, 28vw, 320px);
+  margin-bottom: 24px;
+}
+
+.heroViewport {
+  overflow: hidden;
+}
+
+.heroRail {
+  display: flex;
+  gap: 24px;
+  overflow-x: auto;
+  scroll-snap-type: x mandatory;
+  scrollbar-width: none;
+  padding-bottom: 14px;
+  -webkit-overflow-scrolling: touch;
+  scroll-behavior: smooth;
+}
+
+.heroRail::-webkit-scrollbar,
+.smallRow::-webkit-scrollbar {
+  display: none;
+}
+
+.heroSpacer {
+  flex: 0 0 calc((100% - var(--hero-card-width)) / 2);
 }
 
 .heroCard {
   flex: 0 0 var(--hero-card-width);
-  max-width: 360px;
+  scroll-snap-align: center;
+  border-radius: 28px;
+  overflow: hidden;
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  opacity: 0.45;
+  transform: scale(0.92);
+  transition: transform 0.25s ease, opacity 0.25s ease, box-shadow 0.25s ease;
+  max-width: 320px;
+}
+
+.heroCardActive {
+  opacity: 1;
+  transform: scale(1);
+  box-shadow: 0 24px 60px rgba(0, 0, 0, 0.36);
+}
+
+.heroImageButton {
+  width: 100%;
+  border: 0;
+  padding: 0;
+  margin: 0;
+  background: transparent;
+  cursor: zoom-in;
+  display: block;
+}
+
+.heroImageFrame {
+  position: relative;
+  width: 100%;
+  height: min(62vh, 620px);
+  background: rgba(255, 255, 255, 0.03);
+  overflow: hidden;
+}
+
+.heroImageBg {
+  position: absolute;
+  inset: 0;
+  background-size: cover;
+  background-position: center;
+  filter: blur(28px);
+  transform: scale(1.08);
+  opacity: 0.32;
+}
+
+.heroImage {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+}
+
+.heroImageFallback {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(180deg, #efefef 0 42%, #d7cfbf 42% 100%);
+}
+
+.heroInfo {
+  padding: 18px 20px 20px;
+}
+
+.heroCardTitle,
+.historyTitle,
+.cardTitle {
+  font-size: 22px;
+  font-weight: 800;
 }
 
 .heroCardText {
+  margin-top: 8px;
+}
+
+.heroGeneratedLinkRow {
+  margin-top: 16px;
+  display: flex;
+  justify-content: center;
+}
+
+.card,
+.historyBlock,
+.cardTile {
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 22px;
+  padding: 18px;
+}
+
+.card,
+.cardTile {
+  overflow: hidden;
+  backdrop-filter: blur(8px);
+}
+
+.blockTitle {
+  font-size: 16px;
+  font-weight: 700;
+  margin-bottom: 14px;
+}
+
+.sliderGrid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.sliderCard {
+  background: rgba(0, 0, 0, 0.18);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 18px;
+  padding: 14px;
+}
+
+.sliderLabel {
+  display: inline-block;
+  color: rgba(255, 255, 255, 0.82);
+  margin-bottom: 8px;
+}
+
+.sliderCard input[type="range"] {
+  width: 100%;
+}
+
+.sliderValue {
+  display: inline-block;
+  margin-top: 8px;
+  color: #fff;
+  font-weight: 700;
+}
+
+.segmentRow {
+  margin-top: 12px;
+}
+
+.celebPanel {
+  margin-top: 14px;
+  padding-top: 14px;
+  border-top: 1px dashed rgba(255, 255, 255, 0.1);
+}
+
+.generateBtn {
+  min-height: 58px;
+  min-width: 240px;
+  padding: 0 24px;
+  border-radius: 18px;
+  border: 0;
+  background: linear-gradient(135deg, #ffffff 0%, #d7ecff 100%);
+  color: #07111d;
+  font-size: 17px;
+  font-weight: 900;
+  letter-spacing: 0.01em;
+  box-shadow: 0 14px 30px rgba(138, 198, 255, 0.18);
+  cursor: pointer;
+  transition: 0.2s ease;
+}
+
+.generateBtn:hover {
+  transform: translateY(-1px);
+}
+
+.cardImageBtn {
+  width: 100%;
+  border: 0;
+  padding: 0;
+  cursor: zoom-in;
+  background: transparent;
+  display: block;
+}
+
+.cardImage {
+  width: 100%;
+  aspect-ratio: 3 / 4;
+  object-fit: cover;
+  display: block;
+  border-radius: 18px;
+}
+
+.cardImageFallback,
+.smallCardImageFallback {
+  width: 100%;
+  aspect-ratio: 3 / 4;
+  background: linear-gradient(180deg, #efefef 0 42%, #d7cfbf 42% 100%);
+  border-radius: 18px;
+}
+
+.cardBody {
+  padding-top: 14px;
+}
+
+.cardActions {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 10px;
+  margin-top: 14px;
+}
+
+.cardMeta,
+.compactMeta {
+  display: flex;
+  gap: 14px;
+  margin-top: 12px;
+  color: rgba(255, 255, 255, 0.7);
+  font-size: 13px;
+}
+
+.historyBlock + .historyBlock {
+  margin-top: 14px;
+}
+
+.historyTitle {
+  font-size: 18px;
+  margin-bottom: 12px;
+}
+
+.smallRow {
+  display: flex;
+  gap: 10px;
+  overflow-x: auto;
+  padding-bottom: 4px;
+  scrollbar-width: none;
+}
+
+.smallCard {
+  min-width: 110px;
+  width: 110px;
+  border-radius: 16px;
+  overflow: hidden;
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  padding: 0;
+}
+
+.smallCardImage {
+  width: 100%;
+  aspect-ratio: 4 / 5;
+  object-fit: cover;
+  display: block;
+}
+
+.modalBackdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.74);
+  display: grid;
+  place-items: center;
+  z-index: 1000;
+  padding: 20px;
+}
+
+.modalImg {
+  max-width: 92vw;
+  max-height: 88vh;
+  object-fit: contain;
+  border-radius: 18px;
+  display: block;
+}
+
+@media (max-width: 900px) {
+  .heroSection {
+    --hero-card-width: clamp(360px, 28vw, 320px);
+  }
+
+  .heroImageFrame {
+    height: min(56vh, 520px);
+  }
+
+  .sliderGrid {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 720px) {
+  .topbar {
+    height: auto;
+    padding: 18px 16px;
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
+  .contentWrap,
+  .generatorSection,
+  .historySection {
+    padding-left: 16px;
+    padding-right: 16px;
+  }
+
+  .heroHeader,
+  .sectionHead {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
+  .heroTitle,
+  .sectionTitle {
+    font-size: 30px;
+  }
+
+  .heroSection {
+    --hero-card-width: clamp(360px, 28vw, 320px);
+  }
+
+  .heroImageFrame {
+    height: min(52vh, 430px);
+  }
+
+  .cardActions {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+
+.heroInfo {
+  padding: 18px 20px 22px;
+}
+
+.heroCardTitle {
+  font-size: 18px;
+  line-height: 1.15;
+}
+
+.heroCardText {
+  margin-top: 10px;
   font-size: 14px;
   line-height: 1.6;
   color: rgba(255,255,255,0.72);
 }
 
-.heroSub {
-  max-width: 680px;
+.heroCardActions {
+  margin-top: 16px;
+}
+
+.generatorShell {
+  display: grid;
+  grid-template-columns: 320px minmax(0, 1fr);
+  gap: 18px;
+  align-items: start;
+}
+
+.generatorLeadCard {
+  position: sticky;
+  top: 92px;
+  background: linear-gradient(180deg, rgba(255,255,255,0.06), rgba(255,255,255,0.03));
+  border: 1px solid rgba(255,255,255,0.08);
+  border-radius: 24px;
+  padding: 20px;
+  backdrop-filter: blur(10px);
+}
+
+.generatorLeadTop {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.generatorLeadValue {
+  font-size: 22px;
+  font-weight: 800;
+  line-height: 1.2;
+}
+
+.generatorTempBadge {
+  min-width: 64px;
+  min-height: 44px;
+  padding: 0 14px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 999px;
+  background: rgba(255,255,255,0.92);
+  color: #06101c;
+  font-weight: 800;
+}
+
+.generatorHintText {
+  margin-top: 14px;
+  color: rgba(255,255,255,0.78);
+  line-height: 1.65;
+  font-size: 14px;
+}
+
+.generatorStats {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 10px;
+  margin-top: 18px;
+}
+
+.generatorStat {
+  padding: 12px;
+  border-radius: 16px;
+  background: rgba(0,0,0,0.2);
+  border: 1px solid rgba(255,255,255,0.06);
+}
+
+.generatorStatLabel {
+  display: block;
+  font-size: 12px;
+  color: rgba(255,255,255,0.62);
+  margin-bottom: 6px;
+}
+
+.generatorMain {
+  display: grid;
+  gap: 18px;
+}
+
+.sliderTop {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  margin-bottom: 10px;
+}
+
+.sliderCard {
+  padding: 16px;
+}
+
+.sliderValue {
+  margin-top: 0;
+  font-size: 14px;
+}
+
+.generatorSceneHead {
+  display: flex;
+  justify-content: space-between;
+  gap: 14px;
+  align-items: flex-start;
+  margin-bottom: 14px;
+}
+
+.generatorSceneSub {
+  color: rgba(255,255,255,0.68);
+  font-size: 14px;
+  line-height: 1.55;
+}
+
+.sceneGrid,
+.celebGrid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.sceneCard,
+.sceneCardActive {
+  text-align: left;
+  padding: 16px;
+  border-radius: 18px;
+  border: 1px solid rgba(255,255,255,0.08);
+  background: rgba(0,0,0,0.18);
+  color: #fff;
+  cursor: pointer;
+  transition: 0.2s ease;
+}
+
+.sceneCard:hover {
+  background: rgba(255,255,255,0.06);
+}
+
+.sceneCardActive {
+  background: rgba(255,255,255,0.1);
+  border-color: rgba(255,255,255,0.24);
+  box-shadow: inset 0 0 0 1px rgba(255,255,255,0.08);
+}
+
+.sceneCardTitle {
+  display: block;
+  font-size: 16px;
+  font-weight: 800;
+}
+
+.sceneCardHint {
+  display: block;
+  margin-top: 8px;
+  font-size: 13px;
+  line-height: 1.5;
+  color: rgba(255,255,255,0.7);
+}
+
+.activityGrid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 16px;
+}
+
+.historyTitleRow {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 12px;
+}
+
+.historyCount {
+  min-height: 32px;
+  padding: 0 12px;
+  display: inline-flex;
+  align-items: center;
+  border-radius: 999px;
+  font-size: 12px;
+  color: rgba(255,255,255,0.72);
+  background: rgba(255,255,255,0.05);
+  border: 1px solid rgba(255,255,255,0.08);
+}
+
+.activityList {
+  display: grid;
+  gap: 12px;
+}
+
+.activityCard {
+  display: grid;
+  grid-template-columns: 88px minmax(0, 1fr);
+  gap: 12px;
+  align-items: start;
+  padding: 10px;
+  border-radius: 18px;
+  background: rgba(0,0,0,0.18);
+  border: 1px solid rgba(255,255,255,0.06);
+}
+
+.activityImageBtn {
+  border: 0;
+  padding: 0;
+  margin: 0;
+  background: transparent;
+  cursor: zoom-in;
+}
+
+.activityImage,
+.activityImageFallback {
+  width: 88px;
+  aspect-ratio: 3 / 4;
+  border-radius: 14px;
+  display: block;
+  object-fit: cover;
+}
+
+.activityImageFallback {
+  background: linear-gradient(180deg, #efefef 0 42%, #d7cfbf 42% 100%);
+}
+
+.activityBody {
+  min-width: 0;
+}
+
+.activityTitleRow {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.activityTitle {
+  font-size: 16px;
+  font-weight: 800;
+  line-height: 1.3;
+}
+
+.activityChipBtn,
+.activityLinkBtn {
+  border: 0;
+  background: transparent;
+  color: rgba(255,255,255,0.88);
+  font-weight: 700;
+  cursor: pointer;
+  padding: 0;
+}
+
+.activityText {
+  margin-top: 8px;
+  font-size: 13px;
+  line-height: 1.55;
+  color: rgba(255,255,255,0.68);
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.activityMetaRow {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+  flex-wrap: wrap;
+  margin-top: 10px;
+  color: rgba(255,255,255,0.62);
+  font-size: 12px;
+}
+
+@media (max-width: 1080px) {
+  .generatorShell {
+    grid-template-columns: 1fr;
+  }
+
+  .generatorLeadCard {
+    position: static;
+  }
+
+  .activityGrid {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 900px) {
+  .sceneGrid,
+  .celebGrid {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 720px) {
+  .generatorStats {
+    grid-template-columns: 1fr;
+  }
+
+  .activityCard {
+    grid-template-columns: 76px minmax(0, 1fr);
+  }
+
+  .activityImage,
+  .activityImageFallback {
+    width: 76px;
+  }
+}
+
+/* ===== Settings / System ===== */
+
+.card {
+  background: #111;
+  border-radius: 16px;
+  padding: 16px;
+  margin-top: 16px;
+}
+
+.blockTitle {
+  font-size: 14px;
+  margin-bottom: 12px;
+  opacity: 0.7;
+}
+
+.segmentRow {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.pill {
+  padding: 6px 12px;
+  border-radius: 999px;
+  background: #222;
+  border: 1px solid #333;
+  font-size: 13px;
+}
+
+.activePill {
+  padding: 6px 12px;
+  border-radius: 999px;
+  background: white;
+  color: black;
+  font-size: 13px;
+}
+
+.sliderCard {
+  margin-top: 12px;
+  display: block;
+}
+
+.sliderTop {
+  display: flex;
+  justify-content: space-between;
+  font-size: 13px;
+  margin-bottom: 4px;
+}
+
+.sliderLabel {
+  opacity: 0.7;
+}
+
+.sliderValue {
+  font-weight: 600;
+}
+
+/* ===== Nav Right ===== */
+
+.navRight {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.navGhost {
+  font-size: 13px;
+  opacity: 0.7;
+}
+
+.navGhost:hover {
+  opacity: 1;
+}
+
+.avatar {
+  width: 28px;
+  height: 28px;
+  border-radius: 999px;
+  background: white;
+  color: black;
+  font-size: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.topbarRight {
+  margin-left: auto;
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+.profileWrap {
+  position: relative;
+}
+
+.avatarButton {
+  border: 0;
+  background: transparent;
+  padding: 0;
+  cursor: pointer;
+}
+
+.avatar {
+  width: 34px;
+  height: 34px;
+  border-radius: 999px;
+  background: #ffffff;
+  color: #111111;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 13px;
+  font-weight: 700;
+  box-shadow: 0 10px 24px rgba(0, 0, 0, 0.18);
+}
+
+.profileMenu {
+  position: absolute;
+  top: calc(100% + 10px);
+  right: 0;
+  width: 220px;
+  background: rgba(18, 18, 20, 0.96);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 18px;
+  padding: 12px;
+  box-shadow: 0 20px 48px rgba(0, 0, 0, 0.34);
+  z-index: 60;
+  backdrop-filter: blur(16px);
+}
+
+.profileCard {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding-bottom: 12px;
+  margin-bottom: 10px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.profileAvatar {
+  width: 38px;
+  height: 38px;
+  border-radius: 999px;
+  background: #ffffff;
+  color: #111111;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 14px;
+  font-weight: 700;
+}
+
+.profileName {
+  font-size: 14px;
+  font-weight: 700;
+}
+
+.profileMeta {
+  font-size: 12px;
+  color: rgba(255, 255, 255, 0.58);
+  margin-top: 2px;
+}
+
+.profileMenuList {
+  display: grid;
+  gap: 6px;
+}
+
+.profileMenuItem {
+  display: block;
+  padding: 10px 12px;
+  border-radius: 12px;
+  color: #ffffff;
+  text-decoration: none;
+  transition: background 0.18s ease, opacity 0.18s ease;
+}
+
+.profileMenuItem:hover {
+  background: rgba(255, 255, 255, 0.08);
+}
+
+.pageHeroHead {
+  margin-bottom: 20px;
+}
+
+.pageHeroKicker {
+  font-size: 12px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: rgba(255, 255, 255, 0.55);
+  margin-bottom: 8px;
+}
+
+.pageHeroTitle {
+  font-size: clamp(28px, 4vw, 44px);
+  line-height: 1.06;
+  font-weight: 800;
+  margin: 0;
+}
+
+.pageHeroSub {
+  margin-top: 8px;
+  font-size: 15px;
+  color: rgba(255, 255, 255, 0.6);
+}
+
+.heroEmpty {
+  height: 260px;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  opacity: 0.6;
+}
+
+.heroEmptySub {
+  font-size: 13px;
+  margin-top: 6px;
 }
 
 .generatorBadge {
@@ -37,14 +1082,111 @@
   margin-bottom: 8px;
 }
 
-@media (max-width: 900px) {
-  .heroSection {
-    --hero-card-width: clamp(260px, 68vw, 340px);
-  }
+.topbarRight {
+  margin-left: auto;
+  display: flex;
+  align-items: center;
+  gap: 16px;
 }
 
-@media (max-width: 720px) {
-  .heroSection {
-    --hero-card-width: min(82vw, 320px);
-  }
+.profileWrap {
+  position: relative;
+}
+
+.avatarButton {
+  border: 0;
+  background: transparent;
+  padding: 0;
+  cursor: pointer;
+}
+
+.avatarImage,
+.avatar {
+  width: 36px;
+  height: 36px;
+  border-radius: 999px;
+  object-fit: cover;
+  background: #ffffff;
+  color: #111111;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 13px;
+  font-weight: 700;
+  box-shadow: 0 10px 24px rgba(0, 0, 0, 0.18);
+}
+
+.profileMenu {
+  position: absolute;
+  top: calc(100% + 10px);
+  right: 0;
+  width: 240px;
+  background: rgba(18, 18, 20, 0.96);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 18px;
+  padding: 12px;
+  box-shadow: 0 20px 48px rgba(0, 0, 0, 0.34);
+  z-index: 60;
+  backdrop-filter: blur(16px);
+}
+
+.profileCard {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding-bottom: 12px;
+  margin-bottom: 10px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.profileAvatarImage,
+.profileAvatar {
+  width: 40px;
+  height: 40px;
+  border-radius: 999px;
+  object-fit: cover;
+  background: #ffffff;
+  color: #111111;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 14px;
+  font-weight: 700;
+}
+
+.profileName {
+  font-size: 14px;
+  font-weight: 700;
+}
+
+.profileMeta {
+  font-size: 12px;
+  color: rgba(255, 255, 255, 0.58);
+  margin-top: 2px;
+  word-break: break-all;
+}
+
+.profileMenuList {
+  display: grid;
+  gap: 6px;
+}
+
+.profileMenuItem,
+.profileMenuItemButton {
+  display: block;
+  width: 100%;
+  text-align: left;
+  padding: 10px 12px;
+  border-radius: 12px;
+  color: #ffffff;
+  text-decoration: none;
+  background: transparent;
+  border: 0;
+  cursor: pointer;
+  transition: background 0.18s ease, opacity 0.18s ease;
+}
+
+.profileMenuItem:hover,
+.profileMenuItemButton:hover {
+  background: rgba(255, 255, 255, 0.08);
 }
