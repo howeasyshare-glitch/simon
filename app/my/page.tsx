@@ -1,26 +1,40 @@
 "use client";
 
+import { useEffect, useState } from "react";
 import styles from "../page.module.css";
 import NavBar from "../../components/NavBar";
+import HeroCarousel from "../../components/HeroCarousel";
+import { apiGetJson } from "../../lib/apiFetch";
 
 export default function MyPage() {
+  const [items, setItems] = useState([]);
+
+  useEffect(() => {
+    load();
+  }, []);
+
+  async function load() {
+    try {
+      const data = await apiGetJson("/api/data?op=outfits.recent&limit=12");
+      setItems(data?.items || []);
+    } catch {
+      setItems([]);
+    }
+  }
+
   return (
     <main className={styles.page}>
       <NavBar />
-        <section className={styles.contentWrap}>
-          <div className={styles.pageHeroHead}>
-            <div className={styles.pageHeroKicker}>My</div>
-            <h1 className={styles.pageHeroTitle}>My Generated</h1>
-            <div className={styles.pageHeroSub}>我的生成</div>
-          </div>
 
-          <div className={styles.card}>
-            <div className={styles.blockTitle}>已登入</div>
-            <div className={styles.emptyText}>
-              這個範例頁已接上 Supabase 登入保護。你可以把你現有的 My 內容搬回來。
-            </div>
-          </div>
-        </section>
+      <section className={styles.contentWrap}>
+        <HeroCarousel
+          items={items}
+          generatedItems={items}
+          stage="generated"
+          setStage={() => {}}
+          mode="simple"
+        />
+      </section>
     </main>
   );
 }
