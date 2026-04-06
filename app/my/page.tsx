@@ -6,8 +6,12 @@ import NavBar from "../../components/NavBar";
 import HeroCarousel from "../../components/HeroCarousel";
 import { apiGetJson } from "../../lib/apiFetch";
 
+type OutfitResponse = {
+  items: any[];
+};
+
 export default function MyPage() {
-  const [items, setItems] = useState([]);
+  const [items, setItems] = useState<any[]>([]);
 
   useEffect(() => {
     load();
@@ -15,7 +19,9 @@ export default function MyPage() {
 
   async function load() {
     try {
-      const data = await apiGetJson("/api/data?op=outfits.recent&limit=12");
+      const data = await apiGetJson<OutfitResponse>(
+        "/api/data?op=outfits.recent&limit=12"
+      );
       setItems(data?.items || []);
     } catch {
       setItems([]);
