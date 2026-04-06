@@ -19,8 +19,6 @@ type Props = {
   isLiked?: (id: string) => boolean;
   isShared?: (id: string) => boolean;
   mode?: "home" | "simple";
-  title?: string;
-  kicker?: string;
 };
 
 export default function HeroCarousel({
@@ -38,17 +36,14 @@ export default function HeroCarousel({
   isLiked,
   isShared,
   mode = "home",
-  title,
-  kicker,
 }: Props) {
   const railRef = useRef<HTMLDivElement | null>(null);
   const [activeIdx, setActiveIdx] = useState(0);
 
   const currentItems = stage === "generated" ? generatedItems : items;
-  const resolvedKicker =
-    kicker ?? (stage === "generated" ? "My Generated" : "Featured");
-  const resolvedTitle =
-    title ?? (stage === "generated" ? "我的生成" : "穿搭主舞台");
+  const isHome = mode === "home";
+  const hasItems = currentItems?.length > 0;
+  const canNavigate = currentItems.length > 1;
 
   useEffect(() => {
     setActiveIdx(0);
@@ -81,67 +76,88 @@ export default function HeroCarousel({
   };
 
   const scrollToIndex = (index: number) => {
+    if (!canNavigate) return;
+
+    const nextIndex = Math.max(0, Math.min(currentItems.length - 1, index));
     const el = railRef.current;
     if (!el) return;
 
     const cards = Array.from(el.querySelectorAll('[data-hero-card="1"]')) as HTMLElement[];
-    const target = cards[index];
+    const target = cards[nextIndex];
     if (!target) return;
 
     const left = target.offsetLeft - (el.clientWidth - target.offsetWidth) / 2;
     el.scrollTo({ left, behavior: "smooth" });
-    setActiveIdx(index);
+    setActiveIdx(nextIndex);
   };
 
-  const showHomeControls = mode === "home";
-if (!items?.length && !generatedItems?.length) {
-  return (
-    <div className={styles.heroEmpty}>
-      <div>目前沒有資料</div>
-      <div className={styles.heroEmptySub}>
-        先生成一套穿搭或到 Explore 看看
-      </div>
-    </div>
-  );
-}
+  if (!hasItems) {
+    return (
+      <section className={styles.heroSection}>
+        <div className={styles.heroEmpty}>
+          <div>目前沒有資料</div>
+          <div className={styles.heroEmptySub}>先生成一套穿搭或到 Explore 看看</div>
+        </div>
+      </section>
+    );
+  }
+
   return (
     <section className={styles.heroSection}>
-      <div className={styles.heroHeader}>
-        <div className={styles.heroHeadCopy}>
-          <div className={styles.kicker}>{resolvedKicker}</div>
-          <h1 className={styles.heroTitle}>{resolvedTitle}</h1>
-          {showHomeControls ? (
-            <p className={styles.heroSub}>
-              {stage === "generated"
-                ? generatedSummary || "用和精選相同的方式瀏覽你的生成結果。"
-                : "卡片排成一列，highlight 會跟著目前滑到的位置變化。"}
-            </p>
-          ) : null}
-        </div>
+      {isHome ? (
+        <div className={styles.heroHeader}>
+          <div className={styles.heroHeadCopy}>
+            <div className={styles.kicker}>{stage === "generated" ? "My Generated" : "Featured"}</div>
+            <h1 className={styles.heroTitle}>{stage === "generated" ? "我的生成" : "穿搭主舞台"}</h1>
+            {stage === "generated" && generatedSummary ? (
+              <p className={styles.heroSub}>{generatedSummary}</p>
+            ) : null}
+          </div>
 
-        <div className={styles.heroControls}>
-          {showHomeControls ? (
-            <>
-              <button
-                type="button"
-                className={stage === "featured" ? styles.activePill : styles.pill}
-                onClick={() => setStage("featured")}
-              >
-                精選
-              </button>
-              <button
-                type="button"
-                className={stage === "generated" ? styles.activePill : styles.pill}
-                onClick={() => setStage("generated")}
-              >
-                我的生成
-              </button>
-            </>
-          ) : null}
+          <div className={styles.heroControls}>
+            <button
+              type="button"
+              className={stage === "featured" ? styles.activePill : styles.pill}
+              onClick={() => setStage("featured")}
+            >
+              精選
+            </button>
+            <button
+              type="button"
+              className={stage === "generated" ? styles.activePill : styles.pill}
+              onClick={() => setStage("generated")}
+            >
+              我的生成
+            </button>
+
+            {canNavigate ? (
+              <>
+                <button
+                  type="button"
+                  className={styles.arrowBtn}
+                  onClick={() => scrollToIndex(activeIdx - 1)}
+                  aria-label="上一張"
+                >
+                  ‹
+                </button>
+                <button
+                  type="button"
+                  className={styles.arrowBtn}
+                  onClick={() => scrollToIndex(activeIdx + 1)}
+                  aria-label="下一張"
+                >
+                  ›
+                </button>
+              </>
+            ) : null}
+          </div>
+        </div>
+      ) : canNavigate ? (
+        <div className={styles.heroSimpleControls}>
           <button
             type="button"
             className={styles.arrowBtn}
-            onClick={() => scrollToIndex(Math.max(0, activeIdx - 1))}
+            onClick={() => scrollToIndex(activeIdx - 1)}
             aria-label="上一張"
           >
             ‹
@@ -149,13 +165,13 @@ if (!items?.length && !generatedItems?.length) {
           <button
             type="button"
             className={styles.arrowBtn}
-            onClick={() => scrollToIndex(Math.min(currentItems.length - 1, activeIdx + 1))}
+            onClick={() => scrollToIndex(activeIdx + 1)}
             aria-label="下一張"
           >
             ›
           </button>
         </div>
-      </div>
+      ) : null}
 
       <div className={styles.heroViewport}>
         <div className={styles.heroRail} ref={railRef} onScroll={syncActiveFromScroll}>
@@ -223,7 +239,7 @@ if (!items?.length && !generatedItems?.length) {
           <div className={styles.heroSpacer} />
         </div>
 
-        {showHomeControls && stage === "generated" && generatedShareUrl ? (
+        {isHome && stage === "generated" && generatedShareUrl ? (
           <div className={styles.heroGeneratedLinkRow}>
             <a href={generatedShareUrl} className={styles.linkBtn}>
               開啟分享頁
