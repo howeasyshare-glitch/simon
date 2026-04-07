@@ -1,11 +1,13 @@
 import { supabase } from "./supabase/client";
 
-async function buildAuthHeaders(extraHeaders = {}) {
+type HeaderMap = Record<string, string>;
+
+async function buildAuthHeaders(extraHeaders: HeaderMap = {}): Promise<HeaderMap> {
   const {
     data: { session },
   } = await supabase.auth.getSession();
 
-  const headers = {
+  const headers: HeaderMap = {
     ...extraHeaders,
   };
 
@@ -16,7 +18,7 @@ async function buildAuthHeaders(extraHeaders = {}) {
   return headers;
 }
 
-export async function apiGetJson(url) {
+export async function apiGetJson<T = any>(url: string): Promise<T> {
   const headers = await buildAuthHeaders();
 
   const res = await fetch(url, {
@@ -26,19 +28,19 @@ export async function apiGetJson(url) {
   });
 
   const text = await res.text();
-  let data = {};
+  let data: T | any = {};
   try {
     data = text ? JSON.parse(text) : {};
   } catch {}
 
   if (!res.ok) {
-    throw new Error(data?.error || "API GET failed");
+    throw new Error((data as any)?.error || "API GET failed");
   }
 
-  return data;
+  return data as T;
 }
 
-export async function apiPostJson(url, body = {}) {
+export async function apiPostJson<T = any>(url: string, body: any = {}): Promise<T> {
   const headers = await buildAuthHeaders({
     "Content-Type": "application/json",
   });
@@ -50,14 +52,14 @@ export async function apiPostJson(url, body = {}) {
   });
 
   const text = await res.text();
-  let data = {};
+  let data: T | any = {};
   try {
     data = text ? JSON.parse(text) : {};
   } catch {}
 
   if (!res.ok) {
-    throw new Error(data?.error || "API POST failed");
+    throw new Error((data as any)?.error || "API POST failed");
   }
 
-  return data;
+  return data as T;
 }
