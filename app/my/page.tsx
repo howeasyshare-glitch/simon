@@ -5,8 +5,9 @@ import styles from "../page.module.css";
 import NavBar from "../../components/NavBar";
 import HeroCarousel from "../../components/HeroCarousel";
 import type { OutfitItem } from "../../components/OutfitCard";
-import { apiGetJson } from "../../lib/apiFetch";
+import { apiGetJson, apiPostJson } from "../../lib/apiFetch";
 import { supabase } from "../../lib/supabase/client";
+import { getAnonId } from "../../lib/user";
 
 type ListResp = {
   ok?: boolean;
@@ -83,11 +84,7 @@ export default function MyPage() {
 
   async function loadFavorites() {
     try {
-      let anonId = localStorage.getItem("findoutfit_anon_id");
-      if (!anonId) {
-        anonId = crypto.randomUUID();
-        localStorage.setItem("findoutfit_anon_id", anonId);
-      }
+      const anonId = getAnonId();
       const data = await apiGetJson<ListResp>(
         `/api/data?op=outfits.favorites&limit=12&anon_id=${encodeURIComponent(anonId)}&ts=${Date.now()}`
       );
@@ -106,20 +103,14 @@ export default function MyPage() {
   }
 
   async function toggleLike(item: OutfitItem) {
-    let anonId = localStorage.getItem("findoutfit_anon_id");
-    if (!anonId) {
-      anonId = crypto.randomUUID();
-      localStorage.setItem("findoutfit_anon_id", anonId);
-    }
-
+    const anonId = getAnonId();
     const liked = isLiked(item.id);
     const op = liked ? "outfits.unlike" : "outfits.like";
 
     try {
-      await fetch(`/api/data?op=${op}`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ outfit_id: item.id, anon_id: anonId }),
+      await apiPostJson(`/api/data?op=${op}`, {
+        outfit_id: item.id,
+        anon_id: anonId,
       });
     } catch {}
 
@@ -129,17 +120,15 @@ export default function MyPage() {
       localStorage.setItem(`liked_${item.id}`, "1");
     }
 
-    setRecent((prev) => [...prev]);
-    setFavorites((prev) => [...prev]);
+    await loadFavorites();
+    await loadRecent();
   }
 
   async function shareItem(item: OutfitItem) {
     const key = `shared_${item.id}`;
     try {
-      await fetch(`/api/data?op=outfits.share`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ outfit_id: item.id }),
+      await apiPostJson(`/api/data?op=outfits.share`, {
+        outfit_id: item.id,
       });
     } catch {}
     localStorage.setItem(key, "1");
@@ -148,8 +137,7 @@ export default function MyPage() {
       await navigator.clipboard.writeText(`${window.location.origin}/share/${item.share_slug}`);
     }
 
-    setRecent((prev) => [...prev]);
-    setFavorites((prev) => [...prev]);
+    await loadRecent();
   }
 
   function applyPreset(item: OutfitItem) {
