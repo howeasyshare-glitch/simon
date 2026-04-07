@@ -6,6 +6,7 @@ import NavBar from "../components/NavBar";
 import HeroCarousel from "../components/HeroCarousel";
 import type { OutfitItem } from "../components/OutfitCard";
 import { apiGetJson, apiPostJson } from "../lib/apiFetch";
+import { getAnonId } from "../lib/user";
 
 type ImgResp = {
   ok?: boolean;
@@ -213,11 +214,7 @@ export default function Page() {
 
   async function loadFavorites() {
     try {
-      let anonId = localStorage.getItem("findoutfit_anon_id");
-      if (!anonId) {
-        anonId = crypto.randomUUID();
-        localStorage.setItem("findoutfit_anon_id", anonId);
-      }
+      const anonId = getAnonId();
       const data = await apiGetJson<ListResp>(
         `/api/data?op=outfits.favorites&limit=12&anon_id=${encodeURIComponent(anonId)}&ts=${Date.now()}`
       );
@@ -236,20 +233,14 @@ export default function Page() {
   }
 
   async function toggleLike(item: OutfitItem) {
-    let anonId = localStorage.getItem("findoutfit_anon_id");
-    if (!anonId) {
-      anonId = crypto.randomUUID();
-      localStorage.setItem("findoutfit_anon_id", anonId);
-    }
-
+    const anonId = getAnonId();
     const liked = isLiked(item.id);
     const op = liked ? "outfits.unlike" : "outfits.like";
 
     try {
-      await fetch(`/api/data?op=${op}`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ outfit_id: item.id, anon_id: anonId }),
+      await apiPostJson(`/api/data?op=${op}`, {
+        outfit_id: item.id,
+        anon_id: anonId,
       });
     } catch {}
 
@@ -261,9 +252,9 @@ export default function Page() {
       pushToast("已加入最愛");
     }
 
-    setFeatured((prev) => [...prev]);
-    setRecent((prev) => [...prev]);
-    setFavorites((prev) => [...prev]);
+    await loadFavorites();
+    await loadFeatured();
+    await loadRecent();
   }
 
   async function shareItem(item: OutfitItem) {
@@ -271,10 +262,8 @@ export default function Page() {
     const already = localStorage.getItem(key) === "1";
 
     try {
-      await fetch(`/api/data?op=outfits.share`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ outfit_id: item.id }),
+      await apiPostJson(`/api/data?op=outfits.share`, {
+        outfit_id: item.id,
       });
     } catch {}
 
@@ -285,8 +274,8 @@ export default function Page() {
     }
 
     pushToast(already ? "已複製連結" : "已分享並複製連結");
-    setFeatured((prev) => [...prev]);
-    setRecent((prev) => [...prev]);
+    await loadFeatured();
+    await loadRecent();
   }
 
   function normalizeGender(v?: string) {
