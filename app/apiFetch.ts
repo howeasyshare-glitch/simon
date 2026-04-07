@@ -1,4 +1,4 @@
-import { supabase } from "./supabase/client";
+import { supabase } from "../lib/supabase/client";
 
 type HeaderMap = Record<string, string>;
 
