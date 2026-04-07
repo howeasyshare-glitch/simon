@@ -1,12 +1,10 @@
-export function getUserId() {
-  if (typeof window === "undefined") return null;
+export function getAnonId() {
+  if (typeof window === "undefined") return "";
 
-  let id = localStorage.getItem("findoutfit_user_id");
-
-  if (!id) {
-    id = crypto.randomUUID();
-    localStorage.setItem("findoutfit_user_id", id);
+  let anonId = localStorage.getItem("findoutfit_anon_id");
+  if (!anonId) {
+    anonId = crypto.randomUUID();
+    localStorage.setItem("findoutfit_anon_id", anonId);
   }
-
-  return id;
+  return anonId;
 }
