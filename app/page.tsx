@@ -6,7 +6,6 @@ import NavBar from "../components/NavBar";
 import HeroCarousel from "../components/HeroCarousel";
 import type { OutfitItem } from "../components/OutfitCard";
 import { apiGetJson, apiPostJson } from "../lib/apiFetch";
-import { getAnonId } from "../lib/user";
 
 type ImgResp = {
   ok?: boolean;
@@ -155,22 +154,23 @@ export default function Page() {
   const toastTimer = useRef<number | null>(null);
 
   useEffect(() => {
-    loadAll();
-    tryApplyPresetFromStorage();
+  loadAll();
+  tryApplyPresetFromStorage();
 
-    try {
-      const raw = localStorage.getItem("findoutfit_settings");
-      if (raw) {
-        const s = JSON.parse(raw);
-        if (s.gender) setGender(s.gender);
-        if (s.audience) setAudience(s.audience);
-      }
-    } catch {}
+  // 👉 套用 settings（加在這裡）
+  try {
+    const raw = localStorage.getItem("findoutfit_settings");
+    if (raw) {
+      const s = JSON.parse(raw);
+      if (s.gender) setGender(s.gender);
+      if (s.audience) setAudience(s.audience);
+    }
+  } catch {}
 
-    return () => {
-      if (toastTimer.current) window.clearTimeout(toastTimer.current);
-    };
-  }, []);
+  return () => {
+    if (toastTimer.current) window.clearTimeout(toastTimer.current);
+  };
+}, []);
 
   const quickScenes = useMemo(() => {
     return quickSceneMap[`${gender}-${audience}`] || quickSceneMap["中性-成人"];
@@ -214,7 +214,11 @@ export default function Page() {
 
   async function loadFavorites() {
     try {
-      const anonId = getAnonId();
+      let anonId = localStorage.getItem("findoutfit_anon_id");
+      if (!anonId) {
+        anonId = crypto.randomUUID();
+        localStorage.setItem("findoutfit_anon_id", anonId);
+      }
       const data = await apiGetJson<ListResp>(
         `/api/data?op=outfits.favorites&limit=12&anon_id=${encodeURIComponent(anonId)}&ts=${Date.now()}`
       );
@@ -233,14 +237,20 @@ export default function Page() {
   }
 
   async function toggleLike(item: OutfitItem) {
-    const anonId = getAnonId();
+    let anonId = localStorage.getItem("findoutfit_anon_id");
+    if (!anonId) {
+      anonId = crypto.randomUUID();
+      localStorage.setItem("findoutfit_anon_id", anonId);
+    }
+
     const liked = isLiked(item.id);
     const op = liked ? "outfits.unlike" : "outfits.like";
 
     try {
-      await apiPostJson(`/api/data?op=${op}`, {
-        outfit_id: item.id,
-        anon_id: anonId,
+      await fetch(`/api/data?op=${op}`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ outfit_id: item.id, anon_id: anonId }),
       });
     } catch {}
 
@@ -252,9 +262,9 @@ export default function Page() {
       pushToast("已加入最愛");
     }
 
-    await loadFavorites();
-    await loadFeatured();
-    await loadRecent();
+    setFeatured((prev) => [...prev]);
+    setRecent((prev) => [...prev]);
+    setFavorites((prev) => [...prev]);
   }
 
   async function shareItem(item: OutfitItem) {
@@ -262,8 +272,10 @@ export default function Page() {
     const already = localStorage.getItem(key) === "1";
 
     try {
-      await apiPostJson(`/api/data?op=outfits.share`, {
-        outfit_id: item.id,
+      await fetch(`/api/data?op=outfits.share`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ outfit_id: item.id }),
       });
     } catch {}
 
@@ -274,8 +286,8 @@ export default function Page() {
     }
 
     pushToast(already ? "已複製連結" : "已分享並複製連結");
-    await loadFeatured();
-    await loadRecent();
+    setFeatured((prev) => [...prev]);
+    setRecent((prev) => [...prev]);
   }
 
   function normalizeGender(v?: string) {
@@ -328,29 +340,29 @@ export default function Page() {
   }
 
   async function handleGenerate() {
-    let system = {
-      temperature: 0.7,
-      creativity: 0.5,
-      withBag: false,
-    };
+    // 👉 讀 system 設定
+let system = {
+  temperature: 0.7,
+  creativity: 0.5,
+  withBag: false,
+};
 
-    try {
-      const raw = localStorage.getItem("findoutfit_system");
-      if (raw) system = JSON.parse(raw);
-    } catch {}
-
+try {
+  const raw = localStorage.getItem("findoutfit_system");
+  if (raw) system = JSON.parse(raw);
+} catch {}
+    
     try {
       setStage("generated");
       pushToast("生成中...");
 
       const safeScene = selectedScene || "date";
+      const promptContext = selectedCeleb
+        ? `celeb:${selectedCeleb}`
+        : `scene:${safeScene}`;
+
       const safeGender = normalizeGender(gender);
       const safeAudience = normalizeAudience(audience);
-      const sceneLabel =
-        selectedCeleb
-          ? baseCelebs.find((c) => c.id === selectedCeleb)?.label || "名人靈感"
-          : quickScenes.find((s) => s.id === selectedScene)?.label || "日常穿搭";
-      const promptContext = selectedCeleb ? `celeb:${selectedCeleb}` : `scene:${safeScene}`;
 
       const specResp = await apiPostJson<any>("/api/generate-outfit-spec", {
         payload: {
@@ -397,10 +409,11 @@ export default function Page() {
 
       setGeneratedImageUrl(imgResp.image_url);
       setGeneratedSummary(
-        `${sceneLabel} · 風格 ${system.temperature} · 創意 ${system.creativity} · 包包 ${
-          system.withBag ? "開啟" : "關閉"
-        }`
-      );
+  `${specObj?.summary || "生成完成"} 
+  · 風格:${system.temperature} 
+  · 創意:${system.creativity} 
+  · 包包:${system.withBag ? "有" : "無"}`
+);
 
       try {
         const created = await apiPostJson<any>("/api/data?op=outfits.create", {
@@ -461,7 +474,6 @@ export default function Page() {
           onApply={applyPreset}
           isLiked={isLiked}
           isShared={isShared}
-          mode="home"
         />
       </div>
 
@@ -476,8 +488,6 @@ export default function Page() {
 
         <div className={styles.generatorShell}>
           <aside className={styles.generatorLeadCard}>
-            <div className={styles.generatorBadge}>AI Powered Outfit</div>
-
             <div className={styles.generatorLeadTop}>
               <div>
                 <div className={styles.blockTitle}>本次設定</div>
@@ -619,7 +629,7 @@ export default function Page() {
             </div>
             {recent.length ? (
               <div className={styles.activityList}>
-                {recent.slice(0, 4).map((item) => (
+                {recent.slice(0, 6).map((item) => (
                   <ActivityMiniCard
                     key={item.id}
                     item={item}
@@ -636,12 +646,12 @@ export default function Page() {
 
           <div className={styles.historyBlock}>
             <div className={styles.historyTitleRow}>
-              <div className={styles.historyTitle}>我的最愛預覽</div>
+              <div className={styles.historyTitle}>我的最愛</div>
               <div className={styles.historyCount}>{favorites.length} 筆</div>
             </div>
             {favorites.length ? (
               <div className={styles.activityList}>
-                {favorites.slice(0, 4).map((item) => (
+                {favorites.slice(0, 6).map((item) => (
                   <ActivityMiniCard
                     key={item.id}
                     item={item}
