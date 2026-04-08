@@ -84,9 +84,8 @@ export default function MyPage() {
 
   async function loadFavorites() {
     try {
-      const anonId = getAnonId();
       const data = await apiGetJson<ListResp>(
-        `/api/data?op=outfits.favorites&limit=12&anon_id=${encodeURIComponent(anonId)}&ts=${Date.now()}`
+        `/api/data?op=outfits.favorites&limit=12&ts=${Date.now()}`
       );
       setFavorites(data?.items || []);
     } catch {
@@ -103,14 +102,17 @@ export default function MyPage() {
   }
 
   async function toggleLike(item: OutfitItem) {
-    const anonId = getAnonId();
+    const {
+      data: { session },
+    } = await supabase.auth.getSession();
+
     const liked = isLiked(item.id);
     const op = liked ? "outfits.unlike" : "outfits.like";
 
     try {
       await apiPostJson(`/api/data?op=${op}`, {
         outfit_id: item.id,
-        anon_id: anonId,
+        ...(session?.access_token ? {} : { anon_id: getAnonId() }),
       });
     } catch {}
 
