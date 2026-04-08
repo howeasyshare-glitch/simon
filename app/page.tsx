@@ -6,6 +6,8 @@ import NavBar from "../components/NavBar";
 import HeroCarousel from "../components/HeroCarousel";
 import type { OutfitItem } from "../components/OutfitCard";
 import { apiGetJson, apiPostJson } from "../lib/apiFetch";
+import { getAnonId } from "../lib/user";
+import { supabase } from "../lib/supabase/client";
 
 type ImgResp = {
   ok?: boolean;
@@ -154,23 +156,23 @@ export default function Page() {
   const toastTimer = useRef<number | null>(null);
 
   useEffect(() => {
-  loadAll();
-  tryApplyPresetFromStorage();
+    loadAll();
+    loadUserSettings();
+    tryApplyPresetFromStorage();
 
-  // 👉 套用 settings（加在這裡）
-  try {
-    const raw = localStorage.getItem("findoutfit_settings");
-    if (raw) {
-      const s = JSON.parse(raw);
-      if (s.gender) setGender(s.gender);
-      if (s.audience) setAudience(s.audience);
-    }
-  } catch {}
+    try {
+      const raw = localStorage.getItem("findoutfit_settings");
+      if (raw) {
+        const s = JSON.parse(raw);
+        if (s.gender) setGender(s.gender);
+        if (s.audience) setAudience(s.audience);
+      }
+    } catch {}
 
-  return () => {
-    if (toastTimer.current) window.clearTimeout(toastTimer.current);
-  };
-}, []);
+    return () => {
+      if (toastTimer.current) window.clearTimeout(toastTimer.current);
+    };
+  }, []);
 
   const quickScenes = useMemo(() => {
     return quickSceneMap[`${gender}-${audience}`] || quickSceneMap["中性-成人"];
@@ -187,6 +189,22 @@ export default function Page() {
   async function loadAll() {
     await Promise.all([loadFeatured(), loadRecent(), loadFavorites()]);
   }
+
+  async function loadUserSettings() {
+    try {
+      const data = await apiGetJson<any>(`/api/data?op=user.settings.get&ts=${Date.now()}`);
+      const item = data?.item;
+      if (!item) return;
+
+      if (item.gender) setGender(item.gender);
+      if (item.audience) setAudience(item.audience);
+
+      if (item.system) {
+        localStorage.setItem("findoutfit_system", JSON.stringify(item.system));
+      }
+    } catch {}
+  }
+
 
   function pushToast(text: string) {
     setToast(text);
@@ -214,14 +232,17 @@ export default function Page() {
 
   async function loadFavorites() {
     try {
-      let anonId = localStorage.getItem("findoutfit_anon_id");
-      if (!anonId) {
-        anonId = crypto.randomUUID();
-        localStorage.setItem("findoutfit_anon_id", anonId);
+      const {
+        data: { session },
+      } = await supabase.auth.getSession();
+
+      let url = `/api/data?op=outfits.favorites&limit=12&ts=${Date.now()}`;
+      if (!session?.access_token) {
+        const anonId = getAnonId();
+        url += `&anon_id=${encodeURIComponent(anonId)}`;
       }
-      const data = await apiGetJson<ListResp>(
-        `/api/data?op=outfits.favorites&limit=12&anon_id=${encodeURIComponent(anonId)}&ts=${Date.now()}`
-      );
+
+      const data = await apiGetJson<ListResp>(url);
       setFavorites(data?.items || []);
     } catch {
       setFavorites([]);
@@ -237,20 +258,17 @@ export default function Page() {
   }
 
   async function toggleLike(item: OutfitItem) {
-    let anonId = localStorage.getItem("findoutfit_anon_id");
-    if (!anonId) {
-      anonId = crypto.randomUUID();
-      localStorage.setItem("findoutfit_anon_id", anonId);
-    }
+    const {
+      data: { session },
+    } = await supabase.auth.getSession();
 
     const liked = isLiked(item.id);
     const op = liked ? "outfits.unlike" : "outfits.like";
 
     try {
-      await fetch(`/api/data?op=${op}`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ outfit_id: item.id, anon_id: anonId }),
+      await apiPostJson(`/api/data?op=${op}`, {
+        outfit_id: item.id,
+        ...(session?.access_token ? {} : { anon_id: getAnonId() }),
       });
     } catch {}
 
@@ -262,9 +280,9 @@ export default function Page() {
       pushToast("已加入最愛");
     }
 
-    setFeatured((prev) => [...prev]);
-    setRecent((prev) => [...prev]);
-    setFavorites((prev) => [...prev]);
+    await loadFavorites();
+    await loadFeatured();
+    await loadRecent();
   }
 
   async function shareItem(item: OutfitItem) {
@@ -272,10 +290,8 @@ export default function Page() {
     const already = localStorage.getItem(key) === "1";
 
     try {
-      await fetch(`/api/data?op=outfits.share`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ outfit_id: item.id }),
+      await apiPostJson(`/api/data?op=outfits.share`, {
+        outfit_id: item.id,
       });
     } catch {}
 
@@ -286,8 +302,8 @@ export default function Page() {
     }
 
     pushToast(already ? "已複製連結" : "已分享並複製連結");
-    setFeatured((prev) => [...prev]);
-    setRecent((prev) => [...prev]);
+    await loadFeatured();
+    await loadRecent();
   }
 
   function normalizeGender(v?: string) {
@@ -340,29 +356,29 @@ export default function Page() {
   }
 
   async function handleGenerate() {
-    // 👉 讀 system 設定
-let system = {
-  temperature: 0.7,
-  creativity: 0.5,
-  withBag: false,
-};
+    let system = {
+      temperature: 0.7,
+      creativity: 0.5,
+      withBag: false,
+    };
 
-try {
-  const raw = localStorage.getItem("findoutfit_system");
-  if (raw) system = JSON.parse(raw);
-} catch {}
-    
+    try {
+      const raw = localStorage.getItem("findoutfit_system");
+      if (raw) system = JSON.parse(raw);
+    } catch {}
+
     try {
       setStage("generated");
       pushToast("生成中...");
 
       const safeScene = selectedScene || "date";
-      const promptContext = selectedCeleb
-        ? `celeb:${selectedCeleb}`
-        : `scene:${safeScene}`;
-
       const safeGender = normalizeGender(gender);
       const safeAudience = normalizeAudience(audience);
+      const sceneLabel =
+        selectedCeleb
+          ? baseCelebs.find((c) => c.id === selectedCeleb)?.label || "名人靈感"
+          : quickScenes.find((s) => s.id === selectedScene)?.label || "日常穿搭";
+      const promptContext = selectedCeleb ? `celeb:${selectedCeleb}` : `scene:${safeScene}`;
 
       const specResp = await apiPostJson<any>("/api/generate-outfit-spec", {
         payload: {
@@ -409,11 +425,10 @@ try {
 
       setGeneratedImageUrl(imgResp.image_url);
       setGeneratedSummary(
-  `${specObj?.summary || "生成完成"} 
-  · 風格:${system.temperature} 
-  · 創意:${system.creativity} 
-  · 包包:${system.withBag ? "有" : "無"}`
-);
+        `${sceneLabel} · 風格 ${system.temperature} · 創意 ${system.creativity} · 包包 ${
+          system.withBag ? "開啟" : "關閉"
+        }`
+      );
 
       try {
         const created = await apiPostJson<any>("/api/data?op=outfits.create", {
@@ -474,6 +489,7 @@ try {
           onApply={applyPreset}
           isLiked={isLiked}
           isShared={isShared}
+          mode="home"
         />
       </div>
 
@@ -488,6 +504,8 @@ try {
 
         <div className={styles.generatorShell}>
           <aside className={styles.generatorLeadCard}>
+            <div className={styles.generatorBadge}>AI Powered Outfit</div>
+
             <div className={styles.generatorLeadTop}>
               <div>
                 <div className={styles.blockTitle}>本次設定</div>
@@ -629,7 +647,7 @@ try {
             </div>
             {recent.length ? (
               <div className={styles.activityList}>
-                {recent.slice(0, 6).map((item) => (
+                {recent.slice(0, 4).map((item) => (
                   <ActivityMiniCard
                     key={item.id}
                     item={item}
@@ -646,12 +664,12 @@ try {
 
           <div className={styles.historyBlock}>
             <div className={styles.historyTitleRow}>
-              <div className={styles.historyTitle}>我的最愛</div>
+              <div className={styles.historyTitle}>我的最愛預覽</div>
               <div className={styles.historyCount}>{favorites.length} 筆</div>
             </div>
             {favorites.length ? (
               <div className={styles.activityList}>
-                {favorites.slice(0, 6).map((item) => (
+                {favorites.slice(0, 4).map((item) => (
                   <ActivityMiniCard
                     key={item.id}
                     item={item}
