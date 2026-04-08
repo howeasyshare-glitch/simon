@@ -651,6 +651,79 @@ async function handleProducts(req, res) {
   });
 }
 
+
+/** ===================== User Settings ===================== */
+async function handleUserSettingsGet(req, res) {
+  const env = getEnv();
+  if (!env.ok) return json(res, 500, { error: env.error });
+  const { SUPABASE_URL, SERVICE_ROLE } = env;
+
+  const accessToken = getBearer(req);
+  if (!accessToken) return json(res, 200, { ok: true, item: null });
+
+  const u = await getUserFromAccessToken({ SUPABASE_URL, SERVICE_ROLE, accessToken });
+  if (!u.ok) return json(res, 200, { ok: true, item: null });
+
+  const url =
+    `${SUPABASE_URL}/rest/v1/user_settings` +
+    `?user_id=eq.${encodeURIComponent(u.user.id)}` +
+    `&select=id,user_id,gender,audience,system,updated_at` +
+    `&limit=1`;
+
+  const r = await fetch(url, {
+    headers: {
+      apikey: SERVICE_ROLE,
+      Authorization: `Bearer ${SERVICE_ROLE}`,
+      Accept: "application/json",
+    },
+  });
+
+  const text = await r.text();
+  if (!r.ok) return json(res, 500, { error: "Query failed", status: r.status, detail: text });
+
+  const rows = JSON.parse(text || "[]");
+  return json(res, 200, { ok: true, item: rows?.[0] || null });
+}
+
+async function handleUserSettingsUpsert(req, res) {
+  const env = getEnv();
+  if (!env.ok) return json(res, 500, { error: env.error });
+  const { SUPABASE_URL, SERVICE_ROLE } = env;
+
+  const accessToken = getBearer(req);
+  if (!accessToken) return json(res, 401, { error: "Missing bearer token" });
+
+  const u = await getUserFromAccessToken({ SUPABASE_URL, SERVICE_ROLE, accessToken });
+  if (!u.ok) return json(res, 401, { error: "Invalid token", detail: u.detail });
+
+  const body = req.body || {};
+  const row = {
+    user_id: u.user.id,
+    updated_at: new Date().toISOString(),
+  };
+
+  if ("gender" in body) row.gender = body.gender || null;
+  if ("audience" in body) row.audience = body.audience || null;
+  if ("system" in body) row.system = body.system || null;
+
+  const r = await fetch(`${SUPABASE_URL}/rest/v1/user_settings`, {
+    method: "POST",
+    headers: {
+      apikey: SERVICE_ROLE,
+      Authorization: `Bearer ${SERVICE_ROLE}`,
+      "Content-Type": "application/json",
+      Prefer: "resolution=merge-duplicates,return=representation",
+    },
+    body: JSON.stringify(row),
+  });
+
+  const text = await r.text();
+  if (!r.ok) return json(res, 500, { error: "Upsert failed", status: r.status, detail: text });
+
+  const rows = JSON.parse(text || "[]");
+  return json(res, 200, { ok: true, item: rows?.[0] || null });
+}
+
 /** ===================== Router ===================== */
 export default async function handler(req, res) {
   try {
@@ -701,6 +774,16 @@ export default async function handler(req, res) {
       return await handleOutfitsShare(req, res);
     }
 
+    if (op === "user.settings.get") {
+      if (req.method !== "GET") return json(res, 405, { error: "Method not allowed" });
+      return await handleUserSettingsGet(req, res);
+    }
+
+    if (op === "user.settings.upsert") {
+      if (req.method !== "POST") return json(res, 405, { error: "Method not allowed" });
+      return await handleUserSettingsUpsert(req, res);
+    }
+
     if (op === "products") {
       if (req.method !== "POST") return json(res, 405, { error: "Method not allowed" });
       return await handleProducts(req, res);
@@ -718,6 +801,8 @@ export default async function handler(req, res) {
         "outfits.like",
         "outfits.unlike",
         "outfits.share",
+        "user.settings.get",
+        "user.settings.upsert",
         "products",
       ],
     });
