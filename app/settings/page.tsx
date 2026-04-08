@@ -2,41 +2,90 @@
 
 import styles from "../page.module.css";
 import NavBar from "../../components/NavBar";
-import { useState, useEffect } from "react";
+import { useEffect, useState } from "react";
+import { apiGetJson, apiPostJson } from "../../lib/apiFetch";
+import { supabase } from "../../lib/supabase/client";
 
 export default function SettingsPage() {
   const [gender, setGender] = useState("女性");
   const [audience, setAudience] = useState("成人");
+  const [saving, setSaving] = useState(false);
+  const [savedText, setSavedText] = useState("");
 
-  // 👉 初始化
   useEffect(() => {
-    try {
-      const raw = localStorage.getItem("findoutfit_settings");
-      if (!raw) return;
-      const data = JSON.parse(raw);
-      setGender(data.gender || "女性");
-      setAudience(data.audience || "成人");
-    } catch {}
+    loadSettings();
   }, []);
 
-  // 👉 存設定
-  useEffect(() => {
-    localStorage.setItem(
-      "findoutfit_settings",
-      JSON.stringify({
-        gender,
-        audience,
-      })
-    );
-  }, [gender, audience]);
+  async function loadSettings() {
+    try {
+      const raw = localStorage.getItem("findoutfit_settings");
+      if (raw) {
+        const data = JSON.parse(raw);
+        setGender(data.gender || "女性");
+        setAudience(data.audience || "成人");
+      }
+    } catch {}
+
+    try {
+      const {
+        data: { session },
+      } = await supabase.auth.getSession();
+
+      if (!session?.access_token) return;
+
+      const data = await apiGetJson<any>(`/api/data?op=user.settings.get&ts=${Date.now()}`);
+      const item = data?.item;
+      if (!item) return;
+
+      setGender(item.gender || "女性");
+      setAudience(item.audience || "成人");
+    } catch {}
+  }
+
+  async function save() {
+    setSaving(true);
+    setSavedText("");
+    try {
+      localStorage.setItem(
+        "findoutfit_settings",
+        JSON.stringify({
+          gender,
+          audience,
+        })
+      );
+
+      const systemRaw = localStorage.getItem("findoutfit_system");
+      let system = null;
+      try {
+        system = systemRaw ? JSON.parse(systemRaw) : null;
+      } catch {}
+
+      const {
+        data: { session },
+      } = await supabase.auth.getSession();
+
+      if (session?.access_token) {
+        await apiPostJson("/api/data?op=user.settings.upsert", {
+          gender,
+          audience,
+          system,
+        });
+      }
+
+      setSavedText("已儲存");
+    } catch {
+      setSavedText("儲存失敗");
+    } finally {
+      setSaving(false);
+      setTimeout(() => setSavedText(""), 2200);
+    }
+  }
 
   return (
     <main className={styles.page}>
       <NavBar />
-
       <div className={styles.contentWrap}>
         <h2 className={styles.sectionTitle}>設定</h2>
-
         <div className={styles.card}>
           <div className={styles.blockTitle}>基本偏好</div>
 
@@ -62,6 +111,13 @@ export default function SettingsPage() {
                 {v}
               </button>
             ))}
+          </div>
+
+          <div className={styles.generateRow} style={{ marginTop: 16 }}>
+            <button className={styles.primaryBtn} onClick={save} disabled={saving}>
+              {saving ? "儲存中..." : "儲存設定"}
+            </button>
+            {savedText ? <span className={styles.emptyText}>{savedText}</span> : null}
           </div>
         </div>
       </div>
