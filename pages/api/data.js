@@ -642,64 +642,67 @@ async function handleProducts(req, res) {
   if (!env.ok) return json(res, 500, { error: env.error });
   const { SUPABASE_URL, SERVICE_ROLE } = env;
 
-  const { items = [], limitPerSlot = 3 } = req.body || {};
+  const body = req.body || {};
+  const items = Array.isArray(body.items) ? body.items : [];
+  const limitPerSlot = Math.min(parseInt(body.limitPerSlot || "4", 10) || 4, 12);
 
   if (!items.length) {
     return json(res, 200, { ok: true, products: [] });
   }
 
-  const results = [];
+  const products = [];
 
   for (const item of items) {
-    const keyword = item.label || item.slot;
+    const slot = item?.slot || "";
+    const label = item?.label || item?.name || slot || "單品";
+    const keyword = String(label).trim();
+
+    let candidates = [];
 
     try {
-      // 👉 1. 先抓自訂商品（你後台）
       const url =
         `${SUPABASE_URL}/rest/v1/custom_products` +
-        `?keyword=ilike.*${encodeURIComponent(keyword)}*` +
+        `?select=title,url,slot,keyword,sort_order,is_active` +
+        `&is_active=eq.true` +
+        `&or=(slot.ilike.*${encodeURIComponent(slot)}*,keyword.ilike.*${encodeURIComponent(keyword)}*)` +
+        `&order=sort_order.asc.nullslast` +
         `&limit=${limitPerSlot}`;
 
       const r = await fetch(url, {
         headers: {
           apikey: SERVICE_ROLE,
           Authorization: `Bearer ${SERVICE_ROLE}`,
+          Accept: "application/json",
         },
       });
 
       const text = await r.text();
       const rows = r.ok ? JSON.parse(text || "[]") : [];
 
-      let candidates = rows.map((row) => ({
+      candidates = rows.map((row) => ({
         title: row.title,
         url: row.url,
       }));
+    } catch {}
 
-      // 👉 2. fallback（假資料 / 未來 Google）
-      if (!candidates.length) {
-        candidates = Array.from({ length: limitPerSlot }).map((_, i) => ({
-          title: `${keyword} 類似商品 ${i + 1}`,
-          url: `https://www.google.com/search?q=${encodeURIComponent(keyword)}`,
-        }));
-      }
-
-      results.push({
-        slot: item.slot,
-        label: item.label,
-        candidates,
-      });
-    } catch (e) {
-      results.push({
-        slot: item.slot,
-        label: item.label,
-        candidates: [],
-      });
+    if (!candidates.length) {
+      candidates = Array.from({ length: Math.min(limitPerSlot, 3) }).map((_, i) => ({
+        title: `${label} 類似商品 ${i + 1}`,
+        url: `https://www.google.com/search?q=${encodeURIComponent(label)}`,
+      }));
     }
+
+    products.push({
+      slot,
+      label,
+      candidates,
+    });
   }
 
   return json(res, 200, {
     ok: true,
-    products: results,
+    products,
+    limitPerSlot,
   });
 }
 
