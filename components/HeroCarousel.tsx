@@ -216,6 +216,40 @@ export default function HeroCarousel({
                 <div className={styles.heroCardText}>{card.summary || "穿搭靈感"}</div>
 
                 <div className={styles.heroCardActions}>
+                  {/* 商品區塊 */}
+{(card as any).products?.length ? (
+  <div className={styles.productBlock}>
+    <button
+      className={styles.productToggle}
+      onClick={() =>
+        setOpenProducts(openProducts === card.id ? null : card.id)
+      }
+    >
+      🛍 查看單品 {openProducts === card.id ? "▲" : "▼"}
+    </button>
+
+    {openProducts === card.id && (
+      <div className={styles.productList}>
+        {(card as any).products.map((group: any, i: number) => (
+          <div key={i} className={styles.productGroup}>
+            <div className={styles.productTitle}>
+              {group.slot || group.label}
+            </div>
+
+            {group.candidates?.map((p: any, j: number) => (
+              <div key={j} className={styles.productRow}>
+                <span>{p.title}</span>
+                <a href={p.url} target="_blank">
+                  購買
+                </a>
+              </div>
+            ))}
+          </div>
+        ))}
+      </div>
+    )}
+  </div>
+) : null}
                   <button
                     type="button"
                     className={isLiked?.(card.id) ? styles.activeGhostBtn : styles.ghostBtn}
