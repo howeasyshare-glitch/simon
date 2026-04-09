@@ -706,7 +706,9 @@ async function handleUserSettingsUpsert(req, res) {
   if ("audience" in body) row.audience = body.audience || null;
   if ("system" in body) row.system = body.system || null;
 
-  const r = await fetch(`${SUPABASE_URL}/rest/v1/user_settings`, {
+  const r = await fetch(
+  `${SUPABASE_URL}/rest/v1/user_settings?on_conflict=user_id`,
+  {
     method: "POST",
     headers: {
       apikey: SERVICE_ROLE,
@@ -715,7 +717,8 @@ async function handleUserSettingsUpsert(req, res) {
       Prefer: "resolution=merge-duplicates,return=representation",
     },
     body: JSON.stringify(row),
-  });
+  }
+);
 
   const text = await r.text();
   if (!r.ok) return json(res, 500, { error: "Upsert failed", status: r.status, detail: text });
