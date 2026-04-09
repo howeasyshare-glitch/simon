@@ -430,6 +430,22 @@ export default function Page() {
         }`
       );
 
+            let resolvedProducts: any[] = [];
+
+      try {
+        const productsResp = await apiPostJson<any>("/api/data?op=products", {
+          items: safeItems.map((x: any) => ({
+            slot: x.slot || x.category || x.type || "",
+            label: x.label || x.name || x.item || x.slot || "單品",
+          })),
+          limitPerSlot: 4,
+        });
+
+        resolvedProducts = Array.isArray(productsResp?.products)
+          ? productsResp.products
+          : [];
+      } catch {}
+
       try {
         const created = await apiPostJson<any>("/api/data?op=outfits.create", {
           image_url: imgResp.image_url,
@@ -445,7 +461,7 @@ export default function Page() {
             _echo: { age, height, weight, temp, gender, audience },
           },
           summary: specObj?.summary || promptContext,
-          products: null,
+          products: resolvedProducts,
         });
         const slug = created?.outfit?.share_slug || created?.item?.share_slug;
         if (slug) {
