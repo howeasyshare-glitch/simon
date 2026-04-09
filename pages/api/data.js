@@ -1,4 +1,4 @@
-// pages/api/data.js
+// pages/api/data.js 
 
 async function json(res, status, obj) {
   res.status(status).json(obj);
