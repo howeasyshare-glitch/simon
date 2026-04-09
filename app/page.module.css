@@ -1190,3 +1190,39 @@
 .profileMenuItemButton:hover {
   background: rgba(255, 255, 255, 0.08);
 }
+
+.productBlock {
+  margin-top: 12px;
+  border-top: 1px solid #eee;
+  padding-top: 10px;
+}
+
+.productToggle {
+  font-size: 13px;
+  color: #666;
+}
+
+.productList {
+  margin-top: 8px;
+}
+
+.productGroup {
+  margin-bottom: 10px;
+}
+
+.productTitle {
+  font-size: 12px;
+  color: #999;
+  margin-bottom: 4px;
+}
+
+.productRow {
+  display: flex;
+  justify-content: space-between;
+  margin-bottom: 4px;
+}
+
+.productBtn {
+  font-size: 12px;
+  color: #007aff;
+}
