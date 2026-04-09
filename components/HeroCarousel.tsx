@@ -5,6 +5,7 @@ import { useEffect, useRef, useState } from "react";
 import styles from "../app/page.module.css";
 import type { OutfitItem } from "./OutfitCard";
 
+
 type Props = {
   items: OutfitItem[];
   generatedItems: OutfitItem[];
@@ -45,6 +46,7 @@ export default function HeroCarousel({
   const isHome = mode === "home";
   const hasItems = currentItems?.length > 0;
   const canNavigate = currentItems.length > 1;
+  const [openProducts, setOpenProducts] = useState<string | null>(null);
 
   useEffect(() => {
     setActiveIdx(0);
