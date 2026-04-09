@@ -3,18 +3,36 @@
 import Link from "next/link";
 import styles from "../app/page.module.css";
 
+export type ProductCandidate = {
+  title: string;
+  url: string;
+};
+
+export type ProductGroup = {
+  slot?: string;
+  label?: string;
+  candidates?: ProductCandidate[];
+};
+
 export type OutfitItem = {
   id: string;
-  created_at?: string;
-  share_slug?: string | null;
   image_url?: string;
-  summary?: string | null;
-  style?: any;
+  summary?: string;
+  share_slug?: string;
   like_count?: number;
   share_count?: number;
   apply_count?: number;
-  is_public?: boolean;
+  style?: {
+    style?: string;
+    palette?: string;
+    styleVariant?: string;
+    gender?: string;
+    audience?: string;
+    _echo?: any;
+    echo?: any;
+  };
   spec?: any;
+  products?: ProductGroup[];
 };
 
 type Props = {
