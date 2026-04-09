@@ -222,10 +222,9 @@ export default function HeroCarousel({
 {(card as any).products?.length ? (
   <div className={styles.productBlock}>
     <button
+      type="button"
       className={styles.productToggle}
-      onClick={() =>
-        setOpenProducts(openProducts === card.id ? null : card.id)
-      }
+      onClick={() => setOpenProducts(openProducts === card.id ? null : card.id)}
     >
       🛍 查看單品 {openProducts === card.id ? "▲" : "▼"}
     </button>
@@ -235,13 +234,18 @@ export default function HeroCarousel({
         {(card as any).products.map((group: any, i: number) => (
           <div key={i} className={styles.productGroup}>
             <div className={styles.productTitle}>
-              {group.slot || group.label}
+              {group.slot || group.label || "單品"}
             </div>
 
             {group.candidates?.map((p: any, j: number) => (
               <div key={j} className={styles.productRow}>
-                <span>{p.title}</span>
-                <a href={p.url} target="_blank">
+                <span className={styles.productName}>{p.title}</span>
+                <a
+                  href={p.url}
+                  target="_blank"
+                  rel="noreferrer"
+                  className={styles.productBtn}
+                >
                   購買
                 </a>
               </div>
