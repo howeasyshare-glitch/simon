@@ -644,7 +644,7 @@ async function handleProducts(req, res) {
   const { SUPABASE_URL, SERVICE_ROLE } = env;
   const body = req.body || {};
   const items = Array.isArray(body.items) ? body.items : [];
-  const limitPerSlot = Math.min(parseInt(body.limitPerSlot || "4", 10) || 4, 12);
+  const limitPerSlot = 3;
 
   if (!items.length) {
     return json(res, 200, { ok: true, products: [] });
@@ -653,13 +653,12 @@ async function handleProducts(req, res) {
   const results = [];
 
   for (const item of items) {
-    const slot = item?.slot || "";
-    const label = item?.label || item?.name || slot || "單品";
+    const slot = String(item?.slot || "").trim();
+    const label = String(item?.label || item?.name || slot || "單品").trim();
 
     let candidates = [];
 
     try {
-      // 👉 1. 優先抓你後台 custom_products
       const url =
         `${SUPABASE_URL}/rest/v1/custom_products` +
         `?select=title,url,slot,keyword,sort_order,is_active` +
@@ -687,11 +686,10 @@ async function handleProducts(req, res) {
       // ignore
     }
 
-    // 🔥 2. fallback → Google Shopping（強化版）
     if (!candidates.length) {
       const query = [label, slot].filter(Boolean).join(" ");
 
-      candidates = Array.from({ length: Math.min(limitPerSlot, 3) }).map((_, i) => ({
+      candidates = Array.from({ length: 3 }).map((_, i) => ({
         title: `${label} 類似商品 ${i + 1}`,
         url: `https://www.google.com/search?tbm=shop&q=${encodeURIComponent(query)}`,
       }));
@@ -700,7 +698,7 @@ async function handleProducts(req, res) {
     results.push({
       slot,
       label,
-      candidates,
+      candidates: candidates.slice(0, 3),
     });
   }
 
@@ -709,7 +707,6 @@ async function handleProducts(req, res) {
     products: results,
   });
 }
-
 
 /** ===================== User Settings ===================== */
 async function handleUserSettingsGet(req, res) {
