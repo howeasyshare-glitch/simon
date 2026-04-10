@@ -430,15 +430,28 @@ export default function Page() {
         }`
       );
 
-            let resolvedProducts: any[] = [];
+      let resolvedProducts: any[] = [];
 
       try {
         const productsResp = await apiPostJson<any>("/api/data?op=products", {
-          items: safeItems.map((x: any) => ({
-            slot: x.slot || x.category || x.type || "",
-            label: x.label || x.name || x.item || x.slot || "單品",
-          })),
-          limitPerSlot: 4,
+          items: safeItems.map((x: any) => {
+            const rawLabel =
+              x.description ||
+              x.label ||
+              x.name ||
+              x.item ||
+              x.title ||
+              x.slot ||
+              "單品";
+
+            const label = `${rawLabel} ${sceneLabel}`.trim();
+
+            return {
+              slot: x.slot || x.category || x.type || "",
+              label,
+            };
+          }),
+          limitPerSlot: 3,
         });
 
         resolvedProducts = Array.isArray(productsResp?.products)

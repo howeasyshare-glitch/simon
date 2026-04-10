@@ -1192,37 +1192,60 @@
 }
 
 .productBlock {
-  margin-top: 12px;
-  border-top: 1px solid #eee;
-  padding-top: 10px;
+  margin-top: 14px;
 }
 
 .productToggle {
   font-size: 13px;
-  color: #666;
+  color: rgba(255, 255, 255, 0.72);
+  background: transparent;
+  border: 0;
+  padding: 0;
+  cursor: pointer;
 }
 
-.productList {
-  margin-top: 8px;
+.productPanel {
+  margin-top: 10px;
+  padding: 10px;
+  border-radius: 10px;
+  background: rgba(255, 255, 255, 0.04);
 }
 
 .productGroup {
   margin-bottom: 10px;
 }
 
-.productTitle {
+.productGroupHeader {
   font-size: 12px;
-  color: #999;
-  margin-bottom: 4px;
+  color: rgba(255, 255, 255, 0.52);
+  margin-bottom: 6px;
 }
 
-.productRow {
+.productItems {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.productItem {
   display: flex;
   justify-content: space-between;
-  margin-bottom: 4px;
+  align-items: center;
+  gap: 10px;
+  padding: 6px 8px;
+  border-radius: 8px;
+  text-decoration: none;
+  background: rgba(255, 255, 255, 0.06);
 }
 
-.productBtn {
+.productItemText {
+  font-size: 13px;
+  color: #fff;
+  flex: 1;
+}
+
+.productItemAction {
   font-size: 12px;
-  color: #007aff;
+  color: #8ab4ff;
+  white-space: nowrap;
 }
