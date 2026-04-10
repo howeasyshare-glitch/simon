@@ -216,40 +216,70 @@ export default async function handler(req, res) {
     if (styleVariant && variantPromptMap[styleVariant]) variantHint = variantPromptMap[styleVariant].desc;
 
     const systemInstruction = `
-You are a stylist that only returns STRICT JSON.
+You are a professional fashion stylist and product matcher.
 
-You design outfits as a list of items.
+You must return STRICT JSON only.
 
-Your JSON MUST have this exact shape:
+Your goal is to generate an outfit specification that is useful for:
+1. outfit generation
+2. product matching
+3. shopping link retrieval
+
+Return JSON with this exact shape:
 
 {
-  "summary": "short natural language summary of this outfit in 1-2 sentences (in Traditional Chinese)",
+  "summary": "1-2 sentence summary in Traditional Chinese",
   "items": [
     {
       "slot": "top" | "bottom" | "shoes" | "outer" | "bag" | "hat",
-      "generic_name": "english generic clothing name, e.g. \\"oversized cotton crew neck t-shirt\\"",
-      "display_name_zh": "短中文名稱，例如「寬版棉質圓領上衣」",
-      "color": "simple color in English, e.g. \\"white\\", \\"beige\\", \\"light blue\\"",
-      "style": "short style tag in English, e.g. \\"casual\\", \\"minimal\\", \\"street\\"",
+      "generic_name": "natural English shopping-friendly product name",
+      "display_name_zh": "short Traditional Chinese product name",
+      "label": "short shopping query phrase in English",
+      "description": "detailed shopping description in English",
+      "color": "simple color in English",
+      "style": "short style tag in English",
       "gender": "female" | "male" | "unisex",
       "warmth": "light" | "medium" | "warm"
     }
   ]
 }
 
-HARD rules (VERY IMPORTANT):
+HARD RULES:
 - Always include EXACTLY ONE item with slot = "top".
 - Always include EXACTLY ONE item with slot = "bottom".
 - Always include EXACTLY ONE item with slot = "shoes".
-- If user asked for coat/outer (withCoat = true) OR temperature <= 20°C,
-  you MUST include EXACTLY ONE item with slot = "outer".
-- If user asked for bag (withBag = true), you MUST include EXACTLY ONE item with slot = "bag".
-- If user asked for hat (withHat = true), you MUST include EXACTLY ONE item with slot = "hat".
-- If user did NOT ask for bag/hat/outer, you should NOT include those slots.
-- slot MUST be one of: "top", "bottom", "shoes", "outer", "bag", "hat". No other values.
-- Colors should be realistic and easy to match.
-- Use gender-neutral items (gender:"unisex") if they fit both genders.
-- Return ONLY valid JSON, with no extra text, comments, or explanations.
+- If withCoat = true OR temperature <= 20°C, include EXACTLY ONE item with slot = "outer".
+- If withBag = true, include EXACTLY ONE item with slot = "bag".
+- If withHat = true, include EXACTLY ONE item with slot = "hat".
+- If user did NOT ask for bag/hat/outer, do NOT include them unless temperature rule requires outer.
+- slot MUST be one of: "top", "bottom", "shoes", "outer", "bag", "hat".
+- Return ONLY valid JSON. No markdown. No commentary.
+
+VERY IMPORTANT FOR SHOPPING:
+- generic_name, label, and description MUST be specific enough for real product search.
+- DO NOT use vague words like "top", "bottom", "shoes" as the main product description.
+- Each clothing item MUST describe:
+  - color
+  - garment category
+  - fit / silhouette
+  - style vibe
+  - material or texture feeling when possible
+
+GOOD examples:
+- "white oversized cotton shirt"
+- "black high-waisted straight trousers"
+- "white chunky sneakers"
+- "camel relaxed-fit trench coat"
+
+BAD examples:
+- "top"
+- "pants"
+- "shoes"
+
+description should be a more detailed shopping-friendly phrase, for example:
+- "white oversized cotton button-up shirt with clean minimal styling"
+- "black high-waisted straight-leg trousers for smart casual outfits"
+- "white chunky low-top sneakers with clean everyday styling"
 `.trim();
 
     const userInstruction = `
@@ -311,8 +341,12 @@ if (!geminiResponse.ok) {
       const fallbackItems = [
         {
           slot: "top",
-          generic_name: baseStyle === "minimal" ? "clean crew neck knit top" : "oversized cotton crew neck t-shirt",
-          display_name_zh: baseStyle === "minimal" ? "俐落圓領針織上衣" : "寬版棉質圓領上衣",
+          generic_name: baseStyle === "minimal" ? "beige clean crew neck knit top" : "white oversized cotton crew neck t-shirt",
+          display_name_zh: baseStyle === "minimal" ? "俐落米色圓領針織上衣" : "白色寬版棉質圓領上衣",
+          label: baseStyle === "minimal" ? "beige knit top" : "white oversized cotton t-shirt",
+          description: baseStyle === "minimal"
+            ? "beige clean crew neck knit top with minimal styling"
+            : "white oversized cotton crew neck t-shirt for casual daily styling",
           color: baseStyle === "minimal" ? "beige" : "white",
           style: baseStyle,
           gender: genderText === "female" ? "female" : genderText === "male" ? "male" : "unisex",
@@ -320,8 +354,12 @@ if (!geminiResponse.ok) {
         },
         {
           slot: "bottom",
-          generic_name: baseStyle === "sporty" ? "tapered jogger pants" : "straight leg jeans",
-          display_name_zh: baseStyle === "sporty" ? "錐形運動束口褲" : "直筒牛仔褲",
+          generic_name: baseStyle === "sporty" ? "black tapered jogger pants" : "mid blue straight leg jeans",
+          display_name_zh: baseStyle === "sporty" ? "黑色錐形運動束口褲" : "藍色直筒牛仔褲",
+          label: baseStyle === "sporty" ? "black jogger pants" : "mid blue straight leg jeans",
+          description: baseStyle === "sporty"
+            ? "black tapered jogger pants for sporty athleisure styling"
+            : "mid blue straight leg jeans for casual everyday outfits",
           color: baseStyle === "minimal" ? "dark gray" : "mid blue",
           style: baseStyle,
           gender: genderText === "female" ? "female" : genderText === "male" ? "male" : "unisex",
@@ -342,8 +380,12 @@ if (!geminiResponse.ok) {
       if (withCoat || temp <= 20) {
         fallbackItems.push({
           slot: "outer",
-          generic_name: baseStyle === "street" ? "oversized denim jacket" : "lightweight jacket",
-          display_name_zh: baseStyle === "street" ? "寬版牛仔外套" : "輕薄外套",
+          generic_name: baseStyle === "street" ? "black oversized denim jacket" : "camel lightweight jacket",
+          display_name_zh: baseStyle === "street" ? "黑色寬版牛仔外套" : "駝色輕薄外套",
+          label: baseStyle === "street" ? "black oversized denim jacket" : "camel lightweight jacket",
+          description: baseStyle === "street"
+            ? "black oversized denim jacket for layered streetwear styling"
+            : "camel lightweight jacket for clean daily layering",
           color: baseStyle === "minimal" ? "camel" : "black",
           style: baseStyle,
           gender: genderText === "female" ? "female" : genderText === "male" ? "male" : "unisex",
@@ -353,8 +395,10 @@ if (!geminiResponse.ok) {
       if (withBag) {
         fallbackItems.push({
           slot: "bag",
-          generic_name: "minimalist shoulder bag",
-          display_name_zh: "極簡側背包",
+          generic_name: "black minimalist shoulder bag",
+          display_name_zh: "黑色極簡側背包",
+          label: "black shoulder bag",
+          description: "black minimalist shoulder bag for daily styling",
           color: "black",
           style: baseStyle,
           gender: "unisex",
@@ -364,8 +408,10 @@ if (!geminiResponse.ok) {
       if (withHat) {
         fallbackItems.push({
           slot: "hat",
-          generic_name: "cotton baseball cap",
-          display_name_zh: "棉質棒球帽",
+          generic_name: "black cotton baseball cap",
+          display_name_zh: "黑色棉質棒球帽",
+          label: "black baseball cap",
+          description: "black cotton baseball cap for casual everyday styling",
           color: "black",
           style: baseStyle,
           gender: "unisex",
@@ -415,7 +461,19 @@ if (!geminiResponse.ok) {
       return null;
     };
 
-    items = items.map((it) => ({ ...it, slot: normalizeSlot(it.slot) })).filter((it) => it.slot && it.generic_name);
+    items = items
+      .map((it) => {
+        const slot = normalizeSlot(it.slot);
+        const genericName = it.generic_name || it.label || it.description || "";
+        return {
+          ...it,
+          slot,
+          generic_name: genericName,
+          label: it.label || genericName,
+          description: it.description || genericName,
+        };
+      })
+      .filter((it) => it.slot && it.generic_name);
 
     const hasSlot = (slotName) => items.some((it) => it.slot === slotName);
     const pushIfMissing = (slotName, fallback) => { if (!hasSlot(slotName)) items.push(fallback); };
@@ -423,8 +481,10 @@ if (!geminiResponse.ok) {
     // fallback
     pushIfMissing("top", {
       slot: "top",
-      generic_name: "oversized cotton crew neck t-shirt",
-      display_name_zh: "寬版棉質圓領上衣",
+      generic_name: "white oversized cotton crew neck t-shirt",
+      display_name_zh: "白色寬版棉質圓領上衣",
+      label: "white oversized cotton t-shirt",
+      description: "white oversized cotton crew neck t-shirt for casual daily styling",
       color: "white",
       style: "casual",
       gender: genderText === "female" ? "female" : genderText === "male" ? "male" : "unisex",
@@ -433,8 +493,10 @@ if (!geminiResponse.ok) {
 
     pushIfMissing("bottom", {
       slot: "bottom",
-      generic_name: "straight leg jeans",
-      display_name_zh: "直筒牛仔褲",
+      generic_name: "light blue straight leg jeans",
+      display_name_zh: "淺藍直筒牛仔褲",
+      label: "light blue straight leg jeans",
+      description: "light blue straight leg jeans for casual everyday outfits",
       color: "light blue",
       style: "casual",
       gender: genderText === "female" ? "female" : genderText === "male" ? "male" : "unisex",
@@ -443,8 +505,10 @@ if (!geminiResponse.ok) {
 
     pushIfMissing("shoes", {
       slot: "shoes",
-      generic_name: "white low-top sneakers",
-      display_name_zh: "白色休閒鞋",
+      generic_name: "white chunky low-top sneakers",
+      display_name_zh: "白色厚底休閒鞋",
+      label: "white chunky sneakers",
+      description: "white chunky low-top sneakers with clean casual styling",
       color: "white",
       style: "casual",
       gender: "unisex",
