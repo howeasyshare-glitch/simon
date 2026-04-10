@@ -640,8 +640,8 @@ async function handleOutfitsShare(req, res) {
 async function handleProducts(req, res) {
   const env = getEnv();
   if (!env.ok) return json(res, 500, { error: env.error });
-  const { SUPABASE_URL, SERVICE_ROLE } = env;
 
+  const { SUPABASE_URL, SERVICE_ROLE } = env;
   const body = req.body || {};
   const items = Array.isArray(body.items) ? body.items : [];
   const limitPerSlot = Math.min(parseInt(body.limitPerSlot || "4", 10) || 4, 12);
@@ -650,21 +650,21 @@ async function handleProducts(req, res) {
     return json(res, 200, { ok: true, products: [] });
   }
 
-  const products = [];
+  const results = [];
 
   for (const item of items) {
     const slot = item?.slot || "";
     const label = item?.label || item?.name || slot || "單品";
-    const keyword = String(label).trim();
 
     let candidates = [];
 
     try {
+      // 👉 1. 優先抓你後台 custom_products
       const url =
         `${SUPABASE_URL}/rest/v1/custom_products` +
         `?select=title,url,slot,keyword,sort_order,is_active` +
         `&is_active=eq.true` +
-        `&or=(slot.ilike.*${encodeURIComponent(slot)}*,keyword.ilike.*${encodeURIComponent(keyword)}*)` +
+        `&or=(slot.ilike.*${encodeURIComponent(slot)}*,keyword.ilike.*${encodeURIComponent(label)}*)` +
         `&order=sort_order.asc.nullslast` +
         `&limit=${limitPerSlot}`;
 
@@ -683,16 +683,21 @@ async function handleProducts(req, res) {
         title: row.title,
         url: row.url,
       }));
-    } catch {}
+    } catch (e) {
+      // ignore
+    }
 
+    // 🔥 2. fallback → Google Shopping（強化版）
     if (!candidates.length) {
+      const query = [label, slot].filter(Boolean).join(" ");
+
       candidates = Array.from({ length: Math.min(limitPerSlot, 3) }).map((_, i) => ({
         title: `${label} 類似商品 ${i + 1}`,
-        url: `https://www.google.com/search?q=${encodeURIComponent(label)}`,
+        url: `https://www.google.com/search?tbm=shop&q=${encodeURIComponent(query)}`,
       }));
     }
 
-    products.push({
+    results.push({
       slot,
       label,
       candidates,
@@ -701,8 +706,7 @@ async function handleProducts(req, res) {
 
   return json(res, 200, {
     ok: true,
-    products,
-    limitPerSlot,
+    products: results,
   });
 }
 
