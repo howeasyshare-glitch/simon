@@ -218,44 +218,6 @@ export default function HeroCarousel({
                 <div className={styles.heroCardText}>{card.summary || "穿搭靈感"}</div>
 
                 <div className={styles.heroCardActions}>
-                  {/* 商品區塊 */}
-{(card as any).products?.length ? (
-  <div className={styles.productBlock}>
-    <button
-      type="button"
-      className={styles.productToggle}
-      onClick={() => setOpenProducts(openProducts === card.id ? null : card.id)}
-    >
-      🛍 查看單品 {openProducts === card.id ? "▲" : "▼"}
-    </button>
-
-    {openProducts === card.id && (
-      <div className={styles.productList}>
-        {(card as any).products.map((group: any, i: number) => (
-          <div key={i} className={styles.productGroup}>
-            <div className={styles.productTitle}>
-              {group.slot || group.label || "單品"}
-            </div>
-
-            {group.candidates?.map((p: any, j: number) => (
-              <div key={j} className={styles.productRow}>
-                <span className={styles.productName}>{p.title}</span>
-                <a
-                  href={p.url}
-                  target="_blank"
-                  rel="noreferrer"
-                  className={styles.productBtn}
-                >
-                  購買
-                </a>
-              </div>
-            ))}
-          </div>
-        ))}
-      </div>
-    )}
-  </div>
-) : null}
                   <button
                     type="button"
                     className={isLiked?.(card.id) ? styles.activeGhostBtn : styles.ghostBtn}
@@ -274,6 +236,45 @@ export default function HeroCarousel({
                     套用
                   </button>
                 </div>
+
+                {(card as any).products?.length ? (
+                  <div className={styles.productBlock}>
+                    <button
+                      type="button"
+                      className={styles.productToggle}
+                      onClick={() => setOpenProducts(openProducts === card.id ? null : card.id)}
+                    >
+                      查看單品 {openProducts === card.id ? "▲" : "▼"}
+                    </button>
+
+                    {openProducts === card.id ? (
+                      <div className={styles.productPanel}>
+                        {(card as any).products.map((group: any, i: number) => (
+                          <div key={i} className={styles.productGroup}>
+                            <div className={styles.productGroupHeader}>
+                              {group.slot || group.label || "單品"}
+                            </div>
+
+                            <div className={styles.productItems}>
+                              {(group.candidates || []).slice(0, 3).map((p: any, j: number) => (
+                                <a
+                                  key={j}
+                                  href={p.url}
+                                  target="_blank"
+                                  rel="noreferrer"
+                                  className={styles.productItem}
+                                >
+                                  <span className={styles.productItemText}>{p.title}</span>
+                                  <span className={styles.productItemAction}>前往</span>
+                                </a>
+                              ))}
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    ) : null}
+                  </div>
+                ) : null}
               </div>
             </article>
           ))}
