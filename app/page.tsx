@@ -449,6 +449,7 @@ export default function Page() {
             return {
               slot: x.slot || x.category || x.type || "",
               label,
+              description: x.description || rawLabel || "",
             };
           }),
           limitPerSlot: 3,
