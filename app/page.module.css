@@ -1228,7 +1228,7 @@
 }
 
 
-/* ===== Spec Console v1 ===== */
+/* ===== Spec Console v1.2 ===== */
 
 .specTopbar {
   max-width: 1320px;
@@ -1257,7 +1257,7 @@
 
 .specSub {
   margin-top: 10px;
-  max-width: 700px;
+  max-width: 760px;
   color: rgba(255, 255, 255, 0.68);
   line-height: 1.65;
 }
@@ -1274,7 +1274,7 @@
   margin: 0 auto;
   padding: 24px 28px 40px;
   display: grid;
-  grid-template-columns: minmax(0, 1fr) 340px;
+  grid-template-columns: minmax(0, 1fr) 360px;
   gap: 18px;
   align-items: start;
 }
@@ -1312,6 +1312,44 @@
   flex-wrap: wrap;
 }
 
+.specToggleGrid {
+  display: flex;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.specToggleItem {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 42px;
+  padding: 0 14px;
+  border-radius: 999px;
+  background: rgba(255,255,255,0.05);
+  border: 1px solid rgba(255,255,255,0.08);
+}
+
+.specInfoBox {
+  margin-top: 14px;
+  border-radius: 16px;
+  padding: 14px;
+  background: rgba(0, 0, 0, 0.18);
+  border: 1px solid rgba(255,255,255,0.06);
+}
+
+.specInfoTitle {
+  font-size: 13px;
+  font-weight: 700;
+  margin-bottom: 8px;
+}
+
+.specList {
+  margin: 0;
+  padding-left: 18px;
+  color: rgba(255,255,255,0.78);
+  line-height: 1.7;
+}
+
 .specField {
   display: grid;
   gap: 8px;
@@ -1345,6 +1383,14 @@
   min-height: 180px;
 }
 
+.specMiniHint,
+.specHint {
+  color: rgba(255, 255, 255, 0.62);
+  line-height: 1.65;
+  font-size: 13px;
+  margin-top: 8px;
+}
+
 .specSide {
   position: sticky;
   top: 24px;
@@ -1373,13 +1419,6 @@
 
 .specStatusRow:last-of-type {
   border-bottom: 0;
-}
-
-.specHint {
-  margin-top: 12px;
-  color: rgba(255, 255, 255, 0.62);
-  line-height: 1.65;
-  font-size: 13px;
 }
 
 @media (max-width: 1080px) {
