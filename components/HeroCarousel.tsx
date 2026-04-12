@@ -255,17 +255,36 @@ export default function HeroCarousel({
                               {group.slot || group.label || "單品"}
                             </div>
 
-                            <div className={styles.productItems}>
+                            <div className={styles.productPreviewGrid}>
                               {(group.candidates || []).slice(0, 3).map((p: any, j: number) => (
                                 <a
                                   key={j}
-                                  href={p.url}
+                                  href={p.product_url || p.url}
                                   target="_blank"
                                   rel="noreferrer"
-                                  className={styles.productItem}
+                                  className={styles.productPreviewCard}
                                 >
-                                  <span className={styles.productItemText}>{p.title}</span>
-                                  <span className={styles.productItemAction}>前往</span>
+                                  {p.image_url ? (
+                                    <img
+                                      src={p.image_url}
+                                      alt={p.title || "product"}
+                                      className={styles.productPreviewImage}
+                                    />
+                                  ) : (
+                                    <div className={styles.productPreviewImageFallback} />
+                                  )}
+
+                                  <div className={styles.productPreviewBody}>
+                                    <div className={styles.productPreviewTitle}>{p.title}</div>
+
+                                    {p.badge_text ? (
+                                      <div className={styles.productPreviewBadge}>{p.badge_text}</div>
+                                    ) : null}
+
+                                    {p.merchant ? (
+                                      <div className={styles.productPreviewMerchant}>{p.merchant}</div>
+                                    ) : null}
+                                  </div>
                                 </a>
                               ))}
                             </div>
