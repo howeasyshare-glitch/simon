@@ -637,6 +637,58 @@ async function handleOutfitsShare(req, res) {
 }
 
 /** ===================== Products ===================== */
+function normalizeText(value) {
+  return String(value || "").trim();
+}
+
+function isSearchResultUrl(url) {
+  const v = String(url || "");
+  return /google\.com\/search/i.test(v) || /tbm=shop/i.test(v) || /search\?/i.test(v);
+}
+
+function scoreCustomProduct(row, item) {
+  const slot = normalizeText(item?.slot).toLowerCase();
+  const label = normalizeText(item?.label).toLowerCase();
+  const description = normalizeText(item?.description).toLowerCase();
+
+  const haystack = [
+    row?.title,
+    row?.keyword,
+    row?.brand,
+    row?.style,
+    row?.color,
+    row?.slot,
+  ]
+    .map((x) => normalizeText(x).toLowerCase())
+    .join(" ");
+
+  let score = 0;
+
+  if (slot && normalizeText(row?.slot).toLowerCase() === slot) score += 50;
+
+  const tokens = Array.from(
+    new Set(
+      `${description} ${label}`
+        .split(/\s+/)
+        .map((x) => x.trim().toLowerCase())
+        .filter((x) => x && x.length > 2)
+    )
+  );
+
+  for (const token of tokens) {
+    if (haystack.includes(token)) score += 8;
+  }
+
+  if (row?.sort_order != null) {
+    const n = Number(row.sort_order);
+    if (!Number.isNaN(n)) score += Math.max(0, 20 - n);
+  }
+
+  if (!isSearchResultUrl(row?.url)) score += 20;
+
+  return score;
+}
+
 async function handleProducts(req, res) {
   const env = getEnv();
   if (!env.ok) return json(res, 500, { error: env.error });
@@ -650,60 +702,64 @@ async function handleProducts(req, res) {
     return json(res, 200, { ok: true, products: [] });
   }
 
-  const results = [];
+  let pool = [];
 
-  for (const item of items) {
-    const slot = String(item?.slot || "").trim();
-    const label = String(item?.label || item?.name || slot || "單品").trim();
-    const description = String(item?.description || "").trim();
+  try {
+    const poolUrl =
+      `${SUPABASE_URL}/rest/v1/custom_products` +
+      `?select=title,url,slot,keyword,brand,style,color,sort_order,is_active` +
+      `&is_active=eq.true` +
+      `&order=sort_order.asc.nullslast`;
 
-    let candidates = [];
+    const poolResp = await fetch(poolUrl, {
+      headers: {
+        apikey: SERVICE_ROLE,
+        Authorization: `Bearer ${SERVICE_ROLE}`,
+        Accept: "application/json",
+      },
+    });
 
-    try {
-      const keywordQuery = description || label;
-      const url =
-        `${SUPABASE_URL}/rest/v1/custom_products` +
-        `?select=title,url,slot,keyword,sort_order,is_active` +
-        `&is_active=eq.true` +
-        `&or=(slot.ilike.*${encodeURIComponent(slot)}*,keyword.ilike.*${encodeURIComponent(keywordQuery)}*,keyword.ilike.*${encodeURIComponent(label)}*)` +
-        `&order=sort_order.asc.nullslast` +
-        `&limit=${limitPerSlot}`;
+    const poolText = await poolResp.text();
+    pool = poolResp.ok ? JSON.parse(poolText || "[]") : [];
+  } catch {
+    pool = [];
+  }
 
-      const r = await fetch(url, {
-        headers: {
-          apikey: SERVICE_ROLE,
-          Authorization: `Bearer ${SERVICE_ROLE}`,
-          Accept: "application/json",
-        },
-      });
+  const results = items.map((item) => {
+    const slot = normalizeText(item?.slot);
+    const label = normalizeText(item?.label || item?.name || slot || "單品");
+    const description = normalizeText(item?.description);
 
-      const text = await r.text();
-      const rows = r.ok ? JSON.parse(text || "[]") : [];
-
-      candidates = rows.map((row) => ({
+    const ranked = pool
+      .map((row) => ({
+        title: row.title,
+        url: row.url,
+        score: scoreCustomProduct(row, { slot, label, description }),
+      }))
+      .filter((row) => row.score > 0)
+      .sort((a, b) => b.score - a.score)
+      .slice(0, 3)
+      .map((row) => ({
         title: row.title,
         url: row.url,
       }));
-    } catch (e) {
-      // ignore
-    }
 
-    if (!candidates.length) {
-      const query = [description, label].filter(Boolean).join(" ").trim() || [label, slot].filter(Boolean).join(" ");
+    const fallbackQuery =
+      [description, label].filter(Boolean).join(" ").trim() ||
+      [label, slot].filter(Boolean).join(" ");
 
-      candidates = Array.from({ length: 3 }).map((_, i) => ({
-        title: `${label} 類似商品 ${i + 1}`,
-        url: `https://www.google.com/search?tbm=shop&q=${encodeURIComponent(query)}`,
-      }));
-    }
-
-    results.push({
+    return {
       slot,
       label,
       description,
-      candidates: candidates.slice(0, 3),
-    });
-  }
+      candidates: ranked.length
+        ? ranked
+        : Array.from({ length: 3 }).map((_, i) => ({
+            title: `${label} 類似商品 ${i + 1}`,
+            url: `https://www.google.com/search?tbm=shop&q=${encodeURIComponent(fallbackQuery)}`,
+          })),
+    };
+  });
 
   return json(res, 200, {
     ok: true,
