@@ -216,26 +216,21 @@ export default async function handler(req, res) {
     if (styleVariant && variantPromptMap[styleVariant]) variantHint = variantPromptMap[styleVariant].desc;
 
     const systemInstruction = `
-You are a professional fashion stylist and product matcher.
+You are a stylist that only returns STRICT JSON.
 
-You must return STRICT JSON only.
+You design outfits as a list of items.
 
-Your goal is to generate an outfit specification that is useful for:
-1. outfit generation
-2. product matching
-3. shopping link retrieval
-
-Return JSON with this exact shape:
+Your JSON MUST have this exact shape:
 
 {
-  "summary": "1-2 sentence summary in Traditional Chinese",
+  "summary": "short natural language summary of this outfit in 1-2 sentences (in Traditional Chinese)",
   "items": [
     {
       "slot": "top" | "bottom" | "shoes" | "outer" | "bag" | "hat",
-      "generic_name": "natural English shopping-friendly product name",
-      "display_name_zh": "short Traditional Chinese product name",
-      "label": "short shopping query phrase in English",
-      "description": "detailed shopping description in English",
+      "generic_name": "shopping-friendly English clothing name",
+      "display_name_zh": "短中文名稱，例如「白色寬版棉質上衣」",
+      "label": "short English shopping label, e.g. \"white oversized cotton shirt\"",
+      "description": "detailed English shopping phrase with color, category, fit, style, and material feeling",
       "color": "simple color in English",
       "style": "short style tag in English",
       "gender": "female" | "male" | "unisex",
@@ -244,42 +239,24 @@ Return JSON with this exact shape:
   ]
 }
 
-HARD RULES:
+HARD rules (VERY IMPORTANT):
 - Always include EXACTLY ONE item with slot = "top".
 - Always include EXACTLY ONE item with slot = "bottom".
 - Always include EXACTLY ONE item with slot = "shoes".
-- If withCoat = true OR temperature <= 20°C, include EXACTLY ONE item with slot = "outer".
-- If withBag = true, include EXACTLY ONE item with slot = "bag".
-- If withHat = true, include EXACTLY ONE item with slot = "hat".
-- If user did NOT ask for bag/hat/outer, do NOT include them unless temperature rule requires outer.
-- slot MUST be one of: "top", "bottom", "shoes", "outer", "bag", "hat".
-- Return ONLY valid JSON. No markdown. No commentary.
+- If user asked for coat/outer (withCoat = true) OR temperature <= 20°C,
+  you MUST include EXACTLY ONE item with slot = "outer".
+- If user asked for bag (withBag = true), you MUST include EXACTLY ONE item with slot = "bag".
+- If user asked for hat (withHat = true), you MUST include EXACTLY ONE item with slot = "hat".
+- If user did NOT ask for bag/hat/outer, you should NOT include those slots.
+- slot MUST be one of: "top", "bottom", "shoes", "outer", "bag", "hat". No other values.
+- Colors should be realistic and easy to match.
+- Use gender-neutral items (gender:"unisex") if they fit both genders.
+- Return ONLY valid JSON, with no extra text, comments, or explanations.
 
-VERY IMPORTANT FOR SHOPPING:
-- generic_name, label, and description MUST be specific enough for real product search.
-- DO NOT use vague words like "top", "bottom", "shoes" as the main product description.
-- Each clothing item MUST describe:
-  - color
-  - garment category
-  - fit / silhouette
-  - style vibe
-  - material or texture feeling when possible
-
-GOOD examples:
-- "white oversized cotton shirt"
-- "black high-waisted straight trousers"
-- "white chunky sneakers"
-- "camel relaxed-fit trench coat"
-
-BAD examples:
-- "top"
-- "pants"
-- "shoes"
-
-description should be a more detailed shopping-friendly phrase, for example:
-- "white oversized cotton button-up shirt with clean minimal styling"
-- "black high-waisted straight-leg trousers for smart casual outfits"
-- "white chunky low-top sneakers with clean everyday styling"
+SHOPPING rules:
+- NEVER use generic labels such as "top", "bottom", "shoes" as label or description.
+- label and description MUST be useful for real product search.
+- Each clothing item should clearly imply color + category + fit/silhouette + style + material/texture feeling when possible.
 `.trim();
 
     const userInstruction = `
@@ -367,8 +344,10 @@ if (!geminiResponse.ok) {
         },
         {
           slot: "shoes",
-          generic_name: "white low-top sneakers",
-          display_name_zh: "白色休閒鞋",
+          generic_name: "white chunky low-top sneakers",
+          display_name_zh: "白色厚底休閒鞋",
+          label: "white chunky sneakers",
+          description: "white chunky low-top sneakers with clean everyday styling",
           color: "white",
           style: baseStyle,
           gender: "unisex",

@@ -655,15 +655,17 @@ async function handleProducts(req, res) {
   for (const item of items) {
     const slot = String(item?.slot || "").trim();
     const label = String(item?.label || item?.name || slot || "單品").trim();
+    const description = String(item?.description || "").trim();
 
     let candidates = [];
 
     try {
+      const keywordQuery = description || label;
       const url =
         `${SUPABASE_URL}/rest/v1/custom_products` +
         `?select=title,url,slot,keyword,sort_order,is_active` +
         `&is_active=eq.true` +
-        `&or=(slot.ilike.*${encodeURIComponent(slot)}*,keyword.ilike.*${encodeURIComponent(label)}*)` +
+        `&or=(slot.ilike.*${encodeURIComponent(slot)}*,keyword.ilike.*${encodeURIComponent(keywordQuery)}*,keyword.ilike.*${encodeURIComponent(label)}*)` +
         `&order=sort_order.asc.nullslast` +
         `&limit=${limitPerSlot}`;
 
@@ -687,7 +689,7 @@ async function handleProducts(req, res) {
     }
 
     if (!candidates.length) {
-      const query = [label, slot].filter(Boolean).join(" ");
+      const query = [description, label].filter(Boolean).join(" ").trim() || [label, slot].filter(Boolean).join(" ");
 
       candidates = Array.from({ length: 3 }).map((_, i) => ({
         title: `${label} 類似商品 ${i + 1}`,
@@ -698,6 +700,7 @@ async function handleProducts(req, res) {
     results.push({
       slot,
       label,
+      description,
       candidates: candidates.slice(0, 3),
     });
   }
