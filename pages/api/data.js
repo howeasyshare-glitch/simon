@@ -641,11 +641,6 @@ function normalizeText(value) {
   return String(value || "").trim();
 }
 
-function isSearchResultUrl(url) {
-  const v = String(url || "");
-  return /google\.com\/search/i.test(v) || /tbm=shop/i.test(v) || /search\?/i.test(v);
-}
-
 function scoreCustomProduct(row, item) {
   const slot = normalizeText(item?.slot).toLowerCase();
   const label = normalizeText(item?.label).toLowerCase();
@@ -653,18 +648,26 @@ function scoreCustomProduct(row, item) {
 
   const haystack = [
     row?.title,
-    row?.keyword,
-    row?.brand,
-    row?.style,
-    row?.color,
-    row?.slot,
+    row?.merchant,
+    ...(Array.isArray(row?.tags) ? row.tags : []),
   ]
     .map((x) => normalizeText(x).toLowerCase())
     .join(" ");
 
   let score = 0;
 
-  if (slot && normalizeText(row?.slot).toLowerCase() === slot) score += 50;
+  if (slot) {
+    if (
+      (slot === "outer" && haystack.includes("item_outerwear")) ||
+      (slot === "shoes" && (haystack.includes("item_shoes") || haystack.includes("shoe"))) ||
+      (slot === "top" && (haystack.includes("item_top") || haystack.includes("top"))) ||
+      (slot === "bottom" && (haystack.includes("item_bottom") || haystack.includes("bottom"))) ||
+      (slot === "bag" && (haystack.includes("item_bag") || haystack.includes("bag"))) ||
+      (slot === "hat" && (haystack.includes("item_hat") || haystack.includes("hat")))
+    ) {
+      score += 50;
+    }
+  }
 
   const tokens = Array.from(
     new Set(
@@ -679,12 +682,7 @@ function scoreCustomProduct(row, item) {
     if (haystack.includes(token)) score += 8;
   }
 
-  if (row?.sort_order != null) {
-    const n = Number(row.sort_order);
-    if (!Number.isNaN(n)) score += Math.max(0, 20 - n);
-  }
-
-  if (!isSearchResultUrl(row?.url)) score += 20;
+  score += Number(row?.priority_boost || 0) * 10;
 
   return score;
 }
@@ -696,6 +694,7 @@ async function handleProducts(req, res) {
   const { SUPABASE_URL, SERVICE_ROLE } = env;
   const body = req.body || {};
   const items = Array.isArray(body.items) ? body.items : [];
+  const limitPerSlot = 3;
 
   if (!items.length) {
     return json(res, 200, { ok: true, products: [] });
@@ -704,12 +703,13 @@ async function handleProducts(req, res) {
   let pool = [];
 
   try {
-    const url =
+    const poolUrl =
       `${SUPABASE_URL}/rest/v1/custom_products` +
-      `?select=id,title,image_url,product_url,merchant,tags,priority_boost,badge_text,is_active` +
-      `&is_active=eq.true`;
+      `?select=id,is_active,title,image_url,product_url,merchant,tags,priority_boost,badge_text` +
+      `&is_active=eq.true` +
+      `&order=priority_boost.desc`;
 
-    const r = await fetch(url, {
+    const poolResp = await fetch(poolUrl, {
       headers: {
         apikey: SERVICE_ROLE,
         Authorization: `Bearer ${SERVICE_ROLE}`,
@@ -717,56 +717,57 @@ async function handleProducts(req, res) {
       },
     });
 
-    const text = await r.text();
-    pool = r.ok ? JSON.parse(text || "[]") : [];
+    const poolText = await poolResp.text();
+    pool = poolResp.ok ? JSON.parse(poolText || "[]") : [];
   } catch {
     pool = [];
   }
 
-  function score(row, item) {
-    const label = (item.label || "").toLowerCase();
-    const desc = (item.description || "").toLowerCase();
-    const tags = Array.isArray(row.tags) ? row.tags.join(" ") : "";
+  const results = items.map((item) => {
+    const slot = normalizeText(item?.slot);
+    const label = normalizeText(item?.label || item?.name || slot || "單品");
+    const description = normalizeText(item?.description);
 
-    let s = 0;
-
-    const text = `${row.title} ${tags}`.toLowerCase();
-
-    if (text.includes(label)) s += 10;
-    if (text.includes(desc)) s += 20;
-
-    if (row.priority_boost) s += row.priority_boost * 10;
-
-    return s;
-  }
-
-  const products = items.map((item) => {
     const ranked = pool
       .map((row) => ({
         ...row,
-        score: score(row, item),
+        score: scoreCustomProduct(row, { slot, label, description }),
       }))
-      .filter((x) => x.score > 0)
+      .filter((row) => row.score > 0)
       .sort((a, b) => b.score - a.score)
-      .slice(0, 3);
+      .slice(0, limitPerSlot)
+      .map((row) => ({
+        title: row.title,
+        image_url: row.image_url,
+        product_url: row.product_url,
+        merchant: row.merchant,
+        badge_text: row.badge_text && row.badge_text !== "NULL" ? row.badge_text : "",
+      }));
+
+    const fallbackQuery =
+      [description, label].filter(Boolean).join(" ").trim() ||
+      [label, slot].filter(Boolean).join(" ");
 
     return {
-      slot: item.slot,
-      label: item.label,
-      description: item.description,
+      slot,
+      label,
+      description,
       candidates: ranked.length
-        ? ranked.map((r) => ({
-            title: r.title,
-            image_url: r.image_url,
-            product_url: r.product_url,
-            merchant: r.merchant,
-            badge_text: r.badge_text,
-          }))
-        : [],
+        ? ranked
+        : Array.from({ length: 3 }).map((_, i) => ({
+            title: `${label} 類似商品 ${i + 1}`,
+            image_url: "",
+            product_url: `https://www.google.com/search?tbm=shop&q=${encodeURIComponent(fallbackQuery)}`,
+            merchant: "Google Shopping",
+            badge_text: "",
+          })),
     };
   });
 
-  return json(res, 200, { ok: true, products });
+  return json(res, 200, {
+    ok: true,
+    products: results,
+  });
 }
 
 /** ===================== User Settings ===================== */
