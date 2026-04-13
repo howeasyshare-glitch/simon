@@ -641,10 +641,12 @@ function normalizeText(value) {
   return String(value || "").trim();
 }
 
-function scoreCustomProduct(row, item) {
+function scoreCustomProduct(row, item, specConfig) {
   const slot = normalizeText(item?.slot).toLowerCase();
   const label = normalizeText(item?.label).toLowerCase();
   const description = normalizeText(item?.description).toLowerCase();
+  const sceneTagHint = normalizeText(specConfig?.sceneTagHint).toLowerCase();
+  const extraTags = Array.isArray(specConfig?.productTagHints) ? specConfig.productTagHints : [];
 
   const haystack = [
     row?.title,
@@ -656,17 +658,15 @@ function scoreCustomProduct(row, item) {
 
   let score = 0;
 
-  if (slot) {
-    if (
-      (slot === "outer" && haystack.includes("item_outerwear")) ||
-      (slot === "shoes" && (haystack.includes("item_shoes") || haystack.includes("shoe"))) ||
-      (slot === "top" && (haystack.includes("item_top") || haystack.includes("top"))) ||
-      (slot === "bottom" && (haystack.includes("item_bottom") || haystack.includes("bottom"))) ||
-      (slot === "bag" && (haystack.includes("item_bag") || haystack.includes("bag"))) ||
-      (slot === "hat" && (haystack.includes("item_hat") || haystack.includes("hat")))
-    ) {
-      score += 50;
-    }
+  if (
+    (slot === "outer" && haystack.includes("item_outerwear")) ||
+    (slot === "shoes" && (haystack.includes("item_shoes") || haystack.includes("shoe"))) ||
+    (slot === "top" && (haystack.includes("item_top") || haystack.includes("top"))) ||
+    (slot === "bottom" && (haystack.includes("item_bottom") || haystack.includes("bottom"))) ||
+    (slot === "bag" && (haystack.includes("item_bag") || haystack.includes("bag"))) ||
+    (slot === "hat" && (haystack.includes("item_hat") || haystack.includes("hat")))
+  ) {
+    score += 50;
   }
 
   const tokens = Array.from(
@@ -682,6 +682,13 @@ function scoreCustomProduct(row, item) {
     if (haystack.includes(token)) score += 8;
   }
 
+  if (sceneTagHint && haystack.includes(sceneTagHint)) score += 18;
+
+  for (const tag of extraTags) {
+    const v = normalizeText(tag).toLowerCase();
+    if (v && haystack.includes(v)) score += 12;
+  }
+
   score += Number(row?.priority_boost || 0) * 10;
 
   return score;
@@ -694,7 +701,9 @@ async function handleProducts(req, res) {
   const { SUPABASE_URL, SERVICE_ROLE } = env;
   const body = req.body || {};
   const items = Array.isArray(body.items) ? body.items : [];
-  const limitPerSlot = 3;
+  const specConfig = body.specConfig || {};
+  const maxProductsPerSlot = Math.max(1, Math.min(Number(body.limitPerSlot || specConfig?.maxProductsPerSlot || 3), 3));
+  const productStrategy = normalizeText(specConfig?.productStrategy || "direct_first").toLowerCase();
 
   if (!items.length) {
     return json(res, 200, { ok: true, products: [] });
@@ -731,15 +740,16 @@ async function handleProducts(req, res) {
     const ranked = pool
       .map((row) => ({
         ...row,
-        score: scoreCustomProduct(row, { slot, label, description }),
+        score: scoreCustomProduct(row, { slot, label, description }, specConfig),
       }))
       .filter((row) => row.score > 0)
       .sort((a, b) => b.score - a.score)
-      .slice(0, limitPerSlot)
+      .slice(0, maxProductsPerSlot)
       .map((row) => ({
         title: row.title,
         image_url: row.image_url,
         product_url: row.product_url,
+        url: row.product_url,
         merchant: row.merchant,
         badge_text: row.badge_text && row.badge_text !== "NULL" ? row.badge_text : "",
       }));
@@ -752,15 +762,19 @@ async function handleProducts(req, res) {
       slot,
       label,
       description,
-      candidates: ranked.length
-        ? ranked
-        : Array.from({ length: 3 }).map((_, i) => ({
-            title: `${label} 類似商品 ${i + 1}`,
-            image_url: "",
-            product_url: `https://www.google.com/search?tbm=shop&q=${encodeURIComponent(fallbackQuery)}`,
-            merchant: "Google Shopping",
-            badge_text: "",
-          })),
+      candidates:
+        ranked.length
+          ? ranked
+          : productStrategy === "direct_only"
+          ? []
+          : Array.from({ length: maxProductsPerSlot }).map((_, i) => ({
+              title: `${label} 類似商品 ${i + 1}`,
+              image_url: "",
+              product_url: `https://www.google.com/search?tbm=shop&q=${encodeURIComponent(fallbackQuery)}`,
+              url: `https://www.google.com/search?tbm=shop&q=${encodeURIComponent(fallbackQuery)}`,
+              merchant: "Google Shopping",
+              badge_text: "",
+            })),
     };
   });
 
