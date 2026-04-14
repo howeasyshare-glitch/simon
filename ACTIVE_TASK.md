@@ -1,14 +1,14 @@
 # ACTIVE TASK — FindOutfit
 
 ## 🎯 目標
-提升商品與圖片一致性，同時維持 UI 穩定
+將卡片推薦商品功能完成
 
 ---
 
 ## 🛠 本次修改
-- 優化 products API matching
-- 改善商品預覽 UI
-- 降低 fallback 比例
+- custom 顯示不準確，以資料庫資料來看應該要在外套類第一個出現，接著另外再補兩個
+- 推薦商品網址一樣連到 google 搜尋：**https://www.google.com/search?q=A+dark**，要直接跳過這段到單項商品的頁面
+- 另外卡片點擊「查看單品」後會展開內容變得非常的長，這在UI上不好看，看可以如何優化
 
 ---
 
@@ -33,8 +33,6 @@
 
 - 部分商品仍 fallback
 - custom_products 不足
-- 商品卡可能撐爆 UI
-- 卡片內推薦商品的照片顯示過大
 
 ---
 
