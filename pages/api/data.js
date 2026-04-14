@@ -641,55 +641,62 @@ function normalizeText(value) {
   return String(value || "").trim();
 }
 
-function scoreCustomProduct(row, item, specConfig) {
-  const slot = normalizeText(item?.slot).toLowerCase();
-  const label = normalizeText(item?.label).toLowerCase();
-  const description = normalizeText(item?.description).toLowerCase();
-  const sceneTagHint = normalizeText(specConfig?.sceneTagHint).toLowerCase();
-  const extraTags = Array.isArray(specConfig?.productTagHints) ? specConfig.productTagHints : [];
+function tokenizeForMatch(value) {
+  const stop = new Set([
+    "the", "and", "with", "for", "look", "style", "daily", "casual", "fashion",
+    "item", "outfit", "wear", "single", "piece", "clothing", "woman", "women",
+    "man", "men", "unisex", "top", "bottom", "shoes", "shoe", "bag", "hat", "outer"
+  ]);
 
-  const haystack = [
-    row?.title,
-    row?.merchant,
-    ...(Array.isArray(row?.tags) ? row.tags : []),
-  ]
-    .map((x) => normalizeText(x).toLowerCase())
-    .join(" ");
+  return Array.from(
+    new Set(
+      normalizeText(value)
+        .toLowerCase()
+        .split(/[^a-z0-9]+/)
+        .map((x) => x.trim())
+        .filter((x) => x && x.length > 2 && !stop.has(x))
+    )
+  );
+}
+
+function slotTags(slot) {
+  const s = normalizeText(slot).toLowerCase();
+  if (s === "top") return ["item_top", "top", "shirt", "tee", "tshirt", "blouse", "knit", "hoodie", "sweater"];
+  if (s === "bottom") return ["item_bottom", "bottom", "pants", "jeans", "trousers", "shorts", "skirt"];
+  if (s === "shoes") return ["item_shoes", "shoes", "shoe", "sneaker", "boots", "loafers", "heels"];
+  if (s === "outer") return ["item_outerwear", "outer", "jacket", "coat", "cardigan", "blazer", "hoodie"];
+  if (s === "bag") return ["item_bag", "bag", "tote", "backpack", "shoulder"];
+  if (s === "hat") return ["item_hat", "hat", "cap", "beanie"];
+  return [s];
+}
+
+function scoreCustomProduct(row, item) {
+  const slot = normalizeText(item?.slot).toLowerCase();
+  const label = normalizeText(item?.label);
+  const description = normalizeText(item?.description);
+  const title = normalizeText(row?.title).toLowerCase();
+  const tags = Array.isArray(row?.tags) ? row.tags.map((x) => normalizeText(x).toLowerCase()) : [];
+  const haystack = [title, ...tags].join(" ");
 
   let score = 0;
 
-  if (
-    (slot === "outer" && haystack.includes("item_outerwear")) ||
-    (slot === "shoes" && (haystack.includes("item_shoes") || haystack.includes("shoe"))) ||
-    (slot === "top" && (haystack.includes("item_top") || haystack.includes("top"))) ||
-    (slot === "bottom" && (haystack.includes("item_bottom") || haystack.includes("bottom"))) ||
-    (slot === "bag" && (haystack.includes("item_bag") || haystack.includes("bag"))) ||
-    (slot === "hat" && (haystack.includes("item_hat") || haystack.includes("hat")))
-  ) {
-    score += 50;
+  for (const tag of slotTags(slot)) {
+    if (haystack.includes(tag)) {
+      score += 24;
+      break;
+    }
   }
 
-  const tokens = Array.from(
-    new Set(
-      `${description} ${label}`
-        .split(/\s+/)
-        .map((x) => x.trim().toLowerCase())
-        .filter((x) => x && x.length > 2)
-    )
-  );
-
-  for (const token of tokens) {
-    if (haystack.includes(token)) score += 8;
+  const strongTokens = tokenizeForMatch(`${label} ${description}`);
+  for (const token of strongTokens) {
+    if (title.includes(token)) {
+      score += 10;
+    } else if (tags.some((t) => t.includes(token))) {
+      score += 6;
+    }
   }
 
-  if (sceneTagHint && haystack.includes(sceneTagHint)) score += 18;
-
-  for (const tag of extraTags) {
-    const v = normalizeText(tag).toLowerCase();
-    if (v && haystack.includes(v)) score += 12;
-  }
-
-  score += Number(row?.priority_boost || 0) * 10;
+  score += Math.max(0, Number(row?.priority_boost || 0)) * 4;
 
   return score;
 }
@@ -701,22 +708,19 @@ async function handleProducts(req, res) {
   const { SUPABASE_URL, SERVICE_ROLE } = env;
   const body = req.body || {};
   const items = Array.isArray(body.items) ? body.items : [];
-  const specConfig = body.specConfig || {};
-  const maxProductsPerSlot = Math.max(1, Math.min(Number(body.limitPerSlot || specConfig?.maxProductsPerSlot || 3), 3));
-  const productStrategy = normalizeText(specConfig?.productStrategy || "direct_first").toLowerCase();
+  const limitPerSlot = Math.max(1, Math.min(Number(body.limitPerSlot || 3), 3));
 
   if (!items.length) {
     return json(res, 200, { ok: true, products: [] });
   }
 
   let pool = [];
-
   try {
     const poolUrl =
       `${SUPABASE_URL}/rest/v1/custom_products` +
       `?select=id,is_active,title,image_url,product_url,merchant,tags,priority_boost,badge_text` +
       `&is_active=eq.true` +
-      `&order=priority_boost.desc`;
+      `&order=priority_boost.desc.nullslast`;
 
     const poolResp = await fetch(poolUrl, {
       headers: {
@@ -740,11 +744,11 @@ async function handleProducts(req, res) {
     const ranked = pool
       .map((row) => ({
         ...row,
-        score: scoreCustomProduct(row, { slot, label, description }, specConfig),
+        _score: scoreCustomProduct(row, { slot, label, description }),
       }))
-      .filter((row) => row.score > 0)
-      .sort((a, b) => b.score - a.score)
-      .slice(0, maxProductsPerSlot)
+      .filter((row) => row._score >= 26)
+      .sort((a, b) => b._score - a._score)
+      .slice(0, limitPerSlot)
       .map((row) => ({
         title: row.title,
         image_url: row.image_url,
@@ -762,19 +766,16 @@ async function handleProducts(req, res) {
       slot,
       label,
       description,
-      candidates:
-        ranked.length
-          ? ranked
-          : productStrategy === "direct_only"
-          ? []
-          : Array.from({ length: maxProductsPerSlot }).map((_, i) => ({
-              title: `${label} 類似商品 ${i + 1}`,
-              image_url: "",
-              product_url: `https://www.google.com/search?tbm=shop&q=${encodeURIComponent(fallbackQuery)}`,
-              url: `https://www.google.com/search?tbm=shop&q=${encodeURIComponent(fallbackQuery)}`,
-              merchant: "Google Shopping",
-              badge_text: "",
-            })),
+      candidates: ranked.length
+        ? ranked
+        : Array.from({ length: limitPerSlot }).map((_, i) => ({
+            title: `${label} 類似商品 ${i + 1}`,
+            image_url: "",
+            product_url: `https://www.google.com/search?tbm=shop&q=${encodeURIComponent(fallbackQuery)}`,
+            url: `https://www.google.com/search?tbm=shop&q=${encodeURIComponent(fallbackQuery)}`,
+            merchant: "Google Shopping",
+            badge_text: "",
+          })),
     };
   });
 
