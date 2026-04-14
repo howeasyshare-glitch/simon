@@ -1228,7 +1228,7 @@
 }
 
 
-/* ===== Spec Console v1.3 ===== */
+/* ===== Spec Console v2 ===== */
 
 .specTopbar {
   max-width: 1320px;
@@ -1306,12 +1306,6 @@
   margin-bottom: 14px;
 }
 
-.specModeRow {
-  display: flex;
-  gap: 10px;
-  flex-wrap: wrap;
-}
-
 .specField {
   display: grid;
   gap: 8px;
@@ -1338,7 +1332,7 @@
 }
 
 .specTextarea {
-  min-height: 52px;
+  min-height: 86px;
 }
 
 .specTextareaTall {
@@ -1381,6 +1375,27 @@
 
 .specStatusRow:last-of-type {
   border-bottom: 0;
+}
+
+.specInfoBox {
+  margin-top: 14px;
+  border-radius: 16px;
+  padding: 14px;
+  background: rgba(0, 0, 0, 0.18);
+  border: 1px solid rgba(255,255,255,0.06);
+}
+
+.specInfoTitle {
+  font-size: 13px;
+  font-weight: 700;
+  margin-bottom: 8px;
+}
+
+.specList {
+  margin: 0;
+  padding-left: 18px;
+  color: rgba(255,255,255,0.78);
+  line-height: 1.7;
 }
 
 @media (max-width: 1080px) {
