@@ -641,62 +641,56 @@ function normalizeText(value) {
   return String(value || "").trim();
 }
 
-function tokenizeForMatch(value) {
-  const stop = new Set([
-    "the", "and", "with", "for", "look", "style", "daily", "casual", "fashion",
-    "item", "outfit", "wear", "single", "piece", "clothing", "woman", "women",
-    "man", "men", "unisex", "top", "bottom", "shoes", "shoe", "bag", "hat", "outer"
-  ]);
-
-  return Array.from(
-    new Set(
-      normalizeText(value)
-        .toLowerCase()
-        .split(/[^a-z0-9]+/)
-        .map((x) => x.trim())
-        .filter((x) => x && x.length > 2 && !stop.has(x))
-    )
-  );
+function normalizeTokens(value) {
+  return normalizeText(value)
+    .toLowerCase()
+    .split(/[\s,./\-_"'()]+/)
+    .map((x) => x.trim())
+    .filter((x) => x && x.length > 1);
 }
 
-function slotTags(slot) {
+function slotTagFor(slot) {
   const s = normalizeText(slot).toLowerCase();
-  if (s === "top") return ["item_top", "top", "shirt", "tee", "tshirt", "blouse", "knit", "hoodie", "sweater"];
-  if (s === "bottom") return ["item_bottom", "bottom", "pants", "jeans", "trousers", "shorts", "skirt"];
-  if (s === "shoes") return ["item_shoes", "shoes", "shoe", "sneaker", "boots", "loafers", "heels"];
-  if (s === "outer") return ["item_outerwear", "outer", "jacket", "coat", "cardigan", "blazer", "hoodie"];
-  if (s === "bag") return ["item_bag", "bag", "tote", "backpack", "shoulder"];
-  if (s === "hat") return ["item_hat", "hat", "cap", "beanie"];
-  return [s];
+  if (s === "outer") return "item_outerwear";
+  if (s === "top") return "item_top";
+  if (s === "bottom") return "item_bottom";
+  if (s === "shoes") return "item_shoes";
+  if (s === "bag") return "item_bag";
+  if (s === "hat") return "item_hat";
+  return "";
+}
+
+function rowTags(row) {
+  if (Array.isArray(row?.tags)) return row.tags.map((x) => normalizeText(x).toLowerCase());
+  return [];
 }
 
 function scoreCustomProduct(row, item) {
   const slot = normalizeText(item?.slot).toLowerCase();
   const label = normalizeText(item?.label);
   const description = normalizeText(item?.description);
+
+  const tags = rowTags(row);
   const title = normalizeText(row?.title).toLowerCase();
-  const tags = Array.isArray(row?.tags) ? row.tags.map((x) => normalizeText(x).toLowerCase()) : [];
-  const haystack = [title, ...tags].join(" ");
+  const merchant = normalizeText(row?.merchant).toLowerCase();
+  const slotTag = slotTagFor(slot);
+
+  const tokenSet = Array.from(new Set([
+    ...normalizeTokens(label),
+    ...normalizeTokens(description),
+  ]));
 
   let score = 0;
 
-  for (const tag of slotTags(slot)) {
-    if (haystack.includes(tag)) {
-      score += 24;
-      break;
-    }
+  if (slotTag && tags.includes(slotTag)) score += 80;
+
+  for (const token of tokenSet) {
+    if (title.includes(token)) score += 10;
+    if (tags.some((t) => t.includes(token))) score += 8;
+    if (merchant.includes(token)) score += 3;
   }
 
-  const strongTokens = tokenizeForMatch(`${label} ${description}`);
-  for (const token of strongTokens) {
-    if (title.includes(token)) {
-      score += 10;
-    } else if (tags.some((t) => t.includes(token))) {
-      score += 6;
-    }
-  }
-
-  score += Math.max(0, Number(row?.priority_boost || 0)) * 4;
+  score += Number(row?.priority_boost || 0) * 10;
 
   return score;
 }
@@ -715,12 +709,13 @@ async function handleProducts(req, res) {
   }
 
   let pool = [];
+
   try {
     const poolUrl =
       `${SUPABASE_URL}/rest/v1/custom_products` +
       `?select=id,is_active,title,image_url,product_url,merchant,tags,priority_boost,badge_text` +
       `&is_active=eq.true` +
-      `&order=priority_boost.desc.nullslast`;
+      `&order=priority_boost.desc`;
 
     const poolResp = await fetch(poolUrl, {
       headers: {
@@ -736,6 +731,8 @@ async function handleProducts(req, res) {
     pool = [];
   }
 
+  const SCORE_THRESHOLD = 80;
+
   const results = items.map((item) => {
     const slot = normalizeText(item?.slot);
     const label = normalizeText(item?.label || item?.name || slot || "單品");
@@ -743,13 +740,13 @@ async function handleProducts(req, res) {
 
     const ranked = pool
       .map((row) => ({
-        ...row,
-        _score: scoreCustomProduct(row, { slot, label, description }),
+        row,
+        score: scoreCustomProduct(row, { slot, label, description }),
       }))
-      .filter((row) => row._score >= 26)
-      .sort((a, b) => b._score - a._score)
+      .filter((x) => x.score >= SCORE_THRESHOLD && normalizeText(x.row?.product_url))
+      .sort((a, b) => b.score - a.score)
       .slice(0, limitPerSlot)
-      .map((row) => ({
+      .map(({ row }) => ({
         title: row.title,
         image_url: row.image_url,
         product_url: row.product_url,
@@ -758,24 +755,11 @@ async function handleProducts(req, res) {
         badge_text: row.badge_text && row.badge_text !== "NULL" ? row.badge_text : "",
       }));
 
-    const fallbackQuery =
-      [description, label].filter(Boolean).join(" ").trim() ||
-      [label, slot].filter(Boolean).join(" ");
-
     return {
       slot,
       label,
       description,
-      candidates: ranked.length
-        ? ranked
-        : Array.from({ length: limitPerSlot }).map((_, i) => ({
-            title: `${label} 類似商品 ${i + 1}`,
-            image_url: "",
-            product_url: `https://www.google.com/search?tbm=shop&q=${encodeURIComponent(fallbackQuery)}`,
-            url: `https://www.google.com/search?tbm=shop&q=${encodeURIComponent(fallbackQuery)}`,
-            merchant: "Google Shopping",
-            badge_text: "",
-          })),
+      candidates: ranked,
     };
   });
 
