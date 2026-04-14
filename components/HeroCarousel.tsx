@@ -255,34 +255,34 @@ export default function HeroCarousel({
                               {group.slot || group.label || "單品"}
                             </div>
 
-                            <div className={styles.productPreviewGrid}>
+                            <div className={styles.productCompactList}>
                               {(group.candidates || []).slice(0, 3).map((p: any, j: number) => (
                                 <a
                                   key={j}
                                   href={p.product_url || p.url}
                                   target="_blank"
                                   rel="noreferrer"
-                                  className={styles.productPreviewCard}
+                                  className={styles.productCompactItem}
                                 >
                                   {p.image_url ? (
                                     <img
                                       src={p.image_url}
                                       alt={p.title || "product"}
-                                      className={styles.productPreviewImage}
+                                      className={styles.productCompactImage}
                                     />
                                   ) : (
-                                    <div className={styles.productPreviewImageFallback} />
+                                    <div className={styles.productCompactImageFallback} />
                                   )}
 
-                                  <div className={styles.productPreviewBody}>
-                                    <div className={styles.productPreviewTitle}>{p.title}</div>
-
-                                    {p.badge_text ? (
-                                      <div className={styles.productPreviewBadge}>{p.badge_text}</div>
-                                    ) : null}
+                                  <div className={styles.productCompactBody}>
+                                    <div className={styles.productCompactTitle}>{p.title}</div>
 
                                     {p.merchant ? (
-                                      <div className={styles.productPreviewMerchant}>{p.merchant}</div>
+                                      <div className={styles.productCompactMeta}>{p.merchant}</div>
+                                    ) : null}
+
+                                    {p.badge_text ? (
+                                      <div className={styles.productCompactBadge}>{p.badge_text}</div>
                                     ) : null}
                                   </div>
                                 </a>
