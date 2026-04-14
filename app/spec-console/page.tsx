@@ -18,7 +18,20 @@ type RecordState = {
   uiObservationsText: string;
 };
 
-const STORAGE_KEY = "findoutfit_spec_console_v2";
+type DetectionResult = {
+  ranAt: string;
+  missingFields: string[];
+  touchedBlockedFiles: string[];
+  productSearchUrlCount: number;
+  productTooManyCandidates: number;
+  productGenericCount: number;
+  productIssues: string[];
+  uiIssues: string[];
+  acceptanceChecks: Array<{ label: string; status: true | false | null }>;
+  summary: string[];
+};
+
+const STORAGE_KEY = "findoutfit_spec_console_v21";
 
 const DEFAULT_STATE: RecordState = {
   projectGoal: "避免修改後偏離既有需求，並能快速驗收 UI 與商品結果",
@@ -90,9 +103,96 @@ function parseProductsJson(raw: string) {
   }
 }
 
+function detectFromState(state: RecordState): DetectionResult {
+  const changedFiles = splitLines(state.changedFilesText);
+  const blockedFiles = uniq(state.blockedFiles);
+  const touchedBlockedFiles = changedFiles.filter((file) => blockedFiles.includes(file));
+
+  const missingFields: string[] = [];
+  if (!state.activeTask.trim()) missingFields.push("ACTIVE TASK");
+  if (!state.acceptanceCriteria.length) missingFields.push("ACCEPTANCE CRITERIA");
+  if (!state.requiredChecks.length) missingFields.push("REQUIRED CHECKS");
+  if (!changedFiles.length) missingFields.push("CHANGED FILES");
+
+  const wantsProductCheck = state.requiredChecks.some((x) => /products|搜尋頁|slot|generic/i.test(x));
+  const wantsUICheck = state.requiredChecks.some((x) => /ui|跑版|按鈕|畫面/i.test(x));
+  if (wantsProductCheck && !state.productsJsonText.trim()) missingFields.push("PRODUCTS JSON");
+  if (wantsUICheck && !state.uiObservationsText.trim()) missingFields.push("UI OBSERVATIONS");
+
+  const productGroups = parseProductsJson(state.productsJsonText);
+  let productSearchUrlCount = 0;
+  let productTooManyCandidates = 0;
+  let productGenericCount = 0;
+  const productIssues: string[] = [];
+
+  productGroups.forEach((group: any, idx: number) => {
+    const slot = group?.slot || `group_${idx + 1}`;
+    const label = group?.label || "";
+    const description = group?.description || "";
+    const candidates = Array.isArray(group?.candidates) ? group.candidates : [];
+
+    if (candidates.length > 3) {
+      productTooManyCandidates += 1;
+      productIssues.push(`${slot} 超過 3 個商品`);
+    }
+
+    if (isGenericWord(label) || isGenericWord(description)) {
+      productGenericCount += 1;
+      productIssues.push(`${slot} 使用過於泛的 label/description`);
+    }
+
+    candidates.forEach((c: any, i: number) => {
+      if (isSearchUrl(c?.product_url || c?.url)) {
+        productSearchUrlCount += 1;
+        productIssues.push(`${slot} 第 ${i + 1} 個候選仍為搜尋頁`);
+      }
+    });
+  });
+
+  const obs = state.uiObservationsText.toLowerCase();
+  const uiIssues: string[] = [];
+  if (obs.includes("跑版")) uiIssues.push("UI 觀察提到：跑版");
+  if (obs.includes("撐爆")) uiIssues.push("UI 觀察提到：區塊撐爆");
+  if (obs.includes("按鈕不見")) uiIssues.push("UI 觀察提到：按鈕不見");
+  if (obs.includes("選單不見")) uiIssues.push("UI 觀察提到：選單不見");
+  if (obs.includes("超出")) uiIssues.push("UI 觀察提到：內容超出範圍");
+
+  const acceptanceChecks = state.acceptanceCriteria.map((item) => ({
+    label: item,
+    status:
+      item.includes("最多 3 個商品")
+        ? productTooManyCandidates === 0
+        : item.includes("商品頁優先於搜尋頁")
+        ? productSearchUrlCount === 0
+        : item.includes("Hero UI 不可跑版")
+        ? uiIssues.length === 0
+        : null,
+  }));
+
+  const summary = uniq([
+    ...touchedBlockedFiles.map((file) => `碰到 blocked file：${file}`),
+    ...productIssues,
+    ...uiIssues,
+  ]);
+
+  return {
+    ranAt: new Date().toLocaleString(),
+    missingFields: uniq(missingFields),
+    touchedBlockedFiles,
+    productSearchUrlCount,
+    productTooManyCandidates,
+    productGenericCount,
+    productIssues: uniq(productIssues),
+    uiIssues: uniq(uiIssues),
+    acceptanceChecks,
+    summary,
+  };
+}
+
 export default function SpecConsolePage() {
   const [state, setState] = useState<RecordState>(DEFAULT_STATE);
   const [savedText, setSavedText] = useState("");
+  const [result, setResult] = useState<DetectionResult | null>(null);
 
   useEffect(() => {
     try {
@@ -126,95 +226,14 @@ export default function SpecConsolePage() {
   function resetAll() {
     setState(DEFAULT_STATE);
     localStorage.setItem(STORAGE_KEY, JSON.stringify(DEFAULT_STATE));
+    setResult(null);
     setSavedText("已重設");
     setTimeout(() => setSavedText(""), 1800);
   }
 
-  const changedFiles = useMemo(() => splitLines(state.changedFilesText), [state.changedFilesText]);
-  const blockedFiles = useMemo(() => uniq(state.blockedFiles), [state.blockedFiles]);
-  const touchedBlockedFiles = useMemo(
-    () => changedFiles.filter((file) => blockedFiles.includes(file)),
-    [changedFiles, blockedFiles]
-  );
-
-  const productGroups = useMemo(() => parseProductsJson(state.productsJsonText), [state.productsJsonText]);
-
-  const productDetection = useMemo(() => {
-    let searchUrlCount = 0;
-    let tooManyCandidates = 0;
-    let genericCount = 0;
-    const issues: string[] = [];
-
-    productGroups.forEach((group: any, idx: number) => {
-      const slot = group?.slot || `group_${idx + 1}`;
-      const label = group?.label || "";
-      const description = group?.description || "";
-      const candidates = Array.isArray(group?.candidates) ? group.candidates : [];
-
-      if (candidates.length > 3) {
-        tooManyCandidates += 1;
-        issues.push(`${slot} 超過 3 個商品`);
-      }
-
-      if (isGenericWord(label) || isGenericWord(description)) {
-        genericCount += 1;
-        issues.push(`${slot} 使用過於泛的 label/description`);
-      }
-
-      candidates.forEach((c: any, i: number) => {
-        if (isSearchUrl(c?.product_url || c?.url)) {
-          searchUrlCount += 1;
-          issues.push(`${slot} 第 ${i + 1} 個候選仍為搜尋頁`);
-        }
-      });
-    });
-
-    return {
-      searchUrlCount,
-      tooManyCandidates,
-      genericCount,
-      issues: uniq(issues),
-    };
-  }, [productGroups]);
-
-  const uiIssues = useMemo(() => {
-    const obs = state.uiObservationsText.toLowerCase();
-    const issues: string[] = [];
-
-    if (obs.includes("跑版")) issues.push("UI 觀察提到：跑版");
-    if (obs.includes("撐爆")) issues.push("UI 觀察提到：區塊撐爆");
-    if (obs.includes("按鈕不見")) issues.push("UI 觀察提到：按鈕不見");
-    if (obs.includes("選單不見")) issues.push("UI 觀察提到：選單不見");
-    if (obs.includes("超出")) issues.push("UI 觀察提到：內容超出範圍");
-
-    return uniq(issues);
-  }, [state.uiObservationsText]);
-
-  const derivedChecks = useMemo(() => {
-    const checks = state.acceptanceCriteria.map((item) => ({
-      label: item,
-      status:
-        item.includes("最多 3 個商品")
-          ? productDetection.tooManyCandidates === 0
-          : item.includes("商品頁優先於搜尋頁")
-          ? productDetection.searchUrlCount === 0
-          : item.includes("Hero UI 不可跑版")
-          ? uiIssues.length === 0
-          : null,
-    }));
-
-    return checks;
-  }, [state.acceptanceCriteria, productDetection, uiIssues]);
-
-  const summary = useMemo(() => {
-    const violations: string[] = [];
-
-    touchedBlockedFiles.forEach((file) => violations.push(`碰到 blocked file：${file}`));
-    productDetection.issues.forEach((item) => violations.push(item));
-    uiIssues.forEach((item) => violations.push(item));
-
-    return uniq(violations);
-  }, [touchedBlockedFiles, productDetection, uiIssues]);
+  function runDetection() {
+    setResult(detectFromState(state));
+  }
 
   const recordExport = useMemo(() => {
     return JSON.stringify(
@@ -246,9 +265,9 @@ export default function SpecConsolePage() {
       <div className={styles.specTopbar}>
         <div>
           <div className={styles.specEyebrow}>Spec Console</div>
-          <h1 className={styles.specTitle}>FindOutfit Spec Console v2</h1>
+          <h1 className={styles.specTitle}>FindOutfit Spec Console v2.1</h1>
           <p className={styles.specSub}>
-            這版不控制生成。它負責記錄規則、整理本次任務，並依照紀錄內容做檢測與驗收。
+            這版加入明確的「一鍵檢測」、必填提示，以及它能檢查與不能檢查的說明。
           </p>
         </div>
 
@@ -256,12 +275,35 @@ export default function SpecConsolePage() {
           <Link href="/" className={styles.secondaryBtn}>回首頁</Link>
           <button type="button" className={styles.secondaryBtn} onClick={resetAll}>重設</button>
           <button type="button" className={styles.secondaryBtn} onClick={copyRecord}>複製紀錄</button>
-          <button type="button" className={styles.primaryBtn} onClick={save}>儲存</button>
+          <button type="button" className={styles.secondaryBtn} onClick={save}>儲存</button>
+          <button type="button" className={styles.primaryBtn} onClick={runDetection}>一鍵檢測</button>
         </div>
       </div>
 
       <section className={styles.specGrid}>
         <div className={styles.specMain}>
+          <div className={styles.specCard}>
+            <div className={styles.specCardTitle}>它能檢查什麼 / 不能檢查什麼</div>
+            <div className={styles.specInfoBox}>
+              <div className={styles.specInfoTitle}>能檢查</div>
+              <ul className={styles.specList}>
+                <li>你貼進來的 changed files 是否碰到 blocked files</li>
+                <li>你貼進來的 products JSON 是否仍為搜尋頁</li>
+                <li>你貼進來的 products JSON 是否超過 3 個商品</li>
+                <li>你貼進來的 products JSON 是否有 generic label</li>
+                <li>你寫下的 UI 觀察是否提到跑版、撐爆、按鈕不見等異常</li>
+              </ul>
+            </div>
+            <div className={styles.specInfoBox}>
+              <div className={styles.specInfoTitle}>不能直接檢查</div>
+              <ul className={styles.specList}>
+                <li>不能只靠這個網頁自動讀取你整個 repo 的程式碼</li>
+                <li>不能只靠這個網頁自動掃其它頁面的原始碼</li>
+                <li>若要自動讀 repo 或自動抓 API，需另外接後端 / debug feed / git diff</li>
+              </ul>
+            </div>
+          </div>
+
           <div className={styles.specCard}>
             <div className={styles.specCardTitle}>紀錄區：目標與任務</div>
             <label className={styles.specField}>
@@ -332,7 +374,7 @@ export default function SpecConsolePage() {
 
           <div className={styles.specCard}>
             <div className={styles.specCardTitle}>檢測區：Changed Files</div>
-            <p className={styles.specMiniHint}>把本次實際改動的檔案一行一個貼進來，用來檢查是否碰到 blocked files。</p>
+            <p className={styles.specMiniHint}>必填。把本次實際改動的檔案一行一個貼進來，用來檢查是否碰到 blocked files。</p>
             <textarea
               className={styles.specTextareaTall}
               value={state.changedFilesText}
@@ -343,7 +385,7 @@ export default function SpecConsolePage() {
 
           <div className={styles.specCard}>
             <div className={styles.specCardTitle}>檢測區：Products JSON</div>
-            <p className={styles.specMiniHint}>把 products API 回傳的 JSON 或 products 陣列貼進來，用來檢查搜尋頁比例、slot 數量與 generic label。</p>
+            <p className={styles.specMiniHint}>若你的 required checks 或 acceptance criteria 有商品相關檢查，這欄就必填。</p>
             <textarea
               className={styles.specTextareaTall}
               value={state.productsJsonText}
@@ -354,7 +396,7 @@ export default function SpecConsolePage() {
 
           <div className={styles.specCard}>
             <div className={styles.specCardTitle}>檢測區：UI 觀察</div>
-            <p className={styles.specMiniHint}>把你觀察到的 UI 結果簡單記錄，例如：跑版、撐爆、按鈕不見。</p>
+            <p className={styles.specMiniHint}>若你的 required checks 或 acceptance criteria 有 UI 檢查，這欄就必填。</p>
             <textarea
               className={styles.specTextareaTall}
               value={state.uiObservationsText}
@@ -366,54 +408,77 @@ export default function SpecConsolePage() {
 
         <aside className={styles.specSide}>
           <div className={styles.specStatusCard}>
-            <div className={styles.specCardTitle}>驗收摘要</div>
-
+            <div className={styles.specCardTitle}>目前狀態</div>
             <div className={styles.specStatusRow}>
-              <span>碰到 blocked files</span>
-              <strong>{touchedBlockedFiles.length}</strong>
+              <span>儲存狀態</span>
+              <strong>{savedText || "尚未操作"}</strong>
             </div>
             <div className={styles.specStatusRow}>
-              <span>搜尋頁網址</span>
-              <strong>{productDetection.searchUrlCount}</strong>
-            </div>
-            <div className={styles.specStatusRow}>
-              <span>超過 3 個商品</span>
-              <strong>{productDetection.tooManyCandidates}</strong>
-            </div>
-            <div className={styles.specStatusRow}>
-              <span>generic label</span>
-              <strong>{productDetection.genericCount}</strong>
-            </div>
-            <div className={styles.specStatusRow}>
-              <span>UI 觀察異常</span>
-              <strong>{uiIssues.length}</strong>
+              <span>檢測狀態</span>
+              <strong>{result ? `已於 ${result.ranAt}` : "尚未執行"}</strong>
             </div>
 
-            <div className={styles.specInfoBox}>
-              <div className={styles.specInfoTitle}>依照驗收標準的檢查結果</div>
-              <ul className={styles.specList}>
-                {derivedChecks.length ? (
-                  derivedChecks.map((check) => (
-                    <li key={check.label}>
-                      {check.status === true ? "✅" : check.status === false ? "❌" : "🟡"} {check.label}
-                    </li>
-                  ))
-                ) : (
-                  <li>尚未設定驗收標準</li>
-                )}
-              </ul>
-            </div>
+            {result ? (
+              <>
+                <div className={styles.specInfoBox}>
+                  <div className={styles.specInfoTitle}>檢測前置條件</div>
+                  <ul className={styles.specList}>
+                    {result.missingFields.length ? (
+                      result.missingFields.map((item) => <li key={item}>缺少：{item}</li>)
+                    ) : (
+                      <li>必填資料完整，可以正常檢測</li>
+                    )}
+                  </ul>
+                </div>
 
-            <div className={styles.specInfoBox}>
-              <div className={styles.specInfoTitle}>違規 / 待確認</div>
-              <ul className={styles.specList}>
-                {summary.length ? summary.map((item) => <li key={item}>{item}</li>) : <li>目前沒有明顯違規</li>}
-              </ul>
-            </div>
+                <div className={styles.specStatusRow}>
+                  <span>碰到 blocked files</span>
+                  <strong>{result.touchedBlockedFiles.length}</strong>
+                </div>
+                <div className={styles.specStatusRow}>
+                  <span>搜尋頁網址</span>
+                  <strong>{result.productSearchUrlCount}</strong>
+                </div>
+                <div className={styles.specStatusRow}>
+                  <span>超過 3 個商品</span>
+                  <strong>{result.productTooManyCandidates}</strong>
+                </div>
+                <div className={styles.specStatusRow}>
+                  <span>generic label</span>
+                  <strong>{result.productGenericCount}</strong>
+                </div>
+                <div className={styles.specStatusRow}>
+                  <span>UI 觀察異常</span>
+                  <strong>{result.uiIssues.length}</strong>
+                </div>
 
-            <p className={styles.specHint}>
-              這版的檢查結果會依你在紀錄區寫下的驗收標準來對照，不再只是固定寫死。
-            </p>
+                <div className={styles.specInfoBox}>
+                  <div className={styles.specInfoTitle}>依照驗收標準的檢查結果</div>
+                  <ul className={styles.specList}>
+                    {result.acceptanceChecks.length ? (
+                      result.acceptanceChecks.map((check) => (
+                        <li key={check.label}>
+                          {check.status === true ? "✅" : check.status === false ? "❌" : "🟡"} {check.label}
+                        </li>
+                      ))
+                    ) : (
+                      <li>尚未設定驗收標準</li>
+                    )}
+                  </ul>
+                </div>
+
+                <div className={styles.specInfoBox}>
+                  <div className={styles.specInfoTitle}>違規 / 待確認</div>
+                  <ul className={styles.specList}>
+                    {result.summary.length ? result.summary.map((item) => <li key={item}>{item}</li>) : <li>目前沒有明顯違規</li>}
+                  </ul>
+                </div>
+              </>
+            ) : (
+              <p className={styles.specHint}>
+                先填紀錄區與檢測區，再按「一鍵檢測」。
+              </p>
+            )}
           </div>
 
           <div className={styles.specPreviewCard}>
