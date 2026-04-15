@@ -165,7 +165,6 @@ export default async function handler(req, res) {
     const withBag = !!body.withBag;
     const withHat = !!body.withHat;
     const withCoat = !!body.withCoat;
-    const specConfig = body.specConfig || {};
 
     if (!gender || !age || !height || !weight || !style || temp === undefined || temp === null) {
       return res.status(400).json({
@@ -228,29 +227,31 @@ Your JSON MUST have this exact shape:
   "items": [
     {
       "slot": "top" | "bottom" | "shoes" | "outer" | "bag" | "hat",
-      "generic_name": "shopping-friendly English clothing name",
-      "display_name_zh": "短中文名稱，例如「白色寬版棉質上衣」",
-      "label": "short English shopping label, e.g. \"white oversized cotton shirt\"",
-      "description": "detailed English shopping phrase with color, category, fit, style, and material feeling",
-      "color": "simple color in English",
-      "style": "short style tag in English",
+      "generic_name": "english generic clothing name, e.g. \\"oversized cotton crew neck t-shirt\\"",
+      "display_name_zh": "短中文名稱，例如「寬版棉質圓領上衣」",
+      "color": "simple color in English, e.g. \\"white\\", \\"beige\\", \\"light blue\\"",
+      "style": "short style tag in English, e.g. \\"casual\\", \\"minimal\\", \\"street\\"",
       "gender": "female" | "male" | "unisex",
       "warmth": "light" | "medium" | "warm"
     }
   ]
 }
 
-HARD rules:
+HARD rules (VERY IMPORTANT):
 - Always include EXACTLY ONE item with slot = "top".
 - Always include EXACTLY ONE item with slot = "bottom".
 - Always include EXACTLY ONE item with slot = "shoes".
-- If user asked for coat/outer (withCoat = true) OR temperature <= 20°C, include EXACTLY ONE item with slot = "outer".
-- If user asked for bag (withBag = true), include EXACTLY ONE item with slot = "bag".
-- If user asked for hat (withHat = true), include EXACTLY ONE item with slot = "hat".
-- If user did NOT ask for bag/hat/outer, do NOT include those slots.
-- slot MUST be one of: "top", "bottom", "shoes", "outer", "bag", "hat".
-- NEVER use generic labels such as "top", "bottom", "shoes" as label/description.
-- Return ONLY valid JSON.
+- If user asked for coat/outer (withCoat = true) OR temperature <= 20°C,
+  you MUST include EXACTLY ONE item with slot = "outer".
+- If user asked for bag (withBag = true), you MUST include EXACTLY ONE item with slot = "bag".
+- If user asked for hat (withHat = true), you MUST include EXACTLY ONE item with slot = "hat".
+- If user did NOT ask for bag/hat/outer, you should NOT include those slots.
+- slot MUST be one of: "top", "bottom", "shoes", "outer", "bag", "hat". No other values.
+- Colors should be realistic and easy to match.
+- Use gender-neutral items (gender:"unisex") if they fit both genders.
+- label, description, and shopping_query must be useful for real-world shopping search.
+- Include gender and age vibe naturally in description/shopping_query when helpful, e.g. women, men, young adult, mature minimal style.
+- Return ONLY valid JSON, with no extra text, comments, or explanations.
 `.trim();
 
     const userInstruction = `
@@ -271,14 +272,8 @@ Style variant:
 - ${styleVariant || "none"}
 - Additional styling hints: ${variantHint || "none"}
 
-Spec Console live config:
-- mode: ${specConfig?.mode || "none"}
-- active task: ${specConfig?.activeTask || "none"}
-- generation rules: ${(specConfig?.generationRules || []).join(" | ") || "none"}
-- product rules: ${(specConfig?.productRules || []).join(" | ") || "none"}
-- scene tag hint: ${specConfig?.sceneTagHint || "none"}
-
 Please design one complete outfit and return JSON only.
+For each item, write label / description / shopping_query in a way that helps retrieve real product pages, not generic search words.
 `.trim();
 
     const endpoint =
@@ -426,14 +421,11 @@ if (!geminiResponse.ok) {
     items = items
       .map((it) => {
         const slot = normalizeSlot(it.slot);
-        const genericName = it.generic_name || it.label || it.description || "";
-        return {
-          ...it,
-          slot,
-          generic_name: genericName,
-          label: it.label || genericName,
-          description: it.description || genericName,
-        };
+        const generic_name = it.generic_name || it.label || it.description || "";
+        const label = it.label || generic_name;
+        const description = it.description || label;
+        const shopping_query = it.shopping_query || description || label;
+        return { ...it, slot, generic_name, label, description, shopping_query };
       })
       .filter((it) => it.slot && it.generic_name);
 
@@ -445,6 +437,9 @@ if (!geminiResponse.ok) {
       slot: "top",
       generic_name: "oversized cotton crew neck t-shirt",
       display_name_zh: "寬版棉質圓領上衣",
+      label: genderText === "female" ? "women oversized cotton crew neck t-shirt" : genderText === "male" ? "men oversized cotton crew neck t-shirt" : "unisex oversized cotton crew neck t-shirt",
+      description: `${genderText === "female" ? "women" : genderText === "male" ? "men" : "unisex"} young adult oversized white cotton crew neck t-shirt casual style`,
+      shopping_query: `${genderText === "female" ? "women" : genderText === "male" ? "men" : "unisex"} oversized white cotton crew neck t-shirt casual`,
       color: "white",
       style: "casual",
       gender: genderText === "female" ? "female" : genderText === "male" ? "male" : "unisex",
@@ -455,6 +450,9 @@ if (!geminiResponse.ok) {
       slot: "bottom",
       generic_name: "straight leg jeans",
       display_name_zh: "直筒牛仔褲",
+      label: genderText === "female" ? "women light blue straight leg jeans" : genderText === "male" ? "men light blue straight leg jeans" : "unisex light blue straight leg jeans",
+      description: `${genderText === "female" ? "women" : genderText === "male" ? "men" : "unisex"} young adult light blue straight leg jeans casual everyday style`,
+      shopping_query: `${genderText === "female" ? "women" : genderText === "male" ? "men" : "unisex"} light blue straight leg jeans casual`,
       color: "light blue",
       style: "casual",
       gender: genderText === "female" ? "female" : genderText === "male" ? "male" : "unisex",
@@ -465,6 +463,9 @@ if (!geminiResponse.ok) {
       slot: "shoes",
       generic_name: "white low-top sneakers",
       display_name_zh: "白色休閒鞋",
+      label: "unisex white low-top sneakers",
+      description: "unisex young adult white low-top sneakers clean casual style",
+      shopping_query: "unisex white low-top sneakers casual",
       color: "white",
       style: "casual",
       gender: "unisex",

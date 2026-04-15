@@ -669,15 +669,15 @@ function scoreCustomProduct(row, item) {
   const slot = normalizeText(item?.slot).toLowerCase();
   const label = normalizeText(item?.label);
   const description = normalizeText(item?.description);
+  const shoppingQuery = normalizeText(item?.shopping_query);
 
   const tags = rowTags(row);
   const title = normalizeText(row?.title).toLowerCase();
-  const merchant = normalizeText(row?.merchant).toLowerCase();
   const slotTag = slotTagFor(slot);
-
   const tokenSet = Array.from(new Set([
     ...normalizeTokens(label),
     ...normalizeTokens(description),
+    ...normalizeTokens(shoppingQuery),
   ]));
 
   let score = 0;
@@ -687,12 +687,167 @@ function scoreCustomProduct(row, item) {
   for (const token of tokenSet) {
     if (title.includes(token)) score += 10;
     if (tags.some((t) => t.includes(token))) score += 8;
-    if (merchant.includes(token)) score += 3;
   }
 
   score += Number(row?.priority_boost || 0) * 10;
 
   return score;
+}
+
+function decodeGoogleRedirect(href) {
+  try {
+    const m = href.match(/\/url\?q=([^&]+)/);
+    if (!m) return "";
+    const url = decodeURIComponent(m[1]);
+    if (!/^https?:\/\//i.test(url)) return "";
+    if (/google\./i.test(url)) return "";
+    return url;
+  } catch {
+    return "";
+  }
+}
+
+function stripHtml(html) {
+  return normalizeText(
+    String(html || "")
+      .replace(/<script[\s\S]*?<\/script>/gi, " ")
+      .replace(/<style[\s\S]*?<\/style>/gi, " ")
+      .replace(/<[^>]+>/g, " ")
+      .replace(/&nbsp;/gi, " ")
+      .replace(/&amp;/gi, "&")
+      .replace(/\s+/g, " ")
+  );
+}
+
+function extractProductUrlsFromGoogleHtml(html) {
+  const urls = [];
+  const seen = new Set();
+  const anchorRegex = /<a[^>]+href="([^"]+)"[^>]*>([\s\S]*?)<\/a>/gi;
+  let match;
+
+  while ((match = anchorRegex.exec(html)) !== null) {
+    const href = match[1] || "";
+    const decoded = decodeGoogleRedirect(href);
+    if (!decoded) continue;
+    if (/accounts\.google|support\.google|policies\.google|maps\.google|youtube\.com/i.test(decoded)) continue;
+    if (seen.has(decoded)) continue;
+    seen.add(decoded);
+    urls.push({ url: decoded, anchor_text: stripHtml(match[2] || "") });
+  }
+
+  return urls;
+}
+
+function extractMeta(html, key) {
+  const patterns = [
+    new RegExp(`<meta[^>]+property=["']${key}["'][^>]+content=["']([^"']+)["']`, "i"),
+    new RegExp(`<meta[^>]+content=["']([^"']+)["'][^>]+property=["']${key}["']`, "i"),
+    new RegExp(`<meta[^>]+name=["']${key}["'][^>]+content=["']([^"']+)["']`, "i"),
+    new RegExp(`<meta[^>]+content=["']([^"']+)["'][^>]+name=["']${key}["']`, "i"),
+  ];
+
+  for (const p of patterns) {
+    const m = html.match(p);
+    if (m?.[1]) return normalizeText(m[1]);
+  }
+  return "";
+}
+
+function extractTitle(html) {
+  const ogTitle = extractMeta(html, "og:title");
+  if (ogTitle) return ogTitle;
+  const titleMatch = html.match(/<title[^>]*>([\s\S]*?)<\/title>/i);
+  return titleMatch ? stripHtml(titleMatch[1]) : "";
+}
+
+function hostnameFromUrl(url) {
+  try {
+    return new URL(url).hostname.replace(/^www\./, "");
+  } catch {
+    return "";
+  }
+}
+
+async function fetchTextWithTimeout(url, options = {}, timeoutMs = 8000) {
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), timeoutMs);
+
+  try {
+    const response = await fetch(url, { ...options, signal: controller.signal });
+    const text = await response.text();
+    return { ok: response.ok, status: response.status, text };
+  } catch (error) {
+    return { ok: false, status: 0, text: "", error: String(error?.message || error) };
+  } finally {
+    clearTimeout(timeoutId);
+  }
+}
+
+async function searchProductPages(query, maxResults = 3) {
+  const normalizedQuery = normalizeText(query);
+  if (!normalizedQuery) return [];
+
+  const searchUrl =
+    "https://www.google.com/search?tbm=shop&hl=en&gl=tw&q=" +
+    encodeURIComponent(normalizedQuery);
+
+  const searchResp = await fetchTextWithTimeout(
+    searchUrl,
+    {
+      headers: {
+        "user-agent":
+          "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124 Safari/537.36",
+        "accept-language": "en-US,en;q=0.9,zh-TW;q=0.8",
+        "cache-control": "no-cache",
+      },
+    },
+    9000
+  );
+
+  if (!searchResp.ok || !searchResp.text) return [];
+
+  const rawUrls = extractProductUrlsFromGoogleHtml(searchResp.text).slice(0, 12);
+  if (!rawUrls.length) return [];
+
+  const candidates = [];
+  const seen = new Set();
+
+  for (const item of rawUrls) {
+    if (candidates.length >= maxResults) break;
+    if (!item?.url || seen.has(item.url)) continue;
+    seen.add(item.url);
+
+    const pageResp = await fetchTextWithTimeout(
+      item.url,
+      {
+        headers: {
+          "user-agent":
+            "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124 Safari/537.36",
+          "accept-language": "en-US,en;q=0.9,zh-TW;q=0.8",
+        },
+        redirect: "follow",
+      },
+      9000
+    );
+
+    if (!pageResp.ok || !pageResp.text) continue;
+
+    const title = extractTitle(pageResp.text) || item.anchor_text || hostnameFromUrl(item.url);
+    const image_url = extractMeta(pageResp.text, "og:image") || extractMeta(pageResp.text, "twitter:image");
+    const product_url = item.url;
+    const merchant = hostnameFromUrl(product_url);
+
+    candidates.push({
+      title: normalizeText(title).slice(0, 160),
+      image_url,
+      product_url,
+      url: product_url,
+      merchant,
+      source: "scrape_google_shopping",
+    });
+  }
+
+  return candidates.slice(0, maxResults);
 }
 
 async function handleProducts(req, res) {
@@ -708,7 +863,7 @@ async function handleProducts(req, res) {
     return json(res, 200, { ok: true, products: [] });
   }
 
-  let pool = [];
+  let customPool = [];
 
   try {
     const poolUrl =
@@ -726,24 +881,26 @@ async function handleProducts(req, res) {
     });
 
     const poolText = await poolResp.text();
-    pool = poolResp.ok ? JSON.parse(poolText || "[]") : [];
+    customPool = poolResp.ok ? JSON.parse(poolText || "[]") : [];
   } catch {
-    pool = [];
+    customPool = [];
   }
 
-  const SCORE_THRESHOLD = 80;
+  const CUSTOM_THRESHOLD = 80;
 
-  const results = items.map((item) => {
+  const results = [];
+  for (const item of items) {
     const slot = normalizeText(item?.slot);
     const label = normalizeText(item?.label || item?.name || slot || "單品");
     const description = normalizeText(item?.description);
+    const shoppingQuery = normalizeText(item?.shopping_query || description || label);
 
-    const ranked = pool
+    const customRanked = customPool
       .map((row) => ({
         row,
-        score: scoreCustomProduct(row, { slot, label, description }),
+        score: scoreCustomProduct(row, { slot, label, description, shopping_query: shoppingQuery }),
       }))
-      .filter((x) => x.score >= SCORE_THRESHOLD && normalizeText(x.row?.product_url))
+      .filter((x) => x.score >= CUSTOM_THRESHOLD && normalizeText(x.row?.product_url))
       .sort((a, b) => b.score - a.score)
       .slice(0, limitPerSlot)
       .map(({ row }) => ({
@@ -753,15 +910,38 @@ async function handleProducts(req, res) {
         url: row.product_url,
         merchant: row.merchant,
         badge_text: row.badge_text && row.badge_text !== "NULL" ? row.badge_text : "",
+        source: "custom_products",
       }));
 
-    return {
+    const remaining = Math.max(0, limitPerSlot - customRanked.length);
+    let scraped = [];
+    if (remaining > 0) {
+      try {
+        scraped = await searchProductPages(shoppingQuery, remaining);
+      } catch {
+        scraped = [];
+      }
+    }
+
+    const merged = [];
+    const seen = new Set();
+
+    for (const c of [...customRanked, ...scraped]) {
+      const key = normalizeText(c?.product_url || c?.url);
+      if (!key || seen.has(key)) continue;
+      seen.add(key);
+      merged.push(c);
+      if (merged.length >= limitPerSlot) break;
+    }
+
+    results.push({
       slot,
       label,
       description,
-      candidates: ranked,
-    };
-  });
+      shopping_query: shoppingQuery,
+      candidates: merged,
+    });
+  }
 
   return json(res, 200, {
     ok: true,
