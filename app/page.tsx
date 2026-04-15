@@ -362,29 +362,9 @@ export default function Page() {
       withBag: false,
     };
 
-    let liveSpecConfig: any = {
-      mode: "PRODUCT_OPTIMIZATION",
-      generationRules: [],
-      productRules: [],
-      productTagHints: [],
-      sceneTagHint: "",
-      maxProductsPerSlot: 3,
-      productStrategy: "direct_first",
-    };
-
     try {
       const raw = localStorage.getItem("findoutfit_system");
       if (raw) system = JSON.parse(raw);
-    } catch {}
-
-    try {
-      const rawSpec = localStorage.getItem("findoutfit_spec_console_live");
-      if (rawSpec) {
-        liveSpecConfig = {
-          ...liveSpecConfig,
-          ...JSON.parse(rawSpec),
-        };
-      }
     } catch {}
 
     try {
@@ -400,13 +380,6 @@ export default function Page() {
           : quickScenes.find((s) => s.id === selectedScene)?.label || "日常穿搭";
       const promptContext = selectedCeleb ? `celeb:${selectedCeleb}` : `scene:${safeScene}`;
 
-      const mergedSpecConfig = {
-        ...liveSpecConfig,
-        sceneLabel,
-        sceneTagHint: liveSpecConfig?.sceneTagHint || safeScene,
-        maxProductsPerSlot: Math.max(1, Math.min(Number(liveSpecConfig?.maxProductsPerSlot || 3), 3)),
-      };
-
       const specResp = await apiPostJson<any>("/api/generate-outfit-spec", {
         payload: {
           age,
@@ -420,7 +393,6 @@ export default function Page() {
           palette: "auto",
           withBag: system.withBag,
           promptContext: `${promptContext} | style:${system.temperature} creativity:${system.creativity}`,
-          specConfig: mergedSpecConfig,
         },
       });
       const specObj = specResp?.spec || specResp;
@@ -458,28 +430,20 @@ export default function Page() {
         }`
       );
 
-      let resolvedProducts: any[] = [];
+            let resolvedProducts: any[] = [];
 
       try {
         const productsResp = await apiPostJson<any>("/api/data?op=products", {
-          items: safeItems.map((x: any) => {
-            const rawLabel =
-              x.description ||
-              x.label ||
-              x.name ||
-              x.item ||
-              x.title ||
-              x.slot ||
-              "單品";
-
-            return {
-              slot: x.slot || x.category || x.type || "",
-              label: x.label || x.name || x.item || x.slot || "單品",
-              description: x.description || rawLabel || "",
-            };
-          }),
-          limitPerSlot: mergedSpecConfig.maxProductsPerSlot || 3,
-          specConfig: mergedSpecConfig,
+          items: safeItems.map((x: any) => ({
+            slot: x.slot || x.category || x.type || "",
+            label: x.label || x.name || x.item || x.slot || "單品",
+            description: x.description || "",
+            shopping_query: x.shopping_query || x.searchable_query || x.description || x.label || "",
+            gender: x.gender || safeGender,
+            age,
+            scene: safeScene,
+          })),
+          limitPerSlot: 3,
         });
 
         resolvedProducts = Array.isArray(productsResp?.products)
@@ -500,7 +464,6 @@ export default function Page() {
             gender,
             audience,
             _echo: { age, height, weight, temp, gender, audience },
-            specConfig: mergedSpecConfig,
           },
           summary: specObj?.summary || promptContext,
           products: resolvedProducts,
