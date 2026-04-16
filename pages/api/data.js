@@ -859,10 +859,14 @@ async function handleProducts(req, res) {
   const items = Array.isArray(body.items) ? body.items : [];
   const limitPerSlot = Math.max(1, Math.min(Number(body.limitPerSlot || 3), 3));
 
+  
   if (!items.length) {
     return json(res, 200, { ok: true, products: [] });
   }
-
+console.log("=== handleProducts start ===");
+console.log("products body:", JSON.stringify(req.body, null, 2));
+console.log("products items:", JSON.stringify(items, null, 2));
+  
   let customPool = [];
 
   try {
