@@ -249,8 +249,6 @@ HARD rules (VERY IMPORTANT):
 - slot MUST be one of: "top", "bottom", "shoes", "outer", "bag", "hat". No other values.
 - Colors should be realistic and easy to match.
 - Use gender-neutral items (gender:"unisex") if they fit both genders.
-- label, description, and shopping_query must be useful for real-world shopping search.
-- Include gender and age vibe naturally in description/shopping_query when helpful, e.g. women, men, young adult, mature minimal style.
 - Return ONLY valid JSON, with no extra text, comments, or explanations.
 `.trim();
 
@@ -273,7 +271,6 @@ Style variant:
 - Additional styling hints: ${variantHint || "none"}
 
 Please design one complete outfit and return JSON only.
-For each item, write label / description / shopping_query in a way that helps retrieve real product pages, not generic search words.
 `.trim();
 
     const endpoint =
@@ -418,16 +415,7 @@ if (!geminiResponse.ok) {
       return null;
     };
 
-    items = items
-      .map((it) => {
-        const slot = normalizeSlot(it.slot);
-        const generic_name = it.generic_name || it.label || it.description || "";
-        const label = it.label || generic_name;
-        const description = it.description || label;
-        const shopping_query = it.shopping_query || description || label;
-        return { ...it, slot, generic_name, label, description, shopping_query };
-      })
-      .filter((it) => it.slot && it.generic_name);
+    items = items.map((it) => ({ ...it, slot: normalizeSlot(it.slot) })).filter((it) => it.slot && it.generic_name);
 
     const hasSlot = (slotName) => items.some((it) => it.slot === slotName);
     const pushIfMissing = (slotName, fallback) => { if (!hasSlot(slotName)) items.push(fallback); };
@@ -437,9 +425,6 @@ if (!geminiResponse.ok) {
       slot: "top",
       generic_name: "oversized cotton crew neck t-shirt",
       display_name_zh: "寬版棉質圓領上衣",
-      label: genderText === "female" ? "women oversized cotton crew neck t-shirt" : genderText === "male" ? "men oversized cotton crew neck t-shirt" : "unisex oversized cotton crew neck t-shirt",
-      description: `${genderText === "female" ? "women" : genderText === "male" ? "men" : "unisex"} young adult oversized white cotton crew neck t-shirt casual style`,
-      shopping_query: `${genderText === "female" ? "women" : genderText === "male" ? "men" : "unisex"} oversized white cotton crew neck t-shirt casual`,
       color: "white",
       style: "casual",
       gender: genderText === "female" ? "female" : genderText === "male" ? "male" : "unisex",
@@ -450,9 +435,6 @@ if (!geminiResponse.ok) {
       slot: "bottom",
       generic_name: "straight leg jeans",
       display_name_zh: "直筒牛仔褲",
-      label: genderText === "female" ? "women light blue straight leg jeans" : genderText === "male" ? "men light blue straight leg jeans" : "unisex light blue straight leg jeans",
-      description: `${genderText === "female" ? "women" : genderText === "male" ? "men" : "unisex"} young adult light blue straight leg jeans casual everyday style`,
-      shopping_query: `${genderText === "female" ? "women" : genderText === "male" ? "men" : "unisex"} light blue straight leg jeans casual`,
       color: "light blue",
       style: "casual",
       gender: genderText === "female" ? "female" : genderText === "male" ? "male" : "unisex",
@@ -463,9 +445,6 @@ if (!geminiResponse.ok) {
       slot: "shoes",
       generic_name: "white low-top sneakers",
       display_name_zh: "白色休閒鞋",
-      label: "unisex white low-top sneakers",
-      description: "unisex young adult white low-top sneakers clean casual style",
-      shopping_query: "unisex white low-top sneakers casual",
       color: "white",
       style: "casual",
       gender: "unisex",

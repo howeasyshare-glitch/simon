@@ -666,188 +666,50 @@ function rowTags(row) {
 }
 
 function scoreCustomProduct(row, item) {
-  const slot = normalizeText(item?.slot).toLowerCase();
-  const label = normalizeText(item?.label);
-  const description = normalizeText(item?.description);
-  const shoppingQuery = normalizeText(item?.shopping_query);
-
   const tags = rowTags(row);
+  const slotTag = slotTagFor(item?.slot);
   const title = normalizeText(row?.title).toLowerCase();
-  const slotTag = slotTagFor(slot);
+  const merchant = normalizeText(row?.merchant).toLowerCase();
   const tokenSet = Array.from(new Set([
-    ...normalizeTokens(label),
-    ...normalizeTokens(description),
-    ...normalizeTokens(shoppingQuery),
+    ...normalizeTokens(item?.label),
+    ...normalizeTokens(item?.description),
+    ...normalizeTokens(item?.shopping_query),
   ]));
 
   let score = 0;
-
   if (slotTag && tags.includes(slotTag)) score += 80;
 
   for (const token of tokenSet) {
     if (title.includes(token)) score += 10;
     if (tags.some((t) => t.includes(token))) score += 8;
+    if (merchant.includes(token)) score += 3;
   }
 
   score += Number(row?.priority_boost || 0) * 10;
-
   return score;
 }
 
-function decodeGoogleRedirect(href) {
-  try {
-    const m = href.match(/\/url\?q=([^&]+)/);
-    if (!m) return "";
-    const url = decodeURIComponent(m[1]);
-    if (!/^https?:\/\//i.test(url)) return "";
-    if (/google\./i.test(url)) return "";
-    return url;
-  } catch {
-    return "";
-  }
-}
+async function searchExternalProducts(baseUrl, item, limit) {
+  const query =
+    normalizeText(item?.shopping_query) ||
+    [item?.label, item?.description, item?.gender, item?.audience, item?.scene]
+      .filter(Boolean)
+      .join(" ");
 
-function stripHtml(html) {
-  return normalizeText(
-    String(html || "")
-      .replace(/<script[\s\S]*?<\/script>/gi, " ")
-      .replace(/<style[\s\S]*?<\/style>/gi, " ")
-      .replace(/<[^>]+>/g, " ")
-      .replace(/&nbsp;/gi, " ")
-      .replace(/&amp;/gi, "&")
-      .replace(/\s+/g, " ")
-  );
-}
-
-function extractProductUrlsFromGoogleHtml(html) {
-  const urls = [];
-  const seen = new Set();
-  const anchorRegex = /<a[^>]+href="([^"]+)"[^>]*>([\s\S]*?)<\/a>/gi;
-  let match;
-
-  while ((match = anchorRegex.exec(html)) !== null) {
-    const href = match[1] || "";
-    const decoded = decodeGoogleRedirect(href);
-    if (!decoded) continue;
-    if (/accounts\.google|support\.google|policies\.google|maps\.google|youtube\.com/i.test(decoded)) continue;
-    if (seen.has(decoded)) continue;
-    seen.add(decoded);
-    urls.push({ url: decoded, anchor_text: stripHtml(match[2] || "") });
-  }
-
-  return urls;
-}
-
-function extractMeta(html, key) {
-  const patterns = [
-    new RegExp(`<meta[^>]+property=["']${key}["'][^>]+content=["']([^"']+)["']`, "i"),
-    new RegExp(`<meta[^>]+content=["']([^"']+)["'][^>]+property=["']${key}["']`, "i"),
-    new RegExp(`<meta[^>]+name=["']${key}["'][^>]+content=["']([^"']+)["']`, "i"),
-    new RegExp(`<meta[^>]+content=["']([^"']+)["'][^>]+name=["']${key}["']`, "i"),
-  ];
-
-  for (const p of patterns) {
-    const m = html.match(p);
-    if (m?.[1]) return normalizeText(m[1]);
-  }
-  return "";
-}
-
-function extractTitle(html) {
-  const ogTitle = extractMeta(html, "og:title");
-  if (ogTitle) return ogTitle;
-  const titleMatch = html.match(/<title[^>]*>([\s\S]*?)<\/title>/i);
-  return titleMatch ? stripHtml(titleMatch[1]) : "";
-}
-
-function hostnameFromUrl(url) {
-  try {
-    return new URL(url).hostname.replace(/^www\./, "");
-  } catch {
-    return "";
-  }
-}
-
-async function fetchTextWithTimeout(url, options = {}, timeoutMs = 8000) {
-  const controller = new AbortController();
-  const timeoutId = setTimeout(() => controller.abort(), timeoutMs);
+  if (!query) return [];
 
   try {
-    const response = await fetch(url, { ...options, signal: controller.signal });
-    const text = await response.text();
-    return { ok: response.ok, status: response.status, text };
-  } catch (error) {
-    return { ok: false, status: 0, text: "", error: String(error?.message || error) };
-  } finally {
-    clearTimeout(timeoutId);
-  }
-}
-
-async function searchProductPages(query, maxResults = 3) {
-  const normalizedQuery = normalizeText(query);
-  if (!normalizedQuery) return [];
-
-  const searchUrl =
-    "https://www.google.com/search?tbm=shop&hl=en&gl=tw&q=" +
-    encodeURIComponent(normalizedQuery);
-
-  const searchResp = await fetchTextWithTimeout(
-    searchUrl,
-    {
-      headers: {
-        "user-agent":
-          "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124 Safari/537.36",
-        "accept-language": "en-US,en;q=0.9,zh-TW;q=0.8",
-        "cache-control": "no-cache",
-      },
-    },
-    9000
-  );
-
-  if (!searchResp.ok || !searchResp.text) return [];
-
-  const rawUrls = extractProductUrlsFromGoogleHtml(searchResp.text).slice(0, 12);
-  if (!rawUrls.length) return [];
-
-  const candidates = [];
-  const seen = new Set();
-
-  for (const item of rawUrls) {
-    if (candidates.length >= maxResults) break;
-    if (!item?.url || seen.has(item.url)) continue;
-    seen.add(item.url);
-
-    const pageResp = await fetchTextWithTimeout(
-      item.url,
-      {
-        headers: {
-          "user-agent":
-            "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124 Safari/537.36",
-          "accept-language": "en-US,en;q=0.9,zh-TW;q=0.8",
-        },
-        redirect: "follow",
-      },
-      9000
-    );
-
-    if (!pageResp.ok || !pageResp.text) continue;
-
-    const title = extractTitle(pageResp.text) || item.anchor_text || hostnameFromUrl(item.url);
-    const image_url = extractMeta(pageResp.text, "og:image") || extractMeta(pageResp.text, "twitter:image");
-    const product_url = item.url;
-    const merchant = hostnameFromUrl(product_url);
-
-    candidates.push({
-      title: normalizeText(title).slice(0, 160),
-      image_url,
-      product_url,
-      url: product_url,
-      merchant,
-      source: "scrape_google_shopping",
+    const r = await fetch(`${baseUrl}/api/product-search`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ query, limit }),
     });
-  }
 
-  return candidates.slice(0, maxResults);
+    const data = await r.json();
+    return Array.isArray(data?.items) ? data.items : [];
+  } catch {
+    return [];
+  }
 }
 
 async function handleProducts(req, res) {
@@ -859,16 +721,11 @@ async function handleProducts(req, res) {
   const items = Array.isArray(body.items) ? body.items : [];
   const limitPerSlot = Math.max(1, Math.min(Number(body.limitPerSlot || 3), 3));
 
-  
   if (!items.length) {
     return json(res, 200, { ok: true, products: [] });
   }
-console.log("=== handleProducts start ===");
-console.log("products body:", JSON.stringify(req.body, null, 2));
-console.log("products items:", JSON.stringify(items, null, 2));
-  
-  let customPool = [];
 
+  let pool = [];
   try {
     const poolUrl =
       `${SUPABASE_URL}/rest/v1/custom_products` +
@@ -885,26 +742,25 @@ console.log("products items:", JSON.stringify(items, null, 2));
     });
 
     const poolText = await poolResp.text();
-    customPool = poolResp.ok ? JSON.parse(poolText || "[]") : [];
+    pool = poolResp.ok ? JSON.parse(poolText || "[]") : [];
   } catch {
-    customPool = [];
+    pool = [];
   }
 
-  const CUSTOM_THRESHOLD = 80;
+  const SCORE_THRESHOLD = 80;
+  const proto = req.headers["x-forwarded-proto"] || "https";
+  const host = req.headers.host;
+  const baseUrl = `${proto}://${host}`;
 
   const results = [];
   for (const item of items) {
     const slot = normalizeText(item?.slot);
     const label = normalizeText(item?.label || item?.name || slot || "單品");
     const description = normalizeText(item?.description);
-    const shoppingQuery = normalizeText(item?.shopping_query || description || label);
 
-    const customRanked = customPool
-      .map((row) => ({
-        row,
-        score: scoreCustomProduct(row, { slot, label, description, shopping_query: shoppingQuery }),
-      }))
-      .filter((x) => x.score >= CUSTOM_THRESHOLD && normalizeText(x.row?.product_url))
+    const customRanked = pool
+      .map((row) => ({ row, score: scoreCustomProduct(row, item) }))
+      .filter((x) => x.score >= SCORE_THRESHOLD && normalizeText(x.row?.product_url))
       .sort((a, b) => b.score - a.score)
       .slice(0, limitPerSlot)
       .map(({ row }) => ({
@@ -912,26 +768,19 @@ console.log("products items:", JSON.stringify(items, null, 2));
         image_url: row.image_url,
         product_url: row.product_url,
         url: row.product_url,
+        google_detail_url: "",
         merchant: row.merchant,
         badge_text: row.badge_text && row.badge_text !== "NULL" ? row.badge_text : "",
-        source: "custom_products",
+        source: "custom",
       }));
 
     const remaining = Math.max(0, limitPerSlot - customRanked.length);
-    let scraped = [];
-    if (remaining > 0) {
-      try {
-        scraped = await searchProductPages(shoppingQuery, remaining);
-      } catch {
-        scraped = [];
-      }
-    }
+    const searched = remaining > 0 ? await searchExternalProducts(baseUrl, item, remaining) : [];
 
     const merged = [];
     const seen = new Set();
-
-    for (const c of [...customRanked, ...scraped]) {
-      const key = normalizeText(c?.product_url || c?.url);
+    for (const c of [...customRanked, ...searched]) {
+      const key = normalizeText(c.product_url || c.url || c.google_detail_url);
       if (!key || seen.has(key)) continue;
       seen.add(key);
       merged.push(c);
@@ -942,15 +791,12 @@ console.log("products items:", JSON.stringify(items, null, 2));
       slot,
       label,
       description,
-      shopping_query: shoppingQuery,
+      shopping_query: normalizeText(item?.shopping_query),
       candidates: merged,
     });
   }
 
-  return json(res, 200, {
-    ok: true,
-    products: results,
-  });
+  return json(res, 200, { ok: true, products: results });
 }
 
 /** ===================== User Settings ===================== */
