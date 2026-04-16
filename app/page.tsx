@@ -438,9 +438,20 @@ export default function Page() {
             slot: x.slot || x.category || x.type || "",
             label: x.label || x.name || x.item || x.slot || "單品",
             description: x.description || "",
-            shopping_query: x.shopping_query || x.searchable_query || x.description || x.label || "",
-            gender: x.gender || safeGender,
-            age,
+            shopping_query:
+              x.shopping_query ||
+              x.searchable_query ||
+              [
+                x.label || x.name || x.item || "",
+                x.description || "",
+                safeGender,
+                safeAudience,
+                safeScene,
+              ]
+                .filter(Boolean)
+                .join(" "),
+            gender: safeGender,
+            audience: safeAudience,
             scene: safeScene,
           })),
           limitPerSlot: 3,
