@@ -33,7 +33,7 @@ jobs:
         run: mkdir -p data
 
       - name: Run fetch script
-        run: node scripts/fetchProducts.js
+        run: node scripts/fetchProducts.cjs
 
       - name: Show products.json
         run: cat data/products.json || true
