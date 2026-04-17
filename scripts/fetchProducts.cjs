@@ -21,7 +21,7 @@ async function run() {
 
   for (const query of queries) {
     try {
-      console.log(`Running query: ${query}`);
+      console.log(`\n=== QUERY: ${query} ===`);
 
       const searchUrl = `https://www.google.com/search?tbm=shop&q=${encodeURIComponent(query)}`;
       await page.goto(searchUrl, {
@@ -31,14 +31,34 @@ async function run() {
 
       await page.waitForTimeout(5000);
 
-      const currentBeforeClick = page.url();
-      console.log(`Loaded URL: ${currentBeforeClick}`);
+      const currentUrl = page.url();
+      console.log("Loaded URL:", currentUrl);
+
+      const pageTitle = await page.title();
+      console.log("Page title:", pageTitle);
+
+      const anchorSamples = await page.evaluate(() => {
+        return Array.from(document.querySelectorAll("a"))
+          .slice(0, 30)
+          .map((a) => ({
+            text: (a.innerText || "").trim().slice(0, 80),
+            href: a.getAttribute("href") || ""
+          }));
+      });
+
+      console.log("Anchor samples:");
+      console.log(JSON.stringify(anchorSamples, null, 2));
 
       const clicked = await page.evaluate(() => {
         const anchors = Array.from(document.querySelectorAll("a"));
+
         const candidate = anchors.find((a) => {
           const href = a.getAttribute("href") || "";
-          return href.includes("/shopping/product/") || href.includes("udm=28");
+          return (
+            href.includes("/shopping/product/") ||
+            href.includes("udm=28") ||
+            href.includes("tbm=shop")
+          );
         });
 
         if (candidate) {
@@ -49,7 +69,7 @@ async function run() {
         return false;
       });
 
-      console.log(`Clicked result: ${clicked}`);
+      console.log("Clicked:", clicked);
 
       if (!clicked) {
         results.push({
@@ -63,13 +83,13 @@ async function run() {
 
       await page.waitForTimeout(4000);
 
-      const currentUrl = page.url();
-      console.log(`After click URL: ${currentUrl}`);
+      const afterClickUrl = page.url();
+      console.log("After click URL:", afterClickUrl);
 
       results.push({
         query,
         label: query,
-        url: currentUrl,
+        url: afterClickUrl,
         status: "ok"
       });
     } catch (error) {
@@ -95,7 +115,7 @@ async function run() {
   const outPath = path.join(process.cwd(), "data", "products.json");
   fs.writeFileSync(outPath, JSON.stringify(output, null, 2), "utf8");
 
-  console.log("products.json updated");
+  console.log("\n=== FINAL OUTPUT ===");
   console.log(JSON.stringify(output, null, 2));
 }
 
