@@ -11,7 +11,7 @@
 // - 需要 lib/supabaseServer 可用
 // - 若你的專案不是 pages/api 結構，請自行調整 import 路徑
 
-import { supabaseServer } from "../lib/supabaseServer";
+import { supabaseServer } from "../../lib/supabaseServer";
 
 export const config = { runtime: "nodejs" };
 
