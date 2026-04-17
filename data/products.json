@@ -1,5 +1,23 @@
-
 {
-  "updatedAt": "",
-  "items": []
+  "updatedAt": "2026-04-17T07:51:07.638Z",
+  "items": [
+    {
+      "query": "white minimalist sneakers",
+      "label": "white minimalist sneakers",
+      "url": "",
+      "status": "no-product-found"
+    },
+    {
+      "query": "beige chino pants outfit",
+      "label": "beige chino pants outfit",
+      "url": "",
+      "status": "no-product-found"
+    },
+    {
+      "query": "navy polo shirt casual",
+      "label": "navy polo shirt casual",
+      "url": "",
+      "status": "no-product-found"
+    }
+  ]
 }
