@@ -1,34 +1,47 @@
 name: Fetch Products
 
 on:
-  workflow_dispatch: # 手動觸發
+  workflow_dispatch:
 
 jobs:
   fetch:
     runs-on: ubuntu-latest
 
+    permissions:
+      contents: write
+
     steps:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Install Node
+      - name: Setup Node
         uses: actions/setup-node@v4
         with:
-          node-version: 18
+          node-version: 22
 
-      - name: Install deps
-        run: npm install playwright
+      - name: Show versions
+        run: |
+          node -v
+          npm -v
 
-      - name: Install browsers
-        run: npx playwright install --with-deps
+      - name: Install Playwright
+        run: |
+          npm install playwright
+          npx playwright install --with-deps chromium
 
-      - name: Run script
+      - name: Ensure data folder exists
+        run: mkdir -p data
+
+      - name: Run fetch script
         run: node scripts/fetchProducts.js
 
-      - name: Commit results
+      - name: Show products.json
+        run: cat data/products.json || true
+
+      - name: Commit products.json
         run: |
           git config user.name "github-actions"
           git config user.email "actions@github.com"
           git add data/products.json
-          git commit -m "update products"
+          git diff --cached --quiet || git commit -m "update products.json"
           git push
