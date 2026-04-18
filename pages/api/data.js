@@ -775,7 +775,40 @@ async function handleProducts(req, res) {
       }));
 
     const remaining = Math.max(0, limitPerSlot - customRanked.length);
-    const searched = remaining > 0 ? await searchExternalProducts(baseUrl, item, remaining) : [];
+    let searched = [];
+
+if (remaining > 0) {
+  try {
+    const r = await fetch(`${baseUrl}/api/search-products`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json"
+      },
+      body: JSON.stringify({
+        items: [item],
+        locale: "tw",
+        gender: item.gender || "neutral",
+        styleTag: item.scene || null
+      })
+    });
+
+    const data = await r.json();
+
+    const slotProducts = data?.grouped?.[item.slot] || [];
+
+    searched = slotProducts.map(p => ({
+      title: p.title,
+      image_url: p.thumbnail,
+      product_url: p.link,
+      url: p.link,
+      merchant: p.merchant,
+      source: p.source || "google"
+    }));
+
+  } catch (e) {
+    searched = [];
+  }
+}
 
     const merged = [];
     const seen = new Set();
