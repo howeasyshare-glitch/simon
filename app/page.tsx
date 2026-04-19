@@ -381,20 +381,20 @@ export default function Page() {
       const promptContext = selectedCeleb ? `celeb:${selectedCeleb}` : `scene:${safeScene}`;
 
       const specResp = await apiPostJson<any>("/api/generate-outfit-spec", {
-        payload: {
-          age,
-          height,
-          weight,
-          temp,
-          gender: safeGender,
-          audience: safeAudience,
-          styleVariant: selectedCeleb || safeScene,
-          style: selectedCeleb ? "celeb-inspired" : "scene",
-          palette: "auto",
-          withBag: system.withBag,
-          promptContext: `${promptContext} | style:${system.temperature} creativity:${system.creativity}`,
-        },
-      });
+  age,
+  height,
+  weight,
+  temp,
+  gender: safeGender,
+  audience: safeAudience,
+  styleVariant: selectedCeleb || safeScene,
+  style: selectedCeleb ? "celeb-inspired" : "scene",
+  palette: "auto",
+  withBag: system.withBag,
+  withHat: false,
+  withCoat: false,
+  promptContext: `${promptContext} | style:${system.temperature} creativity:${system.creativity}`,
+});
       const specObj = specResp?.spec || specResp;
 
       const safeItems = Array.isArray(specObj?.items) ? specObj.items : [];
