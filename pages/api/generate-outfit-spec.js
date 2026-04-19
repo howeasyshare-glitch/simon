@@ -1,10 +1,5 @@
 // pages/api/generate-outfit-spec.js
-// V2.2
-// 重點：
-// 1. 保留原本 Supabase 驗證 / 扣點流程
-// 2. item schema 升級成「可購物描述」
-// 3. fallback item 也補齊 category / fit / material / sleeve_length / neckline / silhouette / style_keywords
-// 4. 不需要修改資料庫 schema
+// V2.2.1
 
 const variantPromptMap = {
   "brand-uniqlo": {
@@ -27,7 +22,6 @@ const variantPromptMap = {
     desc: "Korean streetwear similar to Ader Error: oversized fits, playful proportions, bold color accents, sometimes asymmetry.",
     baseStyle: "street"
   },
-
   "celeb-iu-casual": {
     desc: "Outfit styling inspired by IU's Korean casual looks: soft pastel colors, neat knitwear or shirts, straight pants, light outerwear. Do NOT copy her face or identity.",
     baseStyle: "casual"
@@ -46,7 +40,6 @@ const variantPromptMap = {
   }
 };
 
-// ===== Supabase helpers =====
 async function getUserFromSupabase({ supabaseUrl, serviceKey, accessToken }) {
   const resp = await fetch(`${supabaseUrl}/auth/v1/user`, {
     headers: {
@@ -155,7 +148,6 @@ async function deductOneCreditAtomic({ supabaseUrl, serviceKey, userId }) {
   return { ok: true, credits_left: updatedRows[0].credits_left };
 }
 
-// ===== item helpers =====
 function normalizeSlot(slot) {
   if (!slot) return null;
   const s = String(slot).toLowerCase();
@@ -574,6 +566,46 @@ export default async function handler(req, res) {
     const userId = user.id;
     const userEmail = user.email || "";
 
+    // 先讀參數，先驗證，再扣點
+    const body = req.body || {};
+
+    const gender = body.gender;
+    const age = Number(body.age);
+    const height = Number(body.height);
+    const weight = Number(body.weight);
+
+    const style =
+      body.style ||
+      body.styleId ||
+      body.uiStyleValue ||
+      "casual";
+
+    const styleVariant = body.styleVariant || "";
+    const temp = body.temp;
+    const withBag = !!body.withBag;
+    const withHat = !!body.withHat;
+    const withCoat = !!body.withCoat;
+
+    if (
+      !gender ||
+      !Number.isFinite(age) ||
+      !Number.isFinite(height) ||
+      !Number.isFinite(weight) ||
+      temp === undefined
+    ) {
+      return res.status(400).json({
+        error: "Missing parameters",
+        detail: {
+          gender: !!gender,
+          age,
+          height,
+          weight,
+          style,
+          temp
+        }
+      });
+    }
+
     const profile = await getOrCreateProfile({
       supabaseUrl,
       serviceKey,
@@ -595,26 +627,6 @@ export default async function handler(req, res) {
       }
 
       creditsLeftAfter = deduct.credits_left;
-    }
-
-    const {
-      gender,
-      age,
-      height,
-      weight,
-      style,
-      styleVariant,
-      temp,
-      withBag,
-      withHat,
-      withCoat
-    } = req.body || {};
-
-    if (!gender || !age || !height || !weight || !style || temp === undefined) {
-      return res.status(400).json({
-        error: "Missing parameters",
-        credits_left: creditsLeftAfter
-      });
     }
 
     const apiKey = process.env.GEMINI_API_KEY;
@@ -682,8 +694,7 @@ HARD rules (VERY IMPORTANT):
 - Always include EXACTLY ONE item with slot = "top".
 - Always include EXACTLY ONE item with slot = "bottom".
 - Always include EXACTLY ONE item with slot = "shoes".
-- If user asked for coat/outer (withCoat = true) OR temperature <= 20°C,
-  you MUST include EXACTLY ONE item with slot = "outer".
+- If user asked for coat/outer (withCoat = true) OR temperature <= 20°C, you MUST include EXACTLY ONE item with slot = "outer".
 - If user asked for bag (withBag = true), you MUST include EXACTLY ONE item with slot = "bag".
 - If user asked for hat (withHat = true), you MUST include EXACTLY ONE item with slot = "hat".
 - If user did NOT ask for bag/hat/outer, you should NOT include those slots.
