@@ -731,8 +731,8 @@ Please design one complete outfit and return JSON only.
 `;
 
     const endpoint =
-      "https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=" +
-      encodeURIComponent(apiKey);
+  "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=" +
+  encodeURIComponent(apiKey);
 
     const geminiResponse = await fetch(endpoint, {
       method: "POST",
