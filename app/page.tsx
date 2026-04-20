@@ -380,7 +380,7 @@ export default function Page() {
           : quickScenes.find((s) => s.id === selectedScene)?.label || "日常穿搭";
       const promptContext = selectedCeleb ? `celeb:${selectedCeleb}` : `scene:${safeScene}`;
 
-      const specResp = await apiPostJson<any>("/api/generate-outfit-spec", {
+      const baseProfilePayload = {
   age,
   height,
   weight,
@@ -393,33 +393,37 @@ export default function Page() {
   withBag: system.withBag,
   withHat: false,
   withCoat: false,
+  personHint:
+    safeAudience === "kids"
+      ? `${safeGender}, child, age ${age}`
+      : `${safeGender}, adult, age ${age}`,
   promptContext: `${promptContext} | style:${system.temperature} creativity:${system.creativity}`,
-});
+};
+
+const specResp = await apiPostJson<any>("/api/generate-outfit-spec", baseProfilePayload);
       const specObj = specResp?.spec || specResp;
 
       const safeItems = Array.isArray(specObj?.items) ? specObj.items : [];
       if (!safeItems.length) throw new Error("outfitSpec items empty");
 
       const imgResp = await apiPostJson<ImgResp>("/api/generate-image", {
-        payload: {
-          age,
-          height,
-          weight,
-          temp,
-          gender: safeGender,
-          audience: safeAudience,
-          styleVariant: selectedCeleb || safeScene,
-          style: selectedCeleb ? "celeb-inspired" : "scene",
-          palette: "auto",
-          withBag: system.withBag,
-          outfitSpec: {
-            items: safeItems,
-            summary: specObj?.summary || promptContext,
-          },
-          aspectRatio: "3:4",
-          imageSize: "1K",
-        },
-      });
+  ...baseProfilePayload,
+  outfitSpec: {
+    ...specObj,
+    _echo: {
+      gender: safeGender,
+      audience: safeAudience,
+      age,
+      height,
+      weight,
+      temp,
+      styleVariant: selectedCeleb || safeScene,
+      style: selectedCeleb ? "celeb-inspired" : "scene",
+    },
+  },
+  aspectRatio: "3:4",
+  imageSize: "1K",
+});
 
       if (!imgResp?.image_url) throw new Error("圖片生成失敗");
 
@@ -435,25 +439,53 @@ export default function Page() {
       try {
         const productsResp = await apiPostJson<any>("/api/data?op=products", {
           items: safeItems.map((x: any) => ({
-            slot: x.slot || x.category || x.type || "",
-            label: x.label || x.name || x.item || x.slot || "單品",
-            description: x.description || "",
-            shopping_query:
-              x.shopping_query ||
-              x.searchable_query ||
-              [
-                x.label || x.name || x.item || "",
-                x.description || "",
-                safeGender,
-                safeAudience,
-                safeScene,
-              ]
-                .filter(Boolean)
-                .join(" "),
-            gender: safeGender,
-            audience: safeAudience,
-            scene: safeScene,
-          })),
+  slot: x.slot || "",
+  label:
+    x.display_name_zh ||
+    x.category ||
+    x.generic_name ||
+    x.slot ||
+    "單品",
+  description: [
+    x.category,
+    x.color,
+    x.fit,
+    x.material,
+    x.sleeve_length,
+    x.length,
+    x.neckline,
+    x.silhouette,
+    ...(Array.isArray(x.style_keywords) ? x.style_keywords : []),
+  ]
+    .filter(Boolean)
+    .join(" | "),
+  shopping_query:
+    x.shopping_query ||
+    [
+      x.color,
+      x.fit,
+      x.material,
+      x.sleeve_length,
+      x.length,
+      x.neckline,
+      x.category || x.generic_name || x.display_name_zh,
+      ...(Array.isArray(x.style_keywords) ? x.style_keywords.slice(0, 2) : []),
+    ]
+      .filter(Boolean)
+      .join(" "),
+  category: x.category || "",
+  color: x.color || "",
+  fit: x.fit || "",
+  material: x.material || "",
+  sleeve_length: x.sleeve_length || "",
+  length: x.length || "",
+  neckline: x.neckline || "",
+  silhouette: x.silhouette || "",
+  style_keywords: Array.isArray(x.style_keywords) ? x.style_keywords : [],
+  gender: safeGender,
+  audience: safeAudience,
+  scene: safeScene,
+})),
           limitPerSlot: 3,
         });
 
