@@ -690,24 +690,39 @@ function scoreCustomProduct(row, item) {
 }
 
 async function searchExternalProducts(baseUrl, item, limit) {
-  const query =
-    normalizeText(item?.shopping_query) ||
-    [item?.label, item?.description, item?.gender, item?.audience, item?.scene]
-      .filter(Boolean)
-      .join(" ");
-
-  if (!query) return [];
-
   try {
-    const r = await fetch(`${baseUrl}/api/product-search`, {
+    const r = await fetch(`${baseUrl}/api/search-products`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ query, limit }),
+      body: JSON.stringify({
+        items: [item],
+        locale: "tw",
+        gender: item.gender || "neutral",
+        ageGroup: item.audience === "kids" ? "kids" : "adult",
+        styleTag: item.scene || null,
+      }),
     });
 
+    if (!r.ok) {
+      const t = await r.text();
+      console.error("search-products failed:", t);
+      return [];
+    }
+
     const data = await r.json();
-    return Array.isArray(data?.items) ? data.items : [];
-  } catch {
+    const slotProducts = data?.grouped?.[item.slot] || [];
+
+    return slotProducts.slice(0, limit).map((p) => ({
+      title: p.title,
+      image_url: p.thumbnail,
+      product_url: p.link,
+      url: p.link,
+      merchant: p.merchant || "",
+      badge_text: p.badge_text || "",
+      source: p.source || "google",
+    }));
+  } catch (e) {
+    console.error("searchExternalProducts error:", e);
     return [];
   }
 }
