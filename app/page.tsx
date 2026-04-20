@@ -394,7 +394,7 @@ export default function Page() {
   withHat: false,
   withCoat: false,
   personHint:
-    safeAudience === "kids"
+    safeAudience === "兒童"
       ? `${safeGender}, child, age ${age}`
       : `${safeGender}, adult, age ${age}`,
   promptContext: `${promptContext} | style:${system.temperature} creativity:${system.creativity}`,
