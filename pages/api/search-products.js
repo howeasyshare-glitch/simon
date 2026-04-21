@@ -1,63 +1,46 @@
 // pages/api/search-products.js
-
-import { supabaseServer } from "../../lib/supabaseServer";
+// V2.3 - 強化版（gender + category + hard filter + ranking）
 
 export const config = { runtime: "nodejs" };
 
-// ====== 基本設定 ======
-const DEFAULT_RULES = {
-  perSlot: { top: 3, bottom: 3, shoes: 3 },
-  customMax: 2,
-  fallback: true,
-};
-
-// ====== 工具 ======
-const safe = (v) => String(v || "").trim();
-const norm = (v) => safe(v).toLowerCase();
-
+// ===== 工具 =====
+const norm = (v) => String(v || "").toLowerCase();
 const uniq = (arr) => [...new Set(arr.filter(Boolean))];
 
-const tokenize = (v) =>
-  norm(v).split(/[\s,./\-_"'()]+/).filter(Boolean);
+// ===== 類別 mapping =====
+function getCategoryKeywords(item) {
+  const cat = norm(item.category);
 
-// ====== Query 清理（V2.1 核心）======
-function buildQuery(item, { locale, gender, styleTag }) {
-  const zh = safe(item.display_name_zh);
-  const en = safe(item.generic_name);
-  const color = safe(item.color);
-  const slot = safe(item.slot);
+  if (cat.includes("cardigan")) return ["cardigan", "sweater", "knit"];
+  if (cat.includes("shirt")) return ["shirt", "button", "oxford"];
+  if (cat.includes("t-shirt")) return ["t-shirt", "tee"];
+  if (cat.includes("hoodie")) return ["hoodie"];
+  if (cat.includes("jeans")) return ["jeans", "denim"];
+  if (cat.includes("pants")) return ["pants", "trousers"];
+  if (cat.includes("sneaker")) return ["sneaker", "trainer"];
+  if (cat.includes("loafer")) return ["loafer"];
+  if (cat.includes("bag")) return ["bag"];
 
-  const useZH = locale === "tw";
-
-  const base = useZH ? zh || en : en || zh;
-
-  const genderWord =
-    gender === "male" ? (useZH ? "男" : "men") :
-    gender === "female" ? (useZH ? "女" : "women") : "";
-
-  const style =
-    styleTag === "scene_commute"
-      ? (useZH ? "通勤" : "smart casual")
-      : "";
-
-  const tokens = uniq([
-    genderWord,
-    color,
-    base,
-    slot,
-    style
-  ]);
-
-  return tokens.join(" ");
+  return [];
 }
 
-// ====== Google 搜尋 ======
-async function searchGoogle(apiKey, q, gl = "tw", hl = "zh-tw") {
+// ===== Query =====
+function buildQuery(item, gender) {
+  return [
+    gender === "male" ? "men" : "women",
+    item.color,
+    item.fit,
+    item.material,
+    item.sleeve_length,
+    item.category
+  ].filter(Boolean).join(" ");
+}
+
+// ===== 搜尋 =====
+async function searchGoogle(apiKey, q) {
   const url = new URL("https://serpapi.com/search.json");
   url.searchParams.set("engine", "google_shopping");
   url.searchParams.set("q", q);
-  url.searchParams.set("gl", gl);
-  url.searchParams.set("hl", hl);
   url.searchParams.set("api_key", apiKey);
 
   const r = await fetch(url.toString());
@@ -65,112 +48,113 @@ async function searchGoogle(apiKey, q, gl = "tw", hl = "zh-tw") {
   return j.shopping_results || [];
 }
 
-// ====== 排序（V2.1 核心）======
+// ===== Hard Filter =====
+function isOppositeGender(p, gender) {
+  const t = norm(p.title);
 
-// 價格降權
-function scorePrice(p, slot) {
-  const price = Number(p.extracted_price || 0);
-  if (!price) return 0;
-
-  const cap = {
-    top: 2000,
-    bottom: 2500,
-    shoes: 3000
-  }[slot] || 2500;
-
-  if (price < cap * 0.6) return +1;
-  if (price < cap) return +0.5;
-  if (price < cap * 1.5) return -0.5;
-  return -2;
+  if (gender === "male") {
+    return /women|女|ladies|girl/.test(t);
+  }
+  if (gender === "female") {
+    return /men|男/.test(t);
+  }
+  return false;
 }
 
-// 精品降權
-function scoreLuxury(title) {
-  const t = norm(title);
-  const bad = ["off-white", "balenciaga", "gucci", "prada"];
-  return bad.some(x => t.includes(x)) ? -2 : 0;
+function isForbidden(p, slot, gender) {
+  const t = norm(p.title);
+
+  if (gender === "male") {
+    if (/bra|bralette|skirt|dress|heels|bikini/.test(t)) return true;
+  }
+
+  if (slot === "top" && /skirt|dress/.test(t)) return true;
+  if (slot === "bottom" && /bra|top/.test(t)) return true;
+  if (slot === "shoes" && /shirt|pants/.test(t)) return true;
+
+  return false;
 }
 
-// 台灣加權
-function scoreTW(p) {
-  const t = norm(p.title + p.link);
-  const hints = ["蝦皮", "momo", "pchome", "yahoo"];
-  return hints.some(h => t.includes(h)) ? +1 : 0;
+function matchCategory(p, item) {
+  const t = norm(p.title);
+  const kws = getCategoryKeywords(item);
+  if (!kws.length) return true;
+  return kws.some(k => t.includes(k));
 }
 
-// 文字匹配
-function scoreText(p, item) {
-  const tokens = tokenize(item.generic_name || item.display_name_zh);
-  let s = 0;
-  tokens.forEach(t => {
-    if (norm(p.title).includes(t)) s += 1;
+function hardFilter(list, item, slot, gender) {
+  return list.filter(p => {
+    if (isOppositeGender(p, gender)) return false;
+    if (isForbidden(p, slot, gender)) return false;
+    if (!matchCategory(p, item)) return false;
+    return true;
   });
+}
+
+// ===== Ranking =====
+function score(p, item) {
+  const t = norm(p.title);
+  let s = 0;
+
+  if (item.color && t.includes(norm(item.color))) s += 2;
+  if (item.fit && t.includes(norm(item.fit))) s += 1.5;
+  if (item.material && t.includes(norm(item.material))) s += 1.5;
+
   return s;
 }
 
-// 總分
-function rank(list, item, slot) {
-  return list.map(p => {
-    const score =
-      scoreText(p, item) +
-      scorePrice(p, slot) +
-      scoreLuxury(p.title) +
-      scoreTW(p);
-
-    return { ...p, _score: score };
-  }).sort((a, b) => b._score - a._score);
+function rank(list, item) {
+  return list.map(p => ({
+    ...p,
+    _score: score(p, item)
+  })).sort((a, b) => b._score - a._score);
 }
 
-// ====== 主 API ======
+// ===== 主 API =====
 export default async function handler(req, res) {
   if (req.method !== "POST") {
     return res.status(405).json({ error: "Method not allowed" });
   }
 
-  const apiKey = process.env.SERPAPI_API_KEY;
+  try {
+    const apiKey = process.env.SERPAPI_API_KEY;
+    const { items = [], gender = "neutral" } = req.body;
 
-  const { items = [], locale = "tw", gender = "neutral", styleTag } = req.body;
+    const grouped = {};
 
-  const grouped = {};
-  const debug = [];
+    for (const item of items) {
+      const slot = item.slot;
 
-  for (const item of items) {
-    const slot = item.slot;
+      const q = buildQuery(item, gender);
+      const raw = await searchGoogle(apiKey, q);
 
-    const q = buildQuery(item, { locale, gender, styleTag });
+      let list = raw.map(p => ({
+        title: p.title,
+        link: p.product_link || p.link,
+        thumbnail: p.thumbnail,
+        price: p.price,
+        extracted_price: p.extracted_price
+      }));
 
-    const raw = await searchGoogle(apiKey, q);
+      list = list.filter(x => x.title && x.link);
 
-    let list = raw.map(p => ({
-      title: p.title,
-      link: p.product_link,
-      thumbnail: p.thumbnail,
-      price: p.price,
-      extracted_price: p.extracted_price,
-      source: "google"
-    }));
+      list = hardFilter(list, item, slot, gender);
 
-    list = list.filter(x => x.title && x.link && x.thumbnail);
+      list = rank(list, item);
 
-    const ranked = rank(list, item, slot);
+      grouped[slot] = list.slice(0, 3);
+    }
 
-    grouped[slot] = ranked.slice(0, 3);
+    return res.json({
+      ok: true,
+      grouped,
+      flat: Object.values(grouped).flat()
+    });
 
-    debug.push({
-      slot,
-      query: q,
-      count: list.length,
-      top: grouped[slot].map(x => ({
-        title: x.title,
-        score: x._score
-      }))
+  } catch (e) {
+    return res.status(500).json({
+      ok: false,
+      error: e.message
     });
   }
-
-  return res.json({
-    ok: true,
-    grouped,
-    flat: Object.values(grouped).flat(),
-    debug
-  });
 }
