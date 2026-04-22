@@ -1,11 +1,21 @@
 // pages/api/search-products.js
-// V2.3 - 強化版（gender + category + hard filter + ranking）
+// V2.3.1 - gender 修正 + hard filter + 精準搜尋
 
 export const config = { runtime: "nodejs" };
 
 // ===== 工具 =====
 const norm = (v) => String(v || "").toLowerCase();
 const uniq = (arr) => [...new Set(arr.filter(Boolean))];
+
+function normalizeGender(input) {
+  const g = String(input || "").trim().toLowerCase();
+
+  if (["male", "man", "men", "男性", "男", "boy"].includes(g)) return "male";
+  if (["female", "woman", "women", "女性", "女", "girl"].includes(g)) return "female";
+  if (["neutral", "unisex", "中性"].includes(g)) return "neutral";
+
+  return "neutral";
+}
 
 // ===== 類別 mapping =====
 function getCategoryKeywords(item) {
@@ -27,16 +37,18 @@ function getCategoryKeywords(item) {
 // ===== Query =====
 function buildQuery(item, gender) {
   return [
-    gender === "male" ? "men" : "women",
+    gender === "male" ? "men" : gender === "female" ? "women" : "",
     item.color,
     item.fit,
     item.material,
     item.sleeve_length,
     item.category
-  ].filter(Boolean).join(" ");
+  ]
+    .filter(Boolean)
+    .join(" ");
 }
 
-// ===== 搜尋 =====
+// ===== Google Shopping =====
 async function searchGoogle(apiKey, q) {
   const url = new URL("https://serpapi.com/search.json");
   url.searchParams.set("engine", "google_shopping");
@@ -53,7 +65,7 @@ function isOppositeGender(p, gender) {
   const t = norm(p.title);
 
   if (gender === "male") {
-    return /women|女|ladies|girl/.test(t);
+    return /women|ladies|girl|女/.test(t);
   }
   if (gender === "female") {
     return /men|男/.test(t);
@@ -79,11 +91,11 @@ function matchCategory(p, item) {
   const t = norm(p.title);
   const kws = getCategoryKeywords(item);
   if (!kws.length) return true;
-  return kws.some(k => t.includes(k));
+  return kws.some((k) => t.includes(k));
 }
 
 function hardFilter(list, item, slot, gender) {
-  return list.filter(p => {
+  return list.filter((p) => {
     if (isOppositeGender(p, gender)) return false;
     if (isForbidden(p, slot, gender)) return false;
     if (!matchCategory(p, item)) return false;
@@ -104,10 +116,12 @@ function score(p, item) {
 }
 
 function rank(list, item) {
-  return list.map(p => ({
-    ...p,
-    _score: score(p, item)
-  })).sort((a, b) => b._score - a._score);
+  return list
+    .map((p) => ({
+      ...p,
+      _score: score(p, item),
+    }))
+    .sort((a, b) => b._score - a._score);
 }
 
 // ===== 主 API =====
@@ -120,41 +134,58 @@ export default async function handler(req, res) {
     const apiKey = process.env.SERPAPI_API_KEY;
     const { items = [], gender = "neutral" } = req.body;
 
+    const normalizedGender = normalizeGender(gender);
     const grouped = {};
+    const debug = [];
 
     for (const item of items) {
       const slot = item.slot;
 
-      const q = buildQuery(item, gender);
+      const itemGender = normalizeGender(item.gender || normalizedGender);
+
+      const q = buildQuery(item, itemGender);
       const raw = await searchGoogle(apiKey, q);
 
-      let list = raw.map(p => ({
+      let list = raw.map((p) => ({
         title: p.title,
         link: p.product_link || p.link,
         thumbnail: p.thumbnail,
         price: p.price,
-        extracted_price: p.extracted_price
+        extracted_price: p.extracted_price,
       }));
 
-      list = list.filter(x => x.title && x.link);
+      list = list.filter((x) => x.title && x.link);
 
-      list = hardFilter(list, item, slot, gender);
+      const before = list.length;
+
+      list = hardFilter(list, item, slot, itemGender);
+
+      const after = list.length;
 
       list = rank(list, item);
 
       grouped[slot] = list.slice(0, 3);
+
+      debug.push({
+        slot,
+        originalGender: item.gender || gender,
+        normalizedGender: itemGender,
+        query: q,
+        before,
+        after,
+      });
     }
 
     return res.json({
       ok: true,
       grouped,
-      flat: Object.values(grouped).flat()
+      flat: Object.values(grouped).flat(),
+      debug,
     });
-
   } catch (e) {
     return res.status(500).json({
       ok: false,
-      error: e.message
+      error: e.message,
     });
   }
 }
