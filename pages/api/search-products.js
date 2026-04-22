@@ -1,5 +1,6 @@
 // pages/api/search-products.js
-// V2.4
+// V2.5
+// 重點：top / outer 分流
 
 export const config = { runtime: "nodejs" };
 
@@ -32,18 +33,22 @@ function getCategorySynonyms(item) {
   const cat = norm(item.category || item.generic_name || item.display_name_zh);
   const slot = norm(item.slot);
 
-  // TOP
+  // TOP / 上衣
   if (cat.includes("knit polo") || cat.includes("polo shirt")) return ["polo", "polo shirt", "knit polo"];
-  if (cat.includes("cardigan")) return ["cardigan", "knit cardigan", "sweater cardigan", "knitwear"];
   if (cat.includes("button-up shirt") || cat.includes("button up shirt")) return ["button-up shirt", "button down shirt", "shirt", "oxford shirt"];
   if (cat.includes("shirt")) return ["shirt", "button-up shirt", "button down shirt", "oxford shirt"];
   if (cat.includes("graphic t-shirt")) return ["graphic t-shirt", "graphic tee", "t-shirt", "tee"];
   if (cat.includes("crew neck t-shirt")) return ["crew neck t-shirt", "t-shirt", "tee"];
   if (cat.includes("long-sleeve t-shirt") || cat.includes("long sleeve t-shirt")) return ["long sleeve t-shirt", "long-sleeve tee", "t-shirt", "tee"];
   if (cat.includes("t-shirt") || cat.includes("tee")) return ["t-shirt", "tee"];
-  if (cat.includes("hoodie")) return ["hoodie", "hooded sweatshirt", "zip hoodie"];
   if (cat.includes("sweater")) return ["sweater", "knit sweater", "pullover"];
-  if (cat.includes("jacket") || cat.includes("outer")) return ["jacket", "outerwear", "coat", "utility jacket", "coach jacket"];
+
+  // OUTER / 外套
+  if (cat.includes("cardigan")) return ["cardigan", "knit cardigan", "sweater cardigan", "knitwear"];
+  if (cat.includes("hoodie")) return ["hoodie", "hooded sweatshirt", "zip hoodie"];
+  if (cat.includes("utility jacket")) return ["utility jacket", "jacket", "outerwear"];
+  if (cat.includes("fleece jacket")) return ["fleece jacket", "jacket", "outerwear", "fleece"];
+  if (cat.includes("jacket") || cat.includes("outer")) return ["jacket", "outerwear", "coat", "coach jacket"];
 
   // BOTTOM
   if (cat.includes("straight-leg jeans") || cat.includes("straight leg jeans")) return ["jeans", "denim", "straight jeans", "straight-leg jeans"];
@@ -71,8 +76,9 @@ function getCategorySynonyms(item) {
   if (cat.includes("tote")) return ["tote", "tote bag"];
   if (cat.includes("bag")) return ["bag", "crossbody", "tote", "messenger"];
 
-  // fallback
-  if (slot === "top") return ["shirt", "tee", "polo", "cardigan", "sweater", "hoodie", "jacket"];
+  // fallback by slot
+  if (slot === "top") return ["shirt", "tee", "polo", "sweater"];
+  if (slot === "outer") return ["jacket", "outerwear", "coat", "cardigan", "hoodie"];
   if (slot === "bottom") return ["pants", "trousers", "jeans", "shorts", "chino"];
   if (slot === "shoes") return ["shoes", "sneaker", "trainer", "loafer", "boot"];
   if (slot === "bag") return ["bag", "crossbody", "tote", "messenger", "shoulder"];
@@ -80,6 +86,7 @@ function getCategorySynonyms(item) {
   return [];
 }
 
+// ===== query =====
 function buildQuery(item, { locale, gender, styleTag }) {
   const useZH = locale === "tw";
 
@@ -105,7 +112,7 @@ function buildQuery(item, { locale, gender, styleTag }) {
   return uniq([genderWord, ...core, style]).filter(Boolean).join(" ");
 }
 
-// ===== 外部搜尋 =====
+// ===== 搜尋 =====
 async function searchGoogle(apiKey, q, gl = "tw", hl = "zh-tw") {
   const url = new URL("https://serpapi.com/search.json");
   url.searchParams.set("engine", "google_shopping");
@@ -127,6 +134,7 @@ function isOppositeGenderProduct(p, gender) {
     "women", "woman", "womens", "ladies", "lady", "girl", "girls",
     "女裝", "女款", "女生", "婦女", "womenswear"
   ];
+
   const maleWords = [
     "men", "man", "mens", "boy", "boys",
     "男裝", "男款", "男生", "menswear"
@@ -141,13 +149,14 @@ function isForbiddenForSlot(title, slot, gender) {
   const t = norm(title);
 
   const maleForbidden = [
-    "bra", "bralette", "crop top", "skirt", "dress", "bikini", "panties", "heels", "blouse",
-    "one-piece swimsuit", "swimsuit", "lingerie"
+    "bra", "bralette", "crop top", "skirt", "dress", "bikini", "panties",
+    "heels", "blouse", "one-piece swimsuit", "swimsuit", "lingerie"
   ];
 
   if (gender === "male" && maleForbidden.some((w) => t.includes(w))) return true;
 
   if (slot === "top" && ["skirt", "dress", "panties", "bikini bottom", "bottom"].some((w) => t.includes(w))) return true;
+  if (slot === "outer" && ["skirt", "dress", "panties", "bikini", "bra"].some((w) => t.includes(w))) return true;
   if (slot === "bottom" && ["bra", "bralette", "top", "dress", "heel", "shoe", "bikini bottom"].some((w) => t.includes(w))) return true;
   if (slot === "shoes" && ["bra", "shirt", "top", "dress", "bag", "pant", "pants"].some((w) => t.includes(w))) return true;
   if (slot === "bag" && ["shoe", "shirt", "pants", "dress", "bra", "bikini"].some((w) => t.includes(w))) return true;
@@ -155,7 +164,7 @@ function isForbiddenForSlot(title, slot, gender) {
   return false;
 }
 
-// ===== slot 專屬判斷 =====
+// ===== slot 規則 =====
 function slotStrictKeywords(slot, item) {
   const categoryWords = getCategorySynonyms(item);
   const cat = norm(item.category || "");
@@ -165,7 +174,16 @@ function slotStrictKeywords(slot, item) {
     if (cat.includes("polo")) extra.push("polo");
     if (cat.includes("shirt")) extra.push("shirt");
     if (cat.includes("t-shirt") || cat.includes("tee")) extra.push("t-shirt", "tee");
+    if (cat.includes("sweater")) extra.push("sweater");
+    return uniq([...categoryWords, ...extra]);
+  }
+
+  if (slot === "outer") {
+    const extra = [];
     if (cat.includes("cardigan")) extra.push("cardigan");
+    if (cat.includes("hoodie")) extra.push("hoodie");
+    if (cat.includes("jacket")) extra.push("jacket");
+    if (cat.includes("coat")) extra.push("coat");
     return uniq([...categoryWords, ...extra]);
   }
 
@@ -203,7 +221,15 @@ function slotSoftKeywords(slot, item) {
     if (cat.includes("polo")) return ["polo", "shirt", "knit"];
     if (cat.includes("shirt")) return ["shirt", "button"];
     if (cat.includes("t-shirt") || cat.includes("tee")) return ["t-shirt", "tee"];
-    return ["shirt", "tee", "polo", "sweater", "cardigan"];
+    if (cat.includes("sweater")) return ["sweater", "knit"];
+    return ["shirt", "tee", "polo", "sweater"];
+  }
+
+  if (slot === "outer") {
+    if (cat.includes("cardigan")) return ["cardigan", "knit"];
+    if (cat.includes("hoodie")) return ["hoodie"];
+    if (cat.includes("jacket")) return ["jacket", "outerwear"];
+    return ["jacket", "outerwear", "coat", "cardigan", "hoodie"];
   }
 
   if (slot === "bottom") {
@@ -242,12 +268,14 @@ function passesMaterialFilter(p, item, slot) {
 
   if (!m || m === "none") return true;
 
-  if (slot === "top" || slot === "bottom") {
+  if (slot === "top" || slot === "bottom" || slot === "outer") {
     if (m.includes("cotton linen")) return containsAny(hay, ["cotton", "linen", "棉麻"]);
     if (m.includes("cotton blend")) return containsAny(hay, ["cotton", "blend", "棉"]);
     if (m.includes("knit cotton")) return containsAny(hay, ["knit", "cotton", "針織"]);
     if (m.includes("cotton twill")) return containsAny(hay, ["cotton", "twill", "棉"]);
+    if (m.includes("cotton canvas")) return containsAny(hay, ["cotton", "canvas", "帆布"]);
     if (m.includes("denim")) return containsAny(hay, ["denim", "jeans", "牛仔"]);
+    if (m.includes("fleece")) return containsAny(hay, ["fleece", "刷毛", "搖粒絨"]);
     return hay.includes(m) || containsAny(hay, tokenize(m));
   }
 
@@ -255,7 +283,6 @@ function passesMaterialFilter(p, item, slot) {
   if (m.includes("leather")) return containsAny(hay, ["leather", "皮革"]);
   if (m.includes("canvas")) return containsAny(hay, ["canvas", "帆布"]);
   if (m.includes("nylon")) return containsAny(hay, ["nylon", "尼龍"]);
-  if (m.includes("cotton canvas")) return containsAny(hay, ["canvas", "cotton", "帆布"]);
 
   return hay.includes(m) || containsAny(hay, tokenize(m));
 }
@@ -273,7 +300,7 @@ function passesNecklineFilter(p, item) {
   return true;
 }
 
-// ===== filter pipeline =====
+// ===== filter =====
 function hardFilter(list, item, slot, gender) {
   return list.filter((p) => {
     if (isOppositeGenderProduct(p, gender)) return false;
@@ -283,6 +310,11 @@ function hardFilter(list, item, slot, gender) {
     if (slot === "top") {
       if (!passesSleeveFilter(p, item)) return false;
       if (!passesNecklineFilter(p, item)) return false;
+      return true;
+    }
+
+    if (slot === "outer") {
+      if (!passesMaterialFilter(p, item, slot)) return false;
       return true;
     }
 
@@ -324,7 +356,7 @@ function scorePrice(p, slot) {
   const price = Number(p.extracted_price || 0);
   if (!price) return 0;
 
-  const cap = { top: 2000, bottom: 2500, shoes: 3000, bag: 2500 }[slot] || 2500;
+  const cap = { top: 2000, outer: 3500, bottom: 2500, shoes: 3000, bag: 2500 }[slot] || 2500;
   if (price < cap * 0.6) return 1;
   if (price < cap) return 0.5;
   if (price < cap * 1.5) return -0.5;
@@ -375,7 +407,7 @@ function scoreDetails(p, item, slot) {
   }
 
   if (item.material && passesMaterialFilter(p, item, slot)) {
-    s += (slot === "shoes" || slot === "bag") ? 1.2 : 0.8;
+    s += (slot === "shoes" || slot === "bag" || slot === "outer") ? 1.2 : 0.8;
   }
 
   return s;
@@ -435,7 +467,7 @@ export default async function handler(req, res) {
       const afterHardFilterCount = list.length;
 
       let fallbackUsed = false;
-      if (list.length === 0 && ["top", "bottom", "shoes", "bag"].includes(slot)) {
+      if (list.length === 0 && ["top", "outer", "bottom", "shoes", "bag"].includes(slot)) {
         list = softFallbackFilter(baseList, item, slot, itemGender);
         fallbackUsed = true;
       }
