@@ -4,142 +4,130 @@
 FindOutfit / Simon
 
 ## 專案目標
-根據使用者條件與 AI 生成圖片，提供：
-1. AI 穿搭生成圖
-2. 對應的 outfit spec
-3. 「查看單品」商品推薦
-4. Explore / Share / Like / Apply 等社交互動
+根據使用者條件生成穿搭圖，並提供相似單品推薦，讓使用者在「生成圖 → 查看單品 → 點商品」這條路徑中感受到一致性。
 
 ---
 
-## 目前主要技術與環境
+## 現行核心架構
 
 ### 前端
-- 現行頁面：`page.tsx`
+- 現行主頁：`app/page.tsx`
 - 舊頁面：`index.html`
-- 目前正式流程以 `page.tsx` 為主，**不要再優先參考 `index.html` 判斷現行邏輯**
+- 目前正式流程以 `page.tsx` 為主，排查時不要再以 `index.html` 當主依據
 
-### 後端 API
+### API
 - `pages/api/generate-outfit-spec.js`
 - `pages/api/generate-image.js`
 - `pages/api/search-products.js`
 - `pages/api/data.js`
 
-### 資料庫 / 儲存
+### 資料來源
 - Supabase
-- 主要資料：
-  - `profiles`
-  - `outfits`
-  - `custom_products`
-  - `user_settings`
-  - `outfit_likes`
-  - `admin_kv`
-
-### 外部服務
-- Gemini API：用於 outfit spec 與圖片生成相關流程
-- SerpAPI / Google Shopping：用於商品搜尋
+- SerpAPI / Google Shopping
+- custom_products
 
 ---
 
-## 目前已確認的真實流程
+## 已確認的真實流程
 
-### 1. 生成穿搭圖流程
+### 1. 生成流程
 `page.tsx`
-→ 呼叫 `/api/generate-outfit-spec`
-→ 取得 `summary + items`
-→ 再用 spec / prompt 流程呼叫圖片生成
-→ 再呼叫 `/api/data?op=products`
-→ 展開「查看單品」
+→ `/api/generate-outfit-spec`
+→ 取得 `summary + spec.items`
+→ `/api/generate-image`
+→ `/api/data?op=products`
+→ 顯示「查看單品」
 
-### 2. 查看單品流程
-現行 UI 不是直接打 `/api/search-products`
-
-現行實際流程是：
+### 2. 商品流程
 `page.tsx`
+→ 把 spec.items 映射成商品搜尋輸入
 → `/api/data?op=products`
 → `data.js / handleProducts()`
-→ 先抓 `custom_products`
-→ 不足時再補外部搜尋
-→ 外部搜尋目前應接到 `/api/search-products`
+→ 先 custom_products
+→ 不足再呼叫 `/api/search-products`
 
 ### 3. 商品搜尋流程
 `/api/search-products`
-- 會根據 items 做 query
-- 使用 Google Shopping / SerpAPI
-- 現階段已有 ranking，但仍需繼續精修
-- 目標是讓商品與 AI 圖更接近，而不是只抓到同類別商品
+- 根據 item schema 組 query
+- 搜 Google Shopping
+- hard filter
+- slot fallback
+- ranking
+- 回 grouped 結果
 
 ---
 
-## 這輪已確認過的重要問題
+## 這輪已確認的重點
 
-### A. 現行頁面不是 `index.html`
-- 之前誤以為 `index.html` 是現行頁面
-- 已確認目前主流程在 `page.tsx`
-- 後續排查前端問題，優先檢查 `page.tsx`
+### A. gender 曾經格式不一致
+資料流中同時出現：
+- `male / female / neutral`
+- `男性 / 女性 / 中性`
 
-### B. `generate-outfit-spec` 前端曾送錯 body 格式
-- `page.tsx` 曾把資料包成 `{ payload: {...} }`
-- 新版 `generate-outfit-spec.js` 直接讀 `req.body.xxx`
-- 已修正為直接送平面欄位
+這會造成 query 明明應該搜男裝，卻實際變成 women。  
+目前方向已改成在 `search-products.js` 做 gender normalization。
 
-### C. Gemini 模型名稱曾過期
-- `gemini-2.0-flash` 不可用
-- `gemini-1.5-flash` 在當時設定也回 404
-- 目前已改到可用模型（以當下可用設定為準）
-- 後續建議把模型名稱改為 env，例如 `GEMINI_MODEL`
+### B. item schema 新舊混雜
+新資料的 spec.items 已經包含：
+- `category`
+- `fit`
+- `material`
+- `sleeve_length`
+- `neckline`
+- `silhouette`
+- `style_keywords`
 
-### D. `generate-outfit-spec` 曾先扣點再失敗
-- 先前版本會先扣點，再呼叫 Gemini
-- 若 Gemini 報錯，仍可能造成扣點
-- 這是高風險點，後續應評估改成「成功後再扣點」或失敗補償
+但舊資料仍有很多只剩：
+- `slot`
+- `generic_name`
+- 甚至只剩 `shopping_query: "男性 成人 commute"` 這類極粗資訊
 
-### E. 查看單品曾只顯示 custom 商品
-- 原因：`/api/data?op=products` 沒有真正接到新的商品搜尋引擎
-- 已修正成可補外部商品，不再只剩 custom
+這會導致舊資料結果很差，並不是當前搜尋器本身必然失效。
 
-### F. 商品與 AI 圖仍有顯著落差
-- 目前最核心未解問題
-- 原因不是「沒商品」，而是：
-  1. spec 還不夠像購物描述
-  2. search ranking 還不夠嚴格
-  3. 現在仍是文字搜尋商品，不是以圖搜圖
+### C. TOP 單獨為空的根因
+不是單純「查不到」，而是原本把上半身混成同一類：
+- 上衣
+- 外套
 
-### G. 進頁未調整「基本輪廓」時，生成圖性別有時錯
-- 使用者明確反映：
-  - 進入頁面後未調整「基本輪廓」
-  - 按下生成前 UI 顯示性別是男
-  - 但生成圖偏女
-- 代表目前 UI 顯示值、實際送出的 gender、或 prompt 組裝之間可能不同步
-- 這是**高優先驗收問題**
+導致：
+- top hard filter 過嚴
+- outer 類型又混進 top 規則
+- 某些 top（例如 knit polo / shirt）容易被清空
 
----
+### D. 上半身已重新定義為兩類
+目前正確邏輯應為：
+- `top` = 上衣（tee / shirt / polo / sweater）
+- `outer` = 外套（jacket / cardigan / hoodie / coat）
 
-## 目前架構判斷
+之後搜尋器與 filter 都要依這個邏輯維護，不能再把 top / outer 混在一起。
 
-### 已成功的部分
-- API 串接大致打通
-- `generate-outfit-spec` 可正常回 `summary + items`
-- `/api/search-products` 可正常回 `grouped / flat`
-- `/api/data?op=products` 可帶出商品，不再只有 custom
+### E. 商品準確度已有改善
+相比一開始：
+- 男生案例出現 bra / skirt / women 商品
+- bottom 抓到 bikini bottom
+- shoes 抓到女鞋或無關商品
 
-### 尚未完成的核心
-1. 商品與 AI 圖一致性不足
-2. 性別 / 輪廓條件與生成結果同步性不足
-3. 商品 UI 體驗仍需優化（展開內容長、體驗不夠精準）
+目前經過 gender filter + category filter + slot filter 後，整體已明顯改善。
 
 ---
 
-## 後續開發原則
-- 不要優先大改 UI，先確認資料流與推薦精準度
-- 先處理「生成條件是否正確送出」
-- 再處理「商品是否像 AI 圖」
-- 最後再做 UI 優化與視覺整理
+## 現在的狀態判斷
+
+### 已改善
+- gender 查詢方向比之前穩定
+- 商品不再大量亂抓女裝 / bra / bikini
+- bottom / shoes / bag 準確度明顯提高
+- 已開始做 slot 專屬 fallback
+
+### 尚未完全收斂
+- top 在部分案例仍會被篩光
+- top / outer 的邊界仍需靠更多真實案例微調
+- 舊資料流仍可能只送出很粗的 shopping_query，拖累結果
 
 ---
 
-## 下次新對話接手必看
-若換新聊天室，請先理解以下三件事：
-1. 目前現行頁面是 `page.tsx`，不是 `index.html`
-2. 商品流程主入口是 `/api/data?op=products`
-3. 最大問題不是「沒商品」，而是「商品與 AI 圖差距太大」與「性別條件可能失真`
+## 後續原則
+1. 搜尋邏輯以 `top` / `outer` 分流為基礎
+2. 不要再把上半身統稱 top
+3. 新 schema 優先，舊 schema 視為 fallback
+4. 先穩定資料流與 filter，再處理 UI 細節

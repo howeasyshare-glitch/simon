@@ -1,141 +1,135 @@
 # ACTIVE_TASK.md
 
 ## 任務名稱
-FindOutfit — 修正生成條件同步 + 提升商品與 AI 圖一致性
+FindOutfit — 商品搜尋系統整理紀錄（top / outer 分流階段）
 
 ---
 
-## 本輪目標
-目前系統已可：
-- 正常生成 outfit spec
-- 正常顯示查看單品
-- 顯示 custom 與外部商品
+## 目前任務目標
+在不動整體產品方向的前提下，先把商品搜尋系統整理到可持續優化的狀態。
 
-但仍有兩個高優先問題：
-
-### 1. 商品與 AI 圖差距很大
-雖然商品已能顯示，但推薦內容常常：
-- 類別對，風格不對
-- 顏色接近，但材質 / 版型 / 輪廓差很多
-- 偏熱門商品而非相似商品
-
-### 2. 性別條件可能沒有正確落實
-使用者回報：
-- 一進頁面沒有調整「基本輪廓」
-- 按下生成前性別顯示為男
-- 但生成圖偏女
-
-這表示目前至少有一處可能有問題：
-- UI 顯示值
-- page.tsx 送出的值
-- generate-outfit-spec prompt 組裝
-- generate-image prompt / API 組裝
+目前核心目標：
+1. gender 不再錯
+2. top / outer 分流
+3. 四大主要顯示類別穩定：
+   - top
+   - bottom
+   - shoes
+   - bag
+4. outer 可獨立處理，不再混進 top 規則
 
 ---
 
-## 本輪修改方向
-
-### A. 生成條件同步檢查
-要確認以下資料在整條鏈都一致：
-- gender
-- age
-- height
-- weight
-- style
-- temp
-- withBag / withHat / withCoat
-
-### B. outfit spec 升級為購物描述
-已開始導入新 item schema：
-- category
-- fit
-- material
-- sleeve_length
-- length
-- neckline
-- silhouette
-- style_keywords
-
-接下來要確認：
-- page.tsx 真的收到新欄位
-- search-products.js 真的有使用新欄位
-
-### C. search-products 進入 V2.2
-目標：
-- 先硬過濾
-- 再加分排序
-
-重點不是更多商品，而是更像 AI 圖的商品。
-
----
-
-## 當前實際狀態
+## 本輪已完成 / 已確認
 
 ### 已完成
-- 現行頁面確認為 `page.tsx`
-- `/api/generate-outfit-spec` 已能正常回資料
-- `/api/search-products` 已能正常回商品
-- `/api/data?op=products` 已接得出商品，不再只剩 custom
-- 模型名稱錯誤已修正到可用版本
-- `page.tsx` 對 `generate-outfit-spec` 的 body 包裝問題已找出並修正方向
+- 已確認 `page.tsx` 才是現行主頁
+- 已確認 `data.js` 會轉接到 `search-products`
+- 已確認 `search-products.js` 已有：
+  - gender normalization
+  - hard filter
+  - category filter
+  - fallback 概念
+- 已確認 gender 錯誤曾來自 enum 不一致
+- 已確認 top 為空的根因之一是 top / outer 混類
 
-### 尚未完成
-- 商品與 AI 圖相似度仍不足
-- 「基本輪廓 / 性別」是否完整同步仍未驗證完成
-- 查看單品 UI 仍偏長，尚未整理 slot 呈現
-
----
-
-## 驗收標準
-
-### 生成條件
-- 未調整基本輪廓時，UI 顯示的 gender 必須與實際生成結果一致
-- 調整輪廓後，生成圖風格與性別方向要可感知變化
-- 不能出現 UI 顯示男、結果偏女的情況
-
-### 商品推薦
-- top / bottom / shoes 的商品至少要有明顯部位對應
-- 商品要更接近生成圖的：
-  - 顏色
-  - category
-  - fit
-  - material
-  - sleeve_length / neckline / silhouette
-- 不可只回同類別但風格差很大的商品
-
-### UI
-- 查看單品內每個 slot 建議 ≤ 3 個商品
-- 商品圖不可撐爆
-- 展開後不可長到破壞閱讀體驗
+### 已確認的事實
+- `top` 不是沒資料，而是常被 filter 清空
+- `outer` 在不少新資料中已是獨立 slot
+- 舊資料仍存在大量粗糙結構，會導致錯誤推薦
+- 新 schema 的品質明顯比舊資料好很多
 
 ---
 
-## 本輪建議先查的檔案
+## 本輪新的結構決策
 
-### 優先
-- `page.tsx`
-- `pages/api/generate-outfit-spec.js`
-- `pages/api/generate-image.js`
-- `pages/api/search-products.js`
-- `pages/api/data.js`
+### slot 邏輯
+#### top
+上衣類：
+- tee
+- t-shirt
+- shirt
+- polo
+- sweater
 
-### 次優先
-- 查看單品 UI 元件
-- Hero / 卡片內商品呈現區塊
+#### outer
+外套類：
+- cardigan
+- hoodie
+- jacket
+- utility jacket
+- fleece jacket
+- coat
+
+#### bottom
+- jeans
+- chinos
+- trousers
+- shorts
+- cargo
+
+#### shoes
+- sneakers
+- loafers
+- boots
+- running / trail shoes
+
+#### bag
+- tote
+- crossbody
+- messenger
+- shoulder bag
 
 ---
 
-## 明確不要再重踩的錯誤
-1. 不要再把舊 `index.html` 當成現行主頁邏輯
-2. 不要只測 API 成功就當完成，必須看 UI 最終效果
-3. 不要只看有沒有商品，要看商品是不是像 AI 圖
-4. 不要忽略 gender / 輪廓同步問題
-5. 不要先大改 UI，先確認資料流與推薦精準度
+## 現在還沒完全解決的問題
+
+### 1. top 某些案例仍會沒有結果
+尤其是：
+- knit polo
+- short-sleeve shirt
+- 某些 short sleeve + material + neckline 條件一起出現時
+
+### 2. 舊資料仍然存在
+像這些舊 spec：
+- label 只剩 `top`
+- description 空白
+- shopping_query 只剩「男性 成人 commute」
+
+這種資料會讓搜尋品質顯著變差。
+
+### 3. outer 仍需更多驗證
+目前邏輯已拆，但還沒有大量案例證明邊界已完全穩定。
 
 ---
 
-## 下一步建議
-1. 檢查 `page.tsx` → `generate-outfit-spec` → `generate-image` 的 gender 流是否一致
-2. 讓 `search-products.js` 正式吃 V2.2 schema
-3. 針對 top / shoes 先做硬過濾規則
-4. 最後再修查看單品 UI
+## 驗收標準（當前階段）
+
+### gender
+- 男性案例不應再大量出現 women 商品
+- 不應再出現 bra / skirt / bikini bottom 這類明顯錯誤
+
+### top / outer
+- top 不應再因為 outer 規則被清空
+- outer 應能獨立推薦夾克 / cardigan / hoodie 類商品
+
+### bottom / shoes / bag
+- 維持目前已改善的品質
+- 不要因調整 top / outer 反而退化
+
+---
+
+## 接下來建議的工作順序
+1. 用更多真實案例驗證 top / outer 分流
+2. 觀察哪些 top 類別仍常為 0
+3. 根據 debug 微調：
+   - category strict keywords
+   - top fallback
+   - outer fallback
+4. 最後再回頭整理 UI 顯示層
+
+---
+
+## 備註
+目前這個階段屬於「搜尋系統規則收斂期」。
+先把資料流與 slot 邏輯穩住，比急著修 UI 更重要。

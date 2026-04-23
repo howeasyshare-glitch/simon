@@ -1,171 +1,142 @@
 # PRODUCT_SPEC.md
 
 ## 產品定位
-FindOutfit 不是單純圖片生成器，也不是單純商品列表。
+FindOutfit 不是單純圖片生成器，也不是純商品列表。
 
 它是：
-- 先根據使用者條件生成 AI 穿搭圖
-- 再根據穿搭圖 / outfit spec 推出相似商品
-- 讓使用者在「生成圖 → 查看單品 → 點商品」這條路徑中感受到一致性
+1. 根據使用者條件生成 AI 穿搭圖
+2. 產生 outfit spec
+3. 根據 spec 推相似商品
+4. 讓生成圖與單品推薦保持一致
 
 ---
 
 ## 核心產品原則
 
-### 1. 圖像與商品必須一致
-最重要的不是有商品，而是：
-- 商品類別正確
-- 商品風格接近
-- 商品版型接近
-- 商品材質接近
-- 商品配色接近
+### 1. 商品推薦不是只要有就好
+成功標準不是「有商品」，而是：
+- 類別對
+- 性別方向對
+- 風格接近
+- 材質合理
+- 版型輪廓接近
+- 色系相近
 
-### 2. 商品推薦不是亂抓
-商品推薦應該像：
-- AI stylist 幫你找相似單品
+### 2. 上半身要拆成兩類
+不能再把上半身全部視為同一類。
 
-而不是：
-- 搜尋到同類別商品就塞進來
+#### top = 上衣
+- t-shirt
+- shirt
+- polo
+- sweater
 
-### 3. UI 不能為了功能而犧牲體驗
-即使推薦功能逐步上線，也不能：
-- 讓「查看單品」區塊長到失控
-- 讓商品圖撐爆卡片
-- 讓 slot 結構不清楚
-- 讓使用者難以理解哪個商品對應哪個部位
+#### outer = 外套
+- jacket
+- cardigan
+- hoodie
+- coat
+- utility jacket
+- fleece jacket
 
-### 4. 使用者輸入條件要完整落實到結果
-使用者輸入的：
-- 性別
-- 年齡
-- 身高
-- 體重
-- 風格
-- 溫度
-- 是否有包 / 帽 / 外套
+這是目前產品邏輯上的必要拆分。
 
-必須真的影響：
-1. spec
-2. 生成圖
-3. 商品推薦
+### 3. gender 必須全流程一致
+使用者的 gender 不能只在 UI 正確，必須一路影響：
+- outfit spec
+- image prompt
+- search query
+- hard filter
+- ranking
 
-不能 UI 顯示一套、實際送出另一套。
-
----
-
-## Outfit Spec 規格原則
-
-### item schema 必須是「可購物描述」
-每個 item 不能只停留在：
-- top / bottom / shoes
-- 單純 generic name
-
+### 4. 舊資料與新資料要分開看待
+#### 新 schema
 應包含：
 - `slot`
-- `generic_name`
-- `display_name_zh`
 - `category`
 - `color`
 - `fit`
 - `material`
 - `sleeve_length`
-- `length`
 - `neckline`
 - `silhouette`
-- `style`
 - `style_keywords`
-- `gender`
-- `warmth`
 
-### 必備精神
-- 文字要能直接拿去搜商品
-- 類別不能過於 generic
-- 要能描述「像不像圖」
+#### 舊 schema
+可能只剩：
+- `generic_name`
+- `description`
+- `shopping_query`
+
+舊 schema 僅能當 fallback，不能當主依據。
 
 ---
 
-## 商品搜尋規格原則
+## 商品搜尋規格
 
-### 搜尋策略
-優先順序：
+### 搜尋順序
 1. custom_products
-2. 外部商品搜尋（Google Shopping / SerpAPI）
-3. ranking / 去重 / 補位
+2. Google Shopping / SerpAPI
+3. hard filter
+4. slot fallback
+5. ranking
 
-### 搜尋不是只看 category
-不能只靠：
-- top
-- bottom
-- shoes
+### Hard filter 規則
+#### gender
+- 男生案例不應出現 women / ladies / 女裝 / bra / skirt / bikini 等結果
+- 女生案例也應排除明顯男裝詞
 
-必須優先參考：
-- category
-- fit
-- material
-- sleeve_length
-- neckline
-- silhouette
-- color
-- style_keywords
+#### slot
+- top 只留上衣
+- outer 只留外套
+- bottom 只留褲子 / shorts / jeans 類
+- shoes 只留鞋
+- bag 只留包
 
-### Ranking 規則
-商品排序不能只做加分，應分兩層：
-
-#### 第一層：硬過濾
-例如：
-- 指定 polo，就不能進非 polo
-- 指定 leather sneakers，就不該回 running shoes / basketball shoes
-- 指定 short sleeve，就不能回 long sleeve
-
-#### 第二層：加分排序
-再根據：
-- 顏色接近
-- 價格合理
-- 品牌 / 商家適配
-- 台灣可購買性
-- 日常實穿性
+### slot fallback
+若 hard filter 後某 slot = 0，應啟用對應 fallback：
+- 保留 gender 排除
+- 保留 slot 基本類型
+- 放寬部分細節條件
+- 避免直接顯示空白
 
 ---
 
-## UI 規格原則
-
-### 查看單品
-- 每個 slot 建議 ≤ 3 個商品
-- slot 結構要清楚
-- 不能只有一長串商品列表
-- 商品卡不能過大
-- 商品圖片不可撐爆容器
-- 展開後內容不能過長到破壞整體體驗
-
-### Hero / 主畫面
-- Hero 卡片主結構不隨意更動
-- like / share / apply 位置不亂動
-- 商品區塊需維持在合理位置
-- 不為了修推薦功能破壞整體 UI
+## Ranking 方向
+目前排序應優先看：
+1. category / 類別命中
+2. color
+3. material
+4. sleeve_length / neckline（對 top 特別重要）
+5. 合理價格
+6. 台灣可買性（若可判斷）
+7. 避免精品極高價商品誤排到前面
 
 ---
 
-## 目前已知產品風險
+## 當前已知產品風險
 
-### 1. 商品與 AI 圖差距大
-這是目前最大風險。
+### 1. top 還可能為空
+尤其是：
+- knit polo
+- button-up shirt
+- 某些 short sleeve + material + neckline 條件一起出現時
 
-### 2. 性別同步問題
-使用者反映：
-- UI 顯示男
-- 但生成圖結果偏女
-這屬於高優先風險，會直接破壞信任感。
+### 2. 舊資料會嚴重拖累推薦品質
+若只剩：
+- `shopping_query: 男性 成人 commute`
+這種資料
+則搜尋品質必然很差。
 
-### 3. custom_products 過度主導
-若外部搜尋不準或未接上，容易退回只看 custom，導致結果封閉、重複、與圖像不一致。
-
-### 4. 點數扣除流程風險
-若 API 失敗仍扣點，會造成體驗與信任問題。
+### 3. outer 的推薦仍需真實案例校正
+雖然邏輯上已拆分，但還需要更多真實案例驗證：
+- cardigan 是否會誤進 top
+- jacket 是否會誤進 outer 以外類別
 
 ---
 
-## 現階段產品優先順序
-1. 修正性別 / 輪廓 / 條件同步
-2. 提升商品與 AI 圖相似度
-3. 優化查看單品 UI
-4. 再做進一步推薦策略優化
+## 現階段優先順序
+1. 穩定 top / outer 分流
+2. 確保 gender 一致
+3. 讓新 schema 真正主導搜尋
+4. 再做 UI 顯示優化
