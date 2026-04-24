@@ -1,6 +1,5 @@
 // pages/api/search-products.js
-// V3.0
-// 重點：top / outer 分流 + 台灣站優先
+// V3.2 - Taiwan-first + top/outer split + slot filters
 
 export const config = { runtime: "nodejs" };
 
@@ -28,6 +27,66 @@ function normalizeGender(input) {
   return "neutral";
 }
 
+// ===== 台灣站判斷 / 排序 =====
+const TW_DOMAINS = [
+  "shopee.tw",
+  "momoshop.com.tw",
+  "momo.com.tw",
+  "pchome.com.tw",
+  "24h.pchome.com.tw",
+  "shopping.friday.tw",
+  "tw.buy.yahoo.com",
+  "tw.mall.yahoo.com",
+  "yahoo.com.tw",
+  "rakuten.com.tw",
+  "pinkoi.com",
+  "uniqlo.com/tw",
+  "gu-global.com/tw",
+  "zara.com/tw",
+  "hm.com/zh_asia5",
+];
+
+const BAD_GLOBAL_DOMAINS = [
+  "ebay.",
+  "etsy.",
+  "poshmark.",
+  "mercari.",
+  "grailed.",
+  "depop.",
+  "vestiairecollective.",
+  "therealreal.",
+];
+
+function getUrlHost(link) {
+  try {
+    return new URL(link).hostname.toLowerCase();
+  } catch {
+    return "";
+  }
+}
+
+function isTaiwanProduct(p) {
+  const hay = norm(`${p.title || ""} ${p.merchant || ""} ${p.link || ""}`);
+  return TW_DOMAINS.some((d) => hay.includes(d)) ||
+    ["蝦皮", "momo", "pchome", "奇摩", "yahoo購物", "pinkoi", "博客來", "uniqlo 台灣", "gu 台灣"].some((w) =>
+      hay.includes(norm(w))
+    );
+}
+
+function isBadGlobalProduct(p) {
+  const hay = norm(`${p.title || ""} ${p.merchant || ""} ${p.link || ""}`);
+  return BAD_GLOBAL_DOMAINS.some((d) => hay.includes(d));
+}
+
+function scoreLocality(p) {
+  if (isTaiwanProduct(p)) return 8;
+  if (isBadGlobalProduct(p)) return -5;
+
+  const host = getUrlHost(p.link || "");
+  if (host.endsWith(".tw")) return 5;
+  return -1;
+}
+
 // ===== 類別 / 同義詞 =====
 function getCategorySynonyms(item) {
   const cat = norm(item.category || item.generic_name || item.display_name_zh);
@@ -35,11 +94,15 @@ function getCategorySynonyms(item) {
 
   // TOP / 上衣
   if (cat.includes("knit polo") || cat.includes("polo shirt")) return ["polo", "polo shirt", "knit polo"];
-  if (cat.includes("button-up shirt") || cat.includes("button up shirt")) return ["button-up shirt", "button down shirt", "shirt", "oxford shirt"];
+  if (cat.includes("button-up shirt") || cat.includes("button up shirt")) {
+    return ["button-up shirt", "button down shirt", "shirt", "oxford shirt"];
+  }
   if (cat.includes("shirt")) return ["shirt", "button-up shirt", "button down shirt", "oxford shirt"];
   if (cat.includes("graphic t-shirt")) return ["graphic t-shirt", "graphic tee", "t-shirt", "tee"];
   if (cat.includes("crew neck t-shirt")) return ["crew neck t-shirt", "t-shirt", "tee"];
-  if (cat.includes("long-sleeve t-shirt") || cat.includes("long sleeve t-shirt")) return ["long sleeve t-shirt", "long-sleeve tee", "t-shirt", "tee"];
+  if (cat.includes("long-sleeve t-shirt") || cat.includes("long sleeve t-shirt")) {
+    return ["long sleeve t-shirt", "long-sleeve tee", "t-shirt", "tee"];
+  }
   if (cat.includes("t-shirt") || cat.includes("tee")) return ["t-shirt", "tee"];
   if (cat.includes("sweater")) return ["sweater", "knit sweater", "pullover"];
 
@@ -51,11 +114,15 @@ function getCategorySynonyms(item) {
   if (cat.includes("jacket") || cat.includes("outer")) return ["jacket", "outerwear", "coat", "coach jacket"];
 
   // BOTTOM
-  if (cat.includes("straight-leg jeans") || cat.includes("straight leg jeans")) return ["jeans", "denim", "straight jeans", "straight-leg jeans"];
+  if (cat.includes("straight-leg jeans") || cat.includes("straight leg jeans")) {
+    return ["jeans", "denim", "straight jeans", "straight-leg jeans"];
+  }
   if (cat.includes("jeans")) return ["jeans", "denim", "denim pants"];
   if (cat.includes("chino shorts")) return ["chino shorts", "shorts"];
   if (cat.includes("shorts")) return ["shorts"];
-  if (cat.includes("straight-leg chinos") || cat.includes("straight leg chinos")) return ["chinos", "chino", "trousers", "pants"];
+  if (cat.includes("straight-leg chinos") || cat.includes("straight leg chinos")) {
+    return ["chinos", "chino", "trousers", "pants"];
+  }
   if (cat.includes("chino trousers")) return ["chino trousers", "chinos", "trousers", "pants"];
   if (cat.includes("chinos")) return ["chinos", "chino", "trousers", "pants"];
   if (cat.includes("trousers")) return ["trousers", "pants"];
@@ -63,8 +130,12 @@ function getCategorySynonyms(item) {
 
   // SHOES
   if (cat.includes("leather loafers") || cat.includes("loafers")) return ["loafer", "loafers", "slip-on"];
-  if (cat.includes("low-top leather sneakers") || cat.includes("leather sneakers")) return ["sneaker", "sneakers", "leather sneakers", "low-top sneakers"];
-  if (cat.includes("low-top canvas sneakers") || cat.includes("canvas sneakers")) return ["sneaker", "sneakers", "canvas sneakers", "low-top sneakers"];
+  if (cat.includes("low-top leather sneakers") || cat.includes("leather sneakers")) {
+    return ["sneaker", "sneakers", "leather sneakers", "low-top sneakers"];
+  }
+  if (cat.includes("low-top canvas sneakers") || cat.includes("canvas sneakers")) {
+    return ["sneaker", "sneakers", "canvas sneakers", "low-top sneakers"];
+  }
   if (cat.includes("trail")) return ["trail shoes", "trail running", "running shoes"];
   if (cat.includes("running")) return ["running shoes", "running sneaker", "trainer"];
   if (cat.includes("sneaker")) return ["sneaker", "sneakers", "trainer", "trainers", "casual shoes"];
@@ -87,7 +158,7 @@ function getCategorySynonyms(item) {
 }
 
 // ===== query =====
-function buildQuery(item, { locale, gender, styleTag }) {
+function buildQuery(item, { locale, gender, styleTag, localOnly = false }) {
   const useZH = locale === "tw";
 
   const genderWord =
@@ -106,14 +177,20 @@ function buildQuery(item, { locale, gender, styleTag }) {
     item.material,
     item.sleeve_length,
     item.neckline,
-    item.category || item.generic_name || item.display_name_zh
+    item.category || item.generic_name || item.display_name_zh,
   ]);
 
-  return uniq([genderWord, ...core, style]).filter(Boolean).join(" ");
+  const localWords = localOnly
+    ? (useZH ? "台灣 購物 蝦皮 momo PChome Yahoo" : "Taiwan shopping Shopee momo PChome Yahoo")
+    : "";
+
+  return uniq([genderWord, ...core, style, localWords]).filter(Boolean).join(" ");
 }
 
 // ===== 搜尋 =====
 async function searchGoogle(apiKey, q, gl = "tw", hl = "zh-tw") {
+  if (!apiKey) return [];
+
   const url = new URL("https://serpapi.com/search.json");
   url.searchParams.set("engine", "google_shopping");
   url.searchParams.set("q", q);
@@ -126,18 +203,32 @@ async function searchGoogle(apiKey, q, gl = "tw", hl = "zh-tw") {
   return j.shopping_results || [];
 }
 
+async function searchTaiwanFirst(apiKey, item, opts) {
+  const localQ = buildQuery(item, { ...opts, localOnly: true });
+  const globalQ = buildQuery(item, { ...opts, localOnly: false });
+
+  const localRaw = await searchGoogle(apiKey, localQ, "tw", "zh-tw");
+  const globalRaw = await searchGoogle(apiKey, globalQ, "tw", "zh-tw");
+
+  return {
+    localQ,
+    globalQ,
+    raw: [...localRaw, ...globalRaw],
+  };
+}
+
 // ===== gender / 黑名單 =====
 function isOppositeGenderProduct(p, gender) {
   const hay = norm(`${p.title || ""} ${p.merchant || ""} ${p.link || ""}`);
 
   const femaleWords = [
     "women", "woman", "womens", "ladies", "lady", "girl", "girls",
-    "女裝", "女款", "女生", "婦女", "womenswear"
+    "女裝", "女款", "女生", "婦女", "womenswear",
   ];
 
   const maleWords = [
     "men", "man", "mens", "boy", "boys",
-    "男裝", "男款", "男生", "menswear"
+    "男裝", "男款", "男生", "menswear",
   ];
 
   if (gender === "male") return femaleWords.some((w) => hay.includes(norm(w)));
@@ -150,7 +241,7 @@ function isForbiddenForSlot(title, slot, gender) {
 
   const maleForbidden = [
     "bra", "bralette", "crop top", "skirt", "dress", "bikini", "panties",
-    "heels", "blouse", "one-piece swimsuit", "swimsuit", "lingerie"
+    "heels", "blouse", "one-piece swimsuit", "swimsuit", "lingerie",
   ];
 
   if (gender === "male" && maleForbidden.some((w) => t.includes(w))) return true;
@@ -313,25 +404,10 @@ function hardFilter(list, item, slot, gender) {
       return true;
     }
 
-    if (slot === "outer") {
-      if (!passesMaterialFilter(p, item, slot)) return false;
-      return true;
-    }
-
-    if (slot === "bottom") {
-      if (!passesMaterialFilter(p, item, slot)) return false;
-      return true;
-    }
-
-    if (slot === "shoes") {
-      if (!passesMaterialFilter(p, item, slot)) return false;
-      return true;
-    }
-
-    if (slot === "bag") {
-      if (!passesMaterialFilter(p, item, slot)) return false;
-      return true;
-    }
+    if (slot === "outer") return passesMaterialFilter(p, item, slot);
+    if (slot === "bottom") return passesMaterialFilter(p, item, slot);
+    if (slot === "shoes") return passesMaterialFilter(p, item, slot);
+    if (slot === "bag") return passesMaterialFilter(p, item, slot);
 
     return true;
   });
@@ -343,12 +419,25 @@ function softFallbackFilter(list, item, slot, gender) {
     if (isForbiddenForSlot(p.title, slot, gender)) return false;
     if (!passesCategoryFilter(p, item, slot, "soft")) return false;
 
-    if (slot === "top") {
-      return passesSleeveFilter(p, item);
-    }
+    if (slot === "top") return passesSleeveFilter(p, item);
 
     return true;
   });
+}
+
+// ===== 去重 =====
+function dedupeProducts(list) {
+  const seen = new Set();
+  const out = [];
+
+  for (const p of list) {
+    const key = norm(p.link || p.title);
+    if (!key || seen.has(key)) continue;
+    seen.add(key);
+    out.push(p);
+  }
+
+  return out;
 }
 
 // ===== ranking =====
@@ -365,28 +454,7 @@ function scorePrice(p, slot) {
 
 function scoreLuxury(title) {
   const t = norm(title);
-  return ["off-white", "balenciaga", "gucci", "prada"].some((x) => t.includes(x)) ? -2 : 0;
-}
-
-function scoreLocality(p) {
-  const hay = norm(`${p.title || ""} ${p.merchant || ""} ${p.link || ""}`);
-
-  const tier1 = [
-    "shopee.tw", "蝦皮", "momo", "momoshop", "pchome", "24h.pchome",
-    "tw.buy.yahoo", "yahoo奇摩", "pinkoi", "uniqlo.com/tw", "gu-global.com/tw",
-    "zara.com/tw", "hm.com", "decathlon.tw", "lativ", "net-fashion",
-    "plain-me", "plain-me.com", "urban-research.tw"
-  ];
-
-  const tier2 = [".tw", "台灣", "taiwan", "taipei", "誠品", "博客來", "rakuten.com.tw"];
-  const foreignPenalty = ["ebay", "etsy", "poshmark", "mercari", "depop", "thredup", "grailed", "farfetch", "yoox", "ssense", "stockx", "goat.com"];
-  const expensiveLuxury = ["balenciaga", "gucci", "prada", "off-white", "saint laurent", "loewe"];
-
-  if (tier1.some((h) => hay.includes(norm(h)))) return 6;
-  if (tier2.some((h) => hay.includes(norm(h)))) return 3;
-  if (foreignPenalty.some((h) => hay.includes(norm(h)))) return -5;
-  if (expensiveLuxury.some((h) => hay.includes(norm(h)))) return -3;
-  return 0;
+  return ["off-white", "balenciaga", "gucci", "prada", "balmain"].some((x) => t.includes(x)) ? -2 : 0;
 }
 
 function scoreText(p, item) {
@@ -396,7 +464,7 @@ function scoreText(p, item) {
     ...tokenize(item.category || ""),
     ...tokenize(item.color || ""),
     ...tokenize(item.fit || ""),
-    ...tokenize(item.material || "")
+    ...tokenize(item.material || ""),
   ]);
 
   let s = 0;
@@ -433,14 +501,14 @@ function rank(list, item, slot) {
   return list
     .map((p) => {
       const score =
+        scoreLocality(p) +
         scoreText(p, item) +
         scoreCategory(p, item) +
         scoreDetails(p, item, slot) +
         scorePrice(p, slot) +
-        scoreLuxury(p.title) +
-        scoreLocality(p);
+        scoreLuxury(p.title);
 
-      return { ...p, _score: score };
+      return { ...p, _score: score, is_tw: isTaiwanProduct(p) };
     })
     .sort((a, b) => b._score - a._score);
 }
@@ -453,17 +521,30 @@ export default async function handler(req, res) {
 
   try {
     const apiKey = process.env.SERPAPI_API_KEY;
-    const { items = [], locale = "tw", gender = "neutral", styleTag } = req.body;
-    const normalizedGender = normalizeGender(gender);
+    const {
+      items = [],
+      locale = "tw",
+      gender = "neutral",
+      styleTag,
+      region = "tw",
+      preferLocal = true,
+    } = req.body || {};
 
+    const normalizedGender = normalizeGender(gender);
     const grouped = {};
     const debug = [];
 
     for (const item of items) {
       const slot = item.slot;
       const itemGender = normalizeGender(item.gender || normalizedGender);
-      const q = buildQuery(item, { locale, gender: itemGender, styleTag });
-      const raw = await searchGoogle(apiKey, q);
+
+      const { localQ, globalQ, raw } = preferLocal && region === "tw"
+        ? await searchTaiwanFirst(apiKey, item, { locale, gender: itemGender, styleTag })
+        : {
+            localQ: null,
+            globalQ: buildQuery(item, { locale, gender: itemGender, styleTag }),
+            raw: await searchGoogle(apiKey, buildQuery(item, { locale, gender: itemGender, styleTag })),
+          };
 
       let list = raw.map((p) => ({
         title: p.title,
@@ -472,13 +553,15 @@ export default async function handler(req, res) {
         price: p.price,
         extracted_price: p.extracted_price,
         merchant: p.source || p.merchant || "",
-        source: "google"
+        source: "google",
       }));
 
-      list = list.filter((x) => x.title && x.link && x.thumbnail);
-      const baseList = [...list];
-      const beforeCount = list.length;
+      list = dedupeProducts(list.filter((x) => x.title && x.link && x.thumbnail));
 
+      const beforeCount = list.length;
+      const twBeforeFilterCount = list.filter(isTaiwanProduct).length;
+
+      const baseList = [...list];
       list = hardFilter(list, item, slot, itemGender);
       const afterHardFilterCount = list.length;
 
@@ -490,21 +573,30 @@ export default async function handler(req, res) {
 
       const afterFallbackCount = list.length;
       const ranked = rank(list, item, slot);
-      grouped[slot] = ranked.slice(0, 3);
+
+      // 台灣優先：若有台灣商品，前 3 優先保留台灣商品，再用國外補位
+      const twRanked = ranked.filter(isTaiwanProduct);
+      const globalRanked = ranked.filter((p) => !isTaiwanProduct(p));
+      grouped[slot] = dedupeProducts([...twRanked, ...globalRanked]).slice(0, 3);
 
       debug.push({
         slot,
         originalGender: item.gender || gender,
         normalizedGender: itemGender,
-        query: q,
+        localQ,
+        globalQ,
         beforeCount,
+        twBeforeFilterCount,
         afterHardFilterCount,
         fallbackUsed,
         afterFallbackCount,
+        twFinalCount: grouped[slot].filter(isTaiwanProduct).length,
         top: grouped[slot].map((x) => ({
           title: x.title,
-          score: x._score
-        }))
+          merchant: x.merchant,
+          is_tw: isTaiwanProduct(x),
+          score: x._score,
+        })),
       });
     }
 
@@ -512,12 +604,12 @@ export default async function handler(req, res) {
       ok: true,
       grouped,
       flat: Object.values(grouped).flat(),
-      debug
+      debug,
     });
   } catch (e) {
     return res.status(500).json({
       ok: false,
-      error: e?.message || "search-products failed"
+      error: e?.message || "search-products failed",
     });
   }
 }
