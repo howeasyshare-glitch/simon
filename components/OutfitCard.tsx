@@ -1,8 +1,19 @@
 "use client";
 
+export type OutfitItem = {
+  id?: string;
+  image?: string;
+  imageUrl?: string;
+  url?: string;
+  title?: string;
+  summary?: string;
+  products?: any[];
+  [key: string]: any;
+};
+
 type Props = {
-  item: any;
-  onSelect?: (item: any) => void;
+  item: OutfitItem;
+  onSelect?: (item: OutfitItem) => void;
   userProfile?: {
     gender?: string;
     age?: string | number;
@@ -73,7 +84,6 @@ export default function OutfitCard({
           查看單品
         </div>
 
-        {/* 單層滾動：取消內層 max-height */}
         <div className="grid gap-3">
           {products.map((p: any, idx: number) => (
             <a
