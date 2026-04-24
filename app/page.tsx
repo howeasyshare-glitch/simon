@@ -427,17 +427,31 @@ const specResp = await apiPostJson<any>("/api/generate-outfit-spec", baseProfile
 
       if (!imgResp?.image_url) throw new Error("圖片生成失敗");
 
+      const settingSummary = `本次設定：${safeGender}・${safeAudience}｜${age}歲 ${height}cm ${weight}kg｜${temp}°C｜${activeSceneHint || sceneLabel}`;
+      const generatorSnapshot = {
+        gender: safeGender,
+        audience: safeAudience,
+        age,
+        height,
+        weight,
+        temp,
+        scene: safeScene,
+        sceneLabel,
+        hint: activeSceneHint || "",
+        withBag: Boolean(system.withBag),
+      };
+
       setGeneratedImageUrl(imgResp.image_url);
-      setGeneratedSummary(
-        `${sceneLabel} · 風格 ${system.temperature} · 創意 ${system.creativity} · 包包 ${
-          system.withBag ? "開啟" : "關閉"
-        }`
-      );
+      setGeneratedSummary(settingSummary);
 
             let resolvedProducts: any[] = [];
 
       try {
         const productsResp = await apiPostJson<any>("/api/data?op=products", {
+          locale: "tw",
+          region: "tw",
+          preferLocal: true,
+          profile: generatorSnapshot,
           items: safeItems.map((x: any) => ({
   slot: x.slot || "",
   label:
@@ -485,6 +499,10 @@ const specResp = await apiPostJson<any>("/api/generate-outfit-spec", baseProfile
   gender: safeGender,
   audience: safeAudience,
   scene: safeScene,
+  locale: "tw",
+  region: "tw",
+  preferLocal: true,
+  profile: generatorSnapshot,
 })),
           limitPerSlot: 3,
         });
@@ -504,11 +522,12 @@ const specResp = await apiPostJson<any>("/api/generate-outfit-spec", baseProfile
             style: selectedCeleb ? "celeb-inspired" : selectedScene,
             palette: "auto",
             styleVariant: selectedCeleb || selectedScene,
-            gender,
-            audience,
-            _echo: { age, height, weight, temp, gender, audience },
+            gender: safeGender,
+            audience: safeAudience,
+            profile_card: generatorSnapshot,
+            _echo: { ...generatorSnapshot },
           },
-          summary: specObj?.summary || promptContext,
+          summary: specObj?.summary || settingSummary || promptContext,
           products: resolvedProducts,
         });
         const slug = created?.outfit?.share_slug || created?.item?.share_slug;
@@ -555,6 +574,20 @@ const specResp = await apiPostJson<any>("/api/generate-outfit-spec", baseProfile
           isShared={isShared}
           mode="home"
         />
+
+        {stage === "generated" && generatedImageUrl ? (
+          <div className={styles.card}>
+            <div className={styles.blockTitle}>本次設定</div>
+            <div className={styles.generatorLeadValue}>{gender} · {audience}</div>
+            <div className={styles.generatorHintText}>{activeSceneHint || generatedSummary}</div>
+            <div className={styles.generatorStats}>
+              <div className={styles.generatorStat}><span className={styles.generatorStatLabel}>年齡</span><strong>{age}</strong></div>
+              <div className={styles.generatorStat}><span className={styles.generatorStatLabel}>身高</span><strong>{height} cm</strong></div>
+              <div className={styles.generatorStat}><span className={styles.generatorStatLabel}>體重</span><strong>{weight} kg</strong></div>
+              <div className={styles.generatorStat}><span className={styles.generatorStatLabel}>氣溫</span><strong>{temp}°C</strong></div>
+            </div>
+          </div>
+        ) : null}
       </div>
 
       <section className={styles.generatorSection}>
