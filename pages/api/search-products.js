@@ -1,6 +1,6 @@
 // pages/api/search-products.js
-// V2.5
-// 重點：top / outer 分流
+// V3.0
+// 重點：top / outer 分流 + 台灣站優先
 
 export const config = { runtime: "nodejs" };
 
@@ -368,9 +368,25 @@ function scoreLuxury(title) {
   return ["off-white", "balenciaga", "gucci", "prada"].some((x) => t.includes(x)) ? -2 : 0;
 }
 
-function scoreTW(p) {
-  const t = norm(`${p.title || ""} ${p.link || ""}`);
-  return ["蝦皮", "momo", "pchome", "yahoo"].some((h) => t.includes(norm(h))) ? 1 : 0;
+function scoreLocality(p) {
+  const hay = norm(`${p.title || ""} ${p.merchant || ""} ${p.link || ""}`);
+
+  const tier1 = [
+    "shopee.tw", "蝦皮", "momo", "momoshop", "pchome", "24h.pchome",
+    "tw.buy.yahoo", "yahoo奇摩", "pinkoi", "uniqlo.com/tw", "gu-global.com/tw",
+    "zara.com/tw", "hm.com", "decathlon.tw", "lativ", "net-fashion",
+    "plain-me", "plain-me.com", "urban-research.tw"
+  ];
+
+  const tier2 = [".tw", "台灣", "taiwan", "taipei", "誠品", "博客來", "rakuten.com.tw"];
+  const foreignPenalty = ["ebay", "etsy", "poshmark", "mercari", "depop", "thredup", "grailed", "farfetch", "yoox", "ssense", "stockx", "goat.com"];
+  const expensiveLuxury = ["balenciaga", "gucci", "prada", "off-white", "saint laurent", "loewe"];
+
+  if (tier1.some((h) => hay.includes(norm(h)))) return 6;
+  if (tier2.some((h) => hay.includes(norm(h)))) return 3;
+  if (foreignPenalty.some((h) => hay.includes(norm(h)))) return -5;
+  if (expensiveLuxury.some((h) => hay.includes(norm(h)))) return -3;
+  return 0;
 }
 
 function scoreText(p, item) {
@@ -422,7 +438,7 @@ function rank(list, item, slot) {
         scoreDetails(p, item, slot) +
         scorePrice(p, slot) +
         scoreLuxury(p.title) +
-        scoreTW(p);
+        scoreLocality(p);
 
       return { ...p, _score: score };
     })
