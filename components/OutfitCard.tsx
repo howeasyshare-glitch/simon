@@ -1,7 +1,7 @@
 "use client";
 
 export type OutfitItem = {
-  id?: string;
+  id: string;
   image?: string;
   imageUrl?: string;
   url?: string;
