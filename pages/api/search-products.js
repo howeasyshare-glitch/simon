@@ -1,5 +1,5 @@
 // pages/api/search-products.js
-// V3.3 - 中文台灣優先 + adult/kids 分流 + top/outer 穩定版
+// V3.5 - 台灣優先 + adult/kids 分流 + top/outer 穩定 + 每類至少 3 個
 
 export const config = { runtime: "nodejs" };
 
@@ -163,7 +163,7 @@ function buildZhQuery(item, { gender, audience, styleTag, domainHint = false }) 
     zhTerm(item.neckline, ZH_NECKLINE_MAP),
     categoryZh(item),
     styleZh(styleTag),
-    domainHint ? "site:shopee.tw OR site:momoshop.com.tw OR site:pchome.com.tw OR site:tw.buy.yahoo.com" : "台灣 購物 蝦皮 momo PChome Yahoo購物",
+    domainHint ? "site:shopee.tw OR site:momoshop.com.tw OR site:pchome.com.tw OR site:tw.buy.yahoo.com OR site:pinkoi.com" : "台灣 購物 蝦皮 momo PChome Yahoo購物 Pinkoi",
   ]);
   return tokens.filter(Boolean).join(" ");
 }
@@ -630,13 +630,13 @@ export default async function handler(req, res) {
       const itemAudience = normalizeAudience(item.audience || normalizedAudience);
 
       const zhQuery = buildZhQuery(item, { gender: itemGender, audience: itemAudience, styleTag, domainHint: false });
-      const zhDomainQuery = null;
+      const zhDomainQuery = buildZhQuery(item, { gender: itemGender, audience: itemAudience, styleTag, domainHint: true });
       const q = buildQuery(item, { locale, gender: itemGender, styleTag });
 
-      // 中文台灣搜尋優先，但不再用 domain-hint 強搜，避免結果過少；
-      // 英文原 query 永遠作為保底來源，防止 hard filter 後整組清空。
+      // V3.5：中文台灣搜尋優先，並額外補一輪台灣電商 domain query。
+      // 英文原 query 仍作為保底來源，防止 hard filter 後整組清空。
       const rawZh = await searchGoogle(apiKey, zhQuery, "tw", "zh-tw");
-      const rawZhDomain = [];
+      const rawZhDomain = await searchGoogle(apiKey, zhDomainQuery, "tw", "zh-tw");
       const rawGlobal = await searchGoogle(apiKey, q, "tw", "zh-tw");
 
       const seenRaw = new Set();
@@ -683,7 +683,27 @@ export default async function handler(req, res) {
       const ranked = rank(list, item, slot);
       const localRanked = ranked.filter(isLikelyTaiwanProduct);
       const foreignRanked = ranked.filter((p) => !isLikelyTaiwanProduct(p));
-      grouped[slot] = [...localRanked, ...foreignRanked].slice(0, 3);
+
+      let finalList = [...localRanked, ...foreignRanked];
+
+      // V3.5：每個分類盡量補滿 3 個。若 strict/soft 結果不足，
+      // 用 baseList 做最後補位，但仍保留 gender / slot 禁忌，避免亂進 bra、bikini、女鞋等。
+      if (finalList.length < 3) {
+        const existing = new Set(finalList.map((p) => p.link || p.title));
+        const fillers = rank(
+          baseList
+            .filter((p) => !existing.has(p.link || p.title))
+            .filter((p) => !isOppositeGenderProduct(p, itemGender))
+            .filter((p) => !isWrongAudienceProduct(p, itemAudience))
+            .filter((p) => !isForbiddenForSlot(p.title, slot, itemGender))
+            .filter((p) => passesCategoryFilter(p, item, slot, "soft")),
+          item,
+          slot
+        );
+        finalList = [...finalList, ...fillers];
+      }
+
+      grouped[slot] = finalList.slice(0, 3);
 
       debug.push({
         slot,
