@@ -293,15 +293,14 @@ function isOppositeGenderProduct(p, gender) {
 function isWrongAudienceProduct(p, audience) {
   const hay = norm(`${p.title || ""} ${p.merchant || ""} ${p.link || ""}`);
   const kidsWords = ["童裝", "兒童", "男童", "女童", "小童", "kids", "kid", "children", "child", "boys", "girls"];
-  const adultWords = ["成人", "男裝", "女裝", "men", "mens", "women", "womens", "ladies"];
 
-  if (audience === "kids") {
-    // 兒童搜尋可以接受未標註成人/兒童的結果，但要排除明確成人男女裝。
-    return adultWords.some((w) => hay.includes(norm(w))) && !kidsWords.some((w) => hay.includes(norm(w)));
+  // 只在成人案例排除明確童裝。兒童案例不在 hard filter 直接排除成人詞，
+  // 因為台灣商品標題常不標示童裝/成人，太硬會造成整組推薦被清空。
+  if (audience === "adult") {
+    return kidsWords.some((w) => hay.includes(norm(w)));
   }
 
-  // 成人搜尋時，明確童裝直接排除。
-  return kidsWords.some((w) => hay.includes(norm(w)));
+  return false;
 }
 
 function isForbiddenForSlot(title, slot, gender) {
@@ -631,15 +630,17 @@ export default async function handler(req, res) {
       const itemAudience = normalizeAudience(item.audience || normalizedAudience);
 
       const zhQuery = buildZhQuery(item, { gender: itemGender, audience: itemAudience, styleTag, domainHint: false });
-      const zhDomainQuery = buildZhQuery(item, { gender: itemGender, audience: itemAudience, styleTag, domainHint: true });
+      const zhDomainQuery = null;
       const q = buildQuery(item, { locale, gender: itemGender, styleTag });
 
+      // 中文台灣搜尋優先，但不再用 domain-hint 強搜，避免結果過少；
+      // 英文原 query 永遠作為保底來源，防止 hard filter 後整組清空。
       const rawZh = await searchGoogle(apiKey, zhQuery, "tw", "zh-tw");
-      const rawZhDomain = await searchGoogle(apiKey, zhDomainQuery, "tw", "zh-tw");
+      const rawZhDomain = [];
       const rawGlobal = await searchGoogle(apiKey, q, "tw", "zh-tw");
 
       const seenRaw = new Set();
-      const raw = [...rawZh, ...rawZhDomain, ...rawGlobal].filter((p) => {
+      const raw = [...rawZh, ...rawGlobal].filter((p) => {
         const key = p.product_link || p.link || p.title;
         if (!key || seenRaw.has(key)) return false;
         seenRaw.add(key);
@@ -669,6 +670,15 @@ export default async function handler(req, res) {
         fallbackUsed = true;
       }
 
+      let emergencyFallbackUsed = false;
+      if (list.length === 0) {
+        list = baseList
+          .filter((p) => !isOppositeGenderProduct(p, itemGender))
+          .filter((p) => !isForbiddenForSlot(p.title, slot, itemGender))
+          .slice(0, 12);
+        emergencyFallbackUsed = true;
+      }
+
       const afterFallbackCount = list.length;
       const ranked = rank(list, item, slot);
       const localRanked = ranked.filter(isLikelyTaiwanProduct);
@@ -688,6 +698,7 @@ export default async function handler(req, res) {
         beforeCount,
         afterHardFilterCount,
         fallbackUsed,
+        emergencyFallbackUsed,
         afterFallbackCount,
         top: grouped[slot].map((x) => ({
           title: x.title,
