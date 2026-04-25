@@ -178,6 +178,28 @@ export default function Page() {
     return quickSceneMap[`${gender}-${audience}`] || quickSceneMap["中性-成人"];
   }, [gender, audience]);
 
+
+  const bodyRange = useMemo(() => {
+    if (audience === "兒童") {
+      return {
+        age: { min: 3, max: 12, fallback: 8 },
+        height: { min: 90, max: 155, fallback: 125 },
+        weight: { min: 12, max: 55, fallback: 25 },
+      };
+    }
+
+    return {
+      age: { min: 18, max: 65, fallback: 30 },
+      height: { min: 145, max: 200, fallback: 165 },
+      weight: { min: 35, max: 120, fallback: 55 },
+    };
+  }, [audience]);
+
+  useEffect(() => {
+    setAge((v) => Math.min(bodyRange.age.max, Math.max(bodyRange.age.min, Number(v) || bodyRange.age.fallback)));
+    setHeight((v) => Math.min(bodyRange.height.max, Math.max(bodyRange.height.min, Number(v) || bodyRange.height.fallback)));
+    setWeight((v) => Math.min(bodyRange.weight.max, Math.max(bodyRange.weight.min, Number(v) || bodyRange.weight.fallback)));
+  }, [bodyRange]);
   useEffect(() => {
     if (!quickScenes.some((scene) => scene.id === selectedScene)) {
       setSelectedScene(quickScenes[0]?.id || "date");
@@ -488,8 +510,9 @@ const specResp = await apiPostJson<any>("/api/generate-outfit-spec", baseProfile
 })),
           limitPerSlot: 3,
           locale: "tw",
-          region: "TW",
-          profile: productProfileSnapshot,
+          region: "tw",
+          preferLocal: true,
+          audience: safeAudience,
         });
 
         resolvedProducts = Array.isArray(productsResp?.products)
@@ -537,6 +560,7 @@ const specResp = await apiPostJson<any>("/api/generate-outfit-spec", baseProfile
     return quickScenes.find((s) => s.id === selectedScene)?.hint || "";
   }, [selectedScene, selectedCeleb, quickScenes]);
 
+
   const productProfileSnapshot = useMemo(() => ({
     gender,
     audience,
@@ -544,10 +568,8 @@ const specResp = await apiPostJson<any>("/api/generate-outfit-spec", baseProfile
     height,
     weight,
     temp,
-    sceneLabel: activeLabel || "日常穿搭",
-    sceneHint: activeSceneHint || generatedSummary || "依據本次生成條件推薦相似單品",
-    summary: generatedSummary,
-  }), [gender, audience, age, height, weight, temp, activeLabel, activeSceneHint, generatedSummary]);
+    summary: activeSceneHint || "今日推薦風格",
+  }), [gender, audience, age, height, weight, temp, activeSceneHint]);
 
   return (
     <main className={styles.page}>
@@ -645,17 +667,17 @@ const specResp = await apiPostJson<any>("/api/generate-outfit-spec", baseProfile
               <div className={styles.sliderGrid}>
                 <label className={styles.sliderCard}>
                   <span className={styles.sliderTop}><span className={styles.sliderLabel}>年齡</span><span className={styles.sliderValue}>{age}</span></span>
-                  <input type="range" min="5" max="60" value={age} onChange={(e) => setAge(Number(e.target.value))} />
+                  <input type="range" min={bodyRange.age.min} max={bodyRange.age.max} value={age} onChange={(e) => setAge(Number(e.target.value))} />
                 </label>
 
                 <label className={styles.sliderCard}>
                   <span className={styles.sliderTop}><span className={styles.sliderLabel}>身高</span><span className={styles.sliderValue}>{height} cm</span></span>
-                  <input type="range" min="120" max="200" value={height} onChange={(e) => setHeight(Number(e.target.value))} />
+                  <input type="range" min={bodyRange.height.min} max={bodyRange.height.max} value={height} onChange={(e) => setHeight(Number(e.target.value))} />
                 </label>
 
                 <label className={styles.sliderCard}>
                   <span className={styles.sliderTop}><span className={styles.sliderLabel}>體重</span><span className={styles.sliderValue}>{weight} kg</span></span>
-                  <input type="range" min="30" max="120" value={weight} onChange={(e) => setWeight(Number(e.target.value))} />
+                  <input type="range" min={bodyRange.weight.min} max={bodyRange.weight.max} value={weight} onChange={(e) => setWeight(Number(e.target.value))} />
                 </label>
 
                 <label className={styles.sliderCard}>
