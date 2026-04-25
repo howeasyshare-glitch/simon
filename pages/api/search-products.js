@@ -1,5 +1,5 @@
 // pages/api/search-products.js
-// V3.2 - Taiwan-first + top/outer split + slot filters
+// V3.3 - 中文台灣優先 + adult/kids 分流 + top/outer 穩定版
 
 export const config = { runtime: "nodejs" };
 
@@ -27,64 +27,145 @@ function normalizeGender(input) {
   return "neutral";
 }
 
-// ===== 台灣站判斷 / 排序 =====
-const TW_DOMAINS = [
-  "shopee.tw",
-  "momoshop.com.tw",
-  "momo.com.tw",
-  "pchome.com.tw",
-  "24h.pchome.com.tw",
-  "shopping.friday.tw",
-  "tw.buy.yahoo.com",
-  "tw.mall.yahoo.com",
-  "yahoo.com.tw",
-  "rakuten.com.tw",
-  "pinkoi.com",
-  "uniqlo.com/tw",
-  "gu-global.com/tw",
-  "zara.com/tw",
-  "hm.com/zh_asia5",
+
+function normalizeAudience(input) {
+  const a = String(input || "").trim().toLowerCase();
+  if (["kids", "kid", "child", "children", "boy", "girl", "兒童", "童裝", "小孩", "小童", "男童", "女童"].includes(a)) return "kids";
+  return "adult";
+}
+
+const ZH_COLOR_MAP = {
+  navy: "海軍藍",
+  "navy blue": "海軍藍",
+  blue: "藍色",
+  beige: "米色",
+  khaki: "卡其色",
+  cream: "奶油色",
+  white: "白色",
+  black: "黑色",
+  gray: "灰色",
+  grey: "灰色",
+  brown: "棕色",
+  olive: "橄欖綠",
+  "olive green": "橄欖綠",
+  green: "綠色",
+  red: "紅色",
+};
+
+const ZH_MATERIAL_MAP = {
+  knit: "針織",
+  cotton: "棉質",
+  "knit cotton": "針織棉",
+  "cotton blend": "棉混紡",
+  denim: "牛仔",
+  leather: "皮革",
+  canvas: "帆布",
+  nylon: "尼龍",
+  fleece: "刷毛",
+};
+
+const ZH_FIT_MAP = {
+  slim: "合身",
+  regular: "標準版型",
+  relaxed: "寬鬆",
+  oversized: "寬版",
+  straight: "直筒",
+};
+
+const ZH_SLEEVE_MAP = {
+  "short sleeve": "短袖",
+  "long sleeve": "長袖",
+  sleeveless: "無袖",
+};
+
+const ZH_NECKLINE_MAP = {
+  "crew neck": "圓領",
+  "polo collar": "Polo領",
+  "shirt collar": "襯衫領",
+  hooded: "連帽",
+  "lapel collar": "翻領",
+};
+
+const ZH_CATEGORY_MAP = [
+  ["knit polo", "針織 Polo 衫"],
+  ["polo shirt", "Polo 衫"],
+  ["button-up shirt", "襯衫"],
+  ["button up shirt", "襯衫"],
+  ["graphic t-shirt", "圖案 T 恤"],
+  ["crew neck t-shirt", "圓領 T 恤"],
+  ["long sleeve t-shirt", "長袖 T 恤"],
+  ["t-shirt", "T 恤"],
+  ["tee", "T 恤"],
+  ["sweater", "針織衫"],
+  ["cardigan", "針織外套"],
+  ["hoodie", "連帽外套"],
+  ["utility jacket", "機能外套"],
+  ["fleece jacket", "刷毛外套"],
+  ["jacket", "外套"],
+  ["jeans", "牛仔褲"],
+  ["chino shorts", "卡其短褲"],
+  ["shorts", "短褲"],
+  ["chino", "卡其褲"],
+  ["trousers", "長褲"],
+  ["cargo", "工裝褲"],
+  ["loafers", "樂福鞋"],
+  ["loafer", "樂福鞋"],
+  ["leather sneakers", "皮革休閒鞋"],
+  ["canvas sneakers", "帆布休閒鞋"],
+  ["sneaker", "休閒鞋"],
+  ["boot", "靴子"],
+  ["crossbody", "斜背包"],
+  ["messenger", "郵差包"],
+  ["tote", "托特包"],
+  ["bag", "包包"],
 ];
 
-const BAD_GLOBAL_DOMAINS = [
-  "ebay.",
-  "etsy.",
-  "poshmark.",
-  "mercari.",
-  "grailed.",
-  "depop.",
-  "vestiairecollective.",
-  "therealreal.",
-];
+function zhTerm(v, map) {
+  const key = norm(v);
+  return map[key] || safe(v);
+}
 
-function getUrlHost(link) {
-  try {
-    return new URL(link).hostname.toLowerCase();
-  } catch {
-    return "";
+function categoryZh(item) {
+  const cat = norm(item.category || item.generic_name || item.display_name_zh || item.label);
+  if (item.display_name_zh) return safe(item.display_name_zh);
+  for (const [needle, zh] of ZH_CATEGORY_MAP) {
+    if (cat.includes(needle)) return zh;
   }
+  return safe(item.category || item.generic_name || item.label || "服裝");
 }
 
-function isTaiwanProduct(p) {
-  const hay = norm(`${p.title || ""} ${p.merchant || ""} ${p.link || ""}`);
-  return TW_DOMAINS.some((d) => hay.includes(d)) ||
-    ["蝦皮", "momo", "pchome", "奇摩", "yahoo購物", "pinkoi", "博客來", "uniqlo 台灣", "gu 台灣"].some((w) =>
-      hay.includes(norm(w))
-    );
+function audienceGenderWord(gender, audience) {
+  if (audience === "kids") {
+    if (gender === "male") return "男童 童裝";
+    if (gender === "female") return "女童 童裝";
+    return "兒童 童裝";
+  }
+  if (gender === "male") return "男裝";
+  if (gender === "female") return "女裝";
+  return "中性 服裝";
 }
 
-function isBadGlobalProduct(p) {
-  const hay = norm(`${p.title || ""} ${p.merchant || ""} ${p.link || ""}`);
-  return BAD_GLOBAL_DOMAINS.some((d) => hay.includes(d));
+function styleZh(styleTag) {
+  if (styleTag === "scene_commute") return "通勤 穿搭";
+  if (styleTag === "scene_casual") return "休閒 穿搭";
+  if (styleTag === "scene_date") return "約會 穿搭";
+  if (styleTag === "scene_outdoor") return "戶外 穿搭";
+  return "";
 }
 
-function scoreLocality(p) {
-  if (isTaiwanProduct(p)) return 8;
-  if (isBadGlobalProduct(p)) return -5;
-
-  const host = getUrlHost(p.link || "");
-  if (host.endsWith(".tw")) return 5;
-  return -1;
+function buildZhQuery(item, { gender, audience, styleTag, domainHint = false }) {
+  const tokens = uniq([
+    audienceGenderWord(gender, audience),
+    zhTerm(item.color, ZH_COLOR_MAP),
+    zhTerm(item.fit, ZH_FIT_MAP),
+    zhTerm(item.material, ZH_MATERIAL_MAP),
+    zhTerm(item.sleeve_length, ZH_SLEEVE_MAP),
+    zhTerm(item.neckline, ZH_NECKLINE_MAP),
+    categoryZh(item),
+    styleZh(styleTag),
+    domainHint ? "site:shopee.tw OR site:momoshop.com.tw OR site:pchome.com.tw OR site:tw.buy.yahoo.com" : "台灣 購物 蝦皮 momo PChome Yahoo購物",
+  ]);
+  return tokens.filter(Boolean).join(" ");
 }
 
 // ===== 類別 / 同義詞 =====
@@ -94,15 +175,11 @@ function getCategorySynonyms(item) {
 
   // TOP / 上衣
   if (cat.includes("knit polo") || cat.includes("polo shirt")) return ["polo", "polo shirt", "knit polo"];
-  if (cat.includes("button-up shirt") || cat.includes("button up shirt")) {
-    return ["button-up shirt", "button down shirt", "shirt", "oxford shirt"];
-  }
+  if (cat.includes("button-up shirt") || cat.includes("button up shirt")) return ["button-up shirt", "button down shirt", "shirt", "oxford shirt"];
   if (cat.includes("shirt")) return ["shirt", "button-up shirt", "button down shirt", "oxford shirt"];
   if (cat.includes("graphic t-shirt")) return ["graphic t-shirt", "graphic tee", "t-shirt", "tee"];
   if (cat.includes("crew neck t-shirt")) return ["crew neck t-shirt", "t-shirt", "tee"];
-  if (cat.includes("long-sleeve t-shirt") || cat.includes("long sleeve t-shirt")) {
-    return ["long sleeve t-shirt", "long-sleeve tee", "t-shirt", "tee"];
-  }
+  if (cat.includes("long-sleeve t-shirt") || cat.includes("long sleeve t-shirt")) return ["long sleeve t-shirt", "long-sleeve tee", "t-shirt", "tee"];
   if (cat.includes("t-shirt") || cat.includes("tee")) return ["t-shirt", "tee"];
   if (cat.includes("sweater")) return ["sweater", "knit sweater", "pullover"];
 
@@ -114,15 +191,11 @@ function getCategorySynonyms(item) {
   if (cat.includes("jacket") || cat.includes("outer")) return ["jacket", "outerwear", "coat", "coach jacket"];
 
   // BOTTOM
-  if (cat.includes("straight-leg jeans") || cat.includes("straight leg jeans")) {
-    return ["jeans", "denim", "straight jeans", "straight-leg jeans"];
-  }
+  if (cat.includes("straight-leg jeans") || cat.includes("straight leg jeans")) return ["jeans", "denim", "straight jeans", "straight-leg jeans"];
   if (cat.includes("jeans")) return ["jeans", "denim", "denim pants"];
   if (cat.includes("chino shorts")) return ["chino shorts", "shorts"];
   if (cat.includes("shorts")) return ["shorts"];
-  if (cat.includes("straight-leg chinos") || cat.includes("straight leg chinos")) {
-    return ["chinos", "chino", "trousers", "pants"];
-  }
+  if (cat.includes("straight-leg chinos") || cat.includes("straight leg chinos")) return ["chinos", "chino", "trousers", "pants"];
   if (cat.includes("chino trousers")) return ["chino trousers", "chinos", "trousers", "pants"];
   if (cat.includes("chinos")) return ["chinos", "chino", "trousers", "pants"];
   if (cat.includes("trousers")) return ["trousers", "pants"];
@@ -130,12 +203,8 @@ function getCategorySynonyms(item) {
 
   // SHOES
   if (cat.includes("leather loafers") || cat.includes("loafers")) return ["loafer", "loafers", "slip-on"];
-  if (cat.includes("low-top leather sneakers") || cat.includes("leather sneakers")) {
-    return ["sneaker", "sneakers", "leather sneakers", "low-top sneakers"];
-  }
-  if (cat.includes("low-top canvas sneakers") || cat.includes("canvas sneakers")) {
-    return ["sneaker", "sneakers", "canvas sneakers", "low-top sneakers"];
-  }
+  if (cat.includes("low-top leather sneakers") || cat.includes("leather sneakers")) return ["sneaker", "sneakers", "leather sneakers", "low-top sneakers"];
+  if (cat.includes("low-top canvas sneakers") || cat.includes("canvas sneakers")) return ["sneaker", "sneakers", "canvas sneakers", "low-top sneakers"];
   if (cat.includes("trail")) return ["trail shoes", "trail running", "running shoes"];
   if (cat.includes("running")) return ["running shoes", "running sneaker", "trainer"];
   if (cat.includes("sneaker")) return ["sneaker", "sneakers", "trainer", "trainers", "casual shoes"];
@@ -158,7 +227,7 @@ function getCategorySynonyms(item) {
 }
 
 // ===== query =====
-function buildQuery(item, { locale, gender, styleTag, localOnly = false }) {
+function buildQuery(item, { locale, gender, styleTag }) {
   const useZH = locale === "tw";
 
   const genderWord =
@@ -177,20 +246,18 @@ function buildQuery(item, { locale, gender, styleTag, localOnly = false }) {
     item.material,
     item.sleeve_length,
     item.neckline,
-    item.category || item.generic_name || item.display_name_zh,
+    item.category || item.generic_name || item.display_name_zh
   ]);
 
-  const localWords = localOnly
-    ? (useZH ? "台灣 購物 蝦皮 momo PChome Yahoo" : "Taiwan shopping Shopee momo PChome Yahoo")
-    : "";
-
-  return uniq([genderWord, ...core, style, localWords]).filter(Boolean).join(" ");
+  return uniq([genderWord, ...core, style]).filter(Boolean).join(" ");
 }
 
 // ===== 搜尋 =====
-async function searchGoogle(apiKey, q, gl = "tw", hl = "zh-tw") {
-  if (!apiKey) return [];
+function buildTaiwanFirstQuery(q) {
+  return `${q} 台灣 蝦皮 momo PChome Yahoo購物 Pinkoi`;
+}
 
+async function searchGoogle(apiKey, q, gl = "tw", hl = "zh-tw") {
   const url = new URL("https://serpapi.com/search.json");
   url.searchParams.set("engine", "google_shopping");
   url.searchParams.set("q", q);
@@ -203,32 +270,18 @@ async function searchGoogle(apiKey, q, gl = "tw", hl = "zh-tw") {
   return j.shopping_results || [];
 }
 
-async function searchTaiwanFirst(apiKey, item, opts) {
-  const localQ = buildQuery(item, { ...opts, localOnly: true });
-  const globalQ = buildQuery(item, { ...opts, localOnly: false });
-
-  const localRaw = await searchGoogle(apiKey, localQ, "tw", "zh-tw");
-  const globalRaw = await searchGoogle(apiKey, globalQ, "tw", "zh-tw");
-
-  return {
-    localQ,
-    globalQ,
-    raw: [...localRaw, ...globalRaw],
-  };
-}
-
 // ===== gender / 黑名單 =====
 function isOppositeGenderProduct(p, gender) {
   const hay = norm(`${p.title || ""} ${p.merchant || ""} ${p.link || ""}`);
 
   const femaleWords = [
     "women", "woman", "womens", "ladies", "lady", "girl", "girls",
-    "女裝", "女款", "女生", "婦女", "womenswear",
+    "女裝", "女款", "女生", "婦女", "womenswear"
   ];
 
   const maleWords = [
     "men", "man", "mens", "boy", "boys",
-    "男裝", "男款", "男生", "menswear",
+    "男裝", "男款", "男生", "menswear"
   ];
 
   if (gender === "male") return femaleWords.some((w) => hay.includes(norm(w)));
@@ -236,12 +289,27 @@ function isOppositeGenderProduct(p, gender) {
   return false;
 }
 
+
+function isWrongAudienceProduct(p, audience) {
+  const hay = norm(`${p.title || ""} ${p.merchant || ""} ${p.link || ""}`);
+  const kidsWords = ["童裝", "兒童", "男童", "女童", "小童", "kids", "kid", "children", "child", "boys", "girls"];
+  const adultWords = ["成人", "男裝", "女裝", "men", "mens", "women", "womens", "ladies"];
+
+  if (audience === "kids") {
+    // 兒童搜尋可以接受未標註成人/兒童的結果，但要排除明確成人男女裝。
+    return adultWords.some((w) => hay.includes(norm(w))) && !kidsWords.some((w) => hay.includes(norm(w)));
+  }
+
+  // 成人搜尋時，明確童裝直接排除。
+  return kidsWords.some((w) => hay.includes(norm(w)));
+}
+
 function isForbiddenForSlot(title, slot, gender) {
   const t = norm(title);
 
   const maleForbidden = [
     "bra", "bralette", "crop top", "skirt", "dress", "bikini", "panties",
-    "heels", "blouse", "one-piece swimsuit", "swimsuit", "lingerie",
+    "heels", "blouse", "one-piece swimsuit", "swimsuit", "lingerie"
   ];
 
   if (gender === "male" && maleForbidden.some((w) => t.includes(w))) return true;
@@ -392,9 +460,10 @@ function passesNecklineFilter(p, item) {
 }
 
 // ===== filter =====
-function hardFilter(list, item, slot, gender) {
+function hardFilter(list, item, slot, gender, audience) {
   return list.filter((p) => {
     if (isOppositeGenderProduct(p, gender)) return false;
+    if (isWrongAudienceProduct(p, audience)) return false;
     if (isForbiddenForSlot(p.title, slot, gender)) return false;
     if (!passesCategoryFilter(p, item, slot, "strict")) return false;
 
@@ -404,40 +473,43 @@ function hardFilter(list, item, slot, gender) {
       return true;
     }
 
-    if (slot === "outer") return passesMaterialFilter(p, item, slot);
-    if (slot === "bottom") return passesMaterialFilter(p, item, slot);
-    if (slot === "shoes") return passesMaterialFilter(p, item, slot);
-    if (slot === "bag") return passesMaterialFilter(p, item, slot);
+    if (slot === "outer") {
+      if (!passesMaterialFilter(p, item, slot)) return false;
+      return true;
+    }
+
+    if (slot === "bottom") {
+      if (!passesMaterialFilter(p, item, slot)) return false;
+      return true;
+    }
+
+    if (slot === "shoes") {
+      if (!passesMaterialFilter(p, item, slot)) return false;
+      return true;
+    }
+
+    if (slot === "bag") {
+      if (!passesMaterialFilter(p, item, slot)) return false;
+      return true;
+    }
 
     return true;
   });
 }
 
-function softFallbackFilter(list, item, slot, gender) {
+function softFallbackFilter(list, item, slot, gender, audience) {
   return list.filter((p) => {
     if (isOppositeGenderProduct(p, gender)) return false;
+    if (isWrongAudienceProduct(p, audience)) return false;
     if (isForbiddenForSlot(p.title, slot, gender)) return false;
     if (!passesCategoryFilter(p, item, slot, "soft")) return false;
 
-    if (slot === "top") return passesSleeveFilter(p, item);
+    if (slot === "top") {
+      return passesSleeveFilter(p, item);
+    }
 
     return true;
   });
-}
-
-// ===== 去重 =====
-function dedupeProducts(list) {
-  const seen = new Set();
-  const out = [];
-
-  for (const p of list) {
-    const key = norm(p.link || p.title);
-    if (!key || seen.has(key)) continue;
-    seen.add(key);
-    out.push(p);
-  }
-
-  return out;
 }
 
 // ===== ranking =====
@@ -454,7 +526,32 @@ function scorePrice(p, slot) {
 
 function scoreLuxury(title) {
   const t = norm(title);
-  return ["off-white", "balenciaga", "gucci", "prada", "balmain"].some((x) => t.includes(x)) ? -2 : 0;
+  return ["off-white", "balenciaga", "gucci", "prada"].some((x) => t.includes(x)) ? -2 : 0;
+}
+
+function getLocalityScore(p) {
+  const t = norm(`${p.title || ""} ${p.merchant || ""} ${p.link || ""}`);
+
+  const strongTW = [
+    "shopee.tw", "蝦皮", "momo", "momoshop", "momo購物",
+    "pchome", "24h", "tw.mall.yahoo", "yahoo購物", "yahoo奇摩",
+    "pinkoi", ".tw/", ".com.tw"
+  ];
+  const okAsia = ["rakuten", "uniqlo", "gu", "zara", "muji", "淘寶", "韓國", "日本"];
+  const weakForeign = ["ebay", "etsy", "poshmark", "mercari", "depop", "vestiaire", "farfetch", "ssense"];
+
+  if (strongTW.some((h) => t.includes(norm(h)))) return 8;
+  if (okAsia.some((h) => t.includes(norm(h)))) return 2;
+  if (weakForeign.some((h) => t.includes(norm(h)))) return -4;
+  return 0;
+}
+
+function isLikelyTaiwanProduct(p) {
+  return getLocalityScore(p) >= 8;
+}
+
+function scoreTW(p) {
+  return getLocalityScore(p);
 }
 
 function scoreText(p, item) {
@@ -464,7 +561,7 @@ function scoreText(p, item) {
     ...tokenize(item.category || ""),
     ...tokenize(item.color || ""),
     ...tokenize(item.fit || ""),
-    ...tokenize(item.material || ""),
+    ...tokenize(item.material || "")
   ]);
 
   let s = 0;
@@ -501,14 +598,14 @@ function rank(list, item, slot) {
   return list
     .map((p) => {
       const score =
-        scoreLocality(p) +
         scoreText(p, item) +
         scoreCategory(p, item) +
         scoreDetails(p, item, slot) +
         scorePrice(p, slot) +
-        scoreLuxury(p.title);
+        scoreLuxury(p.title) +
+        scoreTW(p);
 
-      return { ...p, _score: score, is_tw: isTaiwanProduct(p) };
+      return { ...p, _score: score };
     })
     .sort((a, b) => b._score - a._score);
 }
@@ -521,30 +618,33 @@ export default async function handler(req, res) {
 
   try {
     const apiKey = process.env.SERPAPI_API_KEY;
-    const {
-      items = [],
-      locale = "tw",
-      gender = "neutral",
-      styleTag,
-      region = "tw",
-      preferLocal = true,
-    } = req.body || {};
-
+    const { items = [], locale = "tw", gender = "neutral", audience = "adult", styleTag } = req.body;
     const normalizedGender = normalizeGender(gender);
+    const normalizedAudience = normalizeAudience(audience);
+
     const grouped = {};
     const debug = [];
 
     for (const item of items) {
       const slot = item.slot;
       const itemGender = normalizeGender(item.gender || normalizedGender);
+      const itemAudience = normalizeAudience(item.audience || normalizedAudience);
 
-      const { localQ, globalQ, raw } = preferLocal && region === "tw"
-        ? await searchTaiwanFirst(apiKey, item, { locale, gender: itemGender, styleTag })
-        : {
-            localQ: null,
-            globalQ: buildQuery(item, { locale, gender: itemGender, styleTag }),
-            raw: await searchGoogle(apiKey, buildQuery(item, { locale, gender: itemGender, styleTag })),
-          };
+      const zhQuery = buildZhQuery(item, { gender: itemGender, audience: itemAudience, styleTag, domainHint: false });
+      const zhDomainQuery = buildZhQuery(item, { gender: itemGender, audience: itemAudience, styleTag, domainHint: true });
+      const q = buildQuery(item, { locale, gender: itemGender, styleTag });
+
+      const rawZh = await searchGoogle(apiKey, zhQuery, "tw", "zh-tw");
+      const rawZhDomain = await searchGoogle(apiKey, zhDomainQuery, "tw", "zh-tw");
+      const rawGlobal = await searchGoogle(apiKey, q, "tw", "zh-tw");
+
+      const seenRaw = new Set();
+      const raw = [...rawZh, ...rawZhDomain, ...rawGlobal].filter((p) => {
+        const key = p.product_link || p.link || p.title;
+        if (!key || seenRaw.has(key)) return false;
+        seenRaw.add(key);
+        return true;
+      });
 
       let list = raw.map((p) => ({
         title: p.title,
@@ -553,50 +653,46 @@ export default async function handler(req, res) {
         price: p.price,
         extracted_price: p.extracted_price,
         merchant: p.source || p.merchant || "",
-        source: "google",
+        source: "google"
       }));
 
-      list = dedupeProducts(list.filter((x) => x.title && x.link && x.thumbnail));
-
-      const beforeCount = list.length;
-      const twBeforeFilterCount = list.filter(isTaiwanProduct).length;
-
+      list = list.filter((x) => x.title && x.link && x.thumbnail);
       const baseList = [...list];
-      list = hardFilter(list, item, slot, itemGender);
+      const beforeCount = list.length;
+
+      list = hardFilter(list, item, slot, itemGender, itemAudience);
       const afterHardFilterCount = list.length;
 
       let fallbackUsed = false;
       if (list.length === 0 && ["top", "outer", "bottom", "shoes", "bag"].includes(slot)) {
-        list = softFallbackFilter(baseList, item, slot, itemGender);
+        list = softFallbackFilter(baseList, item, slot, itemGender, itemAudience);
         fallbackUsed = true;
       }
 
       const afterFallbackCount = list.length;
       const ranked = rank(list, item, slot);
-
-      // 台灣優先：若有台灣商品，前 3 優先保留台灣商品，再用國外補位
-      const twRanked = ranked.filter(isTaiwanProduct);
-      const globalRanked = ranked.filter((p) => !isTaiwanProduct(p));
-      grouped[slot] = dedupeProducts([...twRanked, ...globalRanked]).slice(0, 3);
+      const localRanked = ranked.filter(isLikelyTaiwanProduct);
+      const foreignRanked = ranked.filter((p) => !isLikelyTaiwanProduct(p));
+      grouped[slot] = [...localRanked, ...foreignRanked].slice(0, 3);
 
       debug.push({
         slot,
         originalGender: item.gender || gender,
         normalizedGender: itemGender,
-        localQ,
-        globalQ,
+        originalAudience: item.audience || audience,
+        normalizedAudience: itemAudience,
+        query: q,
+        zhQuery,
+        zhDomainQuery,
+        localCount: grouped[slot].filter(isLikelyTaiwanProduct).length,
         beforeCount,
-        twBeforeFilterCount,
         afterHardFilterCount,
         fallbackUsed,
         afterFallbackCount,
-        twFinalCount: grouped[slot].filter(isTaiwanProduct).length,
         top: grouped[slot].map((x) => ({
           title: x.title,
-          merchant: x.merchant,
-          is_tw: isTaiwanProduct(x),
-          score: x._score,
-        })),
+          score: x._score
+        }))
       });
     }
 
@@ -604,12 +700,12 @@ export default async function handler(req, res) {
       ok: true,
       grouped,
       flat: Object.values(grouped).flat(),
-      debug,
+      debug
     });
   } catch (e) {
     return res.status(500).json({
       ok: false,
-      error: e?.message || "search-products failed",
+      error: e?.message || "search-products failed"
     });
   }
 }
