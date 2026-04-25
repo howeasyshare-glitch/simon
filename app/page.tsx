@@ -130,6 +130,23 @@ function ActivityMiniCard({
   );
 }
 
+function normalizeCardSnapshot(item: any) {
+  const echo = item?.style?._echo || item?.style?.profile_snapshot || item?.spec?._echo || item?.spec?._snapshot || item?._snapshot;
+  if (!echo) return item;
+
+  return {
+    ...item,
+    _snapshot: {
+      gender: echo.gender || item?.style?.gender,
+      audience: echo.audience || item?.style?.audience,
+      age: echo.age,
+      height: echo.height,
+      weight: echo.weight,
+      temp: echo.temp,
+    },
+  };
+}
+
 export default function Page() {
   const [featured, setFeatured] = useState<OutfitItem[]>([]);
   const [recent, setRecent] = useState<OutfitItem[]>([]);
@@ -247,7 +264,7 @@ export default function Page() {
   async function loadRecent() {
     try {
       const data = await apiGetJson<ListResp>(`/api/data?op=outfits.recent&limit=12&ts=${Date.now()}`);
-      setRecent(data?.items || []);
+      setRecent((data?.items || []).map(normalizeCardSnapshot));
     } catch {
       setRecent([]);
     }
@@ -538,19 +555,33 @@ const specResp = await apiPostJson<any>("/api/generate-outfit-spec", baseProfile
           image_url: imgResp.image_url,
           image_path: imgResp.image_path || imgResp.storage_path || null,
           is_public: true,
-          spec: specObj,
+          spec: { ...specObj, _snapshot: snapshotAtGenerate },
           style: {
             style: selectedCeleb ? "celeb-inspired" : selectedScene,
             palette: "auto",
             styleVariant: selectedCeleb || selectedScene,
             gender,
             audience,
-            _echo: { age, height, weight, temp, gender, audience },
+            _echo: { age, height, weight, temp, gender: safeGender, audience: safeAudience },
+            profile_snapshot: snapshotAtGenerate,
           },
           summary: specObj?.summary || promptContext,
           products: resolvedProducts,
         });
         const slug = created?.outfit?.share_slug || created?.item?.share_slug;
+        const createdItem = created?.outfit || created?.item;
+        if (createdItem) {
+          setRecent((prev) => [
+            normalizeCardSnapshot({
+              ...createdItem,
+              image_url: createdItem.image_url || imgResp.image_url,
+              summary: createdItem.summary || specObj?.summary || promptContext,
+              products: createdItem.products || resolvedProducts,
+              _snapshot: snapshotAtGenerate,
+            }),
+            ...prev,
+          ].slice(0, 12));
+        }
         if (slug) {
           setGeneratedShareUrl(`${window.location.origin}/share/${slug}`);
         }
