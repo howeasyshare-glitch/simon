@@ -1,3 +1,4 @@
+
 "use client";
 
 import { useEffect, useRef, useState } from "react";
@@ -14,31 +15,14 @@ type ProfileSnapshot = {
   summary?: string;
 };
 
-type Props = {
-  items: OutfitItem[];
-  generatedItems: OutfitItem[];
-  stage: "featured" | "generated" | string;
-  setStage: (v: any) => void;
-  generatedImageUrl?: string;
-  generatedSummary?: string;
-  generatedShareUrl?: string;
-  onOpen?: (src: string) => void;
-  onLike?: (item: OutfitItem) => void;
-  onShare?: (item: OutfitItem) => void;
-  onApply?: (item: OutfitItem) => void;
-  isLiked?: (id: string) => boolean;
-  isShared?: (id: string) => boolean;
-  mode?: "home" | "simple" | string;
-  profileSnapshot?: ProfileSnapshot;
-};
-
-function ProfileSnapshotBlock({ profile }: { profile?: ProfileSnapshot }) {
+function ProfileSnapshotInline({ profile }: { profile?: ProfileSnapshot }) {
   if (!profile) return null;
 
   return (
     <div
       style={{
-        marginBottom: 12,
+        marginTop: 10,
+        marginBottom: 14,
         padding: "10px 12px",
         borderRadius: 14,
         background: "rgba(250,250,250,0.92)",
@@ -50,7 +34,7 @@ function ProfileSnapshotBlock({ profile }: { profile?: ProfileSnapshot }) {
     >
       <div style={{ fontWeight: 700, color: "#18181b", marginBottom: 4 }}>本次設定</div>
       <div>
-        {profile.gender || "-"}・{profile.audience || "成人"}　{profile.temp || "-"}°C
+        {profile.gender || "-"}・{profile.audience || "成人"}・{profile.temp || "-"}°C
       </div>
       <div>
         年齡 {profile.age || "-"}　身高 {profile.height || "-"}　體重 {profile.weight || "-"}
@@ -59,6 +43,24 @@ function ProfileSnapshotBlock({ profile }: { profile?: ProfileSnapshot }) {
     </div>
   );
 }
+
+type Props = {
+  items: OutfitItem[];
+  generatedItems: OutfitItem[];
+  stage: "featured" | "generated";
+  setStage: (v: "featured" | "generated") => void;
+  generatedImageUrl?: string;
+  generatedSummary?: string;
+  generatedShareUrl?: string;
+  onOpen?: (src: string) => void;
+  onLike?: (item: OutfitItem) => void;
+  onShare?: (item: OutfitItem) => void;
+  onApply?: (item: OutfitItem) => void;
+  isLiked?: (id: string) => boolean;
+  isShared?: (id: string) => boolean;
+  mode?: "home" | "simple";
+  profileSnapshot?: ProfileSnapshot;
+};
 
 export default function HeroCarousel({
   items,
@@ -150,7 +152,9 @@ export default function HeroCarousel({
           <div className={styles.heroHeadCopy}>
             <div className={styles.kicker}>{stage === "generated" ? "My Generated" : "Featured"}</div>
             <h1 className={styles.heroTitle}>{stage === "generated" ? "我的生成" : "穿搭主舞台"}</h1>
-            {stage === "generated" && generatedSummary ? <p className={styles.heroSub}>{generatedSummary}</p> : null}
+            {stage === "generated" && generatedSummary ? (
+              <p className={styles.heroSub}>{generatedSummary}</p>
+            ) : null}
           </div>
 
           <div className={styles.heroControls}>
@@ -171,10 +175,20 @@ export default function HeroCarousel({
 
             {canNavigate ? (
               <>
-                <button type="button" className={styles.arrowBtn} onClick={() => scrollToIndex(activeIdx - 1)} aria-label="上一張">
+                <button
+                  type="button"
+                  className={styles.arrowBtn}
+                  onClick={() => scrollToIndex(activeIdx - 1)}
+                  aria-label="上一張"
+                >
                   ‹
                 </button>
-                <button type="button" className={styles.arrowBtn} onClick={() => scrollToIndex(activeIdx + 1)} aria-label="下一張">
+                <button
+                  type="button"
+                  className={styles.arrowBtn}
+                  onClick={() => scrollToIndex(activeIdx + 1)}
+                  aria-label="下一張"
+                >
                   ›
                 </button>
               </>
@@ -183,10 +197,20 @@ export default function HeroCarousel({
         </div>
       ) : canNavigate ? (
         <div className={styles.heroSimpleControls}>
-          <button type="button" className={styles.arrowBtn} onClick={() => scrollToIndex(activeIdx - 1)} aria-label="上一張">
+          <button
+            type="button"
+            className={styles.arrowBtn}
+            onClick={() => scrollToIndex(activeIdx - 1)}
+            aria-label="上一張"
+          >
             ‹
           </button>
-          <button type="button" className={styles.arrowBtn} onClick={() => scrollToIndex(activeIdx + 1)} aria-label="下一張">
+          <button
+            type="button"
+            className={styles.arrowBtn}
+            onClick={() => scrollToIndex(activeIdx + 1)}
+            aria-label="下一張"
+          >
             ›
           </button>
         </div>
@@ -201,16 +225,26 @@ export default function HeroCarousel({
               data-hero-card="1"
               className={`${styles.heroCard} ${idx === activeIdx ? styles.heroCardActive : ""}`}
             >
-              <button type="button" className={styles.heroImageButton} onClick={() => card.image_url && onOpen?.(card.image_url)}>
+              <button
+                type="button"
+                className={styles.heroImageButton}
+                onClick={() => card.image_url && onOpen?.(card.image_url)}
+              >
                 <div className={styles.heroImageFrame}>
                   {card.image_url ? (
                     <>
-                      <div className={styles.heroImageBg} style={{ backgroundImage: `url(${card.image_url})` }} />
+                      <div
+                        className={styles.heroImageBg}
+                        style={{ backgroundImage: `url(${card.image_url})` }}
+                      />
                       <img src={card.image_url} alt={card.summary || "hero"} className={styles.heroImage} />
                     </>
                   ) : generatedImageUrl && idx === 0 ? (
                     <>
-                      <div className={styles.heroImageBg} style={{ backgroundImage: `url(${generatedImageUrl})` }} />
+                      <div
+                        className={styles.heroImageBg}
+                        style={{ backgroundImage: `url(${generatedImageUrl})` }}
+                      />
                       <img src={generatedImageUrl} alt="" className={styles.heroImage} />
                     </>
                   ) : (
@@ -222,6 +256,7 @@ export default function HeroCarousel({
               <div className={styles.heroInfo}>
                 <div className={styles.heroCardTitle}>{card.style?.style || "Outfit"}</div>
                 <div className={styles.heroCardText}>{card.summary || "穿搭靈感"}</div>
+                {stage === "generated" ? <ProfileSnapshotInline profile={profileSnapshot} /> : null}
 
                 <div className={styles.heroCardActions}>
                   <button
@@ -255,11 +290,11 @@ export default function HeroCarousel({
 
                     {openProducts === card.id ? (
                       <div className={styles.productPanel}>
-                        <ProfileSnapshotBlock profile={profileSnapshot} />
-
                         {(card as any).products.map((group: any, i: number) => (
                           <div key={i} className={styles.productGroup}>
-                            <div className={styles.productGroupHeader}>{group.slot || group.label || "單品"}</div>
+                            <div className={styles.productGroupHeader}>
+                              {group.slot || group.label || "單品"}
+                            </div>
 
                             <div className={styles.productCompactList}>
                               {(group.candidates || []).slice(0, 3).map((p: any, j: number) => (
@@ -271,15 +306,25 @@ export default function HeroCarousel({
                                   className={styles.productCompactItem}
                                 >
                                   {p.image_url ? (
-                                    <img src={p.image_url} alt={p.title || "product"} className={styles.productCompactImage} />
+                                    <img
+                                      src={p.image_url}
+                                      alt={p.title || "product"}
+                                      className={styles.productCompactImage}
+                                    />
                                   ) : (
                                     <div className={styles.productCompactImageFallback} />
                                   )}
 
                                   <div className={styles.productCompactBody}>
                                     <div className={styles.productCompactTitle}>{p.title}</div>
-                                    {p.merchant ? <div className={styles.productCompactMeta}>{p.merchant}</div> : null}
-                                    {p.badge_text ? <div className={styles.productCompactBadge}>{p.badge_text}</div> : null}
+
+                                    {p.merchant ? (
+                                      <div className={styles.productCompactMeta}>{p.merchant}</div>
+                                    ) : null}
+
+                                    {p.badge_text ? (
+                                      <div className={styles.productCompactBadge}>{p.badge_text}</div>
+                                    ) : null}
                                   </div>
                                 </a>
                               ))}
