@@ -151,6 +151,7 @@ export default function Page() {
   const [generatedImageUrl, setGeneratedImageUrl] = useState("");
   const [generatedSummary, setGeneratedSummary] = useState("");
   const [generatedShareUrl, setGeneratedShareUrl] = useState("");
+  const [generatedProfileSnapshot, setGeneratedProfileSnapshot] = useState<any>(null);
 
   const [toast, setToast] = useState("");
   const toastTimer = useRef<number | null>(null);
@@ -449,12 +450,24 @@ const specResp = await apiPostJson<any>("/api/generate-outfit-spec", baseProfile
 
       if (!imgResp?.image_url) throw new Error("圖片生成失敗");
 
-      setGeneratedImageUrl(imgResp.image_url);
-      setGeneratedSummary(
+      const generatedSummaryText =
         `${sceneLabel} · 風格 ${system.temperature} · 創意 ${system.creativity} · 包包 ${
           system.withBag ? "開啟" : "關閉"
-        }`
-      );
+        }`;
+
+      const snapshotAtGenerate = {
+        gender: safeGender,
+        audience: safeAudience,
+        age,
+        height,
+        weight,
+        temp,
+        summary: specObj?.summary || generatedSummaryText || activeSceneHint || "今日推薦風格",
+      };
+
+      setGeneratedImageUrl(imgResp.image_url);
+      setGeneratedSummary(generatedSummaryText);
+      setGeneratedProfileSnapshot(snapshotAtGenerate);
 
             let resolvedProducts: any[] = [];
 
@@ -591,7 +604,7 @@ const specResp = await apiPostJson<any>("/api/generate-outfit-spec", baseProfile
           isLiked={isLiked}
           isShared={isShared}
           mode="home"
-          profileSnapshot={productProfileSnapshot}
+          profileSnapshot={stage === "generated" ? generatedProfileSnapshot : undefined}
         />
       </div>
 
