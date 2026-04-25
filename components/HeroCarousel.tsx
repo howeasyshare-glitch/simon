@@ -39,7 +39,6 @@ function ProfileSnapshotInline({ profile }: { profile?: ProfileSnapshot }) {
       <div>
         年齡 {profile.age || "-"}　身高 {profile.height || "-"}　體重 {profile.weight || "-"}
       </div>
-      {profile.summary ? <div style={{ color: "#71717a" }}>{profile.summary}</div> : null}
     </div>
   );
 }
@@ -256,7 +255,7 @@ export default function HeroCarousel({
               <div className={styles.heroInfo}>
                 <div className={styles.heroCardTitle}>{card.style?.style || "Outfit"}</div>
                 <div className={styles.heroCardText}>{card.summary || "穿搭靈感"}</div>
-                {stage === "generated" ? <ProfileSnapshotInline profile={profileSnapshot} /> : null}
+                {stage === "generated" ? <ProfileSnapshotInline profile={(card as any)._snapshot || profileSnapshot} /> : null}
 
                 <div className={styles.heroCardActions}>
                   <button
