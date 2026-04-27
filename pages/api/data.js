@@ -641,16 +641,24 @@ function normalizeText(value) {
   return String(value || "").trim();
 }
 
+function normalizeLower(value) {
+  return normalizeText(value).toLowerCase();
+}
+
 function normalizeTokens(value) {
-  return normalizeText(value)
-    .toLowerCase()
-    .split(/[\s,./\-_"'()]+/)
+  return normalizeLower(value)
+    .split(/[\s,./\-_"'()|]+/)
     .map((x) => x.trim())
     .filter((x) => x && x.length > 1);
 }
 
+function containsAnyProductText(text, words = []) {
+  const t = normalizeLower(text);
+  return words.some((w) => t.includes(normalizeLower(w)));
+}
+
 function slotTagFor(slot) {
-  const s = normalizeText(slot).toLowerCase();
+  const s = normalizeLower(slot);
   if (s === "outer") return "item_outerwear";
   if (s === "top") return "item_top";
   if (s === "bottom") return "item_bottom";
@@ -661,70 +669,297 @@ function slotTagFor(slot) {
 }
 
 function rowTags(row) {
-  if (Array.isArray(row?.tags)) return row.tags.map((x) => normalizeText(x).toLowerCase());
+  if (Array.isArray(row?.tags)) return row.tags.map((x) => normalizeLower(x));
+  if (typeof row?.tags === "string") {
+    try {
+      const parsed = JSON.parse(row.tags);
+      if (Array.isArray(parsed)) return parsed.map((x) => normalizeLower(x));
+    } catch {}
+    return row.tags.split(/[\s,|]+/).map((x) => normalizeLower(x)).filter(Boolean);
+  }
   return [];
+}
+
+function productCombinedText(row) {
+  return normalizeLower([
+    row?.title,
+    row?.merchant,
+    row?.product_url,
+    row?.url,
+    ...(rowTags(row) || []),
+  ].filter(Boolean).join(" "));
+}
+
+function getItemText(item) {
+  return normalizeLower([
+    item?.slot,
+    item?.label,
+    item?.name,
+    item?.display_name_zh,
+    item?.generic_name,
+    item?.category,
+    item?.description,
+    item?.shopping_query,
+    item?.color,
+    item?.fit,
+    item?.material,
+    item?.sleeve_length,
+    item?.neckline,
+    ...(Array.isArray(item?.style_keywords) ? item.style_keywords : []),
+  ].filter(Boolean).join(" "));
+}
+
+function getItemCategoryType(item) {
+  const slot = normalizeLower(item?.slot);
+  const text = getItemText(item);
+
+  if (slot === "outer") {
+    if (text.includes("cardigan") || text.includes("開襟") || text.includes("針織外套") || text.includes("毛衣外套")) return "cardigan";
+    if (text.includes("blazer") || text.includes("西裝外套") || text.includes("西外")) return "blazer";
+    if (text.includes("corduroy") || text.includes("燈芯絨")) return "corduroy_outer";
+    if (text.includes("hoodie") || text.includes("連帽")) return "hoodie";
+    if (text.includes("bomber") || text.includes("飛行")) return "bomber";
+    return "outer";
+  }
+
+  if (slot === "top") {
+    if (text.includes("ribbed") || text.includes("羅紋")) return "ribbed_knit_top";
+    if (text.includes("knit polo") || text.includes("針織polo")) return "knit_polo";
+    if (text.includes("polo")) return "polo";
+    if (text.includes("knit") || text.includes("針織")) return "knit_top";
+    if (text.includes("shirt") || text.includes("襯衫")) return "shirt";
+    if (text.includes("t-shirt") || text.includes("tee") || text.includes("t恤")) return "tee";
+    return "top";
+  }
+
+  if (slot === "bottom") {
+    if (text.includes("wide") || text.includes("寬褲") || text.includes("寬腿")) return "wide_pants";
+    if (text.includes("jeans") || text.includes("denim") || text.includes("牛仔")) return "jeans";
+    if (text.includes("cargo") || text.includes("工裝")) return "cargo";
+    if (text.includes("shorts") || text.includes("短褲")) return "shorts";
+    return "bottom";
+  }
+
+  if (slot === "shoes") {
+    if (text.includes("low-top") || text.includes("小白鞋") || text.includes("white shoes")) return "low_top_leather_sneakers";
+    if (text.includes("chelsea") || text.includes("切爾西")) return "chelsea_boots";
+    if (text.includes("loafer") || text.includes("樂福")) return "loafers";
+    if (text.includes("sneaker") || text.includes("休閒鞋") || text.includes("運動鞋")) return "sneakers";
+    return "shoes";
+  }
+
+  if (slot === "bag") {
+    if (text.includes("crossbody") || text.includes("斜背") || text.includes("側背")) return "crossbody_bag";
+    if (text.includes("tote") || text.includes("托特")) return "tote";
+    if (text.includes("backpack") || text.includes("後背")) return "backpack";
+    return "bag";
+  }
+
+  return slot || "unknown";
+}
+
+function broadSlotWords(slot) {
+  const s = normalizeLower(slot);
+  if (s === "outer") return ["外套", "夾克", "jacket", "outer", "cardigan", "blazer", "開襟", "針織外套", "西裝外套", "連帽外套"];
+  if (s === "top") return ["上衣", "t恤", "tee", "shirt", "襯衫", "polo", "針織", "毛衣"];
+  if (s === "bottom") return ["褲", "pants", "trousers", "jeans", "牛仔", "短褲", "寬褲"];
+  if (s === "shoes") return ["鞋", "shoe", "sneaker", "休閒鞋", "運動鞋", "靴", "loafer", "樂福"];
+  if (s === "bag") return ["包", "bag", "斜背", "側背", "tote", "托特", "後背"];
+  return [];
+}
+
+function specificCategoryWords(type) {
+  const map = {
+    cardigan: ["開襟", "針織外套", "毛衣外套", "cardigan", "knit"],
+    blazer: ["西裝外套", "西外", "blazer", "翻領"],
+    corduroy_outer: ["燈芯絨", "corduroy", "西裝外套", "襯衫外套", "外套"],
+    hoodie: ["連帽", "hoodie"],
+    bomber: ["飛行外套", "bomber", "夾克"],
+    ribbed_knit_top: ["羅紋", "ribbed", "針織", "knit", "長袖上衣"],
+    knit_polo: ["針織polo", "polo", "針織", "knit"],
+    polo: ["polo", "polo衫"],
+    knit_top: ["針織", "knit", "毛衣", "上衣"],
+    shirt: ["襯衫", "shirt"],
+    tee: ["t恤", "t-shirt", "tee"],
+    wide_pants: ["寬褲", "寬腿", "wide leg", "西裝褲", "長褲"],
+    jeans: ["牛仔", "denim", "jeans", "直筒"],
+    cargo: ["工裝", "cargo", "機能褲"],
+    shorts: ["短褲", "shorts"],
+    low_top_leather_sneakers: ["小白鞋", "真皮", "皮革", "低筒", "休閒鞋", "運動鞋", "sneaker", "leather"],
+    chelsea_boots: ["切爾西", "chelsea", "短靴", "靴"],
+    loafers: ["樂福", "loafer"],
+    sneakers: ["休閒鞋", "運動鞋", "sneaker"],
+    crossbody_bag: ["斜背", "側背", "crossbody", "小包"],
+    tote: ["托特", "tote"],
+    backpack: ["後背", "backpack", "書包"],
+  };
+  return map[type] || [];
+}
+
+function customGuard(row, item) {
+  const slot = normalizeLower(item?.slot);
+  const tags = rowTags(row);
+  const text = productCombinedText(row);
+  const slotTag = slotTagFor(slot);
+  const existingItemTags = tags.filter((t) => t.startsWith("item_"));
+
+  if (existingItemTags.length > 0 && slotTag && !tags.includes(slotTag)) {
+    return { ok: false, reason: `slot tag mismatch: expected ${slotTag}` };
+  }
+
+  const broadWords = broadSlotWords(slot);
+  const broadMatched = Boolean(slotTag && tags.includes(slotTag)) || containsAnyProductText(text, broadWords);
+  if (!broadMatched) {
+    return { ok: false, reason: `slot keyword mismatch: ${slot || "unknown"}` };
+  }
+
+  const type = getItemCategoryType(item);
+  const specificWords = specificCategoryWords(type);
+  const specificMatched = !specificWords.length || containsAnyProductText(text, specificWords);
+
+  // Important: when the requested item is a specific subtype, reject broad custom products.
+  // Example: cardigan should not accept a leather denim jacket just because both are outerwear.
+  const specificTypesThatMustMatch = [
+    "cardigan",
+    "blazer",
+    "corduroy_outer",
+    "ribbed_knit_top",
+    "knit_polo",
+    "wide_pants",
+    "jeans",
+    "low_top_leather_sneakers",
+    "chelsea_boots",
+    "crossbody_bag",
+  ];
+
+  if (specificTypesThatMustMatch.includes(type) && !specificMatched) {
+    return { ok: false, reason: `specific category mismatch: ${type}` };
+  }
+
+  const itemText = getItemText(item);
+  if ((itemText.includes("female") || itemText.includes("女")) && tags.includes("gender_male")) {
+    return { ok: false, reason: "gender mismatch: male custom for female item" };
+  }
+  if ((itemText.includes("male") || itemText.includes("男")) && tags.includes("gender_female")) {
+    return { ok: false, reason: "gender mismatch: female custom for male item" };
+  }
+  if ((itemText.includes("kids") || itemText.includes("童")) && tags.includes("audience_adult")) {
+    return { ok: false, reason: "audience mismatch: adult custom for kids item" };
+  }
+
+  return { ok: true, reason: "matched" };
 }
 
 function scoreCustomProduct(row, item) {
   const tags = rowTags(row);
   const slotTag = slotTagFor(item?.slot);
-  const title = normalizeText(row?.title).toLowerCase();
-  const merchant = normalizeText(row?.merchant).toLowerCase();
+  const text = productCombinedText(row);
+  const itemText = getItemText(item);
   const tokenSet = Array.from(new Set([
     ...normalizeTokens(item?.label),
+    ...normalizeTokens(item?.display_name_zh),
+    ...normalizeTokens(item?.generic_name),
+    ...normalizeTokens(item?.category),
     ...normalizeTokens(item?.description),
     ...normalizeTokens(item?.shopping_query),
+    ...normalizeTokens(item?.color),
+    ...normalizeTokens(item?.material),
   ]));
 
-  let score = 0;
-  if (slotTag && tags.includes(slotTag)) score += 80;
+  let category_score = 0;
+  let text_score = 0;
+  let tag_score = 0;
+  let boost_score = Number(row?.priority_boost || 0) * 10;
+
+  if (slotTag && tags.includes(slotTag)) category_score += 80;
+
+  const type = getItemCategoryType(item);
+  const specificWords = specificCategoryWords(type);
+  for (const w of specificWords) {
+    if (text.includes(normalizeLower(w))) category_score += 18;
+  }
 
   for (const token of tokenSet) {
-    if (title.includes(token)) score += 10;
-    if (tags.some((t) => t.includes(token))) score += 8;
-    if (merchant.includes(token)) score += 3;
+    if (!token || token.length <= 1) continue;
+    if (text.includes(token)) text_score += 6;
+    if (tags.some((t) => t.includes(token))) tag_score += 8;
   }
 
-  score += Number(row?.priority_boost || 0) * 10;
-  return score;
+  // Penalize known near-miss cases.
+  if (type === "cardigan" && containsAnyProductText(text, ["丹寧", "皮革拼接", "牛仔外套"])) category_score -= 60;
+  if (type === "low_top_leather_sneakers" && containsAnyProductText(text, ["拖鞋", "涼鞋", "半拖"])) category_score -= 50;
+  if (type === "knit_polo" && containsAnyProductText(text, ["工作服", "制服"])) category_score -= 30;
+
+  const custom_score = category_score + text_score + tag_score + boost_score;
+  const quality_score = Math.max(0, Math.round(custom_score));
+
+  return {
+    custom_score,
+    quality_score,
+    category_score,
+    text_score,
+    tag_score,
+    boost_score,
+    item_category_type: type,
+  };
 }
 
-async function searchExternalProducts(baseUrl, item, limit) {
-  try {
-    const r = await fetch(`${baseUrl}/api/search-products`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        items: [item],
-        locale: "tw",
-        gender: item.gender || "neutral",
-        ageGroup: item.audience === "kids" ? "kids" : "adult",
-        styleTag: item.scene || null,
-      }),
-    });
+function scoreExternalProduct(product, item) {
+  const text = productCombinedText(product);
+  const type = getItemCategoryType(item);
+  const specificWords = specificCategoryWords(type);
+  const slot = normalizeLower(item?.slot);
 
-    if (!r.ok) {
-      const t = await r.text();
-      console.error("search-products failed:", t);
-      return [];
-    }
+  let category_score = 0;
+  let taiwan_score = isLikelyProductTaiwan(product) ? 30 : 0;
+  let text_score = 0;
 
-    const data = await r.json();
-    const slotProducts = data?.grouped?.[item.slot] || [];
-
-    return slotProducts.slice(0, limit).map((p) => ({
-      title: p.title,
-      image_url: p.thumbnail,
-      product_url: p.link,
-      url: p.link,
-      merchant: p.merchant || "",
-      badge_text: p.badge_text || "",
-      source: p.source || "google",
-    }));
-  } catch (e) {
-    console.error("searchExternalProducts error:", e);
-    return [];
+  if (containsAnyProductText(text, broadSlotWords(slot))) category_score += 20;
+  for (const w of specificWords) {
+    if (text.includes(normalizeLower(w))) category_score += 10;
   }
+
+  for (const token of [
+    ...normalizeTokens(item?.display_name_zh),
+    ...normalizeTokens(item?.generic_name),
+    ...normalizeTokens(item?.category),
+    ...normalizeTokens(item?.color),
+    ...normalizeTokens(item?.material),
+  ]) {
+    if (text.includes(token)) text_score += 3;
+  }
+
+  const quality_score = Math.max(0, Math.round(category_score + taiwan_score + text_score));
+  return { quality_score, category_score, taiwan_score, text_score };
+}
+
+function productDedupeKey(product) {
+  const title = normalizeLower(product?.title).replace(/\s+/g, " ").slice(0, 80);
+  const merchant = normalizeLower(product?.merchant).replace(/\s+/g, " ");
+  if (title && merchant) return `${title}__${merchant}`;
+  return normalizeLower(product?.product_url || product?.url || product?.google_detail_url || title);
+}
+
+function isLikelyProductTaiwan(product) {
+  const text = productCombinedText(product);
+  return containsAnyProductText(text, [
+    "shopee.tw",
+    "蝦皮",
+    "momo",
+    "momoshop",
+    "momo購物",
+    "pchome",
+    "tw.buy.yahoo",
+    "tw.mall.yahoo",
+    "yahoo購物",
+    "pinkoi",
+    "酷澎",
+    "coupang",
+    ".tw/",
+    ".com.tw",
+    "taiwan",
+    "台灣",
+  ]);
 }
 
 async function handleProducts(req, res) {
@@ -737,7 +972,7 @@ async function handleProducts(req, res) {
   const limitPerSlot = Math.max(1, Math.min(Number(body.limitPerSlot || 3), 3));
 
   if (!items.length) {
-    return json(res, 200, { ok: true, products: [] });
+    return json(res, 200, { ok: true, products: [], debug: [] });
   }
 
   let pool = [];
@@ -768,17 +1003,42 @@ async function handleProducts(req, res) {
   const baseUrl = `${proto}://${host}`;
 
   const results = [];
+  const debug = [];
+
   for (const item of items) {
     const slot = normalizeText(item?.slot);
-    const label = normalizeText(item?.label || item?.name || slot || "單品");
+    const label = normalizeText(
+      item?.label ||
+      item?.display_name_zh ||
+      item?.generic_name ||
+      item?.category ||
+      item?.name ||
+      slot ||
+      "單品"
+    );
     const description = normalizeText(item?.description);
 
+    const customDebug = [];
+
     const customRanked = pool
-      .map((row) => ({ row, score: scoreCustomProduct(row, item) }))
-      .filter((x) => x.score >= SCORE_THRESHOLD && normalizeText(x.row?.product_url))
-      .sort((a, b) => b.score - a.score)
+      .map((row) => {
+        const guard = customGuard(row, item);
+        const scores = scoreCustomProduct(row, item);
+        const keep = guard.ok && scores.custom_score >= SCORE_THRESHOLD && normalizeText(row?.product_url);
+        customDebug.push({
+          id: row.id,
+          title: row.title,
+          merchant: row.merchant,
+          keep,
+          reason: guard.reason,
+          ...scores,
+        });
+        return { row, guard, scores, keep };
+      })
+      .filter((x) => x.keep)
+      .sort((a, b) => b.scores.custom_score - a.scores.custom_score)
       .slice(0, limitPerSlot)
-      .map(({ row }) => ({
+      .map(({ row, scores }) => ({
         title: row.title,
         image_url: row.image_url,
         product_url: row.product_url,
@@ -787,48 +1047,61 @@ async function handleProducts(req, res) {
         merchant: row.merchant,
         badge_text: row.badge_text && row.badge_text !== "NULL" ? row.badge_text : "",
         source: "custom",
+        quality_score: scores.quality_score,
+        category_score: scores.category_score,
+        custom_score: scores.custom_score,
+        taiwan_score: 30,
       }));
 
     const remaining = Math.max(0, limitPerSlot - customRanked.length);
     let searched = [];
+    let searchDebug = null;
+    let searchError = "";
 
-if (remaining > 0) {
-  try {
-    const r = await fetch(`${baseUrl}/api/search-products`, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json"
-      },
-      body: JSON.stringify({
-        items: [item],
-        locale: "tw",
-        gender: item.gender || "neutral",
-        styleTag: item.scene || null
-      })
-    });
+    if (remaining > 0) {
+      try {
+        const r = await fetch(`${baseUrl}/api/search-products`, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            items: [item],
+            locale: "tw",
+            gender: item.gender || body.gender || "neutral",
+            audience: item.audience || body.audience || "adult",
+            styleTag: item.scene || body.styleTag || null,
+          }),
+        });
 
-    const data = await r.json();
+        const data = await r.json();
+        searchDebug = data?.debug || null;
 
-    const slotProducts = data?.grouped?.[item.slot] || [];
+        const slotProducts = data?.grouped?.[item.slot] || [];
 
-    searched = slotProducts.map(p => ({
-      title: p.title,
-      image_url: p.thumbnail,
-      product_url: p.link,
-      url: p.link,
-      merchant: p.merchant,
-      source: p.source || "google"
-    }));
-
-  } catch (e) {
-    searched = [];
-  }
-}
+        searched = slotProducts.map((p) => {
+          const base = {
+            title: p.title,
+            image_url: p.thumbnail,
+            product_url: p.link,
+            url: p.link,
+            merchant: p.merchant,
+            source: p.source || "google",
+          };
+          const scores = scoreExternalProduct(base, item);
+          return { ...base, ...scores };
+        });
+      } catch (e) {
+        searchError = String(e?.message || e);
+        searched = [];
+      }
+    }
 
     const merged = [];
     const seen = new Set();
+
     for (const c of [...customRanked, ...searched]) {
-      const key = normalizeText(c.product_url || c.url || c.google_detail_url);
+      const key = productDedupeKey(c);
       if (!key || seen.has(key)) continue;
       seen.add(key);
       merged.push(c);
@@ -842,11 +1115,40 @@ if (remaining > 0) {
       shopping_query: normalizeText(item?.shopping_query),
       candidates: merged,
     });
+
+    debug.push({
+      version: "data.js V3.9 Custom Products Guard + Product Quality Score",
+      slot,
+      label,
+      item_category_type: getItemCategoryType(item),
+      custom: {
+        totalPool: pool.length,
+        kept: customRanked.length,
+        threshold: SCORE_THRESHOLD,
+        topReviewed: customDebug
+          .sort((a, b) => Number(b.custom_score || 0) - Number(a.custom_score || 0))
+          .slice(0, 8),
+      },
+      search: {
+        requested: remaining > 0,
+        returned: searched.length,
+        error: searchError,
+        debug: searchDebug,
+      },
+      final: merged.map((x) => ({
+        title: x.title,
+        merchant: x.merchant,
+        source: x.source,
+        quality_score: x.quality_score,
+        category_score: x.category_score,
+        custom_score: x.custom_score,
+        taiwan_score: x.taiwan_score,
+      })),
+    });
   }
 
-  return json(res, 200, { ok: true, products: results });
+  return json(res, 200, { ok: true, products: results, debug });
 }
-
 /** ===================== User Settings ===================== */
 async function handleUserSettingsGet(req, res) {
   const env = getEnv();
