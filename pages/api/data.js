@@ -917,7 +917,76 @@ if (type === "blazer" && containsAnyProductText(text, ["hoodie", "連帽"])) {
     item_category_type: type,
   };
 }
+function brandQualityBoost(product) {
+  const text = productCombinedText(product);
 
+  let s = 0;
+
+  if (containsAnyProductText(text, [
+    "uniqlo",
+    "gu",
+    "muji",
+    "無印良品",
+    "net",
+    "lativ",
+    "levis",
+    "lee",
+    "blue way",
+    "decathlon",
+    "迪卡儂",
+    "cos",
+    "zara",
+    "adidas",
+    "nike",
+    "fila",
+    "new balance",
+    "timberland",
+    "momo購物網",
+    "pchome 24h",
+    "pinkoi"
+  ])) {
+    s += 12;
+  }
+
+  return s;
+}
+
+function lowQualityTitlePenalty(product) {
+  const title = normalizeLower(product?.title || "");
+  let p = 0;
+
+  if (title.length > 80) p -= 8;
+
+  if (containsAnyProductText(title, [
+    "超取免運290",
+    "全店免運",
+    "免運券",
+    "大碼",
+    "爆款",
+    "下殺",
+    "清倉",
+    "直播",
+    "批發",
+    "淘寶",
+    "韓版",
+    " ins ",
+    "小眾設計"
+  ])) {
+    p -= 10;
+  }
+
+  if (containsAnyProductText(title, [
+    "男 女",
+    "男女同款",
+    "男t 女t",
+    "女男",
+    "男生女生"
+  ])) {
+    p -= 6;
+  }
+
+  return p;
+}
 function scoreExternalProduct(product, item) {
   const text = productCombinedText(product);
   const type = getItemCategoryType(item);
@@ -943,8 +1012,22 @@ function scoreExternalProduct(product, item) {
     if (text.includes(token)) text_score += 3;
   }
 
-  const quality_score = Math.max(0, Math.round(category_score + taiwan_score + text_score));
-  return { quality_score, category_score, taiwan_score, text_score };
+  const brand_score = brandQualityBoost(product);
+const title_penalty = lowQualityTitlePenalty(product);
+
+const quality_score = Math.max(
+  0,
+  Math.round(category_score + taiwan_score + text_score + brand_score + title_penalty)
+);
+
+return {
+  quality_score,
+  category_score,
+  taiwan_score,
+  text_score,
+  brand_score,
+  title_penalty,
+};
 }
 
 function productDedupeKey(product) {
@@ -1093,18 +1176,20 @@ async function handleProducts(req, res) {
 
         const slotProducts = data?.grouped?.[item.slot] || [];
 
-        searched = slotProducts.map((p) => {
-          const base = {
-            title: p.title,
-            image_url: p.thumbnail,
-            product_url: p.link,
-            url: p.link,
-            merchant: p.merchant,
-            source: p.source || "google",
-          };
-          const scores = scoreExternalProduct(base, item);
-          return { ...base, ...scores };
-        });
+        searched = slotProducts
+  .map((p) => {
+    const base = {
+      title: p.title,
+      image_url: p.thumbnail,
+      product_url: p.link,
+      url: p.link,
+      merchant: p.merchant,
+      source: p.source || "google",
+    };
+    const scores = scoreExternalProduct(base, item);
+    return { ...base, ...scores };
+  })
+  .sort((a, b) => Number(b.quality_score || 0) - Number(a.quality_score || 0));
       } catch (e) {
         searchError = String(e?.message || e);
         searched = [];
