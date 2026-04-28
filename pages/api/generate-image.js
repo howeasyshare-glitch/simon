@@ -70,7 +70,56 @@ function base64ToUint8Array(b64) {
   const buf = Buffer.from(b64, "base64");
   return new Uint8Array(buf);
 }
+function normalizeGenderKey(input) {
+  const s = String(input || "").toLowerCase();
 
+  if (
+    s === "female" ||
+    s === "woman" ||
+    s === "women" ||
+    s === "girl" ||
+    s === "girls" ||
+    s.includes("女性") ||
+    s === "女" ||
+    s.includes("女童")
+  ) {
+    return "female";
+  }
+
+  if (
+    s === "male" ||
+    s === "man" ||
+    s === "men" ||
+    s === "boy" ||
+    s === "boys" ||
+    s.includes("男性") ||
+    s === "男" ||
+    s.includes("男童")
+  ) {
+    return "male";
+  }
+
+  return "neutral";
+}
+
+function normalizeAudienceKey(input, age) {
+  const s = String(input || "").toLowerCase();
+  const n = Number(age);
+
+  if (
+    s === "kids" ||
+    s === "kid" ||
+    s === "child" ||
+    s === "children" ||
+    s.includes("兒童") ||
+    s.includes("童裝") ||
+    (!Number.isNaN(n) && n <= 12)
+  ) {
+    return "kids";
+  }
+
+  return "adult";
+}
 export default async function handler(req, res) {
   if (req.method !== "POST") {
     return res.status(405).json({ error: "Method not allowed" });
@@ -129,21 +178,49 @@ export default async function handler(req, res) {
     else if (bmi < 30) bodyShape = "slightly chubby body shape";
     else bodyShape = "plus-size body shape";
 
-   let genderText = "a person with a gender-neutral look";
+   const genderKey = normalizeGenderKey(gender);
+const audienceKey = normalizeAudienceKey(payload.audience || body.audience, age);
+const isKid = audienceKey === "kids";
 
-const isKid = Number(age) <= 12;
+let genderText = "a person with a gender-neutral look";
+let genderLockText = "";
 
 if (isKid) {
-  if (gender === "female") {
-    genderText = "a young girl child with feminine child face";
-  } else if (gender === "male") {
-    genderText = "a young boy child with masculine child face";
+  if (genderKey === "female") {
+    genderText =
+      "a clearly feminine young girl child, around " +
+      age +
+      " years old, soft childlike face, gentle feminine facial features, cute youthful hairstyle, child body proportions";
+
+    genderLockText =
+      "The character must clearly look like a young girl, not a boy. Use feminine child facial features, softer eyes, a cute youthful hairstyle such as a bob, shoulder-length hair, or softly styled hair. Avoid masculine haircut, masculine jawline, or boyish facial structure.";
+  } else if (genderKey === "male") {
+    genderText =
+      "a clearly masculine young boy child, around " +
+      age +
+      " years old, boyish child face, short boy hairstyle, child body proportions";
+
+    genderLockText =
+      "The character must clearly look like a young boy, not a girl. Use boyish child facial features and a short boy hairstyle.";
   } else {
-    genderText = "a child";
+    genderText =
+      "a child around " +
+      age +
+      " years old, childlike face, child body proportions";
+
+    genderLockText =
+      "The character must clearly look like a child, not an adult.";
   }
 } else {
-  if (gender === "female") genderText = "a woman";
-  else if (gender === "male") genderText = "a man";
+  if (genderKey === "female") {
+    genderText = "a woman";
+    genderLockText = "The character must clearly look like an adult woman.";
+  } else if (genderKey === "male") {
+    genderText = "a man";
+    genderLockText = "The character must clearly look like an adult man.";
+  } else {
+    genderText = "a person with a gender-neutral look";
+  }
 }
 
     const lines = outfitSpec.items.map((item) => {
@@ -192,7 +269,9 @@ Rendering requirements:
 - No brand logos or text on clothing.
 - Character must not resemble any real person or celebrity.
 - Face and body proportions must clearly match the requested gender and age.
-- If child requested, must look like a child, not adult.
+- ${genderLockText}
+- If a young girl child is requested, do not make the character look like a boy.
+- If a child is requested, the character must look like a child, not a teenager or adult.
 `.trim();
 
     // ✅ 模型：你現在的 key 可用哪個就用哪個（先用你原本的 image 模型字串）
