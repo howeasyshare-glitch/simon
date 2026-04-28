@@ -773,7 +773,10 @@ function specificCategoryWords(type) {
     cardigan: ["開襟", "針織外套", "毛衣外套", "cardigan", "knit"],
     blazer: ["西裝外套", "西外", "blazer", "翻領"],
     corduroy_outer: ["燈芯絨", "corduroy", "西裝外套", "襯衫外套", "外套"],
-    hoodie: ["連帽", "hoodie"],
+    hoodie: ["連帽", "hoodie", "hooded", "zip hoodie"],
+coat: ["coat", "parka", "trench", "大衣"],
+jacket: ["jacket", "夾克", "denim", "bomber", "utility", "varsity"],
+    
     bomber: ["飛行外套", "bomber", "夾克"],
     ribbed_knit_top: ["羅紋", "ribbed", "針織", "knit", "長袖上衣"],
     knit_polo: ["針織polo", "polo", "針織", "knit"],
@@ -821,15 +824,18 @@ function customGuard(row, item) {
   // Example: cardigan should not accept a leather denim jacket just because both are outerwear.
   const specificTypesThatMustMatch = [
     "cardigan",
-    "blazer",
-    "corduroy_outer",
-    "ribbed_knit_top",
-    "knit_polo",
-    "wide_pants",
-    "jeans",
-    "low_top_leather_sneakers",
-    "chelsea_boots",
-    "crossbody_bag",
+  "blazer",
+  "hoodie",
+  "coat",
+  "jacket",
+  "corduroy_outer",
+  "ribbed_knit_top",
+  "knit_polo",
+  "wide_pants",
+  "jeans",
+  "low_top_leather_sneakers",
+  "chelsea_boots",
+  "crossbody_bag",
   ];
 
   if (specificTypesThatMustMatch.includes(type) && !specificMatched) {
@@ -889,6 +895,14 @@ function scoreCustomProduct(row, item) {
   if (type === "cardigan" && containsAnyProductText(text, ["丹寧", "皮革拼接", "牛仔外套"])) category_score -= 60;
   if (type === "low_top_leather_sneakers" && containsAnyProductText(text, ["拖鞋", "涼鞋", "半拖"])) category_score -= 50;
   if (type === "knit_polo" && containsAnyProductText(text, ["工作服", "制服"])) category_score -= 30;
+  if (type === "hoodie" && containsAnyProductText(text, ["丹寧外套", "皮革拼接", "blazer"])) {
+  category_score -= 70;
+}
+
+
+if (type === "blazer" && containsAnyProductText(text, ["hoodie", "連帽"])) {
+  category_score -= 60;
+}
 
   const custom_score = category_score + text_score + tag_score + boost_score;
   const quality_score = Math.max(0, Math.round(custom_score));
