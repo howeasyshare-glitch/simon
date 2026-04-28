@@ -129,10 +129,22 @@ export default async function handler(req, res) {
     else if (bmi < 30) bodyShape = "slightly chubby body shape";
     else bodyShape = "plus-size body shape";
 
-    const genderText =
-      gender === "female" ? "a woman" :
-      gender === "male" ? "a man" :
-      "a person with a gender-neutral look";
+   let genderText = "a person with a gender-neutral look";
+
+const isKid = Number(age) <= 12;
+
+if (isKid) {
+  if (gender === "female") {
+    genderText = "a young girl child with feminine child face";
+  } else if (gender === "male") {
+    genderText = "a young boy child with masculine child face";
+  } else {
+    genderText = "a child";
+  }
+} else {
+  if (gender === "female") genderText = "a woman";
+  else if (gender === "male") genderText = "a man";
+}
 
     const lines = outfitSpec.items.map((item) => {
       const slot = item.slot || "item";
@@ -179,6 +191,8 @@ Rendering requirements:
 - Clean, full-body illustration, standing pose, neutral background (light gray or off-white).
 - No brand logos or text on clothing.
 - Character must not resemble any real person or celebrity.
+- Face and body proportions must clearly match the requested gender and age.
+- If child requested, must look like a child, not adult.
 `.trim();
 
     // ✅ 模型：你現在的 key 可用哪個就用哪個（先用你原本的 image 模型字串）
