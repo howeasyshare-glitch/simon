@@ -1458,3 +1458,206 @@
     grid-template-columns: 1fr;
   }
 }
+
+/* ===== V5.0 Phase A Mobile UX ===== */
+
+.generateBtn:disabled,
+.mobileCtaButton:disabled {
+  opacity: 0.72;
+  cursor: wait;
+  transform: none;
+}
+
+.loadingSteps {
+  margin-top: 14px;
+  display: grid;
+  gap: 8px;
+}
+
+.loadingStepActive {
+  padding: 12px 14px;
+  border-radius: 16px;
+  background: rgba(255, 255, 255, 0.1);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  color: #ffffff;
+  font-size: 14px;
+  font-weight: 800;
+  animation: v5Pulse 1.4s ease-in-out infinite;
+}
+
+.loadingStepMuted {
+  color: rgba(255, 255, 255, 0.62);
+  font-size: 13px;
+  line-height: 1.55;
+}
+
+@keyframes v5Pulse {
+  0%, 100% {
+    opacity: 0.72;
+    transform: translateY(0);
+  }
+  50% {
+    opacity: 1;
+    transform: translateY(-1px);
+  }
+}
+
+.profileSnapshotBox {
+  margin-top: 12px;
+  margin-bottom: 14px;
+  padding: 12px 14px;
+  border-radius: 18px;
+  background: rgba(255, 255, 255, 0.92);
+  border: 1px solid rgba(0, 0, 0, 0.08);
+  color: #18181b;
+}
+
+.profileSnapshotLabel {
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  color: rgba(24, 24, 27, 0.5);
+  margin-bottom: 5px;
+}
+
+.profileSnapshotMain {
+  font-size: 14px;
+  font-weight: 900;
+}
+
+.profileSnapshotSub {
+  margin-top: 4px;
+  font-size: 12px;
+  color: rgba(24, 24, 27, 0.68);
+  line-height: 1.55;
+}
+
+.heroCardActionsV5 {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+  margin-top: 16px;
+}
+
+.heroCardActionsV5 .primaryBtn {
+  grid-column: span 2;
+  min-height: 48px;
+  font-size: 15px;
+}
+
+.productPanelTitle {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  margin-bottom: 10px;
+  color: rgba(255, 255, 255, 0.84);
+  font-size: 13px;
+  font-weight: 800;
+}
+
+.mobileCtaBar {
+  display: none;
+}
+
+@media (max-width: 720px) {
+  .page {
+    padding-bottom: 96px;
+  }
+
+  .toast {
+    left: 16px;
+    right: 16px;
+    bottom: 96px;
+    max-width: none;
+  }
+
+  .heroCard {
+    border-radius: 26px;
+  }
+
+  .heroInfo {
+    padding: 16px 16px 20px;
+  }
+
+  .heroCardTitle {
+    font-size: 20px;
+  }
+
+  .heroCardText {
+    font-size: 14px;
+  }
+
+  .heroCardActionsV5 {
+    grid-template-columns: 1fr;
+  }
+
+  .heroCardActionsV5 .primaryBtn {
+    grid-column: auto;
+  }
+
+  .productPanel {
+    max-height: 52vh;
+    padding-right: 0;
+  }
+
+  .mobileCtaBar {
+    position: fixed;
+    left: 12px;
+    right: 12px;
+    bottom: calc(12px + env(safe-area-inset-bottom));
+    z-index: 900;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    padding: 12px;
+    border-radius: 22px;
+    background: rgba(16, 18, 24, 0.92);
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    box-shadow: 0 18px 50px rgba(0, 0, 0, 0.42);
+    backdrop-filter: blur(18px);
+  }
+
+  .mobileCtaMeta {
+    min-width: 0;
+    display: grid;
+    gap: 2px;
+  }
+
+  .mobileCtaMeta span {
+    color: #fff;
+    font-size: 13px;
+    font-weight: 900;
+    white-space: nowrap;
+  }
+
+  .mobileCtaMeta small {
+    color: rgba(255, 255, 255, 0.62);
+    font-size: 11px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    max-width: 170px;
+  }
+
+  .mobileCtaButton {
+    min-height: 46px;
+    padding: 0 16px;
+    border: 0;
+    border-radius: 16px;
+    background: #ffffff;
+    color: #07111d;
+    font-weight: 900;
+    white-space: nowrap;
+    cursor: pointer;
+  }
+
+  .generatorLeadCard {
+    border-radius: 24px;
+  }
+
+  .generateRow {
+    display: none;
+  }
+}
