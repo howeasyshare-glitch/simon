@@ -170,8 +170,12 @@ export default function Page() {
   const [generatedShareUrl, setGeneratedShareUrl] = useState("");
   const [generatedProfileSnapshot, setGeneratedProfileSnapshot] = useState<any>(null);
 
-  const [toast, setToast] = useState("");
+const [isGenerating, setIsGenerating] = useState(false);
+const [loadingStep, setLoadingStep] = useState("");
+
+const [toast, setToast] = useState("");
   const toastTimer = useRef<number | null>(null);
+  const resultRef = useRef<HTMLDivElement | null>(null);
 
   useEffect(() => {
     loadAll();
@@ -251,7 +255,10 @@ export default function Page() {
     if (toastTimer.current) window.clearTimeout(toastTimer.current);
     toastTimer.current = window.setTimeout(() => setToast(""), 2600);
   }
-
+function setGenerateStep(text: string) {
+  setLoadingStep(text);
+  pushToast(text);
+}
   async function loadFeatured() {
     try {
       const data = await apiGetJson<ListResp>(`/api/data?op=explore&limit=8&sort=like&ts=${Date.now()}`);
@@ -408,8 +415,9 @@ export default function Page() {
     } catch {}
 
     try {
-      setStage("generated");
-      pushToast("生成中...");
+      setIsGenerating(true);
+  setStage("generated");
+  setGenerateStep("✨ 正在分析你的條件...");
 
       const safeScene = selectedScene || "date";
       const safeGender = normalizeGender(gender);
@@ -439,13 +447,13 @@ export default function Page() {
       : `${safeGender}, adult, age ${age}`,
   promptContext: `${promptContext} | style:${system.temperature} creativity:${system.creativity}`,
 };
-
+setGenerateStep("👕 正在規劃適合的穿搭單品...");
 const specResp = await apiPostJson<any>("/api/generate-outfit-spec", baseProfilePayload);
       const specObj = specResp?.spec || specResp;
 
       const safeItems = Array.isArray(specObj?.items) ? specObj.items : [];
       if (!safeItems.length) throw new Error("outfitSpec items empty");
-
+setGenerateStep("🎨 正在生成你的穿搭圖片...");
       const imgResp = await apiPostJson<ImgResp>("/api/generate-image", {
   ...baseProfilePayload,
   outfitSpec: {
@@ -487,7 +495,7 @@ const specResp = await apiPostJson<any>("/api/generate-outfit-spec", baseProfile
       setGeneratedProfileSnapshot(snapshotAtGenerate);
 
             let resolvedProducts: any[] = [];
-
+setGenerateStep("🛍️ 正在搜尋相似商品...");
       try {
         const productsResp = await apiPostJson<any>("/api/data?op=products", {
           items: safeItems.map((x: any) => ({
@@ -588,10 +596,19 @@ const specResp = await apiPostJson<any>("/api/generate-outfit-spec", baseProfile
       } catch {}
 
       await loadRecent();
-      pushToast("完成");
+
+setLoadingStep("");
+pushToast("完成！已為你搭好一套");
+
+window.setTimeout(() => {
+  resultRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
+}, 120);
     } catch {
-      pushToast("生成失敗");
-    }
+  setLoadingStep("");
+  pushToast("生成失敗，請再試一次");
+} finally {
+  setIsGenerating(false);
+}
   }
 
   const activeLabel = useMemo(() => {
@@ -619,7 +636,7 @@ const specResp = await apiPostJson<any>("/api/generate-outfit-spec", baseProfile
     <main className={styles.page}>
       <NavBar />
 
-      <div className={styles.contentWrap}>
+      <div className={styles.contentWrap} ref={resultRef}>
         <HeroCarousel
           items={featured}
           generatedItems={recent}
@@ -660,7 +677,16 @@ const specResp = await apiPostJson<any>("/api/generate-outfit-spec", baseProfile
               <div className={styles.generatorTempBadge}>{temp}°C</div>
             </div>
 
-            <div className={styles.generatorHintText}>{activeSceneHint || "先選情境，再用條件微調會更準。"}</div>
+           <div className={styles.generatorHintText}>
+  {isGenerating ? loadingStep || "正在處理中..." : activeSceneHint || "先選情境，再用條件微調會更準。"}
+</div>
+
+{isGenerating ? (
+  <div className={styles.loadingSteps}>
+    <div className={styles.loadingStepActive}>{loadingStep || "準備生成..."}</div>
+    <div className={styles.loadingStepMuted}>請稍等一下，我們正在幫你完成整套穿搭。</div>
+  </div>
+) : null}
 
             <div className={styles.generatorStats}>
               <div className={styles.generatorStat}>
@@ -678,9 +704,13 @@ const specResp = await apiPostJson<any>("/api/generate-outfit-spec", baseProfile
             </div>
 
             <div className={styles.generateRow}>
-              <button className={styles.generateBtn} onClick={handleGenerate}>
-                生成穿搭
-              </button>
+              <button
+  className={styles.generateBtn}
+  onClick={handleGenerate}
+  disabled={isGenerating}
+>
+  {isGenerating ? "正在生成..." : "✨ 幫我搭一套"}
+</button>
               {generatedShareUrl ? (
                 <a href={generatedShareUrl} className={styles.secondaryBtn}>
                   查看分享頁
@@ -833,7 +863,20 @@ const specResp = await apiPostJson<any>("/api/generate-outfit-spec", baseProfile
       </section>
 
       {toast ? <Toast text={toast} /> : null}
-
+<div className={styles.mobileCtaBar}>
+  <div className={styles.mobileCtaMeta}>
+    <span>{gender}・{audience}・{temp}°C</span>
+    <small>{activeLabel || "選一個情境"}，年齡 {age}</small>
+  </div>
+  <button
+    type="button"
+    className={styles.mobileCtaButton}
+    onClick={handleGenerate}
+    disabled={isGenerating}
+  >
+    {isGenerating ? "生成中..." : "✨ 搭一套"}
+  </button>
+</div>
       {zoomSrc ? (
         <div className={styles.modalBackdrop} onClick={() => setZoomSrc("")}>
           <img src={zoomSrc} alt="" className={styles.modalImg} />
