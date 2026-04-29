@@ -19,24 +19,12 @@ function ProfileSnapshotInline({ profile }: { profile?: ProfileSnapshot }) {
   if (!profile) return null;
 
   return (
-    <div
-      style={{
-        marginTop: 10,
-        marginBottom: 14,
-        padding: "10px 12px",
-        borderRadius: 14,
-        background: "rgba(250,250,250,0.92)",
-        border: "1px solid rgba(0,0,0,0.08)",
-        fontSize: 12,
-        lineHeight: 1.6,
-        color: "#3f3f46",
-      }}
-    >
-      <div style={{ fontWeight: 700, color: "#18181b", marginBottom: 4 }}>本次設定</div>
-      <div>
+    <div className={styles.profileSnapshotBox}>
+      <div className={styles.profileSnapshotLabel}>本次設定</div>
+      <div className={styles.profileSnapshotMain}>
         {profile.gender || "-"}・{profile.audience || "成人"}・{profile.temp || "-"}°C
       </div>
-      <div>
+      <div className={styles.profileSnapshotSub}>
         年齡 {profile.age || "-"}　身高 {profile.height || "-"}　體重 {profile.weight || "-"}
       </div>
     </div>
@@ -257,35 +245,50 @@ export default function HeroCarousel({
                 <div className={styles.heroCardText}>{card.summary || "穿搭靈感"}</div>
                 {stage === "generated" ? <ProfileSnapshotInline profile={(card as any)._snapshot || profileSnapshot} /> : null}
 
-                <div className={styles.heroCardActions}>
-                  <button
-                    type="button"
-                    className={isLiked?.(card.id) ? styles.activeGhostBtn : styles.ghostBtn}
-                    onClick={() => onLike?.(card)}
-                  >
-                    {isLiked?.(card.id) ? "已讚" : "Like"}
-                  </button>
-                  <button
-                    type="button"
-                    className={isShared?.(card.id) ? styles.activeGhostBtn : styles.ghostBtn}
-                    onClick={() => onShare?.(card)}
-                  >
-                    {isShared?.(card.id) ? "已分享" : "Share"}
-                  </button>
-                  <button type="button" className={styles.primaryBtn} onClick={() => onApply?.(card)}>
-                    套用
-                  </button>
-                </div>
+                <div className={styles.heroCardActionsV5}>
+  {(card as any).products?.length ? (
+    <button
+      type="button"
+      className={styles.primaryBtn}
+      onClick={() => setOpenProducts(openProducts === card.id ? null : card.id)}
+    >
+      🛍 看單品
+    </button>
+  ) : null}
+
+  <button type="button" className={styles.secondaryBtn} onClick={() => onApply?.(card)}>
+    🔄 套用條件
+  </button>
+
+  <button
+    type="button"
+    className={isLiked?.(card.id) ? styles.activeGhostBtn : styles.ghostBtn}
+    onClick={() => onLike?.(card)}
+  >
+    {isLiked?.(card.id) ? "❤️ 已收藏" : "♡ 收藏"}
+  </button>
+
+  <button
+    type="button"
+    className={isShared?.(card.id) ? styles.activeGhostBtn : styles.ghostBtn}
+    onClick={() => onShare?.(card)}
+  >
+    {isShared?.(card.id) ? "已分享" : "分享"}
+  </button>
+</div>
 
                 {(card as any).products?.length ? (
                   <div className={styles.productBlock}>
-                    <button
-                      type="button"
-                      className={styles.productToggle}
-                      onClick={() => setOpenProducts(openProducts === card.id ? null : card.id)}
-                    >
-                      查看單品 {openProducts === card.id ? "▲" : "▼"}
-                    </button>
+                    <div className={styles.productPanelTitle}>
+  <span>相似單品</span>
+  <button
+    type="button"
+    className={styles.productToggle}
+    onClick={() => setOpenProducts(null)}
+  >
+    收起
+  </button>
+</div>
 
                     {openProducts === card.id ? (
                       <div className={styles.productPanel}>
