@@ -1,4 +1,3 @@
-
 "use client";
 
 import { useEffect, useRef, useState } from "react";
@@ -68,15 +67,17 @@ export default function HeroCarousel({
 }: Props) {
   const railRef = useRef<HTMLDivElement | null>(null);
   const [activeIdx, setActiveIdx] = useState(0);
+  const [openProducts, setOpenProducts] = useState<string | null>(null);
 
   const currentItems = stage === "generated" ? generatedItems : items;
   const isHome = mode === "home";
   const hasItems = currentItems?.length > 0;
   const canNavigate = currentItems.length > 1;
-  const [openProducts, setOpenProducts] = useState<string | null>(null);
+  const activeProductCard = currentItems.find((item) => item.id === openProducts);
 
   useEffect(() => {
     setActiveIdx(0);
+    setOpenProducts(null);
     if (railRef.current) {
       railRef.current.scrollTo({ left: 0, behavior: "auto" });
     }
@@ -139,8 +140,15 @@ export default function HeroCarousel({
           <div className={styles.heroHeadCopy}>
             <div className={styles.kicker}>{stage === "generated" ? "My Generated" : "Featured"}</div>
             <h1 className={styles.heroTitle}>{stage === "generated" ? "我的生成" : "穿搭主舞台"}</h1>
-            {stage === "generated" && generatedSummary ? (
-              <p className={styles.heroSub}>{generatedSummary}</p>
+
+            {stage === "generated" ? (
+              <>
+                {generatedSummary ? <p className={styles.heroSub}>{generatedSummary}</p> : null}
+                <div className={styles.resultHintBar}>
+                  <span>已完成這套穿搭</span>
+                  <small>可以看相似單品，或套用條件再微調一套。</small>
+                </div>
+              </>
             ) : null}
           </div>
 
@@ -206,6 +214,7 @@ export default function HeroCarousel({
       <div className={styles.heroViewport}>
         <div className={styles.heroRail} ref={railRef} onScroll={syncActiveFromScroll}>
           <div className={styles.heroSpacer} />
+
           {currentItems.map((card, idx) => (
             <article
               key={`${stage}-${card.id}`}
@@ -243,103 +252,46 @@ export default function HeroCarousel({
               <div className={styles.heroInfo}>
                 <div className={styles.heroCardTitle}>{card.style?.style || "Outfit"}</div>
                 <div className={styles.heroCardText}>{card.summary || "穿搭靈感"}</div>
-                {stage === "generated" ? <ProfileSnapshotInline profile={(card as any)._snapshot || profileSnapshot} /> : null}
+
+                {stage === "generated" ? (
+                  <ProfileSnapshotInline profile={(card as any)._snapshot || profileSnapshot} />
+                ) : null}
 
                 <div className={styles.heroCardActionsV5}>
-  {(card as any).products?.length ? (
-    <button
-      type="button"
-      className={styles.primaryBtn}
-      onClick={() => setOpenProducts(openProducts === card.id ? null : card.id)}
-    >
-      🛍 看單品
-    </button>
-  ) : null}
+                  {(card as any).products?.length ? (
+                    <button
+                      type="button"
+                      className={styles.primaryBtn}
+                      onClick={() => setOpenProducts(card.id)}
+                    >
+                      🛍 看單品
+                    </button>
+                  ) : null}
 
-  <button type="button" className={styles.secondaryBtn} onClick={() => onApply?.(card)}>
-    🔄 套用條件
-  </button>
+                  <button type="button" className={styles.secondaryBtn} onClick={() => onApply?.(card)}>
+                    🔄 套用條件
+                  </button>
 
-  <button
-    type="button"
-    className={isLiked?.(card.id) ? styles.activeGhostBtn : styles.ghostBtn}
-    onClick={() => onLike?.(card)}
-  >
-    {isLiked?.(card.id) ? "❤️ 已收藏" : "♡ 收藏"}
-  </button>
+                  <button
+                    type="button"
+                    className={isLiked?.(card.id) ? styles.activeGhostBtn : styles.ghostBtn}
+                    onClick={() => onLike?.(card)}
+                  >
+                    {isLiked?.(card.id) ? "❤️ 已收藏" : "♡ 收藏"}
+                  </button>
 
-  <button
-    type="button"
-    className={isShared?.(card.id) ? styles.activeGhostBtn : styles.ghostBtn}
-    onClick={() => onShare?.(card)}
-  >
-    {isShared?.(card.id) ? "已分享" : "分享"}
-  </button>
-</div>
-
-                {(card as any).products?.length ? (
-                  <div className={styles.productBlock}>
-                    <div className={styles.productPanelTitle}>
-  <span>相似單品</span>
-  <button
-    type="button"
-    className={styles.productToggle}
-    onClick={() => setOpenProducts(null)}
-  >
-    收起
-  </button>
-</div>
-
-                    {openProducts === card.id ? (
-                      <div className={styles.productPanel}>
-                        {(card as any).products.map((group: any, i: number) => (
-                          <div key={i} className={styles.productGroup}>
-                            <div className={styles.productGroupHeader}>
-                              {group.slot || group.label || "單品"}
-                            </div>
-
-                            <div className={styles.productCompactList}>
-                              {(group.candidates || []).slice(0, 3).map((p: any, j: number) => (
-                                <a
-                                  key={j}
-                                  href={p.product_url || p.url}
-                                  target="_blank"
-                                  rel="noreferrer"
-                                  className={styles.productCompactItem}
-                                >
-                                  {p.image_url ? (
-                                    <img
-                                      src={p.image_url}
-                                      alt={p.title || "product"}
-                                      className={styles.productCompactImage}
-                                    />
-                                  ) : (
-                                    <div className={styles.productCompactImageFallback} />
-                                  )}
-
-                                  <div className={styles.productCompactBody}>
-                                    <div className={styles.productCompactTitle}>{p.title}</div>
-
-                                    {p.merchant ? (
-                                      <div className={styles.productCompactMeta}>{p.merchant}</div>
-                                    ) : null}
-
-                                    {p.badge_text ? (
-                                      <div className={styles.productCompactBadge}>{p.badge_text}</div>
-                                    ) : null}
-                                  </div>
-                                </a>
-                              ))}
-                            </div>
-                          </div>
-                        ))}
-                      </div>
-                    ) : null}
-                  </div>
-                ) : null}
+                  <button
+                    type="button"
+                    className={isShared?.(card.id) ? styles.activeGhostBtn : styles.ghostBtn}
+                    onClick={() => onShare?.(card)}
+                  >
+                    {isShared?.(card.id) ? "已分享" : "分享"}
+                  </button>
+                </div>
               </div>
             </article>
           ))}
+
           <div className={styles.heroSpacer} />
         </div>
 
@@ -351,6 +303,76 @@ export default function HeroCarousel({
           </div>
         ) : null}
       </div>
+
+      {activeProductCard && (activeProductCard as any).products?.length ? (
+        <div className={styles.productSheetBackdrop} onClick={() => setOpenProducts(null)}>
+          <div className={styles.productSheet} onClick={(e) => e.stopPropagation()}>
+            <div className={styles.productSheetHandle} />
+
+            <div className={styles.productSheetHead}>
+              <div>
+                <div className={styles.productSheetKicker}>相似單品</div>
+                <div className={styles.productSheetTitle}>
+                  {(activeProductCard as any).summary || "這套穿搭的推薦商品"}
+                </div>
+              </div>
+
+              <button
+                type="button"
+                className={styles.productSheetClose}
+                onClick={() => setOpenProducts(null)}
+              >
+                關閉
+              </button>
+            </div>
+
+            <div className={styles.productSheetBody}>
+              {(activeProductCard as any).products.map((group: any, i: number) => (
+                <div key={i} className={styles.productSheetGroup}>
+                  <div className={styles.productSheetGroupHead}>
+                    <span>{group.slot || group.label || "單品"}</span>
+                    <small>{(group.candidates || []).length} 件</small>
+                  </div>
+
+                  <div className={styles.productSheetList}>
+                    {(group.candidates || []).slice(0, 3).map((p: any, j: number) => (
+                      <a
+                        key={j}
+                        href={p.product_url || p.url}
+                        target="_blank"
+                        rel="noreferrer"
+                        className={styles.productSheetItem}
+                      >
+                        {p.image_url ? (
+                          <img
+                            src={p.image_url}
+                            alt={p.title || "product"}
+                            className={styles.productSheetImage}
+                          />
+                        ) : (
+                          <div className={styles.productSheetImageFallback} />
+                        )}
+
+                        <div className={styles.productSheetItemBody}>
+                          <div className={styles.productSheetItemTitle}>{p.title}</div>
+
+                          <div className={styles.productSheetItemMeta}>
+                            {p.merchant || "商品來源"}
+                          </div>
+
+                          {p.badge_text ? (
+                            <div className={styles.productCompactBadge}>{p.badge_text}</div>
+                          ) : null}
+                        </div>
+                      </a>
+                    ))}
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+      ) : null}
     </section>
   );
 }
