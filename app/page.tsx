@@ -176,6 +176,7 @@ const [loadingStep, setLoadingStep] = useState("");
 const [toast, setToast] = useState("");
   const toastTimer = useRef<number | null>(null);
   const resultRef = useRef<HTMLDivElement | null>(null);
+  const [likedMap, setLikedMap] = useState<Record<string, boolean>>({});
 
   useEffect(() => {
     loadAll();
@@ -367,31 +368,53 @@ function setGenerateStep(text: string) {
     return "成人";
   }
 
-  function applyPresetPayload(payload: PresetPayload) {
-    setGender(normalizeGender(payload.gender));
-    setAudience(normalizeAudience(payload.audience));
+  function applyPresetPayload(payload: PresetPayload, options?: { silent?: boolean }) {
+  setGender(normalizeGender(payload.gender));
+  setAudience(normalizeAudience(payload.audience));
 
-    if (payload.age) setAge(Number(payload.age));
-    if (payload.height) setHeight(Number(payload.height));
-    if (payload.weight) setWeight(Number(payload.weight));
-    if (payload.temp) setTemp(Number(payload.temp));
+  if (payload.age) setAge(Number(payload.age));
+  if (payload.height) setHeight(Number(payload.height));
+  if (payload.weight) setWeight(Number(payload.weight));
+  if (payload.temp) setTemp(Number(payload.temp));
 
+  if (!options?.silent) {
     pushToast("已套用條件");
   }
+}
 
   function applyPreset(item: OutfitItem) {
-    const anyItem: any = item;
-    const echo = anyItem?.style?._echo || anyItem?.style?.echo || anyItem?.spec?._echo || {};
+  const anyItem: any = item;
 
-    applyPresetPayload({
-      gender: echo.gender || anyItem?.style?.gender,
-      audience: echo.audience || anyItem?.style?.audience,
-      age: echo.age,
-      height: echo.height,
-      weight: echo.weight,
-      temp: echo.temp,
-    });
-  }
+  const snap =
+    anyItem?._snapshot ||
+    anyItem?.style?.profile_snapshot ||
+    anyItem?.spec?._snapshot ||
+    anyItem?.style?._echo ||
+    anyItem?.style?.echo ||
+    anyItem?.spec?._echo ||
+    {};
+
+  applyPresetPayload(
+  {
+    gender: snap.gender || anyItem?.style?.gender,
+    audience: snap.audience || anyItem?.style?.audience,
+    age: snap.age,
+    height: snap.height,
+    weight: snap.weight,
+    temp: snap.temp,
+  },
+  { silent: true }
+);
+
+  setStage("featured");
+  pushToast("已套用這套條件，可以再按「搭一套」生成新版");
+
+  window.setTimeout(() => {
+    document
+      .querySelector(`.${styles.generatorSection}`)
+      ?.scrollIntoView({ behavior: "smooth", block: "start" });
+  }, 120);
+}
 
   function tryApplyPresetFromStorage() {
     const raw = localStorage.getItem("findoutfit_apply_preset");
